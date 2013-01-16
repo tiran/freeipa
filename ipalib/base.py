@@ -380,9 +380,27 @@ class NameSpace(ReadOnly):
 
     The `NameSpace` class is used in many places throughout freeIPA.  For a few
     examples, see the `plugable.API` and the `frontend.Command` classes.
+
+
+    Optionally, we can pass in an "unwrap" function, which will be called on
+    every item/attribute access. For example, have NameSpace simply extract
+    plain integers back from our Member objects:
+
+    >>> unwrapped_ns = NameSpace([Member(1), Member(2), Member(3)],
+    ...     unwrap=lambda x: x.i)
+    >>> unwrapped_ns[0]
+    1
+    >>> unwrapped_ns.member2
+    2
+    >>> unwrapped_ns[1:]
+    (2, 3)
+
+    The unwrap function applies to all methods of accessing the members except
+    __todict__.
     """
 
-    def __init__(self, members, sort=True, name_attr='name'):
+    def __init__(
+            self, members, sort=True, name_attr='name', unwrap=lambda x: x):
         """
         :param members: An iterable providing the members.
         :param sort: Whether to sort the members by member name.
@@ -406,9 +424,9 @@ class NameSpace(ReadOnly):
                 raise AttributeError(OVERRIDE_ERROR %
                     (self.__class__.__name__, name, self.__map[name], member)
                 )
-            assert not hasattr(self, name), 'Ouch! Has attribute %r' % name
+            assert name not in self.__map, 'Ouch! Has key %r' % name
             self.__map[name] = member
-            setattr(self, name, member)
+        self.__unwrap = unwrap
         lock(self)
 
     def __len__(self):
@@ -441,13 +459,16 @@ class NameSpace(ReadOnly):
         This method is like an ordered version of ``dict.itervalues()``.
         """
         for member in self.__members:
-            yield member
+            yield self.__unwrap(member)
 
     def __contains__(self, name):
         """
         Return ``True`` if namespace has a member named ``name``.
         """
         return name in self.__map
+
+    def __getattr__(self, key):
+        return self[key]
 
     def __getitem__(self, key):
         """
@@ -456,9 +477,11 @@ class NameSpace(ReadOnly):
         :param key: The name or index of a member, or a slice object.
         """
         if isinstance(key, basestring):
-            return self.__map[key]
-        if type(key) in (int, slice):
-            return self.__members[key]
+            return self.__unwrap(self.__map[key])
+        if isinstance(key, int):
+            return self.__unwrap(self.__members[key])
+        elif isinstance(key, slice):
+            return tuple(self.__unwrap(v) for v in self.__members[key])
         raise TypeError(
             TYPE_ERROR % ('key', (str, int, slice), key, type(key))
         )

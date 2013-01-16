@@ -208,10 +208,10 @@ class test_NameSpace(ClassChecker):
     """
     _cls = base.NameSpace
 
-    def new(self, count, sort=True):
+    def new(self, count, **kwrags):
         members = tuple(DummyMember(i) for i in xrange(count, 0, -1))
         assert len(members) == count
-        o = self.cls(members, sort=sort)
+        o = self.cls(members, **kwrags)
         return (o, members)
 
     def test_init(self):
@@ -350,3 +350,47 @@ class test_NameSpace(ClassChecker):
 
                 # Test that a copy is returned:
                 assert o.__todict__() is not d
+
+    def test_unwrap(self):
+        """
+        Test the `unwrap` argument to `ipalib.base.NameSpace`.
+        """
+        for cnt in (3, 101):
+            for sort in (True, False):
+                (o, members) = self.new(cnt, sort=sort, unwrap=lambda x: x.i)
+                if sort:
+                    sorted_members = sorted(members, key=lambda x: x.i)
+                else:
+                    sorted_members = members
+
+                # indexing
+                for i, m in enumerate(sorted_members):
+                    assert o[i] == m.i, (o[i], m, m.i)
+                if sort:
+                    assert o[-1] == cnt
+                    assert o[0] == 1
+                else:
+                    assert o[-1] == 1
+                    assert o[0] == cnt
+
+                # key access
+                for m in members:
+                    assert o[m.name] == m.i
+
+                # attribute access
+                for m in members:
+                    assert getattr(o, m.name) == m.i
+
+                # slicing
+                if sort:
+                    pass
+                else:
+                    assert o[:-1] == tuple(range(cnt, 1, -1))
+                    assert o[3:10] == tuple(x.i for x in members[3:10])
+
+                # iteration
+                assert list(o) == [membername(x.i) for x in sorted_members]
+
+                # __todict__ should not call unwrap
+                d = o.__todict__()
+                assert d == dict((m.name, m) for m in members)
