@@ -1120,6 +1120,30 @@ class Local(Command):
         return self.forward(*args, **options)
 
 
+class MethodCollection(object):
+    """Makes an Object's Methods available via attribute and dict-like access
+    """
+    def __init__(self, obj):
+        self.__object = obj
+
+    def __getitem__(self, name):
+        obj = self.__object
+        return obj.api.Method['_'.join((obj.name, name))]
+
+    def __getattr__(self, name):
+        return self[name]
+
+    def __iter__(self):
+        obj = self.__object
+        for fullname in obj.api.Method:
+            objname, sep, methodname = fullname.partition('_')
+            if objname == obj.name:
+                yield methodname
+
+    def __len__(self):
+        return len(list(iter(self)))
+
+
 class Object(HasParam):
     finalize_early = False
 
@@ -1135,9 +1159,7 @@ class Object(HasParam):
     takes_params = tuple()
 
     def _on_finalize(self):
-        self.methods = NameSpace(
-            self.__get_attrs('Method'), sort=False, name_attr='attr_name'
-        )
+        self.methods = MethodCollection(self)
         self._create_param_namespace('params')
         pkeys = filter(lambda p: p.primary_key, self.params())
         if len(pkeys) > 1:
@@ -1178,15 +1200,6 @@ class Object(HasParam):
         Construct an LDAP DN.
         """
         raise NotImplementedError('%s.get_dn()' % self.name)
-
-    def __get_attrs(self, name):
-        if name not in self.api:
-            return
-        namespace = self.api[name]
-        assert type(namespace) is NameSpace
-        for plugin in namespace(): # Equivalent to dict.itervalues()
-            if plugin.obj_name == self.name:
-                yield plugin
 
     def get_params(self):
         """

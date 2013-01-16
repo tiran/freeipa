@@ -922,7 +922,6 @@ class test_Object(ClassChecker):
         assert read_only(o, 'api') is api
 
         namespace = o.methods
-        assert isinstance(namespace, plugable.NameSpace)
         assert len(namespace) == cnt
         f = methods_format
         for i in xrange(cnt):
