@@ -103,8 +103,7 @@ class SetProxy(ReadOnly):
         if type(s) not in allowed:
             raise TypeError('%r not in %r' % (type(s), allowed))
         self.__s = s
-        if not is_production_mode(self):
-            lock(self)
+        lock(self)
 
     def __len__(self):
         """

@@ -196,9 +196,6 @@ def islocked(instance):
 
     :param instance: The instance of `ReadOnly` (or similar) to interrogate.
     """
-    assert (
-        hasattr(instance, '__lock__') and callable(instance.__lock__)
-    ), 'no __lock__() method: %r' % instance
     return instance.__islocked__()
 
 
@@ -398,6 +395,7 @@ class NameSpace(ReadOnly):
     The unwrap function applies to all methods of accessing the members except
     __todict__.
     """
+    __slots__ = ['__sort', '__members', '__names', '__map', '__unwrap']
 
     def __init__(
             self, members, sort=True, name_attr='name', unwrap=lambda x: x):
@@ -424,7 +422,6 @@ class NameSpace(ReadOnly):
                 raise AttributeError(OVERRIDE_ERROR %
                     (self.__class__.__name__, name, self.__map[name], member)
                 )
-            assert name not in self.__map, 'Ouch! Has key %r' % name
             self.__map[name] = member
         self.__unwrap = unwrap
         lock(self)
@@ -467,9 +464,6 @@ class NameSpace(ReadOnly):
         """
         return name in self.__map
 
-    def __getattr__(self, key):
-        return self[key]
-
     def __getitem__(self, key):
         """
         Return a member by name or index, or return a slice of members.
@@ -485,6 +479,7 @@ class NameSpace(ReadOnly):
         raise TypeError(
             TYPE_ERROR % ('key', (str, int, slice), key, type(key))
         )
+    __getattr__ = __getitem__
 
     def __repr__(self):
         """
