@@ -195,11 +195,26 @@ class MagicDict(DictProxy):
         except KeyError:
             raise AttributeError('no magic attribute %r' % name)
 
+    def get_original(self, name):
+        return self[name]
+
+
+class FactoryDict(MagicDict):
+    """A MagicDict that calls each value before returning it"""
+    def __getitem__(self, name):
+        item = super(FactoryDict, self).__getitem__(name)
+        return item()
+
+    def get_original(self, name):
+        return super(FactoryDict, self).__getitem__(name)
+
 
 class Plugin(ReadOnly):
     """
     Base class for all plugins.
     """
+
+    make_factory = False
 
     finalize_early = True
 
@@ -211,7 +226,7 @@ class Plugin(ReadOnly):
         self.__finalized = False
         self.__finalize_lock = threading.RLock()
         cls = self.__class__
-        self.name = cls.__name__
+        self.name = self.__name__ = cls.__name__
         self.module = cls.__module__
         self.fullname = '%s.%s' % (self.module, self.name)
         self.bases = tuple(
@@ -392,7 +407,10 @@ class Registrar(DictProxy):
             name = base.__name__
             if not is_production_mode(self):
                 assert not hasattr(self, name)
-            setattr(self, name, MagicDict(sub_d))
+            if getattr(base, 'make_factory', False):
+                setattr(self, name, FactoryDict(sub_d))
+            else:
+                setattr(self, name, MagicDict(sub_d))
             yield (name, base)
 
     def __findbases(self, klass):
@@ -712,7 +730,10 @@ class API(DictProxy):
             def __init__(self, klass):
                 self.created = self.next()
                 self.klass = klass
-                self.instance = klass()
+                if klass.make_factory:
+                    self.instance = klass
+                else:
+                    self.instance = klass()
                 self.bases = []
 
             @classmethod
@@ -750,8 +771,19 @@ class API(DictProxy):
         for name in self.register:
             base = self.register[name]
             magic = getattr(self.register, name)
+            if base.make_factory:
+                def unwrap(item):
+                    instance = item()
+                    instance.set_api(self)
+                    instance.ensure_finalized()
+                    return instance
+            else:
+                def unwrap(item):
+                    return item
             namespace = NameSpace(
-                plugin_iter(base, (magic[k] for k in magic))
+                plugin_iter(base, (magic.get_original(k) for k in magic)),
+                name_attr='__name__',
+                unwrap=unwrap,
             )
             if not production_mode:
                 assert not (
@@ -761,9 +793,10 @@ class API(DictProxy):
             object.__setattr__(self, name, namespace)
 
         for p in plugins.itervalues():
-            p.instance.set_api(self)
-            if not production_mode:
-                assert p.instance.api is self
+            if not p.klass.make_factory:
+                p.instance.set_api(self)
+                if not production_mode:
+                    assert p.instance.api is self
 
         for p in tofinalize:
             p.instance.ensure_finalized()
