@@ -701,6 +701,10 @@ class help(frontend.Local):
         mcl = max((self._topics[topic_name][1], len(mod_name)))
         self._topics[topic_name][1] = mcl
 
+    @property
+    def all_commands(self):
+        return {c.name: c for c in self.Command()}
+
     def _on_finalize(self):
         # {topic: ["description", mcl, {"subtopic": ["description", mcl, [commands]]}]}
         # {topic: ["description", mcl, [commands]]}
@@ -709,7 +713,7 @@ class help(frontend.Local):
         self._builtins = []
 
         # build help topics
-        for c in self.Command():
+        for c in self.all_commands.values():
             if c.NO_CLI:
                 continue
 
@@ -774,17 +778,17 @@ class help(frontend.Local):
             return
         if name in self._topics:
             self.print_commands(name, outfile)
-        elif name in self.Command:
-            cmd = self.Command[name]
+        elif name in self.all_commands:
+            cmd = self.all_commands[name]
             if cmd.NO_CLI:
                 raise HelpError(topic=name)
             self.Backend.cli.build_parser(cmd).print_help(outfile)
         elif mod_name in sys.modules:
             self.print_commands(name, outfile)
         elif name == "commands":
-            mcl = max(len(s) for s in (self.Command))
-            for cname in self.Command:
-                cmd = self.Command[cname]
+            mcl = max(len(s) for s in (self.all_commands))
+            for cname in self.all_commands:
+                cmd = self.all_commands[cname]
                 if cmd.NO_CLI:
                     continue
                 writer('%s  %s' % (to_cli(cmd.name).ljust(mcl), cmd.summary))
