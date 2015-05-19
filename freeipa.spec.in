@@ -460,8 +460,8 @@ install daemons/dnssec/ipa-ods-exporter %{buildroot}%{_libexecdir}/ipa/ipa-ods-e
 # Web UI plugin dir
 mkdir -p %{buildroot}%{_usr}/share/ipa/ui/js/plugins
 
-# KDC proxy
-install install/share/kdcproxy.conf %{buildroot}%{_sysconfdir}/kdcproxy.conf
+# KDC proxy config (kdcproxyshim.py sets KDCPROXY_CONFIG to load this file)
+install install/share/kdcproxy.conf %{buildroot}%{_sysconfdir}/ipa/kdcproxy.conf
 
 # NOTE: systemd specific section
 mkdir -p %{buildroot}%{_tmpfilesdir}

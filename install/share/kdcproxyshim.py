@@ -21,6 +21,7 @@
 WSGI appliction for KDC Proxy
 """
 import os
+import sys
 
 from ipaserver.install.installutils import is_ipa_configured
 from ipalib import api, errors
@@ -33,7 +34,10 @@ from ipapython import ipautil
 from ipaplatform import services
 from ipaplatform.paths import paths
 
-import kdcproxy
+
+DEBUG = False
+TIME_LIMIT = 2
+KDCPROXY_CONFIG = '/etc/ipa/kdcproxy.conf'
 
 
 class CheckError(Exception):
@@ -114,7 +118,13 @@ def check_enabled(debug=False, time_limit=2):
         return False
 
 
-ENABLED = check_enabled()
+ENABLED = check_enabled(DEBUG, TIME_LIMIT)
+
+# override config location
+if 'kdcproxy' in sys.modules:
+    raise CheckError('kdcproxy already imported')
+os.environ['KDCPROXY_CONFIG'] = KDCPROXY_CONFIG
+import kdcproxy
 
 
 def application(environ, start_response):

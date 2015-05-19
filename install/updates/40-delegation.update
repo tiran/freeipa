@@ -15,7 +15,7 @@ default:cn: Write IPA Configuration
 default:member: cn=Write IPA Configuration,cn=privileges,cn=pbac,$SUFFIX
 
 dn: $SUFFIX
-add:aci: (targetattr = "ipausersearchfields || ipagroupsearchfields || ipasearchtimelimit || ipasearchrecordslimit || ipacustomfields || ipahomesrootdir || ipadefaultloginshell || ipadefaultprimarygroup || ipamaxusernamelength || ipapwdexpadvnotify || ipauserobjectclasses || ipagroupobjectclasses || ipadefaultemaildomain || ipamigrationenabled || ipacertificatesubjectbase || ipaconfigstring")(target = "ldap:///cn=ipaconfig,cn=etc,$SUFFIX" )(version 3.0 ; acl "permission:Write IPA Configuration"; allow (write) groupdn = "ldap:///cn=Write IPA Configuration,cn=permissions,cn=pbac,$SUFFIX";)
+add:aci: (targetattr = "ipausersearchfields || ipagroupsearchfields || ipasearchtimelimit || ipasearchrecordslimit || ipacustomfields || ipahomesrootdir || ipadefaultloginshell || ipadefaultprimarygroup || ipamaxusernamelength || ipapwdexpadvnotify || ipauserobjectclasses || ipagroupobjectclasses || ipadefaultemaildomain || ipamigrationenabled || ipacertificatesubjectbase || ipaconfigstring || ipakdcproxyenabled")(target = "ldap:///cn=ipaconfig,cn=etc,$SUFFIX" )(version 3.0 ; acl "permission:Write IPA Configuration"; allow (write) groupdn = "ldap:///cn=Write IPA Configuration,cn=permissions,cn=pbac,$SUFFIX";)
 
 # Host-Based Access Control
 dn: cn=HBAC Administrator,cn=privileges,cn=pbac,$SUFFIX
