@@ -514,7 +514,7 @@ args: 0,1,1
 option: Str('version?', exclude='webui')
 output: Output('result', None, None)
 command: config_mod
-args: 0,25,3
+args: 0,26,3
 option: Str('addattr*', cli_name='addattr', exclude='webui')
 option: Flag('all', autofill=True, cli_name='all', default=False, exclude='webui')
 option: Str('delattr*', cli_name='delattr', exclude='webui')
@@ -525,6 +525,7 @@ option: Str('ipadefaultprimarygroup', attribute=True, autofill=False, cli_name='
 option: Str('ipagroupobjectclasses', attribute=True, autofill=False, cli_name='groupobjectclasses', csv=True, multivalue=True, required=False)
 option: IA5Str('ipagroupsearchfields', attribute=True, autofill=False, cli_name='groupsearch', multivalue=False, required=False)
 option: IA5Str('ipahomesrootdir', attribute=True, autofill=False, cli_name='homedirectory', multivalue=False, required=False)
+option: Bool('ipakdcproxyenabled', attribute=True, autofill=False, cli_name='enable_kdcproxy', multivalue=False, required=False)
 option: StrEnum('ipakrbauthzdata', attribute=True, autofill=False, cli_name='pac_type', csv=True, multivalue=True, required=False, values=(u'MS-PAC', u'PAD', u'nfs:NONE'))
 option: Int('ipamaxusernamelength', attribute=True, autofill=False, cli_name='maxusername', minvalue=1, multivalue=False, required=False)
 option: Bool('ipamigrationenabled', attribute=True, autofill=False, cli_name='enable_migration', multivalue=False, required=False)

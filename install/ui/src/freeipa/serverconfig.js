@@ -122,6 +122,10 @@ return {
                             name: 'ipakrbauthzdata',
                             $type: 'checkboxes',
                             options: IPA.create_options(['MS-PAC', 'PAD', 'nfs:NONE'])
+                        },
+                        {
+                            $type: 'checkbox',
+                            name: 'ipakdcproxyenabled'
                         }
                     ]
                 }
