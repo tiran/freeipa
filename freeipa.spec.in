@@ -461,7 +461,7 @@ install daemons/dnssec/ipa-ods-exporter %{buildroot}%{_libexecdir}/ipa/ipa-ods-e
 mkdir -p %{buildroot}%{_usr}/share/ipa/ui/js/plugins
 
 # KDC proxy config (kdcproxyshim.py sets KDCPROXY_CONFIG to load this file)
-install install/share/kdcproxy.conf %{buildroot}%{_sysconfdir}/ipa/kdcproxy.conf
+install -m 644 install/share/kdcproxy.conf %{buildroot}%{_sysconfdir}/ipa/kdcproxy.conf
 
 # NOTE: systemd specific section
 mkdir -p %{buildroot}%{_tmpfilesdir}
@@ -689,7 +689,7 @@ fi
 %config(noreplace) %{_sysconfdir}/sysconfig/ipa_memcached
 %config(noreplace) %{_sysconfdir}/sysconfig/ipa-dnskeysyncd
 %config(noreplace) %{_sysconfdir}/sysconfig/ipa-ods-exporter
-%config(noreplace) %{_sysconfdir}/kdcproxy.conf
+%config(noreplace) %{_sysconfdir}/ipa/kdcproxy.conf
 %dir %attr(0700,apache,apache) %{_localstatedir}/run/ipa_memcached/
 %dir %attr(0700,root,root) %{_localstatedir}/run/ipa/
 %dir %attr(0700,apache,apache) %{_localstatedir}/run/httpd/clientcaches/
@@ -782,6 +782,7 @@ fi
 %{_usr}/share/ipa/ipa-rewrite.conf
 %{_usr}/share/ipa/ipa-kdc-proxy.conf
 %{_usr}/share/ipa/ipa-pki-proxy.conf
+%{_usr}/share/ipa/kdcproxy.conf
 %ghost %attr(0644,root,apache) %config(noreplace) %{_usr}/share/ipa/html/ca.crt
 %ghost %attr(0644,root,apache) %{_usr}/share/ipa/html/configure.jar
 %ghost %attr(0644,root,apache) %{_usr}/share/ipa/html/kerberosauth.xpi
