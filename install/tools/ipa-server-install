@@ -53,6 +53,7 @@ from ipaserver.install import httpinstance
 from ipaserver.install import ntpinstance
 from ipaserver.install import certs
 from ipaserver.install import cainstance
+from ipaserver.install import kdcproxyinstance
 from ipaserver.install import krainstance
 from ipaserver.install import memcacheinstance
 from ipaserver.install import otpdinstance
@@ -591,6 +592,7 @@ def uninstall():
 
     dns_installer.uninstall()
 
+    kdcproxyinstance.KDCProxyInstance().uninstall()
     httpinstance.HTTPInstance(fstore).uninstall()
     krbinstance.KrbInstance(fstore).uninstall()
     dsinstance.DsInstance(fstore=fstore).uninstall()
@@ -1249,6 +1251,11 @@ def main():
             subject_base=options.subject, auto_redirect=options.ui_redirect,
             ca_is_configured=setup_ca)
     tasks.restore_context(paths.CACHE_IPA_SESSIONS)
+
+    # Create KDCProxyInstance
+    kdcproxy = kdcproxyinstance.KDCProxyInstance()
+    kdcproxy.create_instance('KDCPROXY', host_name, dm_password,
+                             ipautil.realm_to_suffix(realm_name))
 
     # Export full CA chain
     ca_db = certs.CertDB(realm_name)

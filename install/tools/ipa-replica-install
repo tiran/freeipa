@@ -35,6 +35,7 @@ from ipaserver.install import dsinstance, installutils, krbinstance, service
 from ipaserver.install import bindinstance, httpinstance, ntpinstance
 from ipaserver.install import memcacheinstance, dnskeysyncinstance
 from ipaserver.install import otpdinstance
+from ipaserver.install import kdcproxyinstance
 from ipaserver.install.replication import replica_conn_check, ReplicationManager
 from ipaserver.install.installutils import (
     create_replica_config, read_replica_info_kra_enabled, private_ccache)
@@ -645,6 +646,11 @@ def main():
     otpd = otpdinstance.OtpdInstance()
     otpd.create_instance('OTPD', config.host_name, config.dirman_password,
                          ipautil.realm_to_suffix(config.realm_name))
+
+    kdcproxy = kdcproxyinstance.KDCProxyInstance()
+    kdcproxy.create_instance('KDCPROXY', config.host_name,
+                             config.dirman_password,
+                             ipautil.realm_to_suffix(config.realm_name))
 
     if CA:
         CA.configure_certmonger_renewal()

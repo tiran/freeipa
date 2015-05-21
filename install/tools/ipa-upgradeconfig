@@ -53,6 +53,7 @@ from ipaserver.install import service
 from ipaserver.install import cainstance
 from ipaserver.install import certs
 from ipaserver.install import otpdinstance
+from ipaserver.install import kdcproxyinstance
 from ipaserver.install import sysupgrade
 from ipaserver.install import dnskeysyncinstance
 
@@ -1361,18 +1362,26 @@ def main():
     simple_service_list = (
         (memcacheinstance.MemcacheInstance(), 'MEMCACHE'),
         (otpdinstance.OtpdInstance(), 'OTPD'),
+        (kdcproxyinstance.KDCProxyInstance(), 'KDCPROXY'),
     )
+
+    ldap_suffix = ipautil.realm_to_suffix(api.env.realm)
+    realm = api.env.realm
 
     for service, ldap_name in simple_service_list:
         service.ldapi = True
+        # XXX messy, KDCProxyInstance needs to lookup its state in LDAP
+        service.gensvc_name = ldap_name
+        service.fqdn = fqdn
+        service.dm_password = None
+        service.suffix = ldap_suffix
+        service.realm = realm
         try:
             if not service.is_configured():
                 # 389-ds needs to be running to create the memcache instance
                 # because we record the new service in cn=masters.
                 ds.start()
-                service.create_instance(ldap_name, fqdn, None,
-                                        ipautil.realm_to_suffix(api.env.realm),
-                                        realm=api.env.realm)
+                service.create_instance(ldap_name, fqdn, None, ldap_suffix, realm)
         except ipalib.errors.DuplicateEntry:
             pass
 

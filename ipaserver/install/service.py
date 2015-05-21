@@ -404,6 +404,27 @@ class Service(object):
 
         self.steps = []
 
+    def ldap_is_enabled(self, name, fqdn, dm_password, ldap_suffix):
+        """Check if service is configured and enabled in LDAP
+
+        None: not configured
+        False: configured and disabled
+        True: configured and enabled
+        """
+        assert isinstance(ldap_suffix, DN)
+        if not self.admin_conn:
+            self.ldap_connect()
+
+        entry_name = DN(('cn', name), ('cn', fqdn), ('cn', 'masters'), ('cn', 'ipa'), ('cn', 'etc'), ldap_suffix)
+
+        try:
+            entry = self.admin_conn.get_entry(entry_name, ['ipaConfigString'])
+        except errors.NotFound:
+            return None
+        else:
+            return any(u'enabledservice' == val.lower()
+                       for val in entry.get('ipaConfigString', []))
+
     def ldap_enable(self, name, fqdn, dm_password, ldap_suffix, config=[]):
         assert isinstance(ldap_suffix, DN)
         self.disable()
@@ -437,13 +458,17 @@ class Service(object):
             root_logger.debug("service %s startup entry enabled", name)
             return
 
-        order = SERVICE_LIST[name][1]
+        ipaconfigstring = ["enabledService"]
+        if name in SERVICE_LIST:
+            order = SERVICE_LIST[name][1]
+            ipaconfigstring.append("startOrder %i" % order)
+        ipaconfigstring.extend(config)
+
         entry = self.admin_conn.make_entry(
             entry_name,
             objectclass=["nsContainer", "ipaConfigObject"],
             cn=[name],
-            ipaconfigstring=[
-                "enabledService", "startOrder " + str(order)] + config,
+            ipaconfigstring=ipaconfigstring,
         )
 
         try:
