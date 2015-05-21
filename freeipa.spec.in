@@ -95,6 +95,7 @@ BuildRequires:  p11-kit-devel
 BuildRequires:  pki-base >= 10.2.1-0.1
 BuildRequires:  python-pytest-multihost >= 0.5
 BuildRequires:  python-pytest-sourceorder
+BuildRequires:  python-kdcproxy >= 0.2.1
 
 %description
 IPA is an integrated solution to provide centrally managed Identity (machine,
@@ -140,6 +141,7 @@ Requires: pki-kra >= 10.2.1-0.1
 Requires(preun): python systemd-units
 Requires(postun): python systemd-units
 Requires: python-dns >= 1.11.1
+Requires: python-kdcproxy >= 0.2.1
 Requires: zip
 Requires: policycoreutils >= 2.1.12-5
 Requires: tar
@@ -428,6 +430,7 @@ ln -s ../../../..%{_sysconfdir}/ipa/html/browserconfig.html \
 # So we can own our Apache configuration
 mkdir -p %{buildroot}%{_sysconfdir}/httpd/conf.d/
 /bin/touch %{buildroot}%{_sysconfdir}/httpd/conf.d/ipa.conf
+/bin/touch %{buildroot}%{_sysconfdir}/httpd/conf.d/ipa-kdc-proxy.conf
 /bin/touch %{buildroot}%{_sysconfdir}/httpd/conf.d/ipa-pki-proxy.conf
 /bin/touch %{buildroot}%{_sysconfdir}/httpd/conf.d/ipa-rewrite.conf
 mkdir -p %{buildroot}%{_usr}/share/ipa/html/
@@ -456,6 +459,9 @@ install daemons/dnssec/ipa-ods-exporter %{buildroot}%{_libexecdir}/ipa/ipa-ods-e
 
 # Web UI plugin dir
 mkdir -p %{buildroot}%{_usr}/share/ipa/ui/js/plugins
+
+# KDC proxy
+install install/share/kdcproxy.conf %{buildroot}%{_sysconfdir}/kdcproxy.conf
 
 # NOTE: systemd specific section
 mkdir -p %{buildroot}%{_tmpfilesdir}
@@ -685,6 +691,7 @@ fi
 %config(noreplace) %{_sysconfdir}/sysconfig/ipa_memcached
 %config(noreplace) %{_sysconfdir}/sysconfig/ipa-dnskeysyncd
 %config(noreplace) %{_sysconfdir}/sysconfig/ipa-ods-exporter
+%config(noreplace) %{_sysconfdir}/kdcproxy.conf
 %dir %attr(0700,apache,apache) %{_localstatedir}/run/ipa_memcached/
 %dir %attr(0700,root,root) %{_localstatedir}/run/ipa/
 %dir %attr(0700,apache,apache) %{_localstatedir}/run/httpd/ipa/
@@ -711,6 +718,7 @@ fi
 %attr(755,root,root) %{_libdir}/ipa/certmonger/*
 %dir %{_usr}/share/ipa
 %{_usr}/share/ipa/wsgi.py*
+%{_usr}/share/ipa/kdcproxyshim.py*
 %{_usr}/share/ipa/copy-schema-to-ca.py*
 %{_usr}/share/ipa/*.ldif
 %{_usr}/share/ipa/*.uldif
@@ -772,9 +780,11 @@ fi
 %config(noreplace) %{_sysconfdir}/ipa/html/browserconfig.html
 %ghost %attr(0644,root,apache) %config(noreplace) %{_sysconfdir}/httpd/conf.d/ipa-rewrite.conf
 %ghost %attr(0644,root,apache) %config(noreplace) %{_sysconfdir}/httpd/conf.d/ipa.conf
+%ghost %attr(0644,root,apache) %config(noreplace) %{_sysconfdir}/httpd/conf.d/ipa-kdc-proxy.conf
 %ghost %attr(0644,root,apache) %config(noreplace) %{_sysconfdir}/httpd/conf.d/ipa-pki-proxy.conf
 %{_usr}/share/ipa/ipa.conf
 %{_usr}/share/ipa/ipa-rewrite.conf
+%{_usr}/share/ipa/ipa-kdc-proxy.conf
 %{_usr}/share/ipa/ipa-pki-proxy.conf
 %ghost %attr(0644,root,apache) %config(noreplace) %{_usr}/share/ipa/html/ca.crt
 %ghost %attr(0644,root,apache) %{_usr}/share/ipa/html/configure.jar

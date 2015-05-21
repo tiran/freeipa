@@ -76,6 +76,8 @@ app_DATA =				\
 	copy-schema-to-ca.py		\
 	sasl-mapping-fallback.ldif	\
 	schema-update.ldif		\
+	kdcproxyshim.py			\
+	kdcproxy.conf			\
 	$(NULL)
 
 EXTRA_DIST =				\
