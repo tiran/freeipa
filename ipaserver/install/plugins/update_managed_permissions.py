@@ -115,6 +115,17 @@ NONOBJECT_PERMISSIONS = {
         },
         'default_privileges': {'IPA Masters Readers'},
     },
+    'System: Read IPA Masters KDC Proxy': {
+        'replaces_global_anonymous_aci': True,
+        'ipapermlocation': DN('cn=masters,cn=ipa,cn=etc', api.env.basedn),
+        'ipapermtargetfilter': {'(ipaConfigString=kdcProxyEnabled)'},
+        'ipapermbindruletype': 'permission',
+        'ipapermright': {'read', 'search', 'compare'},
+        'ipapermdefaultattr': {
+            'cn', 'objectclass', 'ipaconfigstring',
+        },
+        'default_privileges': {'IPA Masters KDC Proxy Readers'},
+    },
     'System: Compat Tree ID View targets': {
         'replaces_global_anonymous_aci': True,
         'ipapermlocation':  api.env.basedn,

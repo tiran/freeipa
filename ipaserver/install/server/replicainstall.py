@@ -22,7 +22,8 @@ from ipalib import api, certstore, constants, create_api, errors, x509
 import ipaclient.ntpconf
 from ipaserver.install import (
     bindinstance, ca, dns, dsinstance, httpinstance, installutils, kra,
-    krbinstance, memcacheinstance, ntpinstance, otpdinstance, service)
+    krbinstance, memcacheinstance, ntpinstance, otpdinstance, 
+    kdcproxyinstance, service)
 from ipaserver.install.installutils import create_replica_config
 from ipaserver.install.replication import (
     ReplicationManager, replica_conn_check)
@@ -590,6 +591,12 @@ def install(filename, options):
     otpd = otpdinstance.OtpdInstance()
     otpd.create_instance('OTPD', config.host_name, config.dirman_password,
                          ipautil.realm_to_suffix(config.realm_name))
+
+    kdcproxy = kdcproxyinstance.KDCProxyInstance(fstore)
+    kdcproxy.create_instance('KDCPROXY',
+                             config.host_name,
+                             config.dirman_password,
+                             ipautil.realm_to_suffix(config.realm_name))
 
     # The DS instance is created before the keytab, add the SSL cert we
     # generated

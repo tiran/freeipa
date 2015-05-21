@@ -29,7 +29,7 @@ import ipaclient.ntpconf
 from ipaserver.install import (
     bindinstance, ca, cainstance, certs, dns, dsinstance, httpinstance,
     installutils, kra, krbinstance, memcacheinstance, ntpinstance,
-    otpdinstance, replication, service, sysupgrade)
+    otpdinstance, kdcproxyinstance, replication, service, sysupgrade)
 from ipaserver.install.installutils import (
     IPA_MODULES, BadHostError, get_fqdn, get_server_ip_address,
     is_ipa_configured, load_pkcs12, read_password, verify_fqdn)
@@ -820,6 +820,11 @@ def install(installer):
             ca_is_configured=setup_ca)
     tasks.restore_context(paths.CACHE_IPA_SESSIONS)
 
+    # Create KDCProxyInstance
+    kdcproxy = kdcproxyinstance.KDCProxyInstance(fstore)
+    kdcproxy.create_instance('KDCPROXY', host_name, dm_password,
+                             ipautil.realm_to_suffix(realm_name))
+
     # Export full CA chain
     ca_db = certs.CertDB(realm_name)
     os.chmod(CACERT, 0644)
@@ -1062,6 +1067,7 @@ def uninstall(installer):
 
     dns.uninstall()
 
+    kdcproxyinstance.KDCProxyInstance(fstore).uninstall()
     httpinstance.HTTPInstance(fstore).uninstall()
     krbinstance.KrbInstance(fstore).uninstall()
     dsinstance.DsInstance(fstore=fstore).uninstall()
