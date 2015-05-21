@@ -96,7 +96,7 @@ class config(LDAPObject):
         'ipamigrationenabled', 'ipacertificatesubjectbase',
         'ipapwdexpadvnotify', 'ipaselinuxusermaporder',
         'ipaselinuxusermapdefault', 'ipaconfigstring', 'ipakrbauthzdata',
-        'ipauserauthtype'
+        'ipauserauthtype', 'ipakdcproxyenabled',
     ]
     container_dn = DN(('cn', 'ipaconfig'), ('cn', 'etc'))
     permission_filter_objectclasses = ['ipaguiconfig']
@@ -117,6 +117,7 @@ class config(LDAPObject):
                 'ipasearchrecordslimit', 'ipasearchtimelimit',
                 'ipauserauthtype', 'ipauserobjectclasses',
                 'ipausersearchfields', 'ipacustomfields',
+                'ipakdcproxyenabled',
             },
         },
     }
@@ -230,6 +231,11 @@ class config(LDAPObject):
             doc=_('Default types of supported user authentication'),
             values=(u'password', u'radius', u'otp', u'disabled'),
             csv=True,
+        ),
+        Bool('ipakdcproxyenabled',
+            cli_name='enable_kdcproxy',
+            label=_('Enable KDC requests over HTTPS'),
+            doc=_('Enable KDC requests over HTTPS'),
         ),
     )
 

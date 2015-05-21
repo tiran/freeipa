@@ -31,6 +31,7 @@ from ipaserver.install import service
 from ipaserver.install import cainstance
 from ipaserver.install import certs
 from ipaserver.install import otpdinstance
+from ipaserver.install import kdcproxyinstance
 from ipaserver.install import sysupgrade
 from ipaserver.install import dnskeysyncinstance
 from ipaserver.install.upgradeinstance import IPAUpgrade
@@ -1333,6 +1334,13 @@ def upgrade_configuration():
                 ds.start()
                 dnskeysyncd.create_instance(fqdn, api.env.realm)
                 dnskeysyncd.start_dnskeysyncd()
+
+    # Install KDCProxy configuration file
+    kdcproxy = kdcproxyinstance.KDCProxyInstance(fstore)
+    if not kdcproxy.is_configured():
+        kdcproxy.create_instance('KDCPROXY', fqdn, None,
+                                 ipautil.realm_to_suffix(api.env.realm),
+                                 realm=api.env.realm)
 
     cleanup_kdc(fstore)
     cleanup_adtrust(fstore)

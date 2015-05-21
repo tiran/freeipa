@@ -49,6 +49,7 @@ class BasePathNamespace(object):
     ALIAS_CACERT_ASC = "/etc/httpd/alias/cacert.asc"
     ALIAS_PWDFILE_TXT = "/etc/httpd/alias/pwdfile.txt"
     HTTPD_CONF_D_DIR = "/etc/httpd/conf.d/"
+    HTTPD_IPA_KDC_PROXY_CONF = "/etc/httpd/conf.d/ipa-kdc-proxy.conf"
     HTTPD_IPA_PKI_PROXY_CONF = "/etc/httpd/conf.d/ipa-pki-proxy.conf"
     HTTPD_IPA_REWRITE_CONF = "/etc/httpd/conf.d/ipa-rewrite.conf"
     HTTPD_IPA_CONF = "/etc/httpd/conf.d/ipa.conf"
