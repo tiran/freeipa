@@ -437,13 +437,17 @@ class Service(object):
             root_logger.debug("service %s startup entry enabled", name)
             return
 
-        order = SERVICE_LIST[name][1]
+        ipaconfigstring = ["enabledService"]
+        if name in SERVICE_LIST:
+            order = SERVICE_LIST[name][1]
+            ipaconfigstring.append("startOrder %i" % order)
+        ipaconfigstring.extend(config)
+
         entry = self.admin_conn.make_entry(
             entry_name,
             objectclass=["nsContainer", "ipaConfigObject"],
             cn=[name],
-            ipaconfigstring=[
-                "enabledService", "startOrder " + str(order)] + config,
+            ipaconfigstring=ipaconfigstring,
         )
 
         try:
