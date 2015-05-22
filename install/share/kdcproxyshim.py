@@ -109,7 +109,7 @@ class KDCProxyConfig(object):
             raise CheckError(msg)
 
     def _get_entry(self, dn, attrs):
-        """Get an LDAP entry, handle NotFound"""
+        """Get an LDAP entry, handles NotFound"""
         try:
             return self.con.get_entry(dn,
                                       attrs,
@@ -123,9 +123,31 @@ class KDCProxyConfig(object):
             self.log.exception(msg)
             raise CheckError(msg)
 
+    def _find_entry(self, dn, attrs, filter, scope=IPAdmin.SCOPE_BASE):
+        """Find an LDAP entry, handles NotFound and Limit"""
+        try:
+            entries, truncated = self.con.find_entries(
+                filter, attrs, dn, scope, time_limit=self.time_limit)
+            if truncated:
+                raise errors.LimitsExceeded()
+        except errors.NotFound:
+            self.log.debug('Entry not found: %s', dn)
+            return None
+        except Exception as e:
+            msg = ('Unknown error while retrieving setting from %s: %s' %
+                   (self.ldap_uri, e))
+            self.log.exception(msg)
+            raise CheckError(msg)
+        return entries[0]
+
     def host_enabled(self):
         """Check replica specific flag"""
+        # needs ACI (targetfilter="(ipaConfigString=enabledService)")(targetattr="ipaConfigString")(version 3.0; acl "Compare enabledService access to masters"; allow(search, compare) userdn = "ldap:///all";)
         self.log.debug('Read settings from dn: %s', self.kdcproxy_dn)
+        #srcfilter = self.con.make_filter({'ipaConfigString': u'enabledService'})
+        #entry = self._find_entry(self.kdcproxy_dn, ['cn'], srcfilter)
+        #self.log.debug('%s ipaConfigString: %s', self.kdcproxy_dn, entry)
+        #return entry is not None
         entry = self._get_entry(self.kdcproxy_dn, ['ipaConfigString'])
         if entry is not None:
             values = entry['ipaConfigString']
@@ -153,7 +175,12 @@ def check_enabled(debug=DEBUG, time_limit=TIME_LIMIT):
         standard_logging_setup(verbose=True, debug=debug)
 
     with KDCProxyConfig(time_limit) as cfg:
-        return cfg.host_enabled()
+        if cfg.host_enabled():
+            api.log.info('kdcproxy ENABLED')
+            return True
+        else:
+            api.log.info('kdcproxy DISABLED')
+            return False
 
 
 ENABLED = check_enabled()
