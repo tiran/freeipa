@@ -647,7 +647,7 @@ def main():
     otpd.create_instance('OTPD', config.host_name, config.dirman_password,
                          ipautil.realm_to_suffix(config.realm_name))
 
-    kdcproxy = kdcproxyinstance.KDCProxyInstance()
+    kdcproxy = kdcproxyinstance.KDCProxyInstance(fstore)
     kdcproxy.create_instance('KDCPROXY', config.host_name,
                              config.dirman_password,
                              ipautil.realm_to_suffix(config.realm_name))

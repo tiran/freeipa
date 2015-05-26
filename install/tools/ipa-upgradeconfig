@@ -1315,6 +1315,7 @@ def main():
 
         upgrade(sub_dict, paths.HTTPD_IPA_CONF, ipautil.SHARE_DIR + "ipa.conf")
         upgrade(sub_dict, paths.HTTPD_IPA_REWRITE_CONF, ipautil.SHARE_DIR + "ipa-rewrite.conf")
+        upgrade(sub_dict, paths.HTTPD_IPA_KDC_PROXY_CONF, ipautil.SHARE_DIR + "ipa-kdc-proxy.conf")
         if ca.is_configured():
             upgrade(sub_dict, paths.HTTPD_IPA_PKI_PROXY_CONF, ipautil.SHARE_DIR + "ipa-pki-proxy.conf", add=True)
         else:
@@ -1362,7 +1363,7 @@ def main():
     simple_service_list = (
         (memcacheinstance.MemcacheInstance(), 'MEMCACHE'),
         (otpdinstance.OtpdInstance(), 'OTPD'),
-        (kdcproxyinstance.KDCProxyInstance(), 'KDCPROXY'),
+        (kdcproxyinstance.KDCProxyInstance(fstore), 'KDCPROXY'),
     )
 
     ldap_suffix = ipautil.realm_to_suffix(api.env.realm)

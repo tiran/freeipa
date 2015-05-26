@@ -70,7 +70,7 @@ class KDCProxyConfig(object):
             if hasattr(ipautil, 'kinit_keytab'):
                 # FreeIPA 4.2
                 os.environ['KRB5CCNAME'] = self.ccache
-                ipautil.kinit_keytab(self.principal, self.keytab, self.ccache)
+                ipautil.kinit_keytab(str(self.principal), self.keytab, self.ccache)
             else:
                 # FreeIPA 4.1
                 ccache_dir = os.path.dirname(self.ccache.split(':', 1)[-1])
@@ -150,7 +150,7 @@ class KDCProxyConfig(object):
         #return entry is not None
         entry = self._get_entry(self.kdcproxy_dn, ['ipaConfigString'])
         if entry is not None:
-            values = entry['ipaConfigString']
+            values = entry.get('ipaConfigString', ())
         else:
             values = ()
         self.log.debug('%s ipaConfigString: %s', self.kdcproxy_dn, values)

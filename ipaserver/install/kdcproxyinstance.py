@@ -16,17 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import os
 
-from ipapython import ipautil
 from ipaplatform import services
+from ipaplatform.paths import paths
+from ipapython import ipautil
+from ipapython import sysrestore
+
+import installutils
 import service
 
 
 class KDCProxyInstance(service.Service):
     suffix = ipautil.dn_attribute_property('_ldap_suffix')
 
-    def __init__(self):
-        service.SimpleServiceInstance.__init__(self, "kdcproxy")
+    def __init__(self, fstore):
+        service.Service.__init__(self, "kdcproxy")
+        if fstore:
+            self.fstore = fstore
+        else:
+            self.fstore = sysrestore.FileStore(paths.SYSRESTORE)
         # KDC proxy runs inside Apache HTTPD
         self.service = None
         self.httpd_service_name = 'httpd'
@@ -61,11 +70,13 @@ class KDCProxyInstance(service.Service):
         self.realm = realm
         if not realm:
             self.ldapi = False
+        self.sub_dict = {}
 
         self.step("configuring %s WSGI application" % self.service_name,
                   self.__enable_wsgi)
-        self.step("check %s is started on boot" % self.httpd_service_name,
-                  self.__check_httpd)
+        # self.step("check %s is started on boot" % self.httpd_service_name,
+        #           self.__check_httpd)
+        self.step("configuring httpd", self.__configure_http)
         self.step("(re)starting %s " % self.httpd_service_name,
                   self.__restart_httpd)
         self.start_creation("Configuring %s" % self.service_name)
@@ -79,9 +90,18 @@ class KDCProxyInstance(service.Service):
             self.print_msg("WARNING, %s is not enabled, but %s requires it" %
                            (self.httpd_service_name, self.service_name))
 
+    def __configure_http(self):
+        target_fname = paths.HTTPD_IPA_KDC_PROXY_CONF
+        http_txt = ipautil.template_file(
+            ipautil.SHARE_DIR + "ipa-kdc-proxy.conf", self.sub_dict)
+        self.fstore.backup_file(target_fname)
+        with open(target_fname, 'w') as f:
+            f.write(http_txt)
+        os.chmod(target_fname, 0644)
+
     def __restart_httpd(self):
         self.backup_state("running", self.is_httpd_running())
         self.restart_httpd()
 
     def uninstall(self):
-        pass
+        installutils.remove_file(paths.HTTPD_IPA_KDC_PROXY_CONF)

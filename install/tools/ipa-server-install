@@ -592,7 +592,7 @@ def uninstall():
 
     dns_installer.uninstall()
 
-    kdcproxyinstance.KDCProxyInstance().uninstall()
+    kdcproxyinstance.KDCProxyInstance(fstore).uninstall()
     httpinstance.HTTPInstance(fstore).uninstall()
     krbinstance.KrbInstance(fstore).uninstall()
     dsinstance.DsInstance(fstore=fstore).uninstall()
@@ -1253,7 +1253,7 @@ def main():
     tasks.restore_context(paths.CACHE_IPA_SESSIONS)
 
     # Create KDCProxyInstance
-    kdcproxy = kdcproxyinstance.KDCProxyInstance()
+    kdcproxy = kdcproxyinstance.KDCProxyInstance(fstore)
     kdcproxy.create_instance('KDCPROXY', host_name, dm_password,
                              ipautil.realm_to_suffix(realm_name))
 
