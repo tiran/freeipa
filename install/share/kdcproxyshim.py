@@ -20,19 +20,14 @@
 """
 WSGI appliction for KDC Proxy
 """
-import errno
 import os
 from subprocess import check_call
 import sys
 
 from ipalib import api, errors
-from ipalib.session import get_ipa_ccache_name
 from ipapython.ipa_log_manager import standard_logging_setup
-from ipalib.krb_utils import krb5_format_service_principal_name
-from ipalib.krb_utils import krb5_parse_ccache
 from ipapython.ipaldap import IPAdmin
 from ipapython.dn import DN
-from ipapython import ipautil
 from ipaplatform.paths import paths
 
 
@@ -52,42 +47,27 @@ class KDCProxyConfig(object):
         self.time_limit = time_limit
         self.con = None
         self.log = api.log
-
         self.ldap_uri = api.env.ldap_uri
-        self.principal = krb5_format_service_principal_name(
-            'HTTP', api.env.host, api.env.realm)
         self.keytab = paths.IPA_KEYTAB
-        # Force FILE scheme to have a CCACHE for each PID.
-        self.ccache = get_ipa_ccache_name(scheme='FILE')
-
+        self.ccache = 'MEMORY:kdcproxy_%i' % os.getpid()
         self.ipaconfig_dn = DN(('cn', 'ipaConfig'), ('cn', 'etc'),
                                api.env.basedn)
 
     def _kinit(self):
-        """Get a krb5 ticket with Apache's keytab"""
-        self.log.debug('krb5 principal %s, keytab %s, ccache %s',
-                       self.principal, self.keytab, self.ccache)
-        try:
-            os.environ['KRB5CCNAME'] = self.ccache
-            ipautil.kinit_keytab(str(self.principal), self.keytab, self.ccache)
-        except Exception as e:
-            msg = "kinit failed: %s" % e
-            self.log.exception(msg)
-            raise CheckError(msg)
+        """Setup env for a krb5 ticket with Apache's keytab"""
+        self.log.debug('Setup env for krb5 client keytab %s, ccache %s',
+                       self.keytab, self.ccache)
+        os.environ['KRB5CCNAME'] = self.ccache
+        os.environ['KRB5_CLIENT_KTNAME'] = paths.IPA_KEYTAB
 
     def _kdestroy(self):
         """Release krb5 ccache"""
         self.log.debug('kdestroy %s', self.ccache)
-        del os.environ['KRB5CCNAME']
-        scheme, name = krb5_parse_ccache(self.ccache)
-        if scheme == 'FILE':
-            try:
-                os.unlink(name)
-            except OSError as e:
-                if e.errno != errno.ENOENT:
-                    raise
-        else:
+        try:
             check_call([paths.KDESTROY, '-A', '-q', '-c', self.ccache])
+        finally:
+            del os.environ['KRB5CCNAME']
+            del os.environ['KRB5_CLIENT_KTNAME']
 
     def _ldap_con(self):
         """Establish LDAP connection"""
