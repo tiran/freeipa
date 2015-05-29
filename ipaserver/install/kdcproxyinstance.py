@@ -17,11 +17,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import pwd
 
-from ipaplatform import services
-from ipaplatform.paths import paths
+import ldap
+
+from ipalib import errors
+from ipalib.krb_utils import krb5_format_service_principal_name
 from ipapython import ipautil
 from ipapython import sysrestore
+from ipapython.dn import DN
+from ipapython.ipa_log_manager import root_logger
+from ipaplatform.paths import paths
+from ipaplatform import services
 
 import installutils
 import service
@@ -41,7 +48,8 @@ class KDCProxyInstance(service.SimpleServiceInstance):
 
     # HTTPD
     def start_httpd(self, instance_name="", capture_output=True, wait=True):
-        self.httpd_service.start(instance_name, capture_output=capture_output, wait=wait)
+        self.httpd_service.start(instance_name, capture_output=capture_output,
+                                 wait=wait)
 
     def stop_httpd(self, instance_name="", capture_output=True):
         self.httpd_service.stop(instance_name, capture_output=capture_output)
@@ -58,26 +66,114 @@ class KDCProxyInstance(service.SimpleServiceInstance):
         return self.httpd_service.is_enabled()
 
     def is_configured(self):
-        return os.path.isfile(paths.HTTPD_IPA_KDC_PROXY_CONF)
+        return (os.path.isfile(paths.HTTPD_IPA_KDC_PROXY_CONF)
+                and os.path.isfile(paths.KDCPROXY_KEYTAB))
 
     def disable(self):
         pass
 
     def create_instance(self, gensvc_name=None, fqdn=None, dm_password=None,
                         ldap_suffix=None, realm=None):
+        assert gensvc_name == 'KDCPROXY'
         self.gensvc_name = gensvc_name
         self.fqdn = fqdn
         self.dm_password = dm_password
         self.suffix = ldap_suffix
         self.realm = realm
+        self.principal = krb5_format_service_principal_name(
+            gensvc_name, self.fqdn, self.realm)
         if not realm:
             self.ldapi = False
-        self.sub_dict = {}
+        self.sub_dict = dict(
+            REALM=realm,
+            FQDN=fqdn,
+        )
+        if not self.admin_conn:
+            self.ldap_connect()
 
+        self.step("creating a keytab for %s" % self.service_name,
+                  self.__create_kdcproxy_keytab)
+        self.step("Enable %s in KDC" % self.service_name,
+                  self.__enable_kdcproxy)
         self.step("configuring httpd", self.__configure_http)
         self.step("(re)starting %s " % self.httpd_service_name,
                   self.__restart_httpd)
         self.start_creation("Configuring %s" % self.service_name)
+
+    def __create_kdcproxy_keytab(self):
+        # create a principal for KDCPROXY
+        installutils.kadmin_addprinc(self.principal)
+        # create a keytab for the KDCPROXY principal
+        self.fstore.backup_file(paths.KDCPROXY_KEYTAB)
+        installutils.create_keytab(paths.KDCPROXY_KEYTAB, self.principal)
+        # ... and secure it
+        pent = pwd.getpwnam("apache")
+        os.chown(paths.KDCPROXY_KEYTAB, pent.pw_uid, pent.pw_gid)
+        os.chmod(paths.KDCPROXY_KEYTAB, 0400)
+
+        # move the principal to cn=services,cn=accounts
+        principal_dn = self.move_service(self.principal)
+        if principal_dn is None:
+            # already moved
+            principal_dn = DN(('krbprincipalname', self.principal),
+                              ('cn', 'services'), ('cn', 'accounts'),
+                              self.suffix)
+
+        # add a privilege to the KDCPROXY service principal, so it can read
+        # the ipaConfigString=kdcProxyEnabled attribute
+        privilege = DN(('cn', 'IPA Masters KDC Proxy Readers'),
+                       ('cn', 'privileges'), ('cn', 'pbac'), self.suffix)
+
+        mod = [(ldap.MOD_ADD, 'member', principal_dn)]
+        try:
+            self.admin_conn.modify_s(privilege, mod)
+        except ldap.TYPE_OR_VALUE_EXISTS:
+            pass
+        except Exception as e:
+            root_logger.critical("Could not modify principal's %s entry: %s",
+                                 principal_dn, str(e))
+            raise
+
+    def __enable_kdcproxy(self):
+        entry_name = DN(('cn', 'KDC'), ('cn', self.fqdn), ('cn', 'masters'),
+                        ('cn', 'ipa'), ('cn', 'etc'), self.suffix)
+        attr_name = 'kdcProxyEnabled'
+
+        try:
+            entry = self.admin_conn.get_entry(entry_name, ['ipaConfigString'])
+        except errors.NotFound:
+            pass
+        else:
+            if any(attr_name.lower() == val.lower()
+                   for val in entry.get('ipaConfigString', [])):
+                root_logger.debug("service KDCPROXY already enabled")
+                return
+
+            entry.setdefault('ipaConfigString', []).append(attr_name)
+            try:
+                self.admin_conn.update_entry(entry)
+            except errors.EmptyModlist:
+                root_logger.debug("service KDCPROXY already enabled")
+                return
+            except:
+                root_logger.debug("failed to enable service KDCPROXY")
+                raise
+
+            root_logger.debug("service KDCPROXY enabled")
+            return
+
+        entry = self.admin_conn.make_entry(
+            entry_name,
+            objectclass=["nsContainer", "ipaConfigObject"],
+            cn=['KDC'],
+            ipaconfigstring=[attr_name]
+        )
+
+        try:
+            self.admin_conn.add_entry(entry)
+        except errors.DuplicateEntry:
+            root_logger.debug("failed to add service KDCPROXY entry")
+            raise
 
     def __configure_http(self):
         target_fname = paths.HTTPD_IPA_KDC_PROXY_CONF

@@ -338,7 +338,8 @@ class BasePathNamespace(object):
     ALL_SLAPD_INSTANCE_SOCKETS = "/var/run/slapd-*.socket"
     ADMIN_CERT_PATH = '/root/.dogtag/pki-tomcat/ca_admin.cert'
     ENTROPY_AVAIL = '/proc/sys/kernel/random/entropy_avail'
-
+    KDCPROXY_CONFIG = '/etc/ipa/kdcproxy/kdcproxy.conf'
+    KDCPROXY_KEYTAB = '/etc/ipa/kdcproxy/kdcproxy.keytab'
 
 
 path_namespace = BasePathNamespace

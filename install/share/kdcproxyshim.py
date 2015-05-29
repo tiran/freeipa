@@ -33,7 +33,6 @@ from ipaplatform.paths import paths
 
 DEBUG = True
 TIME_LIMIT = 2
-KDCPROXY_CONFIG = '/etc/ipa/kdcproxy.conf'
 
 
 class CheckError(Exception):
@@ -48,17 +47,17 @@ class KDCProxyConfig(object):
         self.con = None
         self.log = api.log
         self.ldap_uri = api.env.ldap_uri
-        self.keytab = paths.IPA_KEYTAB
         self.ccache = 'MEMORY:kdcproxy_%i' % os.getpid()
-        self.ipaconfig_dn = DN(('cn', 'ipaConfig'), ('cn', 'etc'),
-                               api.env.basedn)
+        self.kdc_dn = DN(('cn', 'KDC'), ('cn', api.env.host),
+                         ('cn', 'masters'), ('cn', 'ipa'), ('cn', 'etc'),
+                         api.env.basedn)
 
     def _kinit(self):
         """Setup env for a krb5 ticket with Apache's keytab"""
         self.log.debug('Setup env for krb5 client keytab %s, ccache %s',
-                       self.keytab, self.ccache)
+                       paths.KDCPROXY_KEYTAB, self.ccache)
         os.environ['KRB5CCNAME'] = self.ccache
-        os.environ['KRB5_CLIENT_KTNAME'] = paths.IPA_KEYTAB
+        os.environ['KRB5_CLIENT_KTNAME'] = paths.KDCPROXY_KEYTAB
 
     def _kdestroy(self):
         """Release krb5 ccache"""
@@ -85,12 +84,13 @@ class KDCProxyConfig(object):
             self.log.exception(msg)
             raise CheckError(msg)
 
-    def _get_entry(self, dn, attrs):
-        """Get an LDAP entry, handles NotFound"""
+    def _find_entry(self, dn, attrs, filter, scope=IPAdmin.SCOPE_BASE):
+        """Find an LDAP entry, handles NotFound and Limit"""
         try:
-            return self.con.get_entry(dn,
-                                      attrs,
-                                      time_limit=self.time_limit)
+            entries, truncated = self.con.find_entries(
+                filter, attrs, dn, scope, time_limit=self.time_limit)
+            if truncated:
+                raise errors.LimitsExceeded()
         except errors.NotFound:
             self.log.debug('Entry not found: %s', dn)
             return None
@@ -99,25 +99,17 @@ class KDCProxyConfig(object):
                    (self.ldap_uri, e))
             self.log.exception(msg)
             raise CheckError(msg)
+        return entries[0]
 
-    def ipaconfig_enabled(self):
-        """Check global ipaKDCProxyEnabled switch"""
-        self.log.debug('Read settings from %s dn: %s',
-                       self.ipaconfig_flag, self.ipaconfig_dn)
-        entry = self._get_entry(self.ipaconfig_dn,
-                                [self.ipaconfig_flag])
-        if entry is not None:
-            value = entry.single_value.get(self.ipaconfig_flag)
-        else:
-            value = None
-        self.log.debug('%s==%s in %s', self.ipaconfig_flag, value,
-                       self.ipaconfig_dn)
-        if value == 'TRUE':
-            return True
-        elif value == 'FALSE':
-            return False
-        else:
-            return None
+    def host_enabled(self):
+        """Check replica specific flag"""
+        self.log.debug('Read settings from dn: %s', self.kdc_dn)
+        srcfilter = self.con.make_filter(
+            {'ipaConfigString': u'kdcProxyEnabled'}
+        )
+        entry = self._find_entry(self.kdc_dn, ['cn'], srcfilter)
+        self.log.debug('%s ipaConfigString: %s', self.kdc_dn, entry)
+        return entry is not None
 
     def __enter__(self):
         self._kinit()
@@ -138,7 +130,7 @@ def check_enabled(debug=DEBUG, time_limit=TIME_LIMIT):
         standard_logging_setup(verbose=True, debug=debug)
 
     with KDCProxyConfig(time_limit) as cfg:
-        if cfg.ipaconfig_enabled():
+        if cfg.host_enabled():
             api.log.info('kdcproxy ENABLED')
             return True
         else:
@@ -151,7 +143,7 @@ ENABLED = check_enabled()
 # override config location
 if 'kdcproxy' in sys.modules:
     raise CheckError('kdcproxy already imported')
-os.environ['KDCPROXY_CONFIG'] = KDCPROXY_CONFIG
+os.environ['KDCPROXY_CONFIG'] = paths.KDCPROXY_CONFIG
 import kdcproxy
 
 
