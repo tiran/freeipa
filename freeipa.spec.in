@@ -22,6 +22,10 @@
 
 %define _hardened_build 1
 
+%define kdcproxy_user kdcproxy
+%define kdcproxy_group kdcproxy
+%define kdcproxy_home %{_sharedstatedir}/kdcproxy
+
 Name:           freeipa
 Version:        __VERSION__
 Release:        __RELEASE__%{?dist}
@@ -131,6 +135,7 @@ Requires: memcached
 Requires: python-memcached
 Requires: dbus-python
 Requires: systemd-units >= 38
+Requires(pre): shadow-utils
 Requires(pre): systemd-units
 Requires(post): systemd-units
 Requires: selinux-policy >= %{selinux_policy_version}
@@ -557,6 +562,13 @@ if [ -e /usr/sbin/ipa_kpasswd ]; then
     /bin/systemctl stop ipa_kpasswd.service >/dev/null 2>&1 || :
 # END
 fi
+
+# create kdcproxy user
+getent group %{kdcproxy_group} >/dev/null || groupadd -r %{kdcproxy_group}
+getent passwd %{kdcproxy_user} >/dev/null || \
+    /usr/sbin/useradd -r -m -c "IPA KDC Proxy User" -s /sbin/nologin \
+    -g %{kdcproxy_group} -d %{kdcproxy_home} %{kdcproxy_user}
+exit 0
 
 %postun server-trust-ad
 if [ "$1" -ge "1" ]; then

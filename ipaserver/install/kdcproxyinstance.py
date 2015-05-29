@@ -107,7 +107,7 @@ class KDCProxyInstance(service.SimpleServiceInstance):
         self.fstore.backup_file(paths.KDCPROXY_KEYTAB)
         installutils.create_keytab(paths.KDCPROXY_KEYTAB, self.principal)
         # ... and secure it
-        pent = pwd.getpwnam("apache")
+        pent = pwd.getpwnam("kdcproxy")
         os.chown(paths.KDCPROXY_KEYTAB, pent.pw_uid, pent.pw_gid)
         os.chmod(paths.KDCPROXY_KEYTAB, 0400)
 
