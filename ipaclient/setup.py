@@ -32,7 +32,6 @@ if __name__ == '__main__':
         name="ipaclient",
         doc=__doc__,
         scripts=['../ipa'],
-        package_dir={'ipaclient': ''},
         packages=[
             "ipaclient",
             "ipaclient.plugins",

@@ -31,7 +31,6 @@ if __name__ == '__main__':
     ipasetup(
         name="ipaplatform",
         doc=__doc__,
-        package_dir={'ipaplatform': ''},
         packages=[
             "ipaplatform",
             "ipaplatform.base",

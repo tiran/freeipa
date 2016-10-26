@@ -31,7 +31,6 @@ if __name__ == '__main__':
     ipasetup(
         name="ipalib",
         doc=__doc__,
-        package_dir={'ipalib': ''},
         packages=[
             "ipalib",
         ],

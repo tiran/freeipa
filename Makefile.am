@@ -1,4 +1,5 @@
-SUBDIRS = asn1 util client contrib daemons init install ipaclient ipalib ipaplatform ipapython ipaserver ipatests po
+IPA_SUBDIRS = ipaclient ipalib ipaplatform ipapython ipaserver ipatests
+SUBDIRS = asn1 util client contrib daemons init install po $(IPA_SUBDIRS)
 
 MOSTLYCLEANFILES = ipasetup.pyc ipasetup.pyo
 
@@ -24,6 +25,9 @@ EXTRA_DIST = .mailmap \
 	     doc \
 	     pylintrc \
 	     pytest.ini
+
+clean-local:
+	rm -rf $(top_builddir)/*.egg-info
 
 # convenience targets for RPM build
 RPMBUILD ?= $(abs_builddir)/rpmbuild
@@ -105,3 +109,8 @@ jslint-ui-test:
 jslint-html:
 	cd $(top_srcdir)/install/html; 				\
 	jsl -nologo -nosummary -nofilelisting -conf jsl.conf
+
+egg_info:
+	for dir in $(IPA_SUBDIRS); do \
+	    $(MAKE) $(AM_MAKEFLAGS) -C $${dir} $@; \
+	done

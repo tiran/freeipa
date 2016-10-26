@@ -29,10 +29,16 @@ clean-local:
 # take list of all Python source files and copy them into distdir
 # SOURCES.txt does not contain directories so we need to create those
 dist-hook:
-	$(PYTHON) "$(srcdir)/setup.py" egg_info
-	PYTHON_SOURCES=$$(cat "$(srcdir)/$(pkgname).egg-info/SOURCES.txt") || exit $$?;	\
+	$(PYTHON) "$(srcdir)/setup.py" egg_info --build-base "$(abs_builddir)/build"
+	PYTHON_SOURCES=$$(cat "$(top_srcdir)/$(pkgname).egg-info/SOURCES.txt") || exit $$?;	\
 	for FILEN in $${PYTHON_SOURCES}; 						\
 	do										\
 		if test -x "$(srcdir)/$${FILEN}"; then MODE=755; else MODE=644; fi;	\
 		$(INSTALL) -D -m $${MODE} "$(srcdir)/$${FILEN}" "$(distdir)/$${FILEN}" || exit $$?;	\
 	done
+
+.PHONY: FORCE egg_info
+FORCE:
+
+egg_info: FORCE
+	cd $(srcdir); $(PYTHON) setup.py egg_info --build-base "$(abs_builddir)/build"

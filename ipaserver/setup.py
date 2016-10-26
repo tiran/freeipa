@@ -33,7 +33,6 @@ if __name__ == '__main__':
     ipasetup(
         name='ipaserver',
         doc=__doc__,
-        package_dir={'ipaserver': ''},
         packages=[
             'ipaserver',
             'ipaserver.advise',

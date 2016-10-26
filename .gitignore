@@ -39,12 +39,11 @@ freeipa2-dev-doc
 # Root directory
 /freeipa.spec
 /dist/
-/*/dist/
 /RELEASE
 /rpmbuild/
 # Build
 /ipasetup.py
-*.egg-info
+/*.egg-info
 
 # Subdirectories
 /daemons/dnssec/ipa-dnskeysyncd.service
