@@ -107,3 +107,10 @@ freeipa2-dev-doc
 /ipaplatform/paths.py
 /ipaplatform/services.py
 /ipaplatform/tasks.py
+
+/packaging/ipacommands/COPYING
+/packaging/ipacommands/Contributors.txt
+/packaging/ipacommands/asn1
+/packaging/ipacommands/client
+/packaging/ipacommands/ipasetup.py
+/packaging/ipacommands/util
