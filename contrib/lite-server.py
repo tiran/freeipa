@@ -47,6 +47,7 @@ For more information see
 """
 from __future__ import print_function
 
+import linecache
 import os
 import optparse  # pylint: disable=deprecated-module
 import ssl
@@ -54,11 +55,12 @@ import sys
 import time
 import warnings
 
-import ipalib
-from ipalib import api
-from ipalib.errors import NetworkError
-from ipalib.krb_utils import krb5_parse_ccache
-from ipalib.krb_utils import krb5_unparse_ccache
+try:
+    import tracemalloc
+except ImportError:
+    tracemalloc = None
+
+# Don't import any ipa modules here!
 
 # pylint: disable=import-error
 from werkzeug.contrib.profiler import ProfilerMiddleware
@@ -70,14 +72,6 @@ from werkzeug.wsgi import DispatcherMiddleware, SharedDataMiddleware
 
 
 BASEDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-IMPORTDIR = os.path.dirname(os.path.dirname(os.path.abspath(ipalib.__file__)))
-
-if BASEDIR != IMPORTDIR:
-    warnings.warn(
-        "ipalib was imported from '{}' instead of '{}'!".format(
-            IMPORTDIR, BASEDIR),
-        RuntimeWarning
-    )
 
 STATIC_FILES = {
     '/ipa/ui': os.path.join(BASEDIR, 'install/ui'),
@@ -87,20 +81,53 @@ STATIC_FILES = {
 }
 
 
+def display_tracemalloc(snapshot, key_type='lineno', limit=10):
+    snapshot = snapshot.filter_traces((
+        tracemalloc.Filter(False, "<frozen importlib._bootstrap*"),
+        tracemalloc.Filter(False, "<unknown>"),
+        tracemalloc.Filter(False, "*/idna/*.py"),
+    ))
+    top_stats = snapshot.statistics(key_type)
+
+    print("Top {} lines".format(limit))
+    for index, stat in enumerate(top_stats[:limit], 1):
+        frame = stat.traceback[0]
+        # replace "/path/to/module/file.py" with "module/file.py"
+        filename = os.sep.join(frame.filename.split(os.sep)[-2:])
+        print("#{}: {}:{}: {:.1f} KiB".format(
+            index, filename, frame.lineno, stat.size / 1024))
+        line = linecache.getline(frame.filename, frame.lineno).strip()
+        if line:
+            print('    {}'.format(line))
+
+    other = top_stats[limit:]
+    if other:
+        size = sum(stat.size for stat in other)
+        print("{} other: {:.1f} KiB".format(len(other), size / 1024))
+    total = sum(stat.size for stat in top_stats)
+    current, peak = tracemalloc.get_traced_memory()
+    print("Total allocated size: {:8.1f} KiB".format(total / 1024))
+    print("Current size:         {:8.1f} KiB".format(current / 1024))
+    print("Peak size:            {:8.1f} KiB".format(current / 1024))
+
+
+
 def get_ccname():
     """Retrieve and validate Kerberos credential cache
 
     Only FILE schema is supported.
     """
+    from ipalib import krb_utils
+
     ccname = os.environ.get('KRB5CCNAME')
     if ccname is None:
         raise ValueError("KRB5CCNAME env var is not set.")
-    scheme, location = krb5_parse_ccache(ccname)
+    scheme, location =  krb_utils.krb5_parse_ccache(ccname)
     if scheme != 'FILE':  # MEMORY makes no sense
         raise ValueError("Unsupported KRB5CCNAME scheme {}".format(scheme))
     if not os.path.isfile(location):
         raise ValueError("KRB5CCNAME file '{}' does not exit".format(location))
-    return krb5_unparse_ccache(scheme, location)
+    return krb_utils.krb5_unparse_ccache(scheme, location)
 
 
 class KRBCheater(object):
@@ -132,9 +159,37 @@ class StaticFilesMiddleware(SharedDataMiddleware):
         return loader
 
 
+class TracemallocMiddleware(object):
+    def __init__(self, app, api):
+        self.app = app
+        self.api = api
+
+    def __call__(self, environ, start_response):
+        # We are only interested in request traces.
+        # Each request is handled in a new process.
+        tracemalloc.clear_traces()
+        try:
+            return self.app(environ, start_response)
+        finally:
+            snapshot = tracemalloc.take_snapshot()
+            display_tracemalloc(snapshot, limit=self.api.env.lite_tracemalloc)
+
+
 def init_api(ccname):
     """Initialize FreeIPA API from command line
     """
+    from ipalib import __file__ as ipalib_file
+    from ipalib import api
+    from ipalib.errors import NetworkError
+
+    importdir = os.path.dirname(os.path.dirname(os.path.abspath(ipalib_file)))
+    if importdir != BASEDIR:
+        warnings.warn(
+            "ipalib was imported from '{}' instead of '{}'!".format(
+                importdir, BASEDIR),
+            RuntimeWarning
+        )
+
     parser = optparse.OptionParser()
 
     parser.add_option(
@@ -161,6 +216,12 @@ def init_api(ccname):
         default=None,
         type='str',
     )
+    parser.add_option(
+        '--enable-tracemalloc',
+        help="Enable memory tracer (Python 3)",
+        default=0,
+        type='int',
+    )
 
     api.env.in_server = True
     api.env.startup_traceback = True
@@ -177,6 +238,7 @@ def init_api(ccname):
         lite_host=options.host,
         webui_prod=options.prod,
         lite_profiler=options.enable_profiler,
+        lite_tracemalloc=options.enable_tracemalloc,
         lite_pem=api.env._join('dot_ipa', 'lite.pem'),
     )
     api.finalize()
@@ -208,6 +270,8 @@ def init_api(ccname):
         api.log.info("LDAP schema retrieved {:03f} sec".format(
             ldap_time - api_time))
 
+    return api
+
 
 def redirect_ui(app):
     """Redirects for UI
@@ -229,6 +293,10 @@ def redirect_ui(app):
 
 
 def main():
+    # workaround, start tracing IPA imports and API init ASAP
+    if any('--enable-tracemalloc' in arg for arg in sys.argv):
+        tracemalloc.start()
+
     try:
         ccname = get_ccname()
     except ValueError as e:
@@ -239,7 +307,15 @@ def main():
         print("    kinit\n", file=sys.stderr)
         sys.exit(1)
 
-    init_api(ccname)
+    api = init_api(ccname)
+
+    if api.env.lite_tracemalloc:
+        # print memory snapshot of import + init
+        snapshot = tracemalloc.take_snapshot()
+        display_tracemalloc(snapshot, limit=api.env.lite_tracemalloc)
+        del snapshot
+        # From here on, only trace requests.
+        tracemalloc.clear_traces()
 
     if os.path.isfile(api.env.lite_pem):
         ctx = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
@@ -262,6 +338,9 @@ def main():
             profile_dir
         ))
         app = ProfilerMiddleware(app, profile_dir=profile_dir)
+
+    if api.env.lite_tracemalloc:
+        app = TracemallocMiddleware(app, api)
 
     app = StaticFilesMiddleware(app, STATIC_FILES)
     app = redirect_ui(app)
