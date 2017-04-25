@@ -34,17 +34,6 @@ def log_error(error):
     print(error, file=sys.stderr)
 
 
-def PKI_TOMCAT_password_callback():
-    password = None
-    with open(paths.PKI_TOMCAT_PASSWORD_CONF) as f:
-        for line in f.readlines():
-            key, value = line.strip().split('=')
-            if key == 'internal':
-                password = value
-                break
-    return password
-
-
 class NSSWrappedCertDB(DBMAPHandler):
     '''
     Store that extracts private keys from an NSSDB, wrapped with the
@@ -62,20 +51,17 @@ class NSSWrappedCertDB(DBMAPHandler):
             raise ValueError(
                 'Configuration does not provide nickname of wrapping key')
         self.nssdb_path = dbmap['path']
-        self.nssdb_password = dbmap['pwcallback']()
+        self.nssdb_pwdfile = dbmap['pwdfile']
         self.wrap_nick = dbmap['wrap_nick']
         self.target_nick = nickname
 
     def export_key(self):
         tdir = tempfile.mkdtemp(dir=paths.TMP)
         try:
-            nsspwfile = os.path.join(tdir, 'nsspwfile')
-            with open(nsspwfile, 'w+') as f:
-                f.write(self.nssdb_password)
             wrapped_key_file = os.path.join(tdir, 'wrapped_key')
             certificate_file = os.path.join(tdir, 'certificate')
             ipautil.run([
-                paths.PKI, '-d', self.nssdb_path, '-C', nsspwfile,
+                paths.PKI, '-d', self.nssdb_path, '-C', self.nssdb_pwdfile,
                 'ca-authority-key-export',
                 '--wrap-nickname', self.wrap_nick,
                 '--target-nickname', self.target_nick,
@@ -106,15 +92,12 @@ class NSSCertDB(DBMAPHandler):
         if 'pwcallback' not in dbmap:
             raise ValueError('Configuration does not provide Password Calback')
         self.nssdb_path = dbmap['path']
+        self.nssdb_pwdfile = dbmap['pwdfile']
         self.nickname = nickname
-        self.nssdb_password = dbmap['pwcallback']()
 
     def export_key(self):
         tdir = tempfile.mkdtemp(dir=paths.TMP)
         try:
-            nsspwfile = os.path.join(tdir, 'nsspwfile')
-            with open(nsspwfile, 'w+') as f:
-                f.write(self.nssdb_password)
             pk12pwfile = os.path.join(tdir, 'pk12pwfile')
             password = ipautil.ipa_generate_password()
             with open(pk12pwfile, 'w+') as f:
@@ -124,7 +107,7 @@ class NSSCertDB(DBMAPHandler):
                          "-d", self.nssdb_path,
                          "-o", pk12file,
                          "-n", self.nickname,
-                         "-k", nsspwfile,
+                         "-k", self.nssdb_pwdfile,
                          "-w", pk12pwfile])
             with open(pk12file, 'r') as f:
                 data = f.read()
@@ -137,9 +120,6 @@ class NSSCertDB(DBMAPHandler):
         v = json_decode(value)
         tdir = tempfile.mkdtemp(dir=paths.TMP)
         try:
-            nsspwfile = os.path.join(tdir, 'nsspwfile')
-            with open(nsspwfile, 'w+') as f:
-                f.write(self.nssdb_password)
             pk12pwfile = os.path.join(tdir, 'pk12pwfile')
             with open(pk12pwfile, 'w+') as f:
                 f.write(v['export password'])
@@ -150,7 +130,7 @@ class NSSCertDB(DBMAPHandler):
                          "-d", self.nssdb_path,
                          "-i", pk12file,
                          "-n", self.nickname,
-                         "-k", nsspwfile,
+                         "-k", self.nssdb_pwdfile,
                          "-w", pk12pwfile])
         finally:
             shutil.rmtree(tdir)
@@ -251,12 +231,12 @@ NAME_DB_MAP = {
         'type': 'NSSDB',
         'path': paths.PKI_TOMCAT_ALIAS_DIR,
         'handler': NSSCertDB,
-        'pwcallback': PKI_TOMCAT_password_callback,
+        'pwdfile': paths.PKI_TOMCAT_ALIAS_PWDFILE_TXT,
     },
     'ca_wrapped': {
         'handler': NSSWrappedCertDB,
         'path': paths.PKI_TOMCAT_ALIAS_DIR,
-        'pwcallback': PKI_TOMCAT_password_callback,
+        'pwdfile': paths.PKI_TOMCAT_ALIAS_PWDFILE_TXT,
         'wrap_nick': 'caSigningCert cert-pki-ca',
     },
     'ra': {
