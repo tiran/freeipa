@@ -22,6 +22,17 @@ import pwd
 
 
 class CustodiaInstance(SimpleServiceInstance):
+    permissions = [
+        # filename, uid, gid, required permissions
+        ('/etc/pki/pki-tomcat', -1, 0, stat.S_IRGRP | stat.S_IXGRP),
+        ('/etc/pki/pki-tomcat/alias', -1, 0,
+         stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP),
+        ('/etc/pki/pki-tomcat/alias/cert8.db', -1, 0, stat.S_IRGRP | stat.S_IWGRP),
+        ('/etc/pki/pki-tomcat/alias/key3.db', -1, 0, stat.S_IRGRP | stat.S_IWGRP),
+        ('/etc/pki/pki-tomcat/alias/secmod.db', -1, 0, stat.S_IRGRP | stat.S_IWGRP),
+        ('/etc/pki/pki-tomcat/alias/pwdfile.txt', -1, 0, stat.S_IRGRP),
+    ]
+
     def __init__(self, host_name=None, realm=None):
         super(CustodiaInstance, self).__init__("ipa-custodia")
         self.config_file = paths.IPA_CUSTODIA_CONF
@@ -53,9 +64,30 @@ class CustodiaInstance(SimpleServiceInstance):
         fd.flush()
         fd.close()
 
+    def _change_permissions(self):
+        """Give ipa-custodia access to files to avoid DAC_OVERRIDE
+        """
+        root_logger.info(
+            "Changing permission to allow ipa-custodia to access files."
+        )
+        for filename, uid, gid, perm in self.permissions:
+            fstat = os.stat(filename)
+            if ((uid != -1 and fstat.st_uid != uid) or
+                    (gid != -1 and fstat.st_gid != gid)):
+                root_logger.debug("    chown %i:%i %s", uid, gid, filename)
+                os.chown(filename, uid, gid)
+            oldperm = stat.S_IMODE(fstat.st_mode)
+            if oldperm & perm != perm:
+                newperm = oldperm | perm
+                root_logger.debug("    chmod %s %s", oct(newperm), filename)
+                os.chmod(filename, newperm)
+        root_logger.info("Done.")
+
     def create_instance(self):
         suffix = ipautil.realm_to_suffix(self.realm)
         self.step("Generating ipa-custodia config file", self.__config_file)
+        self.step("Changing permission to allow ipa-custodia to access file",
+                  self._change_permissions())
         self.step("Making sure custodia container exists", self.__create_container)
         self.step("Generating ipa-custodia keys", self.__gen_keys)
         super(CustodiaInstance, self).create_instance(gensvc_name='KEYS',
@@ -74,9 +106,15 @@ class CustodiaInstance(SimpleServiceInstance):
             root_logger.info("Custodia service is being configured")
             self.create_instance()
         else:
-            old_config = open(self.config_file).read()
+            root_logger.info("Checking file permissions")
+            self._change_permissions()
+
+            # check config file
+            with open(self.config_file) as f:
+                old_config = f.read()
             self.__config_file()
-            new_config = open(self.config_file).read()
+            with open(self.config_file) as f:
+                new_config = f.read()
             if new_config != old_config:
                 root_logger.info("Restarting Custodia")
                 self.restart()
