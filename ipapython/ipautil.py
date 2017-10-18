@@ -29,7 +29,7 @@ import math
 import os
 import sys
 import copy
-import stat
+import stat  # pylint: disable=bad-python3-import
 import shutil
 import socket
 import re
