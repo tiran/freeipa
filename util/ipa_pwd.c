@@ -25,17 +25,141 @@
 #endif
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <ctype.h>
-#include <nss.h>
-#include <nssb64.h>
-#include <hasht.h>
-#include <pk11pub.h>
 #include <errno.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
 #include "ipa_pwd.h"
 
 #define GENERALIZED_TIME_LENGTH 15
 #define DEFAULT_HASH_TYPE "{SHA512}"
+
+/**
+* @brief Initialize crypto library
+*/
+static int init_library(void)
+{
+    static int initialized = 0;
+    if (initialized == 0) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        OPENSSL_add_all_algorithms_noconf();
+#endif
+        initialized = 1;
+    }
+    return 0;
+}
+
+/**
+* base64 encode
+* @param inbuf      Input string
+* @param inlen      Lenght of input string
+* @param outbuf     Output string. Must be freed with OPENSSL_free()
+*
+* @return   Returns length of outbuf or -1 for error
+*/
+static long base64_encode(const char *inbuf, long inlen, char **outbuf)
+{
+    BIO *bio = NULL;
+    BIO *b64bio = NULL;
+    long outlen = -1;
+
+    *outbuf = NULL;
+
+    bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        goto done;
+    }
+    b64bio = BIO_new(BIO_f_base64());
+    if (b64bio == NULL) {
+        goto done;
+    }
+    bio = BIO_push(b64bio, bio);
+    if (bio == NULL) {
+        goto done;
+    }
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+    if (BIO_write(bio, inbuf, inlen) <= 0) {
+        goto done;
+    }
+    BIO_flush(bio);
+    outlen = BIO_get_mem_data(bio, &outbuf);
+  done:
+    if (bio != NULL) {
+        BIO_free_all(bio);
+    }
+    return outlen;
+
+}
+
+/**
+* base64 decode
+* @param inbuf      Input string
+* @param outbuf     Output string. Must be freed with OPENSSL_free()
+*
+* @return   Returns length of outbuf or -1 for error
+*/
+static long base64_decode(const char *inbuf, char **outbuf)
+{
+    BIO *bio = NULL;
+    BIO *b64bio = NULL;
+    int res = -1;
+    int buflen;
+    size_t inlen;
+    char *buf = NULL;
+
+    *outbuf = NULL;
+
+    inlen = strlen(inbuf);
+    if (inlen > INT_MAX) {
+        return -1;
+    }
+    else if (inlen == 0) {
+        *outbuf = (char *)OPENSSL_malloc(0);
+        return *outbuf ? 0 : -1;
+    }
+    else if (inlen < 4) {
+        return -1;
+    }
+
+    buflen = (inlen*3) / 4;
+    /* padding */
+    if (inbuf[inlen-1] == '=') {
+        buflen--;
+        if (inbuf[inlen-2] == '=') {
+            buflen--;
+        }
+    }
+    buf = (char *)OPENSSL_malloc(buflen+1);
+    buf[buflen] = 0;
+
+    bio = BIO_new_mem_buf(inbuf, (int)inlen);
+    if (bio == NULL) {
+        goto done;
+    }
+    b64bio = BIO_new(BIO_f_base64());
+    if (b64bio == NULL) {
+        goto done;
+    }
+    bio = BIO_push(b64bio, bio);
+    if (bio == NULL) {
+        goto done;
+    }
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+    res = BIO_read(bio, buf, buflen);
+  done:
+    if (res <= 0) {
+        OPENSSL_free(buf);
+        return -1;
+    } else {
+        *outbuf = buf;
+        return res;
+    }
+}
+
 
 /**
 * @brief Calculate utf8 string length
@@ -159,34 +283,34 @@ static int ipapwd_gentime_cmp(const void *p1, const void *p2)
 
 #define SHA_SALT_LENGTH 8
 
-/* SHA*_LENGTH leghts come from nss3/hasht.h */
-#define SHA_HASH_MAX_LENGTH SHA512_LENGTH
+/* OpenSSL defines EVP_MAX_MD_SIZE == SHA512 length */
+#define SHA_HASH_MAX_LENGTH EVP_MAX_MD_SIZE
 
 static int ipapwd_hash_type_to_alg(char *hash_type,
-                                   SECOidTag *hash_alg,
+                                   const EVP_MD **hash_alg,
                                    unsigned int *hash_alg_len)
 {
+    *hash_alg = NULL;
     if (strncmp("{SSHA}", hash_type, 6) == 0) {
-        *hash_alg = SEC_OID_SHA1;
-        *hash_alg_len = SHA1_LENGTH;
+        *hash_alg = EVP_sha1();
+        *hash_alg_len = EVP_MD_size(*hash_alg);
         return 0;
     }
     if (strncmp("{SHA256}", hash_type, 8) == 0) {
-        *hash_alg = SEC_OID_SHA256;
-        *hash_alg_len = SHA256_LENGTH;
+        *hash_alg = EVP_sha256();
+        *hash_alg_len = EVP_MD_size(*hash_alg);
         return 0;
     }
     if (strncmp("{SHA384}", hash_type, 8) == 0) {
-        *hash_alg = SEC_OID_SHA384;
-        *hash_alg_len = SHA384_LENGTH;
+        *hash_alg = EVP_sha384();
+        *hash_alg_len = EVP_MD_size(*hash_alg);
         return 0;
     }
     if (strncmp("{SHA512}", hash_type, 8) == 0) {
-        *hash_alg = SEC_OID_SHA512;
-        *hash_alg_len = SHA512_LENGTH;
+        *hash_alg = EVP_sha512();
+        *hash_alg_len = EVP_MD_size(*hash_alg);
         return 0;
     }
-
     return -1;
 }
 
@@ -213,42 +337,44 @@ static int ipapwd_hash_password(char *password,
     unsigned char saltbuf[SHA_SALT_LENGTH];
     unsigned char hash[SHA_HASH_MAX_LENGTH];
     unsigned int hash_len;
-    SECOidTag hash_alg;
+    const EVP_MD *hash_alg;
     unsigned int hash_alg_len;
-    PK11Context *ctx = NULL;
-    int ret;
+    EVP_MD_CTX *ctx = NULL;
+    int ret = -1;
 
-    NSS_NoDB_Init(".");
+    if (init_library() == -1) {
+        return -1;
+    }
 
     if (!salt) {
-        PK11_GenerateRandom(saltbuf, SHA_SALT_LENGTH);
+        if (RAND_bytes(saltbuf, SHA_SALT_LENGTH) != 1) {
+            goto done;
+        }
         salt = saltbuf;
     }
 
     ret = ipapwd_hash_type_to_alg(hash_type, &hash_alg, &hash_alg_len);
     if (ret) {
-        return -1;
+        goto done;
     }
 
-    ctx = PK11_CreateDigestContext(hash_alg);
+    ctx = EVP_MD_CTX_create();
     if (ctx == NULL) {
-        return -1;
+        goto done;
+    }
+    if (EVP_DigestInit(ctx, hash_alg) != 1) {
+        goto done;
     }
 
     memset(hash, 0, sizeof(hash));
 
-    ret = PK11_DigestBegin(ctx);
-    if (ret == SECSuccess) {
-        ret = PK11_DigestOp(ctx, pwd, pwdlen);
+    if (EVP_DigestUpdate(ctx, pwd, pwdlen) != 1) {
+        goto done;
     }
-    if (ret == SECSuccess) {
-        ret = PK11_DigestOp(ctx, salt, SHA_SALT_LENGTH);
+    if (EVP_DigestUpdate(ctx, salt, SHA_SALT_LENGTH) != 1) {
+        goto done;
     }
-    if (ret == SECSuccess) {
-        ret = PK11_DigestFinal(ctx, hash, &hash_len, hash_alg_len);
-    }
-    if (ret != SECSuccess) {
-        ret = -1;
+    if (EVP_DigestFinal(ctx, hash, &hash_len) != 1) {
         goto done;
     }
     if (hash_len != hash_alg_len) {
@@ -267,7 +393,9 @@ static int ipapwd_hash_password(char *password,
     memset(fh + fhl, '\0', 1);
 
 done:
-    PK11_DestroyContext(ctx, 1);
+    if (ctx != NULL) {
+        EVP_MD_CTX_destroy(ctx);
+    }
     *full_hash = fh;
     *full_hash_len = fhl;
     return ret;
@@ -288,14 +416,12 @@ static int ipapwd_cmp_password(char *password, char *historyString)
 {
     char *hash_type;
     char *b64part;
-    size_t b64_len;
-    SECItem *item;
+    char *item = NULL;
+    int item_len;
     unsigned char *salt;
     unsigned char *hash = NULL;
     unsigned int hash_len;
     int ret;
-
-    NSS_NoDB_Init(".");
 
     hash_type = historyString;
     b64part = strchr(historyString, '}');
@@ -303,29 +429,28 @@ static int ipapwd_cmp_password(char *password, char *historyString)
         return -1;
     }
     b64part++;
-    b64_len = strlen(b64part);
 
-    item = NSSBase64_DecodeBuffer(NULL, NULL, b64part, b64_len);
-    if (!item) {
+    item_len = base64_decode(b64part, &item);
+    if (item_len == -1) {
         return -1;
     }
-    if (item->len <= SHA_SALT_LENGTH) {
+    if (item_len <= SHA_SALT_LENGTH) {
         ret = -1;
         goto done;
     }
 
-    salt = item->data + (item->len - SHA_SALT_LENGTH);
+    salt = item + (item_len - SHA_SALT_LENGTH);
     ret = ipapwd_hash_password(password, hash_type, salt, &hash, &hash_len);
     if (ret != 0) {
         goto done;
     }
 
-    if (hash_len != item->len) {
+    if (hash_len != item_len) {
         ret = 1;
         goto done;
     }
 
-    if (memcmp(item->data, hash, hash_len)) {
+    if (memcmp(item, hash, hash_len)) {
         ret = 1;
         goto done;
     }
@@ -333,7 +458,7 @@ static int ipapwd_cmp_password(char *password, char *historyString)
     ret = 0;
 
 done:
-    SECITEM_FreeItem(item, 1);
+    OPENSSL_free(item);
     free(hash);
     return ret;
 }
@@ -358,7 +483,6 @@ static char *ipapwd_hash_to_history(time_t hash_time,
 {
     struct tm utctime;
     char timestr[GENERALIZED_TIME_LENGTH+1];
-    SECItem item;
     char *encoded;
     char *history;
     int ret;
@@ -368,14 +492,8 @@ static char *ipapwd_hash_to_history(time_t hash_time,
     }
     strftime(timestr, GENERALIZED_TIME_LENGTH+1, "%Y%m%d%H%M%SZ", &utctime);
 
-    NSS_NoDB_Init(".");
 
-    item.type = siBuffer;
-    item.data = hash;
-    item.len = hash_len;
-
-    encoded = NSSBase64_EncodeItem(NULL, NULL, 0, &item);
-    if (!encoded) {
+    if (base64_encode(hash, hash_len, &encoded) == -1) {
         return NULL;
     }
 
@@ -384,7 +502,7 @@ static char *ipapwd_hash_to_history(time_t hash_time,
         history = NULL;
     }
 
-    free(encoded);
+    OPENSSL_free(encoded);
     return history;
 }
 
