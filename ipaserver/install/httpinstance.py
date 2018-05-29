@@ -37,6 +37,7 @@ from ipaserver.install import replication
 from ipaserver.install import service
 from ipaserver.install import certs
 from ipaserver.install import installutils
+from ipapython import directives
 from ipapython import dogtag
 from ipapython import ipautil
 from ipapython.dn import DN
@@ -208,8 +209,12 @@ class HTTPInstance(service.Service):
         services.knownservices.gssproxy.restart()
 
     def get_mod_nss_nickname(self):
-        cert = installutils.get_directive(paths.HTTPD_NSS_CONF, 'NSSNickname')
-        nickname = installutils.unquote_directive_value(cert, quote_char="'")
+        cert = directives.get_directive(
+            paths.HTTPD_NSS_CONF, 'NSSNickname'
+        )
+        nickname = directives.unquote_directive_value(
+            cert, quote_char="'"
+        )
         return nickname
 
     def backup_ssl_conf(self):
@@ -230,17 +235,20 @@ class HTTPInstance(service.Service):
             installutils.remove_file(paths.HTTPD_NSS_CONF)
 
     def set_mod_ssl_protocol(self):
-        installutils.set_directive(paths.HTTPD_SSL_CONF,
-                                   'SSLProtocol',
-                                   '+TLSv1 +TLSv1.1 +TLSv1.2', False)
+        directives.set_directive(
+            paths.HTTPD_SSL_CONF,
+            'SSLProtocol',
+            '+TLSv1 +TLSv1.1 +TLSv1.2', False)
 
     def set_mod_ssl_logdir(self):
-        installutils.set_directive(paths.HTTPD_SSL_CONF,
-                                   'ErrorLog',
-                                   'logs/error_log', False)
-        installutils.set_directive(paths.HTTPD_SSL_CONF,
-                                   'TransferLog',
-                                   'logs/access_log', False)
+        directives.set_directive(
+            paths.HTTPD_SSL_CONF,
+            'ErrorLog',
+            'logs/error_log', False)
+        directives.set_directive(
+            paths.HTTPD_SSL_CONF,
+            'TransferLog',
+            'logs/access_log', False)
 
     def disable_mod_ssl_ocsp(self):
         if sysupgrade.get_upgrade_state('http', OCSP_ENABLED) is None:
@@ -404,25 +412,29 @@ class HTTPInstance(service.Service):
 
     def configure_mod_ssl_certs(self):
         """Configure the mod_ssl certificate directives"""
-        installutils.set_directive(paths.HTTPD_SSL_CONF,
-                                   'SSLCertificateFile',
-                                   paths.HTTPD_CERT_FILE, False)
-        installutils.set_directive(paths.HTTPD_SSL_CONF,
-                                   'SSLCertificateKeyFile',
-                                   paths.HTTPD_KEY_FILE, False)
-        installutils.set_directive(
+        directives.set_directive(
+            paths.HTTPD_SSL_CONF,
+            'SSLCertificateFile',
+            paths.HTTPD_CERT_FILE, False)
+        directives.set_directive(
+            paths.HTTPD_SSL_CONF,
+            'SSLCertificateKeyFile',
+            paths.HTTPD_KEY_FILE, False)
+        directives.set_directive(
             paths.HTTPD_SSL_CONF,
             'SSLPassPhraseDialog',
             'exec:{passread}'.format(passread=paths.IPA_HTTPD_PASSWD_READER),
             False)
-        installutils.set_directive(paths.HTTPD_SSL_CONF,
-                                   'SSLCACertificateFile',
-                                   paths.IPA_CA_CRT, False)
+        directives.set_directive(
+            paths.HTTPD_SSL_CONF,
+            'SSLCACertificateFile',
+            paths.IPA_CA_CRT, False)
         # set SSLVerifyDepth for external CA installations
-        installutils.set_directive(paths.HTTPD_SSL_CONF,
-                                   'SSLVerifyDepth',
-                                   MOD_SSL_VERIFY_DEPTH,
-                                   quotes=False)
+        directives.set_directive(
+            paths.HTTPD_SSL_CONF,
+            'SSLVerifyDepth',
+            MOD_SSL_VERIFY_DEPTH,
+            quotes=False)
 
     def __publish_ca_cert(self):
         ca_subject = self.cert.issuer

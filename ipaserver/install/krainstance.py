@@ -30,10 +30,10 @@ import six
 # pylint: disable=import-error
 from six.moves.configparser import RawConfigParser
 # pylint: enable=import-error
-
 from ipalib import api
 from ipalib import x509
 from ipaplatform.paths import paths
+from ipapython import directives
 from ipapython import ipautil
 from ipapython.dn import DN
 from ipaserver.install import cainstance
@@ -362,7 +362,7 @@ class KRAInstance(DogtagInstance):
         write operations.
         """
         with installutils.stopped_service('pki-tomcatd', 'pki-tomcat'):
-            installutils.set_directive(
+            directives.set_directive(
                 self.config,
                 'kra.ephemeralRequests',
                 'true', quotes=False, separator='=')
