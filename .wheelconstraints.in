@@ -8,6 +8,3 @@ ipaplatform == @VERSION@
 ipapython == @VERSION@
 ipaserver == @VERSION@
 ipatests == @VERSION@
-
-# upstream pylint 1.7.5 fixed bad python3 import of stat module
-pylint >= 1.7.5
