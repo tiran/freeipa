@@ -636,3 +636,11 @@ class Backup(admintool.AdminTool):
         shutil.move(self.header, backup_dir)
 
         logger.info('Backed up to %s', backup_dir)
+
+
+def main():
+    Backup.run_cli()
+
+
+if __name__ == '__main__':
+    main()

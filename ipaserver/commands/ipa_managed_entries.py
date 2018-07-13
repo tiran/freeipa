@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # Authors: Jr Aquino <jr.aquino@citrix.com>
 #
 # Copyright (C) 2011  Red Hat
@@ -65,7 +64,8 @@ def get_dirman_password():
 
     return password
 
-def main():
+
+def _main():
     retval = 0
     def_dn = None
 
@@ -197,7 +197,12 @@ def main():
 
     return retval
 
-if __name__ == '__main__':
+
+def main():
     if not os.geteuid() == 0:
         sys.exit("\nMust be run as root\n")
-    installutils.run_script(main, operation_name='ipa-managed-entries')
+    installutils.run_script(_main, operation_name='ipa-managed-entries')
+
+
+if __name__ == '__main__':
+    main()

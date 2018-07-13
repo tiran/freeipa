@@ -95,3 +95,11 @@ class PKINITManage(AdminTool):
             print("PKINIT is enabled")
         else:
             print("PKINIT is disabled")
+
+
+def main():
+    PKINITManage.run_cli()
+
+
+if __name__ == '__main__':
+    main()

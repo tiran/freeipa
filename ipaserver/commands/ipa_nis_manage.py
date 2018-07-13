@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # Authors: Rob Crittenden <rcritten@redhat.com>
 # Authors: Simo Sorce <ssorce@redhat.com>
 #
@@ -80,7 +79,8 @@ def get_entry(dn):
         pass
     return entry
 
-def main():
+
+def _main():
     retval = 0
     files = [paths.NIS_ULDIF]
     servicemsg = ""
@@ -201,5 +201,10 @@ def main():
 
     return retval
 
+
+def main():
+    installutils.run_script(_main, operation_name='ipa-nis-manage')
+
+
 if __name__ == '__main__':
-    installutils.run_script(main, operation_name='ipa-nis-manage')
+    main()

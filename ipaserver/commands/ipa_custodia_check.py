@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """Test client for ipa-custodia
 
 The test script is expected to be executed on an IPA server with existing

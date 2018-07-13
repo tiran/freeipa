@@ -60,3 +60,11 @@ class ServerUpgrade(admintool.AdminTool):
                          "/var/log/ipaupgrade.log and run command "
                          "ipa-server-upgrade manually.")
         return installutils.handle_error(exception, self.log_file_name)
+
+
+def main():
+    ServerUpgrade.run_cli()
+
+
+if __name__ == '__main__':
+    main()

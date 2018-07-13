@@ -47,5 +47,9 @@ ServerInstall = cli.install_tool(
 )
 
 
-def run():
+def main():
     ServerInstall.run_cli()
+
+
+if __name__ == '__main__':
+    main()

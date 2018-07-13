@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # Authors:
 #   Christian Heimes <cheimes@redhat.com>
 #

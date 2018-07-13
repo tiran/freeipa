@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -E
 # Authors: Martin Nagy <mnagy@redhat.com>
 # Based on ipa-server-install by Karl MacMillan <kmacmillan@mentalrootkit.com>
 #
@@ -114,7 +113,7 @@ def parse_options():
 
     return safe_options, options
 
-def main():
+def _main():
     safe_options, options = parse_options()
 
     if os.getegid() != 0:
@@ -151,6 +150,14 @@ def main():
 
     return 0
 
+
+def main():
+    installutils.run_script(
+        _main,
+        log_file_name=log_file_name,
+        operation_name='ipa-dns-install'
+    )
+
+
 if __name__ == '__main__':
-    installutils.run_script(main, log_file_name=log_file_name,
-                            operation_name='ipa-dns-install')
+    main()

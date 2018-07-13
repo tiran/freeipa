@@ -157,3 +157,11 @@ class LDAPUpdater_NonUpgrade(LDAPUpdater):
             logger.info('Update complete, no data were modified')
 
         api.Backend.ldap2.disconnect()
+
+
+def main():
+    LDAPUpdater.run_cli()
+
+
+if __name__ == '__main__':
+    main()

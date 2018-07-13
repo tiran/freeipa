@@ -908,3 +908,11 @@ class Restore(admintool.AdminTool):
             except errors.ACIError:
                 logger.error("Incorrect Directory Manager password provided")
                 raise
+
+
+def main():
+    Restore.run_cli()
+
+
+if __name__ == '__main__':
+    main()

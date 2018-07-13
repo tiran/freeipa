@@ -93,5 +93,9 @@ ReplicaInstall = cli.install_tool(
 )
 
 
-def run():
+def main():
     ReplicaInstall.run_cli()
+
+
+if __name__ == '__main__':
+    main()

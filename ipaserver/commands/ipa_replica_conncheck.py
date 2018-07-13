@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -E
 # Authors: Martin Kosek <mkosek@redhat.com>
 #
 # Copyright (C) 2011  Red Hat
@@ -415,7 +414,7 @@ def port_check(host, port_list):
                 % ", ".join(msg_ports))
 
 
-def main():
+def _main():
     global RESPONDER
     safe_options, options = parse_options()
 
@@ -639,9 +638,9 @@ def main():
                 "Connection check timeout: terminating listening program")
 
 
-if __name__ == "__main__":
+def main():
     try:
-        sys.exit(main())
+        sys.exit(_main())
     except KeyboardInterrupt:
         logger.info("\nCleaning up...")
         sys.exit(1)
@@ -658,3 +657,7 @@ if __name__ == "__main__":
                     os.remove(file_name)
                 except OSError:
                     pass
+
+
+if __name__ == "__main__":
+    main()

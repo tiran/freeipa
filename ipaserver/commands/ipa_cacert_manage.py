@@ -455,3 +455,11 @@ def update_ipa_ca_entry(api, cert):
         api.Backend.ldap2.update_entry(entry)
     except errors.EmptyModlist:
         pass
+
+
+def main():
+    CACertManage.run_cli()
+
+
+if __name__ == '__main__':
+    main()

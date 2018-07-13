@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -E
 # Authors: Karl MacMillan <kmacmillan@mentalrootkit.com>
 #
 # Copyright (C) 2007  Red Hat
@@ -1508,7 +1507,8 @@ def exit_on_managed_topology(what):
              "Please use `ipa topologysegment-*` commands to manage "
              "the topology.".format(what))
 
-def main(options, args):
+
+def _main(options, args):
     if os.getegid() == 0:
         installutils.check_server_configuration()
     elif not os.path.exists(paths.IPA_DEFAULT_CONF):
@@ -1616,26 +1616,31 @@ def main(options, args):
 
     api.Backend.ldap2.disconnect()
 
-try:
-    options, args = parse_options()
-    main(options, args)
-except KeyboardInterrupt:
-    sys.exit(1)
-except SystemExit as e:
-    sys.exit(e)
-except RuntimeError as e:
-    sys.exit(e)
-except socket.timeout:
-    print("Connection timed out.")
-    sys.exit(1)
-except Exception as e:
-    if options.verbose:
-        traceback.print_exc(file=sys.stdout)
-    else:
-        print(
-            "Re-run {} with --verbose option to get more information".format(
-                sys.argv[0])
-        )
 
-    print("Unexpected error: %s" % str(e))
-    sys.exit(1)
+def main():
+    try:
+        options, args = parse_options()
+        _main(options, args)
+    except KeyboardInterrupt:
+        sys.exit(1)
+    except SystemExit as e:
+        sys.exit(e)
+    except RuntimeError as e:
+        sys.exit(e)
+    except socket.timeout:
+        print("Connection timed out.")
+        sys.exit(1)
+    except Exception as e:
+        if options.verbose:
+            traceback.print_exc(file=sys.stdout)
+        else:
+            print(
+                "Re-run {} with --verbose option to get more information".format(
+                    sys.argv[0])
+            )
+
+        print("Unexpected error: %s" % str(e))
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

@@ -568,3 +568,11 @@ class OTPTokenImport(admintool.AdminTool):
 
         # Write out the XML file without the tokens that succeeded.
         self.doc.save(self.output)
+
+
+def main():
+    OTPTokenImport.run_cli()
+
+
+if __name__ == '__main__':
+    main()

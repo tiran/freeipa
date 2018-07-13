@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-#
 # Authors: Sumit Bose <sbose@redhat.com>
 # Based on ipa-server-install by Karl MacMillan <kmacmillan@mentalrootkit.com>
 # and ipa-dns-install by Martin Nagy
@@ -88,7 +86,8 @@ def parse_options():
                       help="Add IPA masters to a list of hosts allowed to "
                       "serve information about users from trusted forests")
     parser.add_option("--enable-compat",
-                      dest="enable_compat", default=False, action="store_true",
+                      dest="enable_compat", default=False,
+                      action="store_true",
                       help="Enable support for trusted domains for old "
                            "clients")
 
@@ -118,7 +117,7 @@ def ensure_admin_kinit(admin_name, admin_password):
     return True
 
 
-def main():
+def _main():
     safe_options, options = parse_options()
 
     if os.getegid() != 0:
@@ -251,8 +250,14 @@ information""")
 
     return 0
 
-if __name__ == '__main__':
+
+def main():
     run_script(
-        main,
+        _main,
         log_file_name=log_file_name,
-        operation_name='ipa-adtrust-install')
+        operation_name='ipa-adtrust-install'
+    )
+
+
+if __name__ == '__main__':
+    main()

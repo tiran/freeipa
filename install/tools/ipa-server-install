@@ -20,6 +20,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ipaserver.commands import ipa_server_install
+from ipaserver.commands.ipa_server_install import main
 
-ipa_server_install.run()
+main()

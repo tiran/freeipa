@@ -387,3 +387,11 @@ class WinsyncMigrate(admintool.AdminTool):
             self.ldap.delete_entry(entry)
 
         self.warn_passsync()
+
+
+def main():
+    WinsyncMigrate.run_cli()
+
+
+if __name__ == '__main__':
+    main()

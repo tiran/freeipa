@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # Authors: Simo Sorce <ssorce@redhat.com>
 #
 # Copyright (C) 2008-2010  Red Hat
@@ -553,7 +552,8 @@ def ipa_status(options):
         except Exception:
             emit_err("Failed to get %s Service status" % svc)
 
-def main():
+
+def _main():
     if not os.getegid() == 0:
         # LSB status code 4: user had insufficient privilege
         raise IpactlError("You must be root to run ipactl.", 4)
@@ -600,5 +600,9 @@ def main():
         ipa_status(options)
 
 
+def main():
+    installutils.run_script(_main, operation_name='ipactl')
+
+
 if __name__ == '__main__':
-    installutils.run_script(main, operation_name='ipactl')
+    main()

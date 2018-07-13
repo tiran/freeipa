@@ -234,3 +234,11 @@ class KRAInstaller(KRAInstall):
         service.enable_services(api.env.host)
         api.Command.dns_update_system_records()
         api.Backend.ldap2.disconnect()
+
+
+def main():
+   KRAInstall.run_cli()
+
+
+if __name__ == '__main__':
+    main()

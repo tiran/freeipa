@@ -640,3 +640,11 @@ class ReplicaPrepare(admintool.AdminTool):
                     prep_domain_level=DOMAIN_LEVEL_0
                 )
             )
+
+
+def main():
+    ReplicaPrepare.run_cli()
+
+
+if __name__ == '__main__':
+    main()

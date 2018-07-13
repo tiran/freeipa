@@ -318,3 +318,11 @@ class ServerCertInstall(admintool.AdminTool):
             raise admintool.ScriptError(str(e))
 
         return server_cert
+
+
+def main():
+    ServerCertInstall.run_cli()
+
+
+if __name__ == '__main__':
+    main()

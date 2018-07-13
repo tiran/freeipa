@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -E
 # Authors: Rob Crittenden <rcritten@redhat.com>
 #
 # Based on ipa-replica-manage by Karl MacMillan <kmacmillan@mentalrootkit.com>
@@ -407,7 +406,7 @@ def exit_on_managed_topology(what, hint="topologysegment"):
              .format(what, hinttext))
 
 
-def main():
+def _main():
     options, args = parse_options()
 
     # Just initialize the environment. This is so the installer can have
@@ -492,11 +491,17 @@ def main():
 
     api.Backend.ldap2.disconnect()
 
-try:
+
+def main():
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(1)
+    except SystemExit as e:
+        sys.exit(e)
+    except Exception as e:
+        sys.exit("unexpected error: %s" % e)
+
+
+if __name__ == '__main__':
     main()
-except KeyboardInterrupt:
-    sys.exit(1)
-except SystemExit as e:
-    sys.exit(e)
-except Exception as e:
-    sys.exit("unexpected error: %s" % e)

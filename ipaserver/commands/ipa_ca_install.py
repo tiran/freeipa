@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -E
 # Authors: Rob Crittenden <rcritten@redhat.com>
 #
 # Copyright (C) 2011  Red Hat
@@ -316,7 +315,7 @@ def promote(safe_options, options, filename):
             install_replica(safe_options, options, filename)
 
 
-def main():
+def _main():
     safe_options, options, filename = parse_options()
 
     if os.geteuid() != 0:
@@ -368,9 +367,10 @@ Your system may be partly configured.
 Run /usr/sbin/ipa-server-install --uninstall to clean up.
 '''
 
-if __name__ == '__main__':
+
+def main():
     try:
-        installutils.run_script(main, log_file_name=log_file_name,
+        installutils.run_script(_main, log_file_name=log_file_name,
                                 operation_name='ipa-ca-install',
                                 fail_message=fail_message)
     finally:
@@ -380,3 +380,7 @@ if __name__ == '__main__':
                 shutil.rmtree(REPLICA_INFO_TOP_DIR)
         except OSError:
             pass
+
+
+if __name__ == '__main__':
+    main()

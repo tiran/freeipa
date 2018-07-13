@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 from __future__ import print_function
 
 import os
@@ -35,8 +33,5 @@ def main():
     print(client.fetch_key(keyname, store=False))
 
 
-try:
+if __name__ == '__main__':
     main()
-except BaseException:
-    traceback.print_exc()
-    sys.exit(1)
