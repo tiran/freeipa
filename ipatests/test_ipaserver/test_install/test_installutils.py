@@ -16,8 +16,7 @@ import pytest
 from ipaplatform.paths import paths
 from ipapython import ipautil
 from ipaserver.install import installutils
-from ipaserver.install import ipa_backup
-from ipaserver.install import ipa_restore
+from ipaserver.commands import ipa_restore, ipa_backup
 
 
 @pytest.fixture

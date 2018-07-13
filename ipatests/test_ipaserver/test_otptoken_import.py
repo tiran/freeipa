@@ -21,8 +21,8 @@ import codecs
 import os
 import pytest
 
-from ipaserver.install.ipa_otptoken_import import PSKCDocument, ValidationError
-from ipaserver.install.ipa_otptoken_import import convertHashName
+from ipaserver.commands.ipa_otptoken_import import PSKCDocument, ValidationError
+from ipaserver.commands.ipa_otptoken_import import convertHashName
 
 basename = os.path.join(os.path.dirname(__file__), "data")
 

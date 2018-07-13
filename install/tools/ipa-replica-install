@@ -18,6 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ipaserver.install import ipa_replica_install
+from ipaserver.commands import ipa_replica_install
 
 ipa_replica_install.run()

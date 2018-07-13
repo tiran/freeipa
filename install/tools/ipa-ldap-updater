@@ -20,6 +20,6 @@
 
 # Documentation can be found at http://freeipa.org/page/LdapUpdate
 
-from ipaserver.install.ipa_ldap_updater import LDAPUpdater
+from ipaserver.commands.ipa_ldap_updater import LDAPUpdater
 
 LDAPUpdater.run_cli()

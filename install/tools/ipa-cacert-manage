@@ -18,6 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ipaserver.install.ipa_cacert_manage import CACertManage
+from ipaserver.commands.ipa_cacert_manage import CACertManage
 
 CACertManage.run_cli()

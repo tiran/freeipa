@@ -18,6 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ipaserver.install.ipa_backup import Backup
+from ipaserver.commands.ipa_backup import Backup
 
 Backup.run_cli()

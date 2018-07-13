@@ -18,6 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ipaserver.install.ipa_otptoken_import import OTPTokenImport
+from ipaserver.commands.ipa_otptoken_import import OTPTokenImport
 
 OTPTokenImport.run_cli()

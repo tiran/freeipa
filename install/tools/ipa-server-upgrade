@@ -7,6 +7,6 @@
 #     http://freeipa.org/page/LdapUpdate
 #     http://www.freeipa.org/page/V4/Server_Upgrade_Refactoring
 
-from ipaserver.install.ipa_server_upgrade import ServerUpgrade
+from ipaserver.commands.ipa_server_upgrade import ServerUpgrade
 
 ServerUpgrade.run_cli()

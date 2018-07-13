@@ -18,6 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ipaserver.install.ipa_restore import Restore
+from ipaserver.commands.ipa_restore import Restore
 
 Restore.run_cli()

@@ -18,6 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ipaserver.install.ipa_replica_prepare import ReplicaPrepare
+from ipaserver.commands.ipa_replica_prepare import ReplicaPrepare
 
 ReplicaPrepare.run_cli()
