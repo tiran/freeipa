@@ -48,6 +48,8 @@ import distutils.spawn
 from ipaplatform.paths import paths
 import gssapi
 
+from ipaserver.install.conncheck import BASE_PORTS, CA_LEGACY_PORTS
+
 logger = logging.getLogger(os.path.basename(__file__))
 
 CONNECT_TIMEOUT = 5
@@ -93,25 +95,6 @@ class SshExec:
 
         return ipautil.run(cmd, env=env, raiseonerr=False,
                            capture_output=True, capture_error=True)
-
-
-class CheckedPort:
-    def __init__(self, port, port_type, description):
-        self.port = port
-        self.port_type = port_type
-        self.description = description
-
-
-BASE_PORTS = [
-                CheckedPort(389, SOCK_STREAM, "Directory Service: Unsecure port"),
-                CheckedPort(636, SOCK_STREAM, "Directory Service: Secure port"),
-                CheckedPort(88, SOCK_STREAM, "Kerberos KDC: TCP"),
-                CheckedPort(88, SOCK_DGRAM, "Kerberos KDC: UDP"),
-                CheckedPort(464, SOCK_STREAM, "Kerberos Kpasswd: TCP"),
-                CheckedPort(464, SOCK_DGRAM, "Kerberos Kpasswd: UDP"),
-                CheckedPort(80, SOCK_STREAM, "HTTP Server: Unsecure port"),
-                CheckedPort(443, SOCK_STREAM, "HTTP Server: Secure port"),
-             ]
 
 
 def parse_options():
@@ -426,12 +409,11 @@ def main():
 
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    required_ports = BASE_PORTS
+    required_ports = BASE_PORTS[:]
     if options.check_ca:
         # Check old Dogtag CA replication port
         # New installs with unified databases use main DS port (checked above)
-        required_ports.append(CheckedPort(7389, SOCK_STREAM,
-                                          "PKI-CA: Directory Service port"))
+        required_ports.extend(CA_LEGACY_PORTS)
 
     if options.replica:
         logger.info("Check connection from master to remote replica '%s':",
