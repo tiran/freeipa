@@ -110,6 +110,9 @@ class IPAVersion:
 
 class RedHatTaskNamespace(BaseTaskNamespace):
 
+    # PID 1 cgroup paths for non-container cases
+    cgroup_noncontainer_scopes = frozenset({'/', '/init.scope'})
+
     def restore_context(self, filepath, force=False):
         """Restore SELinux security context on the given filepath.
 
@@ -182,6 +185,39 @@ class RedHatTaskNamespace(BaseTaskNamespace):
                  "interface that has ::1 address assigned. Add ::1 address "
                  "resolution to 'lo' interface. You might need to enable IPv6 "
                  "on the interface 'lo' in sysctl.conf.")
+
+    def parse_cgroup(self, pid):
+        """Parse cgroup for a given pid
+        """
+        filename = "/proc/{:d}/cgroup".format(pid)
+        if not os.path.isfile(filename):
+            return None
+        cgroup = {}
+        with open(filename) as f:
+            for line in f:
+                hierarchy, controllers, path = line.strip().split(':', 3)
+                if controllers:
+                    controllers = frozenset(controllers.split(','))
+                else:
+                    controllers = frozenset()
+                cgroup[int(hierarchy)] = (controllers, path)
+        return cgroup
+
+    def check_inside_container(self):
+        """Check if running inside a container by inspecting PID 1's cgroups
+
+        Returns True if PID 1 has cgroup paths that are not in
+        cgroup_noncontainer_scopes.
+
+        :return: True, False, None
+        """
+        cgroup = self.parse_cgroup(1)
+        if cgroup is None:
+            return None
+        return not all(
+            cgroup[hierarchy] not in self.cgroup_noncontainer_scopes
+            for hierarchy in cgroup
+        )
 
     def restore_pre_ipa_client_configuration(self, fstore, statestore,
                                              was_sssd_installed,

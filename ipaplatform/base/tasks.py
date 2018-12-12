@@ -24,6 +24,7 @@ This module contains default platform-specific implementations of system tasks.
 
 from __future__ import absolute_import
 
+import os
 import logging
 
 from pkg_resources import parse_version
@@ -105,6 +106,21 @@ class BaseTaskNamespace:
         """Check whether IPv6 kernel module is loaded"""
 
         raise NotImplementedError()
+
+    def parse_cgroup(self, pid):
+        """Parse cgroup for a given pid
+        """
+        raise NotImplementedError
+
+    def check_inside_container(self):
+        """Check if running inside a container by inspecting PID 1's cgroups
+
+        Returns True if PID 1 has cgroup paths that are not in
+        cgroup_noncontainer_scopes.
+
+        :return: True, False, None
+        """
+        raise NotImplementedError
 
     def restore_hostname(self, fstore, statestore):
         """
