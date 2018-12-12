@@ -29,6 +29,7 @@ import tempfile
 import stat
 import fnmatch
 
+import ldap
 from lib389 import DirSrv
 from lib389.idm.ipadomain import IpaDomain
 from lib389.instance.options import General2Base, Slapd2Base
@@ -552,6 +553,13 @@ class DsInstance(service.Service):
         self.backup_state("serverid", self.serverid)
         self.fstore.backup_file(paths.SYSCONFIG_DIRSRV)
 
+        # 389-DS installer doesn't set timeout for connection and search
+        ldap.set_option(ldap.OPT_NETWORK_TIMEOUT, 30)
+        ldap.set_option(ldap.OPT_TIMEOUT, 30)
+        ldap.set_option(ldap.OPT_TIMELIMIT, 30)
+        debuglevel = ldap.get_option(ldap.OPT_DEBUG_LEVEL)
+        ldap.set_option(ldap.OPT_DEBUG_LEVEL, -1)
+
         # The new installer is api driven. We can pass it a log function
         # and it will use it. Because of this, we can pass verbose true,
         # and allow our logger to control the display based on level.
@@ -600,6 +608,8 @@ class DsInstance(service.Service):
             })
         finally:
             inst.close()
+
+        ldap.set_option(ldap.OPT_DEBUG_LEVEL, debuglevel)
 
         # Done!
         logger.debug("completed creating DS instance")

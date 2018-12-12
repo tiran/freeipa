@@ -20,14 +20,6 @@ env:
           CI_RUNNER_LOGS_DIR="/tmp/test-runner-logs"
           CI_RUNNER_LOG_ARCHIVE="freeipa-ci-pr-${TRAVIS_PULL_REQUEST}-job-${TRAVIS_JOB_NUMBER}.tar.gz"
     matrix:
-        - TASK_TO_RUN="lint"
-          TEST_RUNNER_CONFIG=".test_runner_config.yaml"
-        - TASK_TO_RUN="webui-unit"
-          TEST_RUNNER_CONFIG=".test_runner_config.yaml"
-        - TASK_TO_RUN="run-tests"
-          PYTHON=/usr/bin/python3
-          TEST_RUNNER_CONFIG=".test_runner_config.yaml"
-          TESTS_TO_RUN="test_xmlrpc/test_[a-k]*.py"
         - TASK_TO_RUN="run-tests"
           PYTHON=/usr/bin/python3
           TEST_RUNNER_CONFIG=".test_runner_config.yaml"
@@ -39,14 +31,6 @@ env:
                 test_ipapython
                 test_ipaserver
                 test_xmlrpc/test_[l-z]*.py"
-        - TASK_TO_RUN="tox"
-          TEST_RUNNER_CONFIG=".test_runner_config.yaml"
-
-before_install:
-    - ip addr show
-    - ls /proc/net
-    - cat /proc/net/if_inet6
-#    - ip addr show dev lo | grep -q inet6 || (echo "No IPv6 address found"; exit 1)
 
 install:
     - pip3 install --upgrade pip
