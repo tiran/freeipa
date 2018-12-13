@@ -141,7 +141,11 @@ BuildRequires:  systemd
 # systemd-tmpfiles which is executed from make install requires apache user
 BuildRequires:  httpd
 BuildRequires:  nspr-devel
+%if 0%{?fedora} <= 28
+BuildRequires:  nss-devel < 3.40
+%else
 BuildRequires:  nss-devel >= %{nss_version}
+%endif
 BuildRequires:  openssl-devel
 BuildRequires:  libini_config-devel
 BuildRequires:  cyrus-sasl-devel
@@ -264,8 +268,13 @@ Requires: python3-ipaserver = %{version}-%{release}
 Requires: python3-ldap >= %{python_ldap_version}
 Requires: 389-ds-base >= %{ds_version}
 Requires: openldap-clients > 2.4.35-4
+%if 0%{?fedora} <= 28
+Requires: nss < 3.40
+Requires: nss-tools < 3.40
+%else
 Requires: nss >= %{nss_version}
 Requires: nss-tools >= %{nss_version}
+%endif
 Requires(post): krb5-server >= %{krb5_version}
 Requires(post): krb5-server >= %{krb5_base_version}, krb5-server < %{krb5_base_version}.100
 Requires: krb5-pkinit-openssl >= %{krb5_version}
@@ -471,7 +480,11 @@ Requires: libcurl >= 7.21.7-2
 Requires: xmlrpc-c >= 1.27.4
 Requires: sssd-ipa >= %{sssd_version}
 Requires: certmonger >= 0.79.5-1
+%if 0%{?fedora} <= 28
+Requires: nss-tools < 3.40
+%else
 Requires: nss-tools >= %{nss_version}
+%endif
 Requires: bind-utils
 Requires: oddjob-mkhomedir
 Requires: libsss_autofs
