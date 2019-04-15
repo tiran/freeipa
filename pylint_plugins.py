@@ -9,11 +9,13 @@ import os.path
 import sys
 import textwrap
 
+import astroid
 from astroid import MANAGER, register_module_extender
 from astroid import scoped_nodes
 from pylint.checkers import BaseChecker
 from pylint.checkers.utils import check_messages
 from pylint.interfaces import IAstroidChecker
+from pylint.utils import get_module_and_frameid
 from astroid.builder import AstroidBuilder
 
 
@@ -22,7 +24,7 @@ def register(linter):
 
 
 def _warning_already_exists(cls, member):
-    print(
+    print(  # pylint: disable=forbidden-print
         "WARNING: member '{member}' in '{cls}' already exists".format(
             cls="{}.{}".format(cls.root().name, cls.name), member=member),
         file=sys.stderr
@@ -293,6 +295,11 @@ class IPAChecker(BaseChecker):
             'ipa-forbidden-import',
             'Used when an forbidden import is detected.',
         ),
+        'W9902': (
+            'Forbidden print() call, use logcm()',
+            'forbidden-print',
+            'IPA installer code should use logcm to print to stdout.'
+        ),
     }
     options = (
         (
@@ -305,6 +312,15 @@ class IPAChecker(BaseChecker):
                         'given paths',
             },
         ),
+        (
+            'allow-print-function',
+            {
+                'default': '^ipatests\..*$',
+                'type': 'regexp',
+                'metavar': '<regexp>',
+                'help': 'Allow print in modules that match the expression.'
+            }
+        )
     )
     priority = -1
 
@@ -364,6 +380,24 @@ class IPAChecker(BaseChecker):
         names = ['{}.{}'.format(node.modname, n[0]) for n in node.names]
         self._check_forbidden_imports(node, names)
 
+    def visit_call(self, node):
+        if isinstance(node.func, astroid.Name) and \
+                node.func.name == 'print':
+            # check that's actually builtin print function
+            found_node = node.func.lookup(node.func.name)[0]
+            builtins = ("__builtin__", "builtins")
+            if getattr(found_node, "name", None) not in builtins:
+                return
+
+            # allow it in some modules
+            module, _frame = get_module_and_frameid(node)
+            if self.config.allow_print_function and \
+                    self.config.allow_print_function.match(module):
+                return
+
+            self.add_message(
+                'forbidden-print', node=node,
+            )
 
 #
 # Teach pylint how api object works
