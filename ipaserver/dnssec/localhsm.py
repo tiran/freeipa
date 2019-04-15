@@ -196,6 +196,7 @@ class LocalHSM(AbstractHSM):
 
 
 if __name__ == '__main__':
+    # pylint: disable=forbidden-print
     if 'SOFTHSM2_CONF' not in os.environ:
         os.environ['SOFTHSM2_CONF'] = paths.DNSSEC_SOFTHSM2_CONF
     localhsm = LocalHSM(paths.LIBSOFTHSM2_SO, SOFTHSM_DNSSEC_TOKEN_LABEL,

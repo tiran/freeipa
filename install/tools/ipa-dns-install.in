@@ -121,7 +121,10 @@ def main():
         sys.exit("Must be root to setup server")
 
     standard_logging_setup(log_file_name, debug=options.debug, filemode='a')
-    print("\nThe log file for this installation can be found in %s" % log_file_name)
+    logger.info(
+        "\nThe log file for this installation can be found in %s",
+        log_file_name
+    )
 
     logger.debug('%s was invoked with options: %s', sys.argv[0], safe_options)
     logger.debug("missing options might be asked for interactively later\n")

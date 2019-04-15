@@ -1181,6 +1181,7 @@ def no_matching_interface_for_ip_address_warning(addr_list):
                 "No network interface matches the IP address %s", ip)
             # fixme: once when loggers will be fixed, we can remove this
             # print
+            # pylint: disable=forbidden-print
             print(
                 "WARNING: No network interface matches the IP address "
                 "{}".format(ip),

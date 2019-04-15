@@ -23,6 +23,8 @@
 # Test the API against a known-good API to ensure that changes aren't made
 # lightly.
 
+# pylint: disable=forbidden-print
+
 from __future__ import print_function
 
 import importlib

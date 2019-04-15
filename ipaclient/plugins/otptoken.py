@@ -107,6 +107,7 @@ class otptoken_add(MethodOverride):
                 textui, output, *args, **options)
 
         if qr is not None:
+            # pylint: disable=forbidden-print
             print("\n")
             qr.print_ascii(tty=sys.stdout.isatty())
             print("\n")

@@ -45,6 +45,9 @@ For more information see
   * http://www.freeipa.org/page/Testing
 
 """
+
+# pylint: disable=forbidden-print
+
 from __future__ import print_function
 
 import logging

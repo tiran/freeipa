@@ -238,7 +238,6 @@ def install_master(safe_options, options):
     ca.install_check(True, None, options)
 
     ca.print_ca_configuration(options)
-    print()
 
     if not options.unattended:
         if not ipautil.user_input(

@@ -20,6 +20,9 @@
 """
 Functionality for Command Line Interface.
 """
+
+# pylint: disable=forbidden-print
+
 from __future__ import print_function
 
 import atexit

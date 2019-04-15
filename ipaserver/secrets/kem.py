@@ -278,6 +278,7 @@ class IPAKEMKeys(KEMKeysStore):
 
 # Manual testing
 if __name__ == '__main__':
+    # pylint: disable=forbidden-print
     IKK = IPAKEMKeys({'paths': '/',
                       'server_keys': '/etc/ipa/custodia/server.keys'})
     IKK.generate_server_keys()

@@ -265,6 +265,7 @@ class CheckedIPAddressLoopback(CheckedIPAddress):
         if self.is_loopback():
             # print is being used instead of a logger, because at this
             # moment, in execution process, there is no logger configured
+            # pylint: disable=forbidden-print
             print("WARNING: You are using a loopback IP: {}".format(addr),
                   file=sys.stderr)
 

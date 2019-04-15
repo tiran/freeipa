@@ -32,6 +32,7 @@ class DBMAPHandler:
 
 
 def log_error(error):
+    # pylint: disable=forbidden-print
     print(error, file=sys.stderr)
 
 

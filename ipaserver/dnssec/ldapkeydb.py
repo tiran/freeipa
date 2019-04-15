@@ -455,6 +455,7 @@ class LdapKeyDB(AbstractHSM):
         return self.cache_zone_keypairs
 
 if __name__ == '__main__':
+    # pylint: disable=forbidden-print
     # this is debugging mode
     # print information we think are useful to stdout
     # other garbage goes via logger to stderr

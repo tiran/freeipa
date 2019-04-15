@@ -16,6 +16,7 @@ def main():
 
     python = cfg['extraction']['python']
 
+    # pylint: disable=forbidden-print
     print("""\
     FROM ubuntu:bionic
     RUN apt-get update && \

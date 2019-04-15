@@ -32,6 +32,7 @@ def main():
 
     # Print the response JSON to stdout; it is already in the format
     # that Dogtag's ExternalProcessKeyRetriever expects
+    # pylint: disable=forbidden-print
     print(client.fetch_key(keyname, store=False))
 
 

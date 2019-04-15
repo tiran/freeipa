@@ -19,6 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# pylint: disable=forbidden-print
+
 from __future__ import print_function
 from ipalib import api
 

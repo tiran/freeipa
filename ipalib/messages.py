@@ -501,6 +501,7 @@ public_messages = tuple(sorted(
     iter_messages(globals(), PublicMessage), key=lambda E: E.errno))
 
 def print_report(label, classes):
+    # pylint: disable=forbidden-print
     for cls in classes:
         print('%d\t%s' % (cls.errno, cls.__name__))
     print('(%d %s)' % (len(classes), label))
