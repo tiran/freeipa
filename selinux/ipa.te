@@ -53,6 +53,35 @@ miscfiles_cert_type(ipa_cert_t)
 type ipa_tmp_t;
 files_tmp_file(ipa_tmp_t)
 
+type ipa_custodia_t;
+type ipa_custodia_exec_t;
+init_daemon_domain(ipa_custodia_t, ipa_custodia_exec_t)
+
+type ipa_custodia_dmldap_t;
+type ipa_custodia_dmldap_exec_t;
+domain_type(ipa_custodia_dmldap_t)
+domain_entry_file(ipa_custodia_dmldap_t, ipa_custodia_dmldap_exec_t)
+role system_r types ipa_custodia_dmldap_t;
+
+type ipa_custodia_pki_tomcat_t;
+type ipa_custodia_pki_tomcat_exec_t;
+domain_type(ipa_custodia_pki_tomcat_t)
+domain_entry_file(ipa_custodia_pki_tomcat_t, ipa_custodia_pki_tomcat_exec_t)
+role system_r types ipa_custodia_pki_tomcat_t;
+
+type ipa_custodia_ra_agent_t;
+type ipa_custodia_ra_agent_exec_t;
+domain_type(ipa_custodia_ra_agent_t)
+domain_entry_file(ipa_custodia_ra_agent_t, ipa_custodia_ra_agent_exec_t)
+role system_r types ipa_custodia_ra_agent_t;
+
+type ipa_custodia_etc_rw_t;
+files_type(ipa_custodia_etc_rw_t)
+
+type ipa_custodia_log_t;
+logging_log_file(ipa_custodia_log_t)
+
+
 ########################################
 #
 # ipa_otpd local policy
@@ -286,3 +315,106 @@ optional_policy(`
 optional_policy(`
     ldap_stream_connect(ipa_ods_exporter_t)
 ')
+
+########################################
+#
+# ipa-custodia local policy
+#
+
+allow ipa_custodia_t ipa_custodia_etc_rw_t:dir search;
+allow ipa_custodia_t ipa_custodia_etc_rw_t:file { getattr ioctl open read };
+allow ipa_custodia_t ipa_custodia_log_t:file open;
+allow ipa_custodia_t ldconfig_exec_t:file { execute execute_no_trans map open read };
+allow ipa_custodia_t self:capability { setgid setuid };
+allow ipa_custodia_t self:unix_dgram_socket { create getopt setopt };
+
+apache_manage_pid_files(ipa_custodia_t)
+apache_search_config(ipa_custodia_t)
+apache_systemctl(ipa_custodia_t)
+auth_read_passwd(ipa_custodia_t)
+corecmd_mmap_bin_files(ipa_custodia_t)
+dirsrv_manage_var_run(ipa_custodia_t)
+dirsrv_stream_connect(ipa_custodia_t)
+files_exec_isid_files(ipa_custodia_t)
+files_manage_generic_tmp_dirs(ipa_custodia_t)
+files_manage_generic_tmp_files(ipa_custodia_t)
+fs_getattr_xattr_fs(ipa_custodia_t)
+ipa_read_lib(ipa_custodia_t)
+ipa_search_lib(ipa_custodia_t)
+kernel_dgram_send(ipa_custodia_t)
+kernel_rw_unlabeled_files(ipa_custodia_t)
+miscfiles_read_certs(ipa_custodia_t)
+pki_manage_tomcat_etc_rw(ipa_custodia_t)
+pki_read_tomcat_cert(ipa_custodia_t)
+pki_rw_tomcat_cert(ipa_custodia_t)
+sssd_read_public_files(ipa_custodia_t)
+sssd_run_stream_connect(ipa_custodia_t)
+sssd_search_lib(ipa_custodia_t)
+sssd_stream_connect(ipa_custodia_t)
+sysnet_read_config(ipa_custodia_t)
+
+########################################
+#
+# ipa-custodia-dmldap local policy
+#
+domtrans_pattern(ipa_custodia_t, ipa_custodia_dmldap_exec_t, ipa_custodia_dmldap_t)
+
+auth_read_passwd(ipa_custodia_dmldap_t)
+corecmd_exec_bin(ipa_custodia_dmldap_t)
+corecmd_mmap_bin_files(ipa_custodia_dmldap_t)
+dirsrv_manage_var_run(ipa_custodia_dmldap_t)
+dirsrv_stream_connect(ipa_custodia_dmldap_t)
+files_manage_generic_tmp_dirs(ipa_custodia_dmldap_t)
+files_manage_generic_tmp_files(ipa_custodia_dmldap_t)
+libs_exec_ldconfig(ipa_custodia_dmldap_t)
+libs_ldconfig_exec_entry_type(ipa_custodia_dmldap_t)
+sssd_read_public_files(ipa_custodia_dmldap_t)
+sssd_run_stream_connect(ipa_custodia_dmldap_t)
+sssd_search_lib(ipa_custodia_dmldap_t)
+sssd_stream_connect(ipa_custodia_dmldap_t)
+sysnet_read_config(ipa_custodia_dmldap_t)
+
+########################################
+#
+# ipa-custodia-pki-tomcat local policy
+#
+domtrans_pattern(ipa_custodia_t, ipa_custodia_pki_tomcat_exec_t, ipa_custodia_pki_tomcat_t)
+
+auth_read_passwd(ipa_custodia_pki_tomcat_t)
+corecmd_exec_bin(ipa_custodia_pki_tomcat_t)
+corecmd_mmap_bin_files(ipa_custodia_pki_tomcat_t)
+files_manage_generic_tmp_dirs(ipa_custodia_pki_tomcat_t)
+files_manage_generic_tmp_files(ipa_custodia_pki_tomcat_t)
+files_mmap_usr_files(ipa_custodia_pki_tomcat_t)
+fs_getattr_xattr_fs(ipa_custodia_pki_tomcat_t)
+libs_exec_ldconfig(ipa_custodia_pki_tomcat_t)
+libs_ldconfig_exec_entry_type(ipa_custodia_pki_tomcat_t)
+miscfiles_read_certs(ipa_custodia_pki_tomcat_t)
+pki_manage_tomcat_etc_rw(ipa_custodia_pki_tomcat_t)
+pki_read_tomcat_cert(ipa_custodia_pki_tomcat_t)
+pki_rw_tomcat_cert(ipa_custodia_pki_tomcat_t)
+sssd_read_public_files(ipa_custodia_pki_tomcat_t)
+sssd_search_lib(ipa_custodia_pki_tomcat_t)
+sysnet_read_config(ipa_custodia_pki_tomcat_t)
+
+########################################
+#
+# ipa-custodia-ra-agent local policy
+#
+domtrans_pattern(ipa_custodia_t, ipa_custodia_ra_agent_exec_t, ipa_custodia_ra_agent_t)
+
+auth_read_passwd(ipa_custodia_ra_agent_t)
+corecmd_exec_bin(ipa_custodia_ra_agent_t)
+corecmd_mmap_bin_files(ipa_custodia_ra_agent_t)
+files_manage_generic_tmp_dirs(ipa_custodia_ra_agent_t)
+files_manage_generic_tmp_files(ipa_custodia_ra_agent_t)
+ipa_read_lib(ipa_custodia_ra_agent_t)
+ipa_search_lib(ipa_custodia_ra_agent_t)
+libs_exec_ldconfig(ipa_custodia_ra_agent_t)
+libs_ldconfig_exec_entry_type(ipa_custodia_ra_agent_t)
+miscfiles_read_certs(ipa_custodia_ra_agent_t)
+sssd_read_public_files(ipa_custodia_ra_agent_t)
+sssd_run_stream_connect(ipa_custodia_ra_agent_t)
+sssd_search_lib(ipa_custodia_ra_agent_t)
+sssd_stream_connect(ipa_custodia_ra_agent_t)
+sysnet_read_config(ipa_custodia_ra_agent_t)
