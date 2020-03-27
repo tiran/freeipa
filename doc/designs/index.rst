@@ -9,6 +9,6 @@ FreeIPA design documentation
    adtrust/samba-domain-member.md
    krb-ticket-policy.md
    extdom-plugin-protocol.md
-   membermanager.md
+   membermanager
    hidden-replicas.md
    disable-stale-users.md
