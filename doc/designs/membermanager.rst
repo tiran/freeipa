@@ -1,6 +1,10 @@
 Member Manager for group membership
 ===================================
 
+.. designauthor:: Christian Heimes
+.. versionadded:: 4.8.4
+.. seealso:: :issue:`8114`
+
 Overview
 --------
 
@@ -34,20 +38,22 @@ one for adding and one for removing member managers. The show command
 prints member manager users and member manager groups. The find command
 can search by member manager.
 
-Member managers are stored in a new LDAP attribute ``memberManager``
-with OID 2.16.840.1.113730.3.8.23.1. It is multi-valued and contains DNs
-of users and groups which can manage members of the group. The attribute
-can be added to entries with object class ``ipaUserGroup`` or
-``ipaHostGroup``. The attribute is indexed and its membership controlled
-by referential integrity postoperation plugin. New userattr ACIs grant
-principals with user DN or group DN in ``memberManager`` write
-permission to the ``member`` attribute of the group.
+Member managers are stored in a new LDAP attribute :ldap:attr:`memberManager`
+with OID :ldap:oid:`2.16.840.1.113730.3.8.23.1`. It is multi-valued and
+contains DNs of users and groups which can manage members of the group. The
+attribute can be added to entries with object class
+:ldap:objcls:`ipaUserGroup` or :ldap:objcls:`ipaHostGroup`. The attribute
+is indexed and its membership controlled by referential integrity
+postoperation plugin. New userattr ACIs grant
+principals with user DN or group DN in :ldap:attr:`memberManager` write
+permission to the :ldap:attr:`member` attribute of the group.
 
-The ``memberManager`` attribute is protected by the generic read and
+The :ldap:attr:`memberManager` attribute is protected by the generic read and
 modify permissions for each type of group. It is readable by everybody
-with ``System: Read Groups`` / ``System: Read Hostgroups`` permission
-and writable by everybody with ``System: Modify Groups`` /
-``System: Modify Hostgroups`` permission.
+with :ipa:permission:`System: Read Groups` /
+:ipa:permission:`System: Read Hostgroups`
+and writable by everybody with :ipa:permission:`System: Modify Groups` /
+:ipa:permission:`System: Modify Hostgroups` permission.
 
 Examples
 --------

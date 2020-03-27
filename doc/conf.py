@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
 
 
 # -- Project information -----------------------------------------------------
@@ -36,10 +36,12 @@ master_doc = 'index'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'm2r',
+    'ipasphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -83,3 +85,16 @@ source_suffix = {
 
 # Example configuration for intersphinx: refer to the Python standard library.
 # intersphinx_mapping = {'https://docs.python.org/': None}
+
+# -- Options for extlinks extension ---------------------------------------
+
+extlinks = {
+    'issue': ('https://pagure.io/freeipa/issue/%s', 'FreeIPA issue #'),
+    'rhbz': ('https://bugzilla.redhat.com/show_bug.cgi?id=%s', 'rhbz#'),
+    'freeipa': ('https://www.freeipa.org/page/%s', ''),
+    'systemd': (
+        'https://www.freedesktop.org/software/systemd/man/%s.html', ''
+    ),
+}
+
+show_authors = True
