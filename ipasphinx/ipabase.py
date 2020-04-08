@@ -156,8 +156,6 @@ def init_ipalib_api(app, config):
 
 
 def setup(app):
-    app.setup_extension("sphinx.ext.autodoc")
-
     app.add_config_value("ipa_context", "doc", "env")
     app.add_config_value("ipa_domain", "ipa.example", "env")
     app.add_config_value("ipa_server_fqdn", "server.ipa.example", "env")

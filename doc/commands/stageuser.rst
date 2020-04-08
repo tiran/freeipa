@@ -1,0 +1,1 @@
+.. autoipapluginmodule:: ipaserver.plugins.stageuser

@@ -37,9 +37,10 @@ master_doc = 'index'
 # ones.
 extensions = [
     'ipasphinx.ipabase',
+    'ipasphinx.ipaautodoc',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
+    # 'sphinx.ext.viewcode',
     'm2r',
 ]
 
@@ -86,3 +87,15 @@ source_suffix = {
 
 # Example configuration for intersphinx: refer to the Python standard library.
 # intersphinx_mapping = {'https://docs.python.org/': None}
+
+# -- Options for autodoc extension -------------------------------------------
+
+autodoc_mock_imports = [
+    # no binary wheels available
+    "dbus",
+    "gssapi",
+    "ldap",
+    # dogtag-pki is client-only
+    "pki",
+    # PyPI packages not available
+]
