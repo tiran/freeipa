@@ -30,8 +30,11 @@ class IPATrustEnableAgent(AdminTool):
 
         parser.add_option(
             "--enable-compat",
-            dest="enable_compat", default=False, action="store_true",
-            help="Enable support for trusted domains for old clients")
+            dest="enable_compat",
+            default=False,
+            action="store_true",
+            help="Enable support for trusted domains for old clients",
+        )
 
     def validate_options(self):
         super(IPATrustEnableAgent, self).validate_options(needs_root=True)
@@ -45,14 +48,16 @@ class IPATrustEnableAgent(AdminTool):
             entry_dn = DN(config[0], compat_plugin_dn)
             current = api.Backend.ldap2.get_entry(entry_dn)
             lookup_nsswitch = current.get(lookup_nsswitch_name, [])
-            if not(config[1] in lookup_nsswitch):
-                logger.debug("Enabling Schema Compatibility plugin "
-                             "for %s", config[0])
+            if not (config[1] in lookup_nsswitch):
+                logger.debug(
+                    "Enabling Schema Compatibility plugin " "for %s", config[0]
+                )
                 current[lookup_nsswitch_name] = [config[1]]
                 api.Backend.ldap2.update_entry(current)
             else:
-                logger.debug("Schema Compatibility plugin already enabled "
-                             "for %s", config[0])
+                logger.debug(
+                    "Schema Compatibility plugin already enabled " "for %s", config[0]
+                )
 
     def run(self):
         api.bootstrap(in_server=True, confdir=paths.ETC_IPA)
@@ -67,8 +72,8 @@ class IPATrustEnableAgent(AdminTool):
                     self._enable_compat_tree()
                 except Exception as e:
                     raise ScriptError(
-                        "Enabling Schema Compatibility plugin "
-                        "failed: {}".format(e))
+                        "Enabling Schema Compatibility plugin " "failed: {}".format(e)
+                    )
 
             # Restart 389-ds and sssd
             logger.info("Restarting Directory Server")
@@ -76,15 +81,15 @@ class IPATrustEnableAgent(AdminTool):
                 services.knownservices.dirsrv.restart()
             except Exception as e:
                 raise ScriptError(
-                    "Directory Server restart was unsuccessful: {}".format(e))
+                    "Directory Server restart was unsuccessful: {}".format(e)
+                )
 
             logger.info("Restarting SSSD service")
             try:
-                sssd = services.service('sssd', api)
+                sssd = services.service("sssd", api)
                 sssd.restart()
             except CalledProcessError as e:
-                raise ScriptError(
-                    "SSSD service restart was unsuccessful: {}".format(e))
+                raise ScriptError("SSSD service restart was unsuccessful: {}".format(e))
 
         finally:
             if api.Backend.ldap2.isconnected():

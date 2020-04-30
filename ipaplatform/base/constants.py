@@ -2,18 +2,18 @@
 # Copyright (C) 2015  FreeIPA Contributors see COPYING for license
 #
 
-'''
+"""
 This base platform module exports platform dependant constants.
-'''
+"""
 import sys
 
 
 class BaseConstantsNamespace:
     IS_64BITS = sys.maxsize > 2 ** 32
-    DEFAULT_ADMIN_SHELL = '/bin/bash'
-    DEFAULT_SHELL = '/bin/sh'
-    DS_USER = 'dirsrv'
-    DS_GROUP = 'dirsrv'
+    DEFAULT_ADMIN_SHELL = "/bin/bash"
+    DEFAULT_SHELL = "/bin/sh"
+    DS_USER = "dirsrv"
+    DS_GROUP = "dirsrv"
     HTTPD_USER = "apache"
     HTTPD_GROUP = "apache"
     GSSPROXY_USER = "root"
@@ -24,35 +24,31 @@ class BaseConstantsNamespace:
     NAMED_GROUP = "named"
     NAMED_DATA_DIR = "data/"
     NAMED_ZONE_COMMENT = ""
-    PKI_USER = 'pkiuser'
-    PKI_GROUP = 'pkiuser'
+    PKI_USER = "pkiuser"
+    PKI_GROUP = "pkiuser"
     # ntpd init variable used for daemon options
     NTPD_OPTS_VAR = "OPTIONS"
     # quote used for daemon options
-    NTPD_OPTS_QUOTE = "\""
+    NTPD_OPTS_QUOTE = '"'
     ODS_USER = "ods"
     ODS_GROUP = "ods"
     # nfsd init variable used to enable kerberized NFS
     SECURE_NFS_VAR = "SECURE_NFS"
     SELINUX_BOOLEAN_ADTRUST = {
-        'samba_portmapper': 'on',
+        "samba_portmapper": "on",
     }
     SELINUX_BOOLEAN_HTTPD = {
-        'httpd_can_network_connect': 'on',
-        'httpd_manage_ipa': 'on',
-        'httpd_run_ipa': 'on',
-        'httpd_dbus_sssd': 'on',
+        "httpd_can_network_connect": "on",
+        "httpd_manage_ipa": "on",
+        "httpd_run_ipa": "on",
+        "httpd_dbus_sssd": "on",
     }
     # Unlike above, there are multiple use cases for SMB sharing
     # SELINUX_BOOLEAN_SMBSERVICE is a dictionary of dictionaries
     # to define set of booleans for each use case
     SELINUX_BOOLEAN_SMBSERVICE = {
-        'share_home_dirs': {
-            'samba_enable_home_dirs': 'on',
-        },
-        'reshare_nfs_with_samba': {
-            'samba_share_nfs': 'on',
-        },
+        "share_home_dirs": {"samba_enable_home_dirs": "on",},
+        "reshare_nfs_with_samba": {"samba_share_nfs": "on",},
     }
     SELINUX_MCS_MAX = 1023
     SELINUX_MCS_REGEX = r"^c(\d+)([.,-]c(\d+))*$"

@@ -16,36 +16,38 @@ def export_key(args, tmpdir):
 
     The private key is encrypted using key wrapping.
     """
-    wrapped_key_file = os.path.join(tmpdir, 'wrapped_key')
-    certificate_file = os.path.join(tmpdir, 'certificate')
+    wrapped_key_file = os.path.join(tmpdir, "wrapped_key")
+    certificate_file = os.path.join(tmpdir, "certificate")
 
-    ipautil.run([
-        paths.PKI,
-        '-d', args.nssdb_path,
-        '-C', args.nssdb_pwdfile,
-        'ca-authority-key-export',
-        '--wrap-nickname', args.wrap_nickname,
-        '--target-nickname', args.nickname,
-        '--algorithm', args.algorithm,
-        '-o', wrapped_key_file
-    ])
+    ipautil.run(
+        [
+            paths.PKI,
+            "-d",
+            args.nssdb_path,
+            "-C",
+            args.nssdb_pwdfile,
+            "ca-authority-key-export",
+            "--wrap-nickname",
+            args.wrap_nickname,
+            "--target-nickname",
+            args.nickname,
+            "--algorithm",
+            args.algorithm,
+            "-o",
+            wrapped_key_file,
+        ]
+    )
 
     nssdb = NSSDatabase(args.nssdb_path)
-    nssdb.run_certutil([
-        '-L',
-        '-n', args.nickname,
-        '-a',
-        '-o', certificate_file,
-    ])
-    with open(wrapped_key_file, 'rb') as f:
+    nssdb.run_certutil(
+        ["-L", "-n", args.nickname, "-a", "-o", certificate_file,]
+    )
+    with open(wrapped_key_file, "rb") as f:
         wrapped_key = f.read()
-    with open(certificate_file, 'r') as f:
+    with open(certificate_file, "r") as f:
         certificate = f.read()
 
-    data = {
-        'wrapped_key': wrapped_key,
-        'certificate': certificate
-    }
+    data = {"wrapped_key": wrapped_key, "certificate": certificate}
     common.json_dump(data, args.exportfile)
 
 
@@ -53,32 +55,25 @@ def default_parser():
     """Generic interface
     """
     parser = common.mkparser(
-        supports_import=False,
-        description='ipa-custodia NSS wrapped cert handler',
+        supports_import=False, description="ipa-custodia NSS wrapped cert handler",
     )
     parser.add_argument(
-        '--nssdb',
-        dest='nssdb_path',
-        help='path to NSS DB',
-        required=True
+        "--nssdb", dest="nssdb_path", help="path to NSS DB", required=True
     )
     parser.add_argument(
-        '--pwdfile',
-        dest='nssdb_pwdfile',
-        help='path to password file for NSS DB',
-        required=True
+        "--pwdfile",
+        dest="nssdb_pwdfile",
+        help="path to password file for NSS DB",
+        required=True,
     )
     parser.add_argument(
-        '--wrap-nickname',
-        dest='wrap_nickname',
-        help='nick name of wrapping key',
-        required=True
+        "--wrap-nickname",
+        dest="wrap_nickname",
+        help="nick name of wrapping key",
+        required=True,
     )
     parser.add_argument(
-        '--nickname',
-        dest='nickname',
-        help='nick name of target key',
-        required=True
+        "--nickname", dest="nickname", help="nick name of target key", required=True
     )
     return parser
 
@@ -88,29 +83,26 @@ def pki_tomcat_parser():
     """
     parser = common.mkparser(
         supports_import=False,
-        description='ipa-custodia pki-tomcat NSS wrapped cert handler',
+        description="ipa-custodia pki-tomcat NSS wrapped cert handler",
     )
     parser.add_argument(
-        '--nickname',
-        dest='nickname',
-        help='nick name of target key',
-        required=True
+        "--nickname", dest="nickname", help="nick name of target key", required=True
     )
 
     # Caller must specify a cipher.  This gets passed on to
     # the 'pki ca-authority-key-export' command (part of
     # Dogtag) via its own --algorithm option.
     parser.add_argument(
-        '--algorithm',
-        dest='algorithm',
-        help='OID of symmetric wrap algorithm',
-        required=True
+        "--algorithm",
+        dest="algorithm",
+        help="OID of symmetric wrap algorithm",
+        required=True,
     )
 
     parser.set_defaults(
         nssdb_path=paths.PKI_TOMCAT_ALIAS_DIR,
         nssdb_pwdfile=paths.PKI_TOMCAT_ALIAS_PWDFILE_TXT,
-        wrap_nickname='caSigningCert cert-pki-ca',
+        wrap_nickname="caSigningCert cert-pki-ca",
     )
     return parser
 
@@ -122,5 +114,5 @@ def main(parser=None):
     common.main(parser, export_key, None)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

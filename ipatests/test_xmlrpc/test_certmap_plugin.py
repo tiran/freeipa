@@ -8,92 +8,91 @@ import pytest
 from ipalib import api, errors
 from ipapython.dn import DN
 from ipatests.test_xmlrpc.xmlrpc_test import XMLRPC_test, raises_exact
-from ipatests.test_xmlrpc.tracker.certmap_plugin import (CertmapruleTracker,
-                                                         CertmapconfigTracker)
+from ipatests.test_xmlrpc.tracker.certmap_plugin import (
+    CertmapruleTracker,
+    CertmapconfigTracker,
+)
 from ipatests.test_xmlrpc.tracker.user_plugin import UserTracker
 from ipatests.util import assert_deepequal
 from ipatests.util import change_principal, unlock_principal_password
 
 
 certmaprule_create_params = {
-        u'cn': u'test_rule',
-        u'description': u'Certificate mapping and matching rule for test '
-                        u'purposes',
-        u'ipacertmapmaprule': u'arbitrary free-form mapping rule defined and '
-                              u'consumed by SSSD',
-        u'ipacertmapmatchrule': u'arbitrary free-form matching rule defined '
-                                u'and consumed by SSSD',
-        u'associateddomain': api.env.domain,
-        u'ipacertmappriority': u'1',
+    u"cn": u"test_rule",
+    u"description": u"Certificate mapping and matching rule for test " u"purposes",
+    u"ipacertmapmaprule": u"arbitrary free-form mapping rule defined and "
+    u"consumed by SSSD",
+    u"ipacertmapmatchrule": u"arbitrary free-form matching rule defined "
+    u"and consumed by SSSD",
+    u"associateddomain": api.env.domain,
+    u"ipacertmappriority": u"1",
 }
 
 certmaprule_create_trusted_params = {
-    u'cn': u'test_trusted_rule',
-    u'description': u'Certificate mapping and matching rule for test '
-                    u'purposes for trusted domain',
-    u'ipacertmapmaprule': u'altsecurityidentities=X509:<some map>',
-    u'ipacertmapmatchrule': u'arbitrary free-form matching rule defined '
-                            u'and consumed by SSSD',
-    u'associateddomain': api.env.domain,
-    u'ipacertmappriority': u'1',
+    u"cn": u"test_trusted_rule",
+    u"description": u"Certificate mapping and matching rule for test "
+    u"purposes for trusted domain",
+    u"ipacertmapmaprule": u"altsecurityidentities=X509:<some map>",
+    u"ipacertmapmatchrule": u"arbitrary free-form matching rule defined "
+    u"and consumed by SSSD",
+    u"associateddomain": api.env.domain,
+    u"ipacertmappriority": u"1",
 }
 
 certmaprule_update_params = {
-        u'description': u'Changed description',
-        u'ipacertmapmaprule': u'changed arbitrary mapping rule',
-        u'ipacertmapmatchrule': u'changed arbitrary maching rule',
-        u'ipacertmappriority': u'5',
+    u"description": u"Changed description",
+    u"ipacertmapmaprule": u"changed arbitrary mapping rule",
+    u"ipacertmapmatchrule": u"changed arbitrary maching rule",
+    u"ipacertmappriority": u"5",
 }
 
 certmaprule_optional_params = (
-    'description',
-    'ipacertmapmaprule',
-    'ipacertmapmatchrule',
-    'ipaassociateddomain',
-    'ipacertmappriority',
+    "description",
+    "ipacertmapmaprule",
+    "ipacertmapmatchrule",
+    "ipaassociateddomain",
+    "ipacertmappriority",
 )
 
-certmapconfig_update_params = {u'ipacertmappromptusername': u'TRUE'}
+certmapconfig_update_params = {u"ipacertmappromptusername": u"TRUE"}
 
-CREATE_PERM = u'System: Add Certmap Rules'
-READ_PERM = u'System: Read Certmap Rules'
-UPDATE_PERM = u'System: Modify Certmap Rules'
-DELETE_PERM = u'System: Delete Certmap Rules'
+CREATE_PERM = u"System: Add Certmap Rules"
+READ_PERM = u"System: Read Certmap Rules"
+UPDATE_PERM = u"System: Modify Certmap Rules"
+DELETE_PERM = u"System: Delete Certmap Rules"
 
 certmaprule_permissions = {
-    u'C': CREATE_PERM,
-    u'R': READ_PERM,
-    u'U': UPDATE_PERM,
-    u'D': DELETE_PERM,
+    u"C": CREATE_PERM,
+    u"R": READ_PERM,
+    u"U": UPDATE_PERM,
+    u"D": DELETE_PERM,
 }
 
-CERTMAP_USER = u'cuser'
-CERTMAP_PASSWD = 'Secret123'
+CERTMAP_USER = u"cuser"
+CERTMAP_PASSWD = "Secret123"
 
 
 def dontfill_idfn(dont_fill):
-    return u"dont_fill=({})".format(', '.join([
-        u"{}".format(d) for d in dont_fill
-    ]))
+    return u"dont_fill=({})".format(", ".join([u"{}".format(d) for d in dont_fill]))
 
 
 def update_idfn(update):
-    return ', '.join(["{}: {}".format(k, v) for k, v in update.items()])
+    return ", ".join(["{}: {}".format(k, v) for k, v in update.items()])
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def certmap_rule(request, xmlrpc_setup):
     tracker = CertmapruleTracker(**certmaprule_create_params)
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def certmap_rule_trusted_domain(request, xmlrpc_setup):
     tracker = CertmapruleTracker(**certmaprule_create_trusted_params)
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def certmap_config(request, xmlrpc_setup):
     tracker = CertmapconfigTracker()
     return tracker.make_fixture(request)
@@ -101,11 +100,13 @@ def certmap_config(request, xmlrpc_setup):
 
 class TestCRUD(XMLRPC_test):
     @pytest.mark.parametrize(
-        'dont_fill',
-        itertools.chain(*[
-            itertools.combinations(certmaprule_optional_params, l)
-            for l in range(len(certmaprule_optional_params)+1)
-        ]),
+        "dont_fill",
+        itertools.chain(
+            *[
+                itertools.combinations(certmaprule_optional_params, l)
+                for l in range(len(certmaprule_optional_params) + 1)
+            ]
+        ),
         ids=dontfill_idfn,
     )
     def test_create(self, dont_fill, certmap_rule):
@@ -123,10 +124,12 @@ class TestCRUD(XMLRPC_test):
         certmap_rule.ensure_exists()
         certmap_rule.find()
 
-    @pytest.mark.parametrize('update', [
-            dict(u) for l in range(1, len(certmaprule_update_params)+1)
-            for u in itertools.combinations(
-                list(certmaprule_update_params.items()), l)
+    @pytest.mark.parametrize(
+        "update",
+        [
+            dict(u)
+            for l in range(1, len(certmaprule_update_params) + 1)
+            for u in itertools.combinations(list(certmaprule_update_params.items()), l)
         ],
         ids=update_idfn,
     )
@@ -148,8 +151,10 @@ class TestCRUD(XMLRPC_test):
         else:
             certmap_rule_trusted_domain.exists = True
             certmap_rule_trusted_domain.ensure_missing()
-            raise AssertionError("Expected validation error for "
-                                 "altSecurityIdentities used for IPA domain")
+            raise AssertionError(
+                "Expected validation error for "
+                "altSecurityIdentities used for IPA domain"
+            )
 
 
 class TestEnableDisable(XMLRPC_test):
@@ -166,7 +171,7 @@ class TestConfig(XMLRPC_test):
     def test_config_mod(self, certmap_config):
         certmap_config.update(
             certmapconfig_update_params,
-            {k: [v] for k, v in certmapconfig_update_params.items()}
+            {k: [v] for k, v in certmapconfig_update_params.items()},
         )
 
     def test_config_show(self, certmap_config):
@@ -174,49 +179,51 @@ class TestConfig(XMLRPC_test):
 
 
 certmapdata_create_params = {
-    u'issuer': u'CN=CA,O=EXAMPLE.ORG',
-    u'subject': u'CN={},O=EXAMPLE.ORG'.format(CERTMAP_USER),
-    u'ipacertmapdata': (u'X509:<I>O=EXAMPLE.ORG,CN=CA'
-                        u'<S>O=EXAMPLE.ORG,CN={}'.format(CERTMAP_USER)),
-    u'certificate': (
-        u'MIICwzCCAaugAwIBAgICP9wwDQYJKoZIhvcNAQELBQAwIzEUMBIGA1UEChMLRVhB\n\r'
-        'TVBMRS5PUkcxCzAJBgNVBAMTAkNBMB4XDTE3MDIxMDEzMjAyNVoXDTE3MDUxMDEz\n\r'
-        'MjAyNVowJjEUMBIGA1UEChMLRVhBTVBMRS5PUkcxDjAMBgNVBAMTBWN1c2VyMIIB\n\r'
-        'IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlEBxZ6RULSZZ+nW1YfJUfCaX\n\r'
-        'wHIIWJeAoU98m7dbdUtkZMgLCPXiceIkCkcHu0DLS3wYlsL6VDG+0nIpT56Qkxph\n\r'
-        '+qpWGdVptnuVZ5dEthbluoopzxpkAAz3ywM3NqfTCM78G9GQvftUZEOlwnfyEBbY\n\r'
-        'XXs2wBhynrVTZcpL+ORXMpzVAallU63/YUExNvBzHlqdGHy+pPJSw1gsRTpLm75p\n\r'
-        '36r3bn/5cnIih1WUygC0WnjxXQwqOdGUauBp/Z8JVRuLSe8qbPfcl/voQGnSt3u2\n\r'
-        '9CFkDKpMMp6pv/3RbnOmMwSZGO0/n4G13qEdoneIghF1SE9qaxFGWk8mSDYc5QID\n\r'
-        'AQABMA0GCSqGSIb3DQEBCwUAA4IBAQCKrvO7AUCt9YOyJ0RioDxgQZVJqQ0/E877\n\r'
-        'vBP3HPwN0xkiGgASKtEDi3uLWGQfDgJFX5qXtK1qu7yiM86cbKq9PlkLTC6UowjP\n\r'
-        'iaFAaVBwbS3nLVo731gn5cCJqZ0QrDt2NDiXaGxo4tBcqc/Y/taw5Py3f59tMDk6\n\r'
-        'TnTmKmFnI+hB4+oxZhpcFj6bX35XMJXnRyekraE5VWtSbq57SXiRnINW4gNS5B6w\n\r'
-        'dYUGo551tfFq+DOnSl0H7NnnL3q4VzCH/1AMOownorgVsw4LqMgY0NiaD/yqJyKe\n\r'
-        'SggODAjRznNYx/Sk/At/eStqDxMHjP9X8AucGFIt76bEwHAAL2uu\n'
+    u"issuer": u"CN=CA,O=EXAMPLE.ORG",
+    u"subject": u"CN={},O=EXAMPLE.ORG".format(CERTMAP_USER),
+    u"ipacertmapdata": (
+        u"X509:<I>O=EXAMPLE.ORG,CN=CA" u"<S>O=EXAMPLE.ORG,CN={}".format(CERTMAP_USER)
+    ),
+    u"certificate": (
+        u"MIICwzCCAaugAwIBAgICP9wwDQYJKoZIhvcNAQELBQAwIzEUMBIGA1UEChMLRVhB\n\r"
+        "TVBMRS5PUkcxCzAJBgNVBAMTAkNBMB4XDTE3MDIxMDEzMjAyNVoXDTE3MDUxMDEz\n\r"
+        "MjAyNVowJjEUMBIGA1UEChMLRVhBTVBMRS5PUkcxDjAMBgNVBAMTBWN1c2VyMIIB\n\r"
+        "IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlEBxZ6RULSZZ+nW1YfJUfCaX\n\r"
+        "wHIIWJeAoU98m7dbdUtkZMgLCPXiceIkCkcHu0DLS3wYlsL6VDG+0nIpT56Qkxph\n\r"
+        "+qpWGdVptnuVZ5dEthbluoopzxpkAAz3ywM3NqfTCM78G9GQvftUZEOlwnfyEBbY\n\r"
+        "XXs2wBhynrVTZcpL+ORXMpzVAallU63/YUExNvBzHlqdGHy+pPJSw1gsRTpLm75p\n\r"
+        "36r3bn/5cnIih1WUygC0WnjxXQwqOdGUauBp/Z8JVRuLSe8qbPfcl/voQGnSt3u2\n\r"
+        "9CFkDKpMMp6pv/3RbnOmMwSZGO0/n4G13qEdoneIghF1SE9qaxFGWk8mSDYc5QID\n\r"
+        "AQABMA0GCSqGSIb3DQEBCwUAA4IBAQCKrvO7AUCt9YOyJ0RioDxgQZVJqQ0/E877\n\r"
+        "vBP3HPwN0xkiGgASKtEDi3uLWGQfDgJFX5qXtK1qu7yiM86cbKq9PlkLTC6UowjP\n\r"
+        "iaFAaVBwbS3nLVo731gn5cCJqZ0QrDt2NDiXaGxo4tBcqc/Y/taw5Py3f59tMDk6\n\r"
+        "TnTmKmFnI+hB4+oxZhpcFj6bX35XMJXnRyekraE5VWtSbq57SXiRnINW4gNS5B6w\n\r"
+        "dYUGo551tfFq+DOnSl0H7NnnL3q4VzCH/1AMOownorgVsw4LqMgY0NiaD/yqJyKe\n\r"
+        "SggODAjRznNYx/Sk/At/eStqDxMHjP9X8AucGFIt76bEwHAAL2uu\n"
     ),
 }
 
 
 @pytest.fixture
 def certmap_user(request):
-    user = UserTracker(CERTMAP_USER, u'certmap', u'user')
+    user = UserTracker(CERTMAP_USER, u"certmap", u"user")
     return user.make_fixture(request)
 
 
 def addcertmap_id(options):
     if options:
-        return u', '.join(list(options))
+        return u", ".join(list(options))
     else:
-        return u' '
+        return u" "
 
 
 class TestAddRemoveCertmap(XMLRPC_test):
     @pytest.mark.parametrize(
-        'options', [
-            dict(o) for l in range(len(certmapdata_create_params)+1)
-            for o in itertools.combinations(
-                list(certmapdata_create_params.items()), l)
+        "options",
+        [
+            dict(o)
+            for l in range(len(certmapdata_create_params) + 1)
+            for o in itertools.combinations(list(certmapdata_create_params.items()), l)
         ],
         ids=addcertmap_id,
     )
@@ -227,26 +234,24 @@ class TestAddRemoveCertmap(XMLRPC_test):
 
     def test_remove_certmap(self, certmap_user):
         certmap_user.ensure_exists()
-        certmap_user.add_certmap(ipacertmapdata=u'rawdata')
-        certmap_user.remove_certmap(ipacertmapdata=u'rawdata')
+        certmap_user.add_certmap(ipacertmapdata=u"rawdata")
+        certmap_user.remove_certmap(ipacertmapdata=u"rawdata")
 
     def test_add_certmap_multiple_subject(self, certmap_user):
         certmap_user.ensure_exists()
-        cmd = certmap_user.make_command('user_add_certmapdata',
-                                        certmap_user.name)
-        with raises_exact(errors.ConversionError(
-                name='subject',
-                error=u"Only one value is allowed")):
-            cmd(subject=(u'CN=subject1', u'CN=subject2'), issuer=u'CN=issuer')
+        cmd = certmap_user.make_command("user_add_certmapdata", certmap_user.name)
+        with raises_exact(
+            errors.ConversionError(name="subject", error=u"Only one value is allowed")
+        ):
+            cmd(subject=(u"CN=subject1", u"CN=subject2"), issuer=u"CN=issuer")
 
     def test_add_certmap_multiple_issuer(self, certmap_user):
         certmap_user.ensure_exists()
-        cmd = certmap_user.make_command('user_add_certmapdata',
-                                        certmap_user.name)
-        with raises_exact(errors.ConversionError(
-                name='issuer',
-                error=u"Only one value is allowed")):
-            cmd(issuer=(u'CN=issuer1', u'CN=issuer2'), subject=u'CN=subject')
+        cmd = certmap_user.make_command("user_add_certmapdata", certmap_user.name)
+        with raises_exact(
+            errors.ConversionError(name="issuer", error=u"Only one value is allowed")
+        ):
+            cmd(issuer=(u"CN=issuer1", u"CN=issuer2"), subject=u"CN=subject")
 
 
 class EWE:
@@ -256,6 +261,7 @@ class EWE:
     given to the user.
 
     """
+
     def __init__(self, user, password):
         """
         @param user     Change to this user before calling the command
@@ -312,7 +318,8 @@ class EWE:
 
     def __exit__(self, exc_type, exc_value, tb):
         self.change_principal_cm.__exit__(  # pylint: disable=no-member
-            exc_type, exc_value, tb)
+            exc_type, exc_value, tb
+        )
         if self.exception:
             return self.assert_raises_cm.__exit__(exc_type, exc_value, tb)
         else:
@@ -331,25 +338,24 @@ def permissions_idfn(perms):
         if long_name in perms:
             i.append(short_name)
         else:
-            i.append('-')
-    return ''.join(i)
+            i.append("-")
+    return "".join(i)
 
 
 def change_permissions_bindtype(perm, bindtype):
-    orig = api.Command.permission_show(perm)['result']['ipapermbindruletype']
+    orig = api.Command.permission_show(perm)["result"]["ipapermbindruletype"]
     if orig != (bindtype,):
         api.Command.permission_mod(perm, ipapermbindruletype=bindtype)
 
     return orig
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def bindtype_permission(request, xmlrpc_setup):
     orig_bindtype = {}
     # set bindtype to permission to actually test the permission
     for perm_name in certmaprule_permissions.values():
-        orig_bindtype[perm_name] = change_permissions_bindtype(
-            perm_name, u'permission')
+        orig_bindtype[perm_name] = change_permissions_bindtype(perm_name, u"permission")
 
     def finalize():
         for perm_name, bindtype in orig_bindtype.items():
@@ -359,23 +365,25 @@ def bindtype_permission(request, xmlrpc_setup):
 
 
 @pytest.fixture(
-    scope='class',
+    scope="class",
     params=itertools.chain(
-        *[itertools.combinations(list(certmaprule_permissions.values()), l)
-          for l in range(len(list(certmaprule_permissions.values())) + 1)]
+        *[
+            itertools.combinations(list(certmaprule_permissions.values()), l)
+            for l in range(len(list(certmaprule_permissions.values())) + 1)
+        ]
     ),
     ids=permissions_idfn,
 )
 def certmap_user_permissions(request, bindtype_permission):
-    tmp_password = u'Initial123'
+    tmp_password = u"Initial123"
 
-    priv_name = u'test_certmap_privilege'
-    role_name = u'test_certmap_role'
+    priv_name = u"test_certmap_privilege"
+    role_name = u"test_certmap_role"
 
-    api.Command.user_add(CERTMAP_USER, givenname=u'Certmap', sn=u'User',
-                         userpassword=tmp_password)
-    unlock_principal_password(CERTMAP_USER, tmp_password,
-                              CERTMAP_PASSWD)
+    api.Command.user_add(
+        CERTMAP_USER, givenname=u"Certmap", sn=u"User", userpassword=tmp_password
+    )
+    unlock_principal_password(CERTMAP_USER, tmp_password, CERTMAP_PASSWD)
 
     api.Command.privilege_add(priv_name)
     for perm_name in request.param:
@@ -430,10 +438,7 @@ class TestPermission(XMLRPC_test):
         certmap_rule.ensure_exists()
 
         with self.execute_with_expected(
-            certmap_user_permissions,
-            [
-                (READ_PERM, errors.NotFound, None,),
-            ],
+            certmap_user_permissions, [(READ_PERM, errors.NotFound, None,),],
         ):
             certmap_rule.retrieve()
 
@@ -441,35 +446,32 @@ class TestPermission(XMLRPC_test):
         certmap_rule.ensure_exists()
 
         expected_without_read = {
-            u'count': 0,
-            u'result': (),
-            u'summary': u'0 Certificate Identity Mapping Rules matched',
-            u'truncated': False,
+            u"count": 0,
+            u"result": (),
+            u"summary": u"0 Certificate Identity Mapping Rules matched",
+            u"truncated": False,
         }
         expected_ok = {
-            u'count': 1,
-            u'result': [{
-                k: (v,) for k, v in certmaprule_create_params.items()
-            }],
-            u'summary': u'1 Certificate Identity Mapping Rule matched',
-            u'truncated': False,
+            u"count": 1,
+            u"result": [{k: (v,) for k, v in certmaprule_create_params.items()}],
+            u"summary": u"1 Certificate Identity Mapping Rule matched",
+            u"truncated": False,
         }
-        expected_ok[u'result'][0][u'dn'] = DN(
-            (u'cn', expected_ok[u'result'][0][u'cn'][0]),
+        expected_ok[u"result"][0][u"dn"] = DN(
+            (u"cn", expected_ok[u"result"][0][u"cn"][0]),
             api.env.container_certmaprules,
             api.env.basedn,
         )
-        expected_ok[u'result'][0][u'ipaenabledflag'] = (u'TRUE',)
+        expected_ok[u"result"][0][u"ipaenabledflag"] = (u"TRUE",)
         with self.execute_with_expected(
             certmap_user_permissions,
-            [
-                (READ_PERM, None, expected_without_read,),
-            ],
+            [(READ_PERM, None, expected_without_read,),],
             expected_ok,
         ) as ewe:
             find = certmap_rule.make_find_command()
-            res = find(**{k: v for k, v in certmaprule_create_params.items()
-                          if k != u'dn'})
+            res = find(
+                **{k: v for k, v in certmaprule_create_params.items() if k != u"dn"}
+            )
             ewe.send(res)
 
     def test_update(self, certmap_rule, certmap_user_permissions):
@@ -492,10 +494,7 @@ class TestPermission(XMLRPC_test):
         certmap_rule.ensure_exists()
 
         with self.execute_with_expected(
-            certmap_user_permissions,
-            [
-                (DELETE_PERM, errors.ACIError, None,),
-            ],
+            certmap_user_permissions, [(DELETE_PERM, errors.ACIError, None,),],
         ):
             certmap_rule.delete()
 

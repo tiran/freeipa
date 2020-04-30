@@ -34,26 +34,24 @@ try:
 except ImportError:
     pass
 
-ENTRY_EXIST = 'This entry already exists'
-FIELD_REQ = 'Required field'
-INV_NAME = ("invalid 'name': Leading and trailing spaces are "
-            "not allowed")
-ERR_INCLUDE = 'May only contain letters, numbers, -, _, and space'
-SERVICE_ADDED = 'Self Service Permission successfully added'
+ENTRY_EXIST = "This entry already exists"
+FIELD_REQ = "Required field"
+INV_NAME = "invalid 'name': Leading and trailing spaces are " "not allowed"
+ERR_INCLUDE = "May only contain letters, numbers, -, _, and space"
+SERVICE_ADDED = "Self Service Permission successfully added"
 
 
 def reset_passwd(self, login, pwd):
-            self.navigate_to_entity(user.ENTITY)
-            self.navigate_to_record(login)
-            self.action_list_action('reset_password', False)
-            self.fill_password('password', pwd)
-            self.fill_password('password2', pwd)
-            self.dialog_button_click('confirm')
+    self.navigate_to_entity(user.ENTITY)
+    self.navigate_to_record(login)
+    self.action_list_action("reset_password", False)
+    self.fill_password("password", pwd)
+    self.fill_password("password2", pwd)
+    self.dialog_button_click("confirm")
 
 
 @pytest.mark.tier1
 class test_selfservice(UI_driver):
-
     @screenshot
     def test_crud(self):
         """
@@ -68,8 +66,7 @@ class test_selfservice(UI_driver):
         Add self service with all attribute
         """
         self.init_app()
-        self.add_record(data_selfservice.ENTITY, data_selfservice.DATA_ALL,
-                        delete=True)
+        self.add_record(data_selfservice.ENTITY, data_selfservice.DATA_ALL, delete=True)
 
     @screenshot
     def test_add_scenarios(self):
@@ -84,28 +81,29 @@ class test_selfservice(UI_driver):
 
         # check if record is added
         for record in records:
-            self.assert_record(record['pkey'])
+            self.assert_record(record["pkey"])
 
         # cleanup
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.select_multiple_records(records)
-        self.facet_button_click('remove')
-        self.dialog_button_click('ok')
+        self.facet_button_click("remove")
+        self.dialog_button_click("ok")
         for record in records:
-            self.assert_record(record['pkey'], negative=True)
+            self.assert_record(record["pkey"], negative=True)
 
         # Add self service with Add and edit button
-        self.add_record(data_selfservice.ENTITY,
-                        data_selfservice.DATA1,
-                        dialog_btn='add_and_edit')
+        self.add_record(
+            data_selfservice.ENTITY, data_selfservice.DATA1, dialog_btn="add_and_edit"
+        )
 
         # cleanup
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.delete(data_selfservice.ENTITY, [data_selfservice.DATA1])
 
         # Add self service with Add and cancel button
-        self.add_record(data_selfservice.ENTITY, data_selfservice.DATA1,
-                        dialog_btn='cancel')
+        self.add_record(
+            data_selfservice.ENTITY, data_selfservice.DATA1, dialog_btn="cancel"
+        )
 
     @screenshot
     def test_undo_reset(self):
@@ -117,18 +115,18 @@ class test_selfservice(UI_driver):
         self.add_record(data_selfservice.ENTITY, data_selfservice.DATA1)
         self.navigate_to_record(data_selfservice.PKEY1)
         self.fill_fields(data_selfservice.DATA2)
-        self.click_undo_button('attrs')
+        self.click_undo_button("attrs")
         self.wait_for_request()
         # if undo succeed, 'save' button remains disabled
-        self.assert_facet_button_enabled('save', enabled=False)
+        self.assert_facet_button_enabled("save", enabled=False)
 
         # Add self service permission and perform reset
         self.add_record(data_selfservice.ENTITY, data_selfservice.DATA1)
         self.navigate_to_record(data_selfservice.PKEY1)
         self.fill_fields(data_selfservice.DATA2)
-        self.facet_button_click('revert')
+        self.facet_button_click("revert")
         # if revert succeed, 'save' button remains disabled
-        self.assert_facet_button_enabled('save', enabled=False)
+        self.assert_facet_button_enabled("save", enabled=False)
 
     @screenshot
     def test_permission_negative(self):
@@ -139,8 +137,12 @@ class test_selfservice(UI_driver):
 
         # try to add duplicate entry
         self.add_record(data_selfservice.ENTITY, data_selfservice.DATA1)
-        self.add_record(data_selfservice.ENTITY, data_selfservice.DATA1,
-                        negative=True, pre_delete=False)
+        self.add_record(
+            data_selfservice.ENTITY,
+            data_selfservice.DATA1,
+            negative=True,
+            pre_delete=False,
+        )
         self.assert_last_error_dialog(ENTRY_EXIST)
         self.close_all_dialogs()
         self.delete(data_selfservice.ENTITY, [data_selfservice.DATA1])
@@ -149,67 +151,65 @@ class test_selfservice(UI_driver):
         # try to add permission without name and attribute
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.wait_for_request()
-        self.facet_button_click('add')
-        self.dialog_button_click('add')
-        self.assert_field_validation(FIELD_REQ, field='aciname')
-        self.dialog_button_click('cancel')
+        self.facet_button_click("add")
+        self.dialog_button_click("add")
+        self.assert_field_validation(FIELD_REQ, field="aciname")
+        self.dialog_button_click("cancel")
 
         # try to add permission without name but having attribute
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.wait_for_request()
-        self.facet_button_click('add')
-        self.check_option('attrs', 'displayname')
-        self.dialog_button_click('add')
-        self.assert_field_validation(FIELD_REQ, field='aciname')
-        self.dialog_button_click('cancel')
+        self.facet_button_click("add")
+        self.check_option("attrs", "displayname")
+        self.dialog_button_click("add")
+        self.assert_field_validation(FIELD_REQ, field="aciname")
+        self.dialog_button_click("cancel")
 
         # try to add permission without having attribute.
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.wait_for_request()
-        self.facet_button_click('add')
-        self.fill_textbox('aciname', data_selfservice.DATA1['pkey'])
-        self.dialog_button_click('add')
-        self.assert_field_validation(FIELD_REQ, field='attrs')
-        self.dialog_button_click('cancel')
+        self.facet_button_click("add")
+        self.fill_textbox("aciname", data_selfservice.DATA1["pkey"])
+        self.dialog_button_click("add")
+        self.assert_field_validation(FIELD_REQ, field="attrs")
+        self.dialog_button_click("cancel")
 
         # try to add aciname with leading space.
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.wait_for_request()
-        self.facet_button_click('add')
-        self.fill_textbox('aciname',
-                          ' {}'.format(data_selfservice.DATA1['pkey']))
-        self.check_option('attrs', 'audio')
-        self.dialog_button_click('add')
+        self.facet_button_click("add")
+        self.fill_textbox("aciname", " {}".format(data_selfservice.DATA1["pkey"]))
+        self.check_option("attrs", "audio")
+        self.dialog_button_click("add")
         self.assert_last_error_dialog(INV_NAME)
         self.close_all_dialogs()
 
         # try to add aciname with trailing space
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.wait_for_request()
-        self.facet_button_click('add')
-        self.fill_textbox('aciname',
-                          '{} '.format(data_selfservice.DATA1['pkey']))
-        self.check_option('attrs', 'audio')
-        self.dialog_button_click('add')
+        self.facet_button_click("add")
+        self.fill_textbox("aciname", "{} ".format(data_selfservice.DATA1["pkey"]))
+        self.check_option("attrs", "audio")
+        self.dialog_button_click("add")
         self.assert_last_error_dialog(INV_NAME)
-        self.dialog_button_click('cancel')
-        self.dialog_button_click('cancel')
+        self.dialog_button_click("cancel")
+        self.dialog_button_click("cancel")
 
         # try to add aciname with special char
         self.navigate_to_entity(data_selfservice.ENTITY)
         self.wait_for_request()
-        self.facet_button_click('add')
-        self.fill_textbox('aciname', '#%^')
-        self.dialog_button_click('add')
-        self.assert_field_validation(ERR_INCLUDE, field='aciname')
-        self.dialog_button_click('cancel')
+        self.facet_button_click("add")
+        self.fill_textbox("aciname", "#%^")
+        self.dialog_button_click("add")
+        self.assert_field_validation(ERR_INCLUDE, field="aciname")
+        self.dialog_button_click("cancel")
 
         # try to modify pesmission by removing all attributes
         self.add_record(data_selfservice.ENTITY, data_selfservice.DATA1)
-        self.navigate_to_record(data_selfservice.DATA1['pkey'])
-        self.check_option('attrs', 'businesscategory')
-        self.facet_button_click('save')
-        self.assert_field_validation(FIELD_REQ, field='attrs')
+        self.navigate_to_record(data_selfservice.DATA1["pkey"])
+        self.check_option("attrs", "businesscategory")
+        self.facet_button_click("save")
+        self.assert_field_validation(FIELD_REQ, field="attrs")
 
     @screenshot
     def test_del_multiple_permission(self):
@@ -219,12 +219,11 @@ class test_selfservice(UI_driver):
         self.init_app()
         self.add_record(data_selfservice.ENTITY, data_selfservice.DATA1)
         self.add_record(data_selfservice.ENTITY, data_selfservice.DATA)
-        self.delete(data_selfservice.ENTITY,
-                    [data_selfservice.DATA1,
-                     data_selfservice.DATA])
+        self.delete(
+            data_selfservice.ENTITY, [data_selfservice.DATA1, data_selfservice.DATA]
+        )
         # check if record deleted
-        for key in [data_selfservice.DATA1['pkey'],
-                    data_selfservice.DATA['pkey']]:
+        for key in [data_selfservice.DATA1["pkey"], data_selfservice.DATA["pkey"]]:
             self.assert_record(key, negative=True)
 
     @screenshot
@@ -234,24 +233,24 @@ class test_selfservice(UI_driver):
         """
         # try to add using enter key
         self.init_app()
-        self.add_record(data_selfservice.ENTITY,
-                        data_selfservice.DATA1,
-                        dialog_btn=None)
+        self.add_record(
+            data_selfservice.ENTITY, data_selfservice.DATA1, dialog_btn=None
+        )
         actions = ActionChains(self.driver)
         actions.send_keys(Keys.ENTER).perform()
         self.wait()
         self.assert_notification(assert_text=SERVICE_ADDED)
-        self.assert_record(data_selfservice.DATA1['pkey'])
+        self.assert_record(data_selfservice.DATA1["pkey"])
         self.close_notifications()
 
         # try to delete using enter key
         self.navigate_to_entity(data_selfservice.ENTITY)
-        self.select_record(data_selfservice.DATA1['pkey'])
-        self.facet_button_click('remove')
+        self.select_record(data_selfservice.DATA1["pkey"])
+        self.facet_button_click("remove")
         actions = ActionChains(self.driver)
         actions.send_keys(Keys.ENTER).perform()
         self.wait()
-        self.assert_notification(assert_text='1 item(s) deleted')
+        self.assert_notification(assert_text="1 item(s) deleted")
         self.close_notifications()
 
     @screenshot
@@ -259,7 +258,7 @@ class test_selfservice(UI_driver):
         """
         Try to delete sshkey after altering sshkey permission
         """
-        pwd = self.config.get('ipa_password')
+        pwd = self.config.get("ipa_password")
 
         self.init_app()
         self.add_record(user.ENTITY, user.DATA, navigate=False)
@@ -273,12 +272,12 @@ class test_selfservice(UI_driver):
 
         self.init_app()
         self.navigate_to_entity(data_selfservice.ENTITY)
-        self.navigate_to_record('Users can manage their own SSH public keys')
+        self.navigate_to_record("Users can manage their own SSH public keys")
         # to pass the validator, check some option from the options
-        self.check_option('attrs', 'carlicense')
+        self.check_option("attrs", "carlicense")
         # uncheck the ipasshpubkey checkbox.
-        self.check_option('attrs', 'ipasshpubkey')
-        self.facet_button_click('save')
+        self.check_option("attrs", "ipasshpubkey")
+        self.facet_button_click("save")
         self.close_notifications()
         self.logout()
 

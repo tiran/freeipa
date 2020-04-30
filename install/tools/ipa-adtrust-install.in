@@ -36,7 +36,8 @@ from ipaserver.install import adtrust, service
 from ipaserver.install.installutils import (
     read_password,
     check_server_configuration,
-    run_script)
+    run_script,
+)
 from ipapython.admintool import ScriptError
 from ipapython import version
 from ipapython import ipautil
@@ -55,42 +56,86 @@ log_file_name = paths.IPASERVER_INSTALL_LOG
 
 def parse_options():
     parser = IPAOptionParser(version=version.VERSION)
-    parser.add_option("-d", "--debug", dest="debug", action="store_true",
-                      default=False, help="print debugging information")
-    parser.add_option("--netbios-name", dest="netbios_name",
-                      help="NetBIOS name of the IPA domain")
+    parser.add_option(
+        "-d",
+        "--debug",
+        dest="debug",
+        action="store_true",
+        default=False,
+        help="print debugging information",
+    )
+    parser.add_option(
+        "--netbios-name", dest="netbios_name", help="NetBIOS name of the IPA domain"
+    )
 
     # no-msdcs has not effect, option is here just for backward compatibility
-    parser.add_option("--no-msdcs", dest="no_msdcs", action="store_true",
-                      default=False, help=SUPPRESS_HELP)
+    parser.add_option(
+        "--no-msdcs",
+        dest="no_msdcs",
+        action="store_true",
+        default=False,
+        help=SUPPRESS_HELP,
+    )
 
-    parser.add_option("--rid-base", dest="rid_base", type=int, default=1000,
-                      help="Start value for mapping UIDs and GIDs to RIDs")
-    parser.add_option("--secondary-rid-base", dest="secondary_rid_base",
-                      type=int, default=100000000,
-                      help="Start value of the secondary range for mapping "
-                           "UIDs and GIDs to RIDs")
-    parser.add_option("-U", "--unattended", dest="unattended",
-                      action="store_true",
-                      default=False,
-                      help="unattended installation never prompts the user")
-    parser.add_option("-a", "--admin-password",
-                      sensitive=True, dest="admin_password",
-                      help="admin user kerberos password")
-    parser.add_option("-A", "--admin-name",
-                      sensitive=True, dest="admin_name", default='admin',
-                      help="admin user principal")
-    parser.add_option("--add-sids", dest="add_sids", action="store_true",
-                      default=False, help="Add SIDs for existing users and"
-                                          " groups as the final step")
-    parser.add_option("--add-agents", dest="add_agents", action="store_true",
-                      default=False,
-                      help="Add IPA masters to a list of hosts allowed to "
-                      "serve information about users from trusted forests")
-    parser.add_option("--enable-compat",
-                      dest="enable_compat", default=False, action="store_true",
-                      help="Enable support for trusted domains for old "
-                           "clients")
+    parser.add_option(
+        "--rid-base",
+        dest="rid_base",
+        type=int,
+        default=1000,
+        help="Start value for mapping UIDs and GIDs to RIDs",
+    )
+    parser.add_option(
+        "--secondary-rid-base",
+        dest="secondary_rid_base",
+        type=int,
+        default=100000000,
+        help="Start value of the secondary range for mapping " "UIDs and GIDs to RIDs",
+    )
+    parser.add_option(
+        "-U",
+        "--unattended",
+        dest="unattended",
+        action="store_true",
+        default=False,
+        help="unattended installation never prompts the user",
+    )
+    parser.add_option(
+        "-a",
+        "--admin-password",
+        sensitive=True,
+        dest="admin_password",
+        help="admin user kerberos password",
+    )
+    parser.add_option(
+        "-A",
+        "--admin-name",
+        sensitive=True,
+        dest="admin_name",
+        default="admin",
+        help="admin user principal",
+    )
+    parser.add_option(
+        "--add-sids",
+        dest="add_sids",
+        action="store_true",
+        default=False,
+        help="Add SIDs for existing users and" " groups as the final step",
+    )
+    parser.add_option(
+        "--add-agents",
+        dest="add_agents",
+        action="store_true",
+        default=False,
+        help="Add IPA masters to a list of hosts allowed to "
+        "serve information about users from trusted forests",
+    )
+    parser.add_option(
+        "--enable-compat",
+        dest="enable_compat",
+        default=False,
+        action="store_true",
+        help="Enable support for trusted domains for old " "clients",
+    )
 
     options, _args = parser.parse_args()
     safe_options = parser.get_safe_opts(options)
@@ -99,10 +144,13 @@ def parse_options():
 
 
 def read_admin_password(admin_name):
-    print("Configuring cross-realm trusts for IPA server requires password "
-          "for user '%s'." % (admin_name))
-    print("This user is a regular system account used for IPA server "
-          "administration.")
+    print(
+        "Configuring cross-realm trusts for IPA server requires password "
+        "for user '%s'." % (admin_name)
+    )
+    print(
+        "This user is a regular system account used for IPA server " "administration."
+    )
     print("")
     admin_password = read_password(admin_name, confirm=False, validate=None)
     return admin_password
@@ -110,10 +158,9 @@ def read_admin_password(admin_name):
 
 def ensure_admin_kinit(admin_name, admin_password):
     try:
-        ipautil.run([paths.KINIT, admin_name], stdin=admin_password+'\n')
+        ipautil.run([paths.KINIT, admin_name], stdin=admin_password + "\n")
     except ipautil.CalledProcessError:
-        print("There was error to automatically re-kinit your admin user "
-              "ticket.")
+        print("There was error to automatically re-kinit your admin user " "ticket.")
         return False
     return True
 
@@ -124,23 +171,25 @@ def main():
     if os.getegid() != 0:
         raise ScriptError("Must be root to setup AD trusts on server")
 
-    standard_logging_setup(log_file_name, debug=options.debug, filemode='a')
-    print("\nThe log file for this installation can be found in %s"
-          % log_file_name)
+    standard_logging_setup(log_file_name, debug=options.debug, filemode="a")
+    print("\nThe log file for this installation can be found in %s" % log_file_name)
 
-    logger.debug('%s was invoked with options: %s', sys.argv[0], safe_options)
-    logger.debug(
-        "missing options might be asked for interactively later\n")
-    logger.debug('IPA version %s', version.VENDOR_VERSION)
+    logger.debug("%s was invoked with options: %s", sys.argv[0], safe_options)
+    logger.debug("missing options might be asked for interactively later\n")
+    logger.debug("IPA version %s", version.VENDOR_VERSION)
 
     check_server_configuration()
 
     fstore = sysrestore.FileStore(paths.SYSRESTORE)
 
-    print("================================================================"
-          "==============")
-    print("This program will setup components needed to establish trust to "
-          "AD domains for")
+    print(
+        "================================================================"
+        "=============="
+    )
+    print(
+        "This program will setup components needed to establish trust to "
+        "AD domains for"
+    )
     print("the FreeIPA Server.")
     print("")
     print("This includes:")
@@ -159,10 +208,7 @@ def main():
 
     # Initialize the ipalib api
     api.bootstrap(
-        in_server=True,
-        debug=options.debug,
-        context='install',
-        confdir=paths.ETC_IPA
+        in_server=True, debug=options.debug, context="install", confdir=paths.ETC_IPA
     )
     api.finalize()
 
@@ -181,33 +227,37 @@ def main():
     except errors.CCacheError as e:
         raise ScriptError(
             "Must have Kerberos credentials to setup AD trusts on server: "
-            "{err}".format(err=e))
+            "{err}".format(err=e)
+        )
 
     try:
         api.Backend.ldap2.connect()
     except errors.ACIError:
         raise ScriptError(
             "Outdated Kerberos credentials. "
-            "Use kdestroy and kinit to update your ticket")
+            "Use kdestroy and kinit to update your ticket"
+        )
     except errors.DatabaseError:
         raise ScriptError(
-            "Cannot connect to the LDAP database. Please check if IPA "
-            "is running")
+            "Cannot connect to the LDAP database. Please check if IPA " "is running"
+        )
 
     try:
-        user = api.Command.user_show(
-            principal.partition('@')[0].partition('/')[0])['result']
-        group = api.Command.group_show(u'admins')['result']
-        if not (user['uid'][0] in group['member_user'] and
-                group['cn'][0] in user['memberof_group']):
-            raise errors.RequirementError(name='admins group membership')
+        user = api.Command.user_show(principal.partition("@")[0].partition("/")[0])[
+            "result"
+        ]
+        group = api.Command.group_show(u"admins")["result"]
+        if not (
+            user["uid"][0] in group["member_user"]
+            and group["cn"][0] in user["memberof_group"]
+        ):
+            raise errors.RequirementError(name="admins group membership")
     except errors.RequirementError as e:
         raise ScriptError(
             "Must have administrative privileges to setup AD trusts on server"
         )
     except Exception as e:
-        raise ScriptError(
-            "Unrecognized error during check of admin rights: %s" % e)
+        raise ScriptError("Unrecognized error during check of admin rights: %s" % e)
 
     adtrust.install_check(True, options, api)
     adtrust.install(True, options, fstore, api)
@@ -222,7 +272,8 @@ def main():
     else:
         api.Command.dns_update_system_records()
 
-    print("""
+    print(
+        """
 =============================================================================
 Setup complete
 
@@ -243,22 +294,23 @@ You must make sure these network ports are open:
 See the ipa-adtrust-install(1) man page for more details
 
 =============================================================================
-""")
+"""
+    )
     if admin_password:
         admin_kinited = ensure_admin_kinit(options.admin_name, admin_password)
 
     if not admin_kinited:
-        print("""
+        print(
+            """
 WARNING: you MUST re-kinit admin user before using 'ipa trust-*' commands
 family in order to re-generate Kerberos tickets to include AD-specific
-information""")
+information"""
+        )
 
     api.Backend.ldap2.disconnect()
 
     return 0
 
-if __name__ == '__main__':
-    run_script(
-        main,
-        log_file_name=log_file_name,
-        operation_name='ipa-adtrust-install')
+
+if __name__ == "__main__":
+    run_script(main, log_file_name=log_file_name, operation_name="ipa-adtrust-install")

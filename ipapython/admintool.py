@@ -42,9 +42,10 @@ logger = logging.getLogger(__name__)
 class ScriptError(Exception):
     """An exception that records an error message and a return value
     """
-    def __init__(self, msg='', rval=1):
+
+    def __init__(self, msg="", rval=1):
         if msg is None:
-            msg = ''
+            msg = ""
         super(ScriptError, self).__init__(msg)
         self.rval = rval
 
@@ -89,6 +90,7 @@ class AdminTool:
 
     See the setup_logging method for more info on logging.
     """
+
     command_name = None
     log_file_name = None
     usage = None
@@ -99,9 +101,12 @@ class AdminTool:
     @classmethod
     def make_parser(cls):
         """Create an option parser shared across all instances of this class"""
-        parser = config.IPAOptionParser(version=version.VERSION,
-            usage=cls.usage, formatter=config.IPAFormatter(),
-            description=cls.description)
+        parser = config.IPAOptionParser(
+            version=version.VERSION,
+            usage=cls.usage,
+            formatter=config.IPAFormatter(),
+            description=cls.description,
+        )
         cls.option_parser = parser
         cls.add_options(parser)
 
@@ -113,15 +118,38 @@ class AdminTool:
         :param debug_option: Add a --debug option as an alias to --verbose
         """
         group = OptionGroup(parser, "Logging and output options")
-        group.add_option("-v", "--verbose", dest="verbose", default=False,
-            action="store_true", help="print debugging information")
+        group.add_option(
+            "-v",
+            "--verbose",
+            dest="verbose",
+            default=False,
+            action="store_true",
+            help="print debugging information",
+        )
         if debug_option:
-            group.add_option("-d", "--debug", dest="verbose", default=False,
-                action="store_true", help="alias for --verbose (deprecated)")
-        group.add_option("-q", "--quiet", dest="quiet", default=False,
-            action="store_true", help="output only errors")
-        group.add_option("--log-file", dest="log_file", default=None,
-            metavar="FILE", help="log to the given file")
+            group.add_option(
+                "-d",
+                "--debug",
+                dest="verbose",
+                default=False,
+                action="store_true",
+                help="alias for --verbose (deprecated)",
+            )
+        group.add_option(
+            "-q",
+            "--quiet",
+            dest="quiet",
+            default=False,
+            action="store_true",
+            help="output only errors",
+        )
+        group.add_option(
+            "--log-file",
+            dest="log_file",
+            default=None,
+            metavar="FILE",
+            help="log to the given file",
+        )
         parser.add_option_group(group)
 
     @classmethod
@@ -185,8 +213,7 @@ class AdminTool:
             traceback = sys.exc_info()[2]
             error_message, return_value = self.handle_error(exception)
             if return_value:
-                self.log_failure(error_message, return_value, exception,
-                    traceback)
+                self.log_failure(error_message, return_value, exception, traceback)
                 return return_value
         self.log_success()
         return return_value
@@ -198,10 +225,11 @@ class AdminTool:
         useful later, but no changes to the system should be made here.
         """
         if needs_root and os.getegid() != 0:
-            raise ScriptError('Must be root to run %s' % self.command_name, 1)
+            raise ScriptError("Must be root to run %s" % self.command_name, 1)
         if self.options.verbose and self.options.quiet:
             raise ScriptError(
-                'The --quiet and --verbose options are mutually exclusive')
+                "The --quiet and --verbose options are mutually exclusive"
+            )
 
     def ask_for_options(self):
         """Ask for missing options interactively
@@ -213,7 +241,7 @@ class AdminTool:
         Any options that might be asked for should also be validated here.
         """
 
-    def setup_logging(self, log_file_mode='w'):
+    def setup_logging(self, log_file_mode="w"):
         """Set up logging
 
         :param _to_file: Setting this to false will disable logging to file.
@@ -242,8 +270,10 @@ class AdminTool:
         """
         root_logger = logging.getLogger()
         for handler in root_logger.handlers:
-            if (isinstance(handler, logging.StreamHandler) and
-                    handler.stream is sys.stderr):  # pylint: disable=no-member
+            if (
+                isinstance(handler, logging.StreamHandler)
+                and handler.stream is sys.stderr
+            ):  # pylint: disable=no-member
                 root_logger.removeHandler(handler)
                 break
 
@@ -251,7 +281,7 @@ class AdminTool:
         if self.log_file_name:
             self.log_file_initialized = True
 
-    def _setup_logging(self, log_file_mode='w', no_file=False):
+    def _setup_logging(self, log_file_mode="w", no_file=False):
         if no_file:
             log_file_name = None
         elif self.options.log_file:
@@ -260,24 +290,27 @@ class AdminTool:
         else:
             log_file_name = self.log_file_name
         if self.options.verbose:
-            console_format = '%(name)s: %(levelname)s: %(message)s'
+            console_format = "%(name)s: %(levelname)s: %(message)s"
             verbose = True
             debug = True
         else:
-            console_format = '%(message)s'
+            console_format = "%(message)s"
             debug = False
             if self.options.quiet:
                 verbose = False
             else:
                 verbose = True
         standard_logging_setup(
-            log_file_name, console_format=console_format,
-            filemode=log_file_mode, debug=debug, verbose=verbose)
+            log_file_name,
+            console_format=console_format,
+            filemode=log_file_mode,
+            debug=debug,
+            verbose=verbose,
+        )
         if log_file_name:
-            logger.debug('Logging to %s', log_file_name)
+            logger.debug("Logging to %s", log_file_name)
         elif not no_file:
-            logger.debug('Not logging to a file')
-
+            logger.debug("Not logging to a file")
 
     def handle_error(self, exception):
         """Given an exception, return a message (or None) and process exit code
@@ -301,16 +334,24 @@ class AdminTool:
         assumed to have run successfully, and the return value is used as the
         SystemExit code.
         """
-        logger.debug('%s was invoked with arguments %s and options: %s',
-                     self.command_name, self.args, self.safe_options)
-        logger.debug('IPA version %s', version.VENDOR_VERSION)
+        logger.debug(
+            "%s was invoked with arguments %s and options: %s",
+            self.command_name,
+            self.args,
+            self.safe_options,
+        )
+        logger.debug("IPA version %s", version.VENDOR_VERSION)
 
     def log_failure(self, error_message, return_value, exception, backtrace):
-        logger.debug('%s', ''.join(traceback.format_tb(backtrace)))
-        logger.debug('The %s command failed, exception: %s: %s',
-                     self.command_name, type(exception).__name__, exception)
+        logger.debug("%s", "".join(traceback.format_tb(backtrace)))
+        logger.debug(
+            "The %s command failed, exception: %s: %s",
+            self.command_name,
+            type(exception).__name__,
+            exception,
+        )
         if error_message:
-            logger.error('%s', error_message)
+            logger.error("%s", error_message)
         if return_value == 0:
             # A script may raise an exception but still want quit gracefully,
             # like the case of ipa-client-install called from
@@ -319,7 +360,7 @@ class AdminTool:
         message = "The %s command failed." % self.command_name
         if self.log_file_initialized and return_value != SERVER_NOT_CONFIGURED:
             message += " See %s for more information" % self.log_file_name
-        logger.error('%s', message)
+        logger.error("%s", message)
 
     def log_success(self):
-        logger.info('The %s command was successful', self.command_name)
+        logger.info("The %s command was successful", self.command_name)

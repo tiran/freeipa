@@ -17,12 +17,12 @@ class ODSDBConnection(AbstractODSDBConnection):
     def get_zones(self):
         cur = self._db.execute("SELECT name from zones")
         rows = cur.fetchall()
-        return [row['name'] for row in rows]
+        return [row["name"] for row in rows]
 
     def get_zone_id(self, zone_name):
         cur = self._db.execute(
-            "SELECT id FROM zones WHERE LOWER(name)=LOWER(?)",
-            (zone_name,))
+            "SELECT id FROM zones WHERE LOWER(name)=LOWER(?)", (zone_name,)
+        )
         rows = cur.fetchall()
         return [row[0] for row in rows]
 
@@ -33,7 +33,9 @@ class ODSDBConnection(AbstractODSDBConnection):
             "dnsk.keytype, dnsk.state "
             "FROM keypairs AS kp "
             "JOIN dnsseckeys AS dnsk ON kp.id = dnsk.keypair_id "
-            "WHERE dnsk.zone_id = ?", (zone_id,))
+            "WHERE dnsk.zone_id = ?",
+            (zone_id,),
+        )
         for row in cur:
             yield row
 
@@ -44,24 +46,24 @@ class ODSSignerConn(AbstractODSSignerConn):
         return cmd
 
     def send_reply_and_close(self, reply):
-        self._conn.send(reply + b'\n')
+        self._conn.send(reply + b"\n")
         self._conn.shutdown(socket.SHUT_RDWR)
         self._conn.close()
 
 
-class ODSTask():
+class ODSTask:
     def run_ods_setup(self):
         """Initialize a new kasp.db"""
-        cmd = [paths.ODS_KSMUTIL, 'setup']
+        cmd = [paths.ODS_KSMUTIL, "setup"]
         return ipautil.run(cmd, stdin="y", runas=constants.ODS_USER)
 
     def run_ods_notify(self, **kwargs):
         """Notify ods-enforcerd to reload its conf."""
-        cmd = [paths.ODS_KSMUTIL, 'notify']
+        cmd = [paths.ODS_KSMUTIL, "notify"]
 
         # run commands as ODS user
         if os.geteuid() == 0:
-            kwargs['runas'] = constants.ODS_USER
+            kwargs["runas"] = constants.ODS_USER
 
         return ipautil.run(cmd, **kwargs)
 
@@ -77,13 +79,13 @@ class ODSTask():
         :param kwargs: additional arguments for ipautil.run()
         :return: result from ipautil.run()
         """
-        assert params[0] != 'setup'
+        assert params[0] != "setup"
 
         cmd = [paths.ODS_KSMUTIL]
         cmd.extend(params)
 
         # run commands as ODS user
         if os.geteuid() == 0:
-            kwargs['runas'] = constants.ODS_USER
+            kwargs["runas"] = constants.ODS_USER
 
         return ipautil.run(cmd, **kwargs)

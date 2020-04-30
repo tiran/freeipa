@@ -24,30 +24,30 @@ from ipalib.dns import record_name_format
 from ipapython.dnsutil import DNSName, resolve_rrsets
 
 if six.PY3:
-    unicode=str
+    unicode = str
 
 logger = logging.getLogger(__name__)
 
 
 IPA_DEFAULT_MASTER_SRV_REC = (
     # srv record name, port
-    (DNSName('_ldap._tcp'), 389),
-    (DNSName('_kerberos._tcp'), 88),
-    (DNSName('_kerberos._udp'), 88),
-    (DNSName('_kerberos-master._tcp'), 88),
-    (DNSName('_kerberos-master._udp'), 88),
-    (DNSName('_kpasswd._tcp'), 464),
-    (DNSName('_kpasswd._udp'), 464),
+    (DNSName("_ldap._tcp"), 389),
+    (DNSName("_kerberos._tcp"), 88),
+    (DNSName("_kerberos._udp"), 88),
+    (DNSName("_kerberos-master._tcp"), 88),
+    (DNSName("_kerberos-master._udp"), 88),
+    (DNSName("_kpasswd._tcp"), 464),
+    (DNSName("_kpasswd._udp"), 464),
 )
 
 IPA_DEFAULT_ADTRUST_SRV_REC = (
     # srv record name, port
-    (DNSName('_ldap._tcp.Default-First-Site-Name._sites.dc._msdcs'), 389),
-    (DNSName('_ldap._tcp.dc._msdcs'), 389),
-    (DNSName('_kerberos._tcp.Default-First-Site-Name._sites.dc._msdcs'), 88),
-    (DNSName('_kerberos._udp.Default-First-Site-Name._sites.dc._msdcs'), 88),
-    (DNSName('_kerberos._tcp.dc._msdcs'), 88),
-    (DNSName('_kerberos._udp.dc._msdcs'), 88),
+    (DNSName("_ldap._tcp.Default-First-Site-Name._sites.dc._msdcs"), 389),
+    (DNSName("_ldap._tcp.dc._msdcs"), 389),
+    (DNSName("_kerberos._tcp.Default-First-Site-Name._sites.dc._msdcs"), 88),
+    (DNSName("_kerberos._udp.Default-First-Site-Name._sites.dc._msdcs"), 88),
+    (DNSName("_kerberos._tcp.dc._msdcs"), 88),
+    (DNSName("_kerberos._udp.dc._msdcs"), 88),
 )
 
 IPA_DEFAULT_NTP_SRV_REC = (
@@ -83,14 +83,14 @@ class IPASystemRecords:
         self.__init_data()
 
     def __get_server_attrs(self, server_result):
-        weight = int(server_result.get('ipaserviceweight', ['100'])[0])
-        location = server_result.get('ipalocation_location', [None])[0]
-        roles = set(server_result.get('enabled_role_servrole', ()))
+        weight = int(server_result.get("ipaserviceweight", ["100"])[0])
+        location = server_result.get("ipalocation_location", [None])[0]
+        roles = set(server_result.get("enabled_role_servrole", ()))
 
         return weight, location, roles
 
     def __get_location_suffix(self, location):
-        return location + DNSName('_locations') + self.domain_abs
+        return location + DNSName("_locations") + self.domain_abs
 
     def __init_data(self, all_servers=False):
         self.servers_data.clear()
@@ -101,17 +101,16 @@ class IPASystemRecords:
             kwargs["servrole"] = "IPA master"
         servers = self.api_instance.Command.server_find(**kwargs)
 
-        for s in servers['result']:
+        for s in servers["result"]:
             weight, location, roles = self.__get_server_attrs(s)
-            self.servers_data[s['cn'][0]] = {
-                'weight': weight,
-                'location': location,
-                'roles': roles,
+            self.servers_data[s["cn"][0]] = {
+                "weight": weight,
+                "location": location,
+                "roles": roles,
             }
 
     def __add_srv_records(
-        self, zone_obj, hostname, rname_port_map,
-        weight=100, priority=0, location=None
+        self, zone_obj, hostname, rname_port_map, weight=100, priority=0, location=None
     ):
         assert isinstance(hostname, DNSName)
         assert isinstance(priority, int)
@@ -124,21 +123,21 @@ class IPASystemRecords:
 
         for name, port in rname_port_map:
             rd = rdata.from_text(
-                rdataclass.IN, rdatatype.SRV,
-                '{0} {1} {2} {3}'.format(
+                rdataclass.IN,
+                rdatatype.SRV,
+                "{0} {1} {2} {3}".format(
                     priority, weight, port, hostname.make_absolute()
-                )
+                ),
             )
 
             r_name = name.derelativize(suffix)
 
-            rdataset = zone_obj.get_rdataset(
-                r_name, rdatatype.SRV, create=True)
+            rdataset = zone_obj.get_rdataset(r_name, rdatatype.SRV, create=True)
             rdataset.add(rd, ttl=86400)  # FIXME: use TTL from config
 
     def __add_ca_records_from_hostname(self, zone_obj, hostname):
         assert isinstance(hostname, DNSName) and hostname.is_absolute()
-        r_name = DNSName('ipa-ca') + self.domain_abs
+        r_name = DNSName("ipa-ca") + self.domain_abs
         rrsets = []
         end_time = time() + CA_RECORDS_DNS_TIMEOUT
         while time() < end_time:
@@ -151,36 +150,39 @@ class IPASystemRecords:
             sleep(5)
 
         if not rrsets:
-            logger.error('unable to resolve host name %s to IP address, '
-                         'ipa-ca DNS record will be incomplete', hostname)
+            logger.error(
+                "unable to resolve host name %s to IP address, "
+                "ipa-ca DNS record will be incomplete",
+                hostname,
+            )
             return
 
         for rrset in rrsets:
             for rd in rrset:
-                rdataset = zone_obj.get_rdataset(
-                    r_name, rd.rdtype, create=True)
+                rdataset = zone_obj.get_rdataset(r_name, rd.rdtype, create=True)
                 rdataset.add(rd, ttl=86400)  # FIXME: use TTL from config
 
     def __add_kerberos_txt_rec(self, zone_obj):
         # FIXME: with external DNS, this should generate records for all
         # realmdomains
-        r_name = DNSName('_kerberos') + self.domain_abs
-        rd = rdata.from_text(rdataclass.IN, rdatatype.TXT,
-                             self.api_instance.env.realm)
-        rdataset = zone_obj.get_rdataset(
-            r_name, rdatatype.TXT, create=True
-        )
+        r_name = DNSName("_kerberos") + self.domain_abs
+        rd = rdata.from_text(rdataclass.IN, rdatatype.TXT, self.api_instance.env.realm)
+        rdataset = zone_obj.get_rdataset(r_name, rdatatype.TXT, create=True)
         rdataset.add(rd, ttl=86400)  # FIXME: use TTL from config
 
     def _add_base_dns_records_for_server(
-            self, zone_obj, hostname, roles=None, include_master_role=True,
-            include_kerberos_realm=True,
+        self,
+        zone_obj,
+        hostname,
+        roles=None,
+        include_master_role=True,
+        include_kerberos_realm=True,
     ):
         server = self.servers_data[hostname]
         if roles:
-            eff_roles = server['roles'] & set(roles)
+            eff_roles = server["roles"] & set(roles)
         else:
-            eff_roles = server['roles']
+            eff_roles = server["roles"]
         hostname_abs = DNSName(hostname).make_absolute()
 
         if include_kerberos_realm:
@@ -192,41 +194,38 @@ class IPASystemRecords:
                 zone_obj,
                 hostname_abs,
                 IPA_DEFAULT_MASTER_SRV_REC,
-                weight=server['weight']
+                weight=server["weight"],
             )
 
-        if 'CA server' in eff_roles:
+        if "CA server" in eff_roles:
             self.__add_ca_records_from_hostname(zone_obj, hostname_abs)
 
-        if 'AD trust controller' in eff_roles:
+        if "AD trust controller" in eff_roles:
             self.__add_srv_records(
                 zone_obj,
                 hostname_abs,
                 IPA_DEFAULT_ADTRUST_SRV_REC,
-                weight=server['weight']
+                weight=server["weight"],
             )
 
-        if 'NTP server' in eff_roles:
+        if "NTP server" in eff_roles:
             self.__add_srv_records(
-                zone_obj,
-                hostname_abs,
-                IPA_DEFAULT_NTP_SRV_REC,
-                weight=server['weight']
+                zone_obj, hostname_abs, IPA_DEFAULT_NTP_SRV_REC, weight=server["weight"]
             )
 
     def _get_location_dns_records_for_server(
-            self, zone_obj, hostname, locations,
-            roles=None, include_master_role=True):
+        self, zone_obj, hostname, locations, roles=None, include_master_role=True
+    ):
         server = self.servers_data[hostname]
         if roles:
-            eff_roles = server['roles'] & roles
+            eff_roles = server["roles"] & roles
         else:
-            eff_roles = server['roles']
+            eff_roles = server["roles"]
         hostname_abs = DNSName(hostname).make_absolute()
 
         # generate locations specific records
         for location in locations:
-            if location == self.servers_data[hostname]['location']:
+            if location == self.servers_data[hostname]["location"]:
                 priority = self.PRIORITY_HIGH
             else:
                 priority = self.PRIORITY_LOW
@@ -236,29 +235,29 @@ class IPASystemRecords:
                     zone_obj,
                     hostname_abs,
                     IPA_DEFAULT_MASTER_SRV_REC,
-                    weight=server['weight'],
+                    weight=server["weight"],
                     priority=priority,
-                    location=location
+                    location=location,
                 )
 
-            if 'AD trust controller' in eff_roles:
+            if "AD trust controller" in eff_roles:
                 self.__add_srv_records(
                     zone_obj,
                     hostname_abs,
                     IPA_DEFAULT_ADTRUST_SRV_REC,
-                    weight=server['weight'],
+                    weight=server["weight"],
                     priority=priority,
-                    location=location
+                    location=location,
                 )
 
-            if 'NTP server' in eff_roles:
+            if "NTP server" in eff_roles:
                 self.__add_srv_records(
                     zone_obj,
                     hostname_abs,
                     IPA_DEFAULT_NTP_SRV_REC,
-                    weight=server['weight'],
+                    weight=server["weight"],
                     priority=priority,
-                    location=location
+                    location=location,
                 )
 
         return zone_obj
@@ -267,53 +266,55 @@ class IPASystemRecords:
         update_dict = defaultdict(list)
         for rdataset in node:
             for rdata in rdataset:
-                option_name = (record_name_format % rdatatype.to_text(
-                    rdata.rdtype).lower())
+                option_name = (
+                    record_name_format % rdatatype.to_text(rdata.rdtype).lower()
+                )
                 update_dict[option_name].append(unicode(rdata.to_text()))
         return update_dict
 
-    def __update_dns_records(
-            self, record_name, nodes, set_cname_template=True
-    ):
+    def __update_dns_records(self, record_name, nodes, set_cname_template=True):
         update_dict = self.__prepare_records_update_dict(nodes)
         cname_template = {
-            'addattr': ['objectclass=idnsTemplateObject'],
-            'setattr': [
-                r'idnsTemplateAttribute;cnamerecord=%s'
-                r'.\{substitutionvariable_ipalocation\}._locations' %
-                record_name.relativize(self.domain_abs)
-            ]
+            "addattr": ["objectclass=idnsTemplateObject"],
+            "setattr": [
+                r"idnsTemplateAttribute;cnamerecord=%s"
+                r".\{substitutionvariable_ipalocation\}._locations"
+                % record_name.relativize(self.domain_abs)
+            ],
         }
         try:
             if set_cname_template:
                 # only srv records should have configured cname templates
                 update_dict.update(cname_template)
             self.api_instance.Command.dnsrecord_mod(
-                self.domain_abs, record_name,
-                **update_dict
+                self.domain_abs, record_name, **update_dict
             )
         except errors.NotFound:
             # because internal API magic, addattr and setattr doesn't work with
             # dnsrecord-add well, use dnsrecord-mod instead later
-            update_dict.pop('addattr', None)
-            update_dict.pop('setattr', None)
+            update_dict.pop("addattr", None)
+            update_dict.pop("setattr", None)
 
             self.api_instance.Command.dnsrecord_add(
-                self.domain_abs, record_name, **update_dict)
+                self.domain_abs, record_name, **update_dict
+            )
 
             if set_cname_template:
                 try:
                     self.api_instance.Command.dnsrecord_mod(
-                        self.domain_abs,
-                        record_name, **cname_template)
+                        self.domain_abs, record_name, **cname_template
+                    )
                 except errors.EmptyModlist:
                     pass
         except errors.EmptyModlist:
             pass
 
     def get_base_records(
-            self, servers=None, roles=None, include_master_role=True,
-            include_kerberos_realm=True
+        self,
+        servers=None,
+        roles=None,
+        include_master_role=True,
+        include_kerberos_realm=True,
     ):
         """
         Generate IPA service records for specific servers and roles
@@ -331,14 +332,16 @@ class IPASystemRecords:
             servers = list(self.servers_data)
 
         for server in servers:
-            self._add_base_dns_records_for_server(zone_obj, server,
-                roles=roles, include_master_role=include_master_role,
-                include_kerberos_realm=include_kerberos_realm
+            self._add_base_dns_records_for_server(
+                zone_obj,
+                server,
+                roles=roles,
+                include_master_role=include_master_role,
+                include_kerberos_realm=include_kerberos_realm,
             )
         return zone_obj
 
-    def get_locations_records(
-            self, servers=None, roles=None, include_master_role=True):
+    def get_locations_records(self, servers=None, roles=None, include_master_role=True):
         """
         Generate IPA location records for specific servers and roles.
         :param servers: list of server which will be used in records,
@@ -353,14 +356,17 @@ class IPASystemRecords:
         if servers is None:
             servers = list(self.servers_data)
 
-        locations_result = self.api_instance.Command.location_find()['result']
-        locations = [l['idnsname'][0] for l in locations_result]
+        locations_result = self.api_instance.Command.location_find()["result"]
+        locations = [l["idnsname"][0] for l in locations_result]
 
         for server in servers:
             self._get_location_dns_records_for_server(
-                zone_obj, server,
-                locations, roles=roles,
-                include_master_role=include_master_role)
+                zone_obj,
+                server,
+                locations,
+                roles=roles,
+                include_master_role=include_master_role,
+            )
         return zone_obj
 
     def update_base_records(self):
@@ -373,10 +379,11 @@ class IPASystemRecords:
         fail = []
         success = []
         names_requiring_cname_templates = set(
-            rec[0].derelativize(self.domain_abs) for rec in (
-                IPA_DEFAULT_MASTER_SRV_REC +
-                IPA_DEFAULT_ADTRUST_SRV_REC +
-                IPA_DEFAULT_NTP_SRV_REC
+            rec[0].derelativize(self.domain_abs)
+            for rec in (
+                IPA_DEFAULT_MASTER_SRV_REC
+                + IPA_DEFAULT_ADTRUST_SRV_REC
+                + IPA_DEFAULT_NTP_SRV_REC
             )
         )
 
@@ -384,8 +391,7 @@ class IPASystemRecords:
         for record_name, node in base_zone.items():
             set_cname_template = record_name in names_requiring_cname_templates
             try:
-                self.__update_dns_records(
-                    record_name, node, set_cname_template)
+                self.__update_dns_records(record_name, node, set_cname_template)
             except errors.PublicError as e:
                 fail.append((record_name, node, e))
             else:
@@ -405,9 +411,7 @@ class IPASystemRecords:
         location_zone = self.get_locations_records()
         for record_name, nodes in location_zone.items():
             try:
-                self.__update_dns_records(
-                    record_name, nodes,
-                    set_cname_template=False)
+                self.__update_dns_records(record_name, nodes, set_cname_template=False)
             except errors.PublicError as e:
                 fail.append((record_name, nodes, e))
             else:
@@ -428,10 +432,7 @@ class IPASystemRecords:
         except errors.NotFound:
             raise IPADomainIsNotManagedByIPAError()
 
-        return (
-            self.update_base_records(),
-            self.update_locations_records()
-        )
+        return (self.update_base_records(), self.update_locations_records())
 
     def remove_location_records(self, location):
         """
@@ -447,18 +448,18 @@ class IPASystemRecords:
         location = DNSName(location)
         loc_records = []
         for records in (
-                IPA_DEFAULT_MASTER_SRV_REC,
-                IPA_DEFAULT_ADTRUST_SRV_REC,
-                IPA_DEFAULT_NTP_SRV_REC
+            IPA_DEFAULT_MASTER_SRV_REC,
+            IPA_DEFAULT_ADTRUST_SRV_REC,
+            IPA_DEFAULT_NTP_SRV_REC,
         ):
             for name, _port in records:
-                loc_records.append(
-                    name + self.__get_location_suffix(location))
+                loc_records.append(name + self.__get_location_suffix(location))
 
         for rname in loc_records:
             try:
                 self.api_instance.Command.dnsrecord_del(
-                    self.domain_abs, rname, del_all=True)
+                    self.domain_abs, rname, del_all=True
+                )
             except errors.NotFound:
                 pass
             except errors.PublicError as e:
@@ -467,19 +468,18 @@ class IPASystemRecords:
                 success.append(rname)
         return success, failed
 
-
     @classmethod
     def records_list_from_node(cls, name, node):
         records = []
         for rdataset in node:
             for rd in rdataset:
                 records.append(
-                    '{name} {ttl} {rdclass} {rdtype} {rdata}'.format(
+                    "{name} {ttl} {rdclass} {rdtype} {rdata}".format(
                         name=name.ToASCII(),
                         ttl=rdataset.ttl,
                         rdclass=rdataclass.to_text(rd.rdclass),
                         rdtype=rdatatype.to_text(rd.rdtype),
-                        rdata=rd.to_text()
+                        rdata=rd.to_text(),
                     )
                 )
         return records

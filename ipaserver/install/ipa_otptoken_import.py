@@ -56,13 +56,19 @@ class ValidationError(Exception):
 
 
 def fetchAll(element, xpath, conv=lambda x: x):
-    return [conv(e) for e in element.xpath(xpath, namespaces={
-        "pkcs5": "http://www.rsasecurity.com/rsalabs/pkcs/schemas/pkcs-5v2-0#",
-        "pskc": "urn:ietf:params:xml:ns:keyprov:pskc",
-        "xenc11": "http://www.w3.org/2009/xmlenc11#",
-        "xenc": "http://www.w3.org/2001/04/xmlenc#",
-        "ds": "http://www.w3.org/2000/09/xmldsig#",
-    })]
+    return [
+        conv(e)
+        for e in element.xpath(
+            xpath,
+            namespaces={
+                "pkcs5": "http://www.rsasecurity.com/rsalabs/pkcs/schemas/pkcs-5v2-0#",
+                "pskc": "urn:ietf:params:xml:ns:keyprov:pskc",
+                "xenc11": "http://www.w3.org/2009/xmlenc11#",
+                "xenc": "http://www.w3.org/2001/04/xmlenc#",
+                "ds": "http://www.w3.org/2000/09/xmldsig#",
+            },
+        )
+    ]
 
 
 def fetch(element, xpath, conv=lambda x: x, default=None):
@@ -77,8 +83,7 @@ def convertDate(value):
 
     # pylint: disable=E1101
     if dt.tzinfo is None:
-        dt = datetime.datetime(*dt.timetuple()[0:6],
-                               tzinfo=dateutil.tz.tzlocal())
+        dt = datetime.datetime(*dt.timetuple()[0:6], tzinfo=dateutil.tz.tzlocal())
 
     return dt.astimezone(dateutil.tz.tzutc())
 
@@ -98,14 +103,17 @@ def convertHashName(value):
     "Converts hash names to their canonical names."
 
     default_hash = u"sha1"
-    known_prefixes = ("", "hmac-",)
+    known_prefixes = (
+        "",
+        "hmac-",
+    )
     known_hashes = {
-        "sha1":    u"sha1",
-        "sha224":  u"sha224",
-        "sha256":  u"sha256",
-        "sha384":  u"sha384",
-        "sha512":  u"sha512",
-        "sha-1":   u"sha1",
+        "sha1": u"sha1",
+        "sha224": u"sha224",
+        "sha256": u"sha256",
+        "sha384": u"sha384",
+        "sha512": u"sha512",
+        "sha-1": u"sha1",
         "sha-224": u"sha224",
         "sha-256": u"sha256",
         "sha-384": u"sha384",
@@ -118,7 +126,7 @@ def convertHashName(value):
     v = value.lower()
     for prefix in known_prefixes:
         if prefix:
-            w = v[len(prefix):]
+            w = v[len(prefix) :]
         else:
             w = v
         result = known_hashes.get(w)
@@ -134,7 +142,7 @@ def convertHMACType(value):
     "Converts HMAC URI to hashlib object."
 
     return {
-        "http://www.w3.org/2000/09/xmldsig#hmac-sha1":        hashes.SHA1,
+        "http://www.w3.org/2000/09/xmldsig#hmac-sha1": hashes.SHA1,
         "http://www.w3.org/2001/04/xmldsig-more#hmac-sha224": hashes.SHA224,
         "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256": hashes.SHA256,
         "http://www.w3.org/2001/04/xmldsig-more#hmac-sha384": hashes.SHA384,
@@ -146,21 +154,29 @@ def convertAlgorithm(value):
     "Converts encryption URI to (mech, ivlen)."
 
     return {
-        "http://www.w3.org/2001/04/xmlenc#aes128-cbc": (
-            algorithms.AES, modes.CBC, 128),
-        "http://www.w3.org/2001/04/xmlenc#aes192-cbc": (
-            algorithms.AES, modes.CBC, 192),
-        "http://www.w3.org/2001/04/xmlenc#aes256-cbc": (
-            algorithms.AES, modes.CBC, 256),
+        "http://www.w3.org/2001/04/xmlenc#aes128-cbc": (algorithms.AES, modes.CBC, 128),
+        "http://www.w3.org/2001/04/xmlenc#aes192-cbc": (algorithms.AES, modes.CBC, 192),
+        "http://www.w3.org/2001/04/xmlenc#aes256-cbc": (algorithms.AES, modes.CBC, 256),
         "http://www.w3.org/2001/04/xmlenc#tripledes-cbc": (
-            algorithms.TripleDES, modes.CBC, 64),
+            algorithms.TripleDES,
+            modes.CBC,
+            64,
+        ),
         "http://www.w3.org/2001/04/xmldsig-more#camellia128": (
-            algorithms.Camellia, modes.CBC, 128),
+            algorithms.Camellia,
+            modes.CBC,
+            128,
+        ),
         "http://www.w3.org/2001/04/xmldsig-more#camellia192": (
-            algorithms.Camellia, modes.CBC, 192),
+            algorithms.Camellia,
+            modes.CBC,
+            192,
+        ),
         "http://www.w3.org/2001/04/xmldsig-more#camellia256": (
-            algorithms.Camellia, modes.CBC, 256),
-
+            algorithms.Camellia,
+            modes.CBC,
+            256,
+        ),
         # TODO: add support for these formats.
         # "http://www.w3.org/2001/04/xmlenc#kw-aes128": "kw-aes128",
         # "http://www.w3.org/2001/04/xmlenc#kw-aes192": "kw-aes192",
@@ -189,6 +205,7 @@ def convertEncrypted(value, decryptor=None, pconv=base64.b64decode, econv=lambda
 
 class XMLKeyDerivation(six.with_metaclass(abc.ABCMeta, object)):
     "Interface for XML Encryption 1.1 key derivation."
+
     @abc.abstractmethod
     def __init__(self, enckey):
         "Sets up key derivation parameters from the parent XML entity."
@@ -200,7 +217,9 @@ class XMLKeyDerivation(six.with_metaclass(abc.ABCMeta, object)):
 
 class PBKDF2KeyDerivation(XMLKeyDerivation):
     def __init__(self, enckey):
-        params = fetch(enckey, "./xenc11:DerivedKey/xenc11:KeyDerivationMethod/pkcs5:PBKDF2-params")
+        params = fetch(
+            enckey, "./xenc11:DerivedKey/xenc11:KeyDerivationMethod/pkcs5:PBKDF2-params"
+        )
         if params is None:
             raise ValueError("XML file is missing PBKDF2 parameters!")
 
@@ -223,7 +242,7 @@ class PBKDF2KeyDerivation(XMLKeyDerivation):
             length=klen,
             salt=salt,
             iterations=itrs,
-            backend=default_backend()
+            backend=default_backend(),
         )
 
     def derive(self, masterkey):
@@ -249,11 +268,10 @@ class XMLDecryptor:
 
     def __call__(self, element, mac=None):
         algo, mode, klen = fetch(
-            element, "./xenc:EncryptionMethod/@Algorithm", convertAlgorithm)
+            element, "./xenc:EncryptionMethod/@Algorithm", convertAlgorithm
+        )
         data = fetch(
-            element,
-            "./xenc:CipherData/xenc:CipherValue/text()",
-            base64.b64decode
+            element, "./xenc:CipherData/xenc:CipherValue/text()", base64.b64decode
         )
 
         # Make sure the key is the right length.
@@ -269,8 +287,8 @@ class XMLDecryptor:
             except InvalidSignature as e:
                 raise ValidationError("MAC validation failed!", e)
 
-        iv = data[:algo.block_size // 8]
-        data = data[len(iv):]
+        iv = data[: algo.block_size // 8]
+        data = data[len(iv) :]
 
         algorithm = algo(self.__key)
         cipher = Cipher(algorithm, mode(iv), default_backend())
@@ -287,65 +305,74 @@ class XMLDecryptor:
 
 class PSKCKeyPackage:
     _XML = {
-        'pskc:DeviceInfo': {
-            'pskc:IssueNo/text()':      ('issueno',      unicode),
-            'pskc:ExpiryDate/text()':   ('notafter.hw',  convertDate),
-            'pskc:Manufacturer/text()': ('vendor',       unicode),
-            'pskc:Model/text()':        ('model',        unicode),
-            'pskc:SerialNo/text()':     ('serial',       unicode),
-            'pskc:StartDate/text()':    ('notbefore.hw', convertDate),
-            'pskc:UserId/text()':       ('owner',        unicode),
+        "pskc:DeviceInfo": {
+            "pskc:IssueNo/text()": ("issueno", unicode),
+            "pskc:ExpiryDate/text()": ("notafter.hw", convertDate),
+            "pskc:Manufacturer/text()": ("vendor", unicode),
+            "pskc:Model/text()": ("model", unicode),
+            "pskc:SerialNo/text()": ("serial", unicode),
+            "pskc:StartDate/text()": ("notbefore.hw", convertDate),
+            "pskc:UserId/text()": ("owner", unicode),
         },
-
-        'pskc:Key': {
-            '@Algorithm':               ('type',        convertTokenType),
-            '@Id':                      ('id',          unicode),
-            'pskc:FriendlyName/text()': ('description', unicode),
-            'pskc:Issuer/text()':       ('issuer',      unicode),
-            'pskc:KeyReference/text()': ('keyref',      unicode),
-
-            'pskc:AlgorithmParameters': {
-                'pskc:Suite/text()':               ('algorithm',  convertHashName),
-                'pskc:ResponseFormat/@CheckDigit': ('checkdigit', unicode),
-                'pskc:ResponseFormat/@Encoding':   ('encoding',   unicode),
-                'pskc:ResponseFormat/@Length':     ('digits',     int),
+        "pskc:Key": {
+            "@Algorithm": ("type", convertTokenType),
+            "@Id": ("id", unicode),
+            "pskc:FriendlyName/text()": ("description", unicode),
+            "pskc:Issuer/text()": ("issuer", unicode),
+            "pskc:KeyReference/text()": ("keyref", unicode),
+            "pskc:AlgorithmParameters": {
+                "pskc:Suite/text()": ("algorithm", convertHashName),
+                "pskc:ResponseFormat/@CheckDigit": ("checkdigit", unicode),
+                "pskc:ResponseFormat/@Encoding": ("encoding", unicode),
+                "pskc:ResponseFormat/@Length": ("digits", int),
             },
-
-            'pskc:Data': {
-                'pskc:Counter':      ('counter',  lambda v, d: convertEncrypted(v, d, long, long)),
-                'pskc:Secret':       ('key',      convertEncrypted),
-                'pskc:Time':         ('time',     lambda v, d: convertEncrypted(v, d, int, int)),
-                'pskc:TimeDrift':    ('offset',   lambda v, d: convertEncrypted(v, d, int, int)),
-                'pskc:TimeInterval': ('interval', lambda v, d: convertEncrypted(v, d, int, int)),
+            "pskc:Data": {
+                "pskc:Counter": (
+                    "counter",
+                    lambda v, d: convertEncrypted(v, d, long, long),
+                ),
+                "pskc:Secret": ("key", convertEncrypted),
+                "pskc:Time": ("time", lambda v, d: convertEncrypted(v, d, int, int)),
+                "pskc:TimeDrift": (
+                    "offset",
+                    lambda v, d: convertEncrypted(v, d, int, int),
+                ),
+                "pskc:TimeInterval": (
+                    "interval",
+                    lambda v, d: convertEncrypted(v, d, int, int),
+                ),
             },
-
-            'pskc:Policy': {
-                'pskc:ExpiryDate/text()':    ('notafter.sw',  convertDate),
-                'pskc:KeyUsage/text()':      ('keyusage',     unicode),
-                'pskc:NumberOfTransactions': ('maxtransact',  lambda v: v),
-                'pskc:PINPolicy':            ('pinpolicy',    lambda v: v),
-                'pskc:StartDate/text()':     ('notbefore.sw', convertDate),
+            "pskc:Policy": {
+                "pskc:ExpiryDate/text()": ("notafter.sw", convertDate),
+                "pskc:KeyUsage/text()": ("keyusage", unicode),
+                "pskc:NumberOfTransactions": ("maxtransact", lambda v: v),
+                "pskc:PINPolicy": ("pinpolicy", lambda v: v),
+                "pskc:StartDate/text()": ("notbefore.sw", convertDate),
             },
         },
     }
 
     _MAP = (
-        ('type',        'type',                    lambda v, o: v.strip()),
-        ('description', 'description',             lambda v, o: v.strip()),
-        ('vendor',      'ipatokenvendor',          lambda v, o: v.strip()),
-        ('model',       'ipatokenmodel',           lambda v, o: v.strip()),
-        ('serial',      'ipatokenserial',          lambda v, o: v.strip()),
-        ('issueno',     'ipatokenserial',          lambda v, o: o.get('ipatokenserial', '') + '-' + v.strip()),
+        ("type", "type", lambda v, o: v.strip()),
+        ("description", "description", lambda v, o: v.strip()),
+        ("vendor", "ipatokenvendor", lambda v, o: v.strip()),
+        ("model", "ipatokenmodel", lambda v, o: v.strip()),
+        ("serial", "ipatokenserial", lambda v, o: v.strip()),
         (
-            'key',
-            'ipatokenotpkey',
-            lambda v, o: base64.b32encode(v).decode('ascii')
+            "issueno",
+            "ipatokenserial",
+            lambda v, o: o.get("ipatokenserial", "") + "-" + v.strip(),
         ),
-        ('digits',      'ipatokenotpdigits',       lambda v, o: v),
-        ('algorithm',   'ipatokenotpalgorithm',    lambda v, o: v),
-        ('counter',     'ipatokenhotpcounter',     lambda v, o: v),
-        ('interval',    'ipatokentotptimestep',    lambda v, o: v),
-        ('offset',      'ipatokentotpclockoffset', lambda v, o: o.get('ipatokentotptimestep', 30) * v),
+        ("key", "ipatokenotpkey", lambda v, o: base64.b32encode(v).decode("ascii")),
+        ("digits", "ipatokenotpdigits", lambda v, o: v),
+        ("algorithm", "ipatokenotpalgorithm", lambda v, o: v),
+        ("counter", "ipatokenhotpcounter", lambda v, o: v),
+        ("interval", "ipatokentotptimestep", lambda v, o: v),
+        (
+            "offset",
+            "ipatokentotpclockoffset",
+            lambda v, o: o.get("ipatokentotptimestep", 30) * v,
+        ),
     )
 
     def __init__(self, element, decryptor):
@@ -383,12 +410,12 @@ class PSKCKeyPackage:
                 options[ok] = f(data[dk], options)
 
         # Copy validity dates.
-        self.__dates(options, data, 'notbefore', max)
-        self.__dates(options, data, 'notafter', min)
+        self.__dates(options, data, "notbefore", max)
+        self.__dates(options, data, "notafter", min)
 
         # Save attributes.
         self.__options = options
-        self.__id = data.get('id', uuid.uuid4())
+        self.__id = data.get("id", uuid.uuid4())
 
     def __parse(self, decryptor, element, prefix, table):
         "Recursively parses the xml from a table."
@@ -404,9 +431,7 @@ class PSKCKeyPackage:
             result = fetch(element, path)
             if result is not None:
                 lambda_code_attr = "__code__" if six.PY3 else "func_code"
-                if getattr(
-                        getattr(v[1], lambda_code_attr, None),
-                        "co_argcount", 0) > 1:
+                if getattr(getattr(v[1], lambda_code_attr, None), "co_argcount", 0) > 1:
                     data[v[0]] = v[1](result, decryptor)
                 else:
                     data[v[0]] = v[1](result)
@@ -416,39 +441,39 @@ class PSKCKeyPackage:
     def __validate(self, data):
         "Validates the parsed data."
 
-        if 'type' not in data or data['type'] not in ('totp', 'hotp'):
+        if "type" not in data or data["type"] not in ("totp", "hotp"):
             raise ValidationError("Unsupported token type!")
 
-        if 'key' not in data:
-            if 'keyref' in data:
+        if "key" not in data:
+            if "keyref" in data:
                 raise ValidationError("Referenced keys are not supported!")
             raise ValidationError("Key not found in token!")
 
-        if data.get('checkdigit', 'FALSE').upper() != 'FALSE':
+        if data.get("checkdigit", "FALSE").upper() != "FALSE":
             raise ValidationError("CheckDigit not supported!")
 
-        if data.get('maxtransact', None) is not None:
-            raise ValidationError('NumberOfTransactions policy not supported!')
+        if data.get("maxtransact", None) is not None:
+            raise ValidationError("NumberOfTransactions policy not supported!")
 
-        if data.get('pinpolicy', None) is not None:
-            raise ValidationError('PINPolicy policy not supported!')
+        if data.get("pinpolicy", None) is not None:
+            raise ValidationError("PINPolicy policy not supported!")
 
-        if data.get('time', 0) != 0:
-            raise ValidationError('Specified time is not supported!')
+        if data.get("time", 0) != 0:
+            raise ValidationError("Specified time is not supported!")
 
-        encoding = data.get('encoding', 'DECIMAL').upper()
-        if encoding != 'DECIMAL':
-            raise ValidationError('Unsupported encoding: %s!' % encoding)
+        encoding = data.get("encoding", "DECIMAL").upper()
+        if encoding != "DECIMAL":
+            raise ValidationError("Unsupported encoding: %s!" % encoding)
 
-        usage = data.get('keyusage', 'OTP')
-        if usage != 'OTP':
-            raise ValidationError('Unsupported key usage: %s' % usage)
+        usage = data.get("keyusage", "OTP")
+        if usage != "OTP":
+            raise ValidationError("Unsupported key usage: %s" % usage)
 
     def __dates(self, out, data, key, reducer):
-        dates = (data.get(key + '.sw', None), data.get(key + '.hw', None))
+        dates = (data.get(key + ".sw", None), data.get(key + ".hw", None))
         dates = [x for x in dates if x is not None]
         if dates:
-            out['ipatoken' + key] = unicode(reducer(dates).strftime("%Y%m%d%H%M%SZ"))
+            out["ipatoken" + key] = unicode(reducer(dates).strftime("%Y%m%d%H%M%SZ"))
 
 
 class PSKCDocument:
@@ -477,14 +502,17 @@ class PSKCDocument:
             # Get the keyname.
             self.__keyname = fetch(self.__enckey, "./ds:KeyName/text()")
             if self.__keyname is None:
-                self.__keyname = fetch(self.__enckey,
-                                       "./xenc11:DerivedKey/xenc11:MasterKeyName/text()")
+                self.__keyname = fetch(
+                    self.__enckey, "./xenc11:DerivedKey/xenc11:MasterKeyName/text()"
+                )
 
     def setKey(self, key):
         # Derive the enckey if required.
-        kd = fetch(self.__enckey,
-                   "./xenc11:DerivedKey/xenc11:KeyDerivationMethod/@Algorithm",
-                   convertKeyDerivation)
+        kd = fetch(
+            self.__enckey,
+            "./xenc11:DerivedKey/xenc11:KeyDerivationMethod/@Algorithm",
+            convertKeyDerivation,
+        )
         if kd is not None:
             key = kd(self.__enckey).derive(key)
 
@@ -492,9 +520,7 @@ class PSKCDocument:
         self.__decryptor = XMLDecryptor(key)
         if self.__mkey is not None and self.__algo is not None:
             tmp = hmac.HMAC(
-                self.__decryptor(self.__mkey),
-                self.__algo(),
-                backend=default_backend()
+                self.__decryptor(self.__mkey), self.__algo(), backend=default_backend()
             )
             self.__decryptor = XMLDecryptor(key, tmp)
 
@@ -507,7 +533,7 @@ class PSKCDocument:
 
 
 class OTPTokenImport(admintool.AdminTool):
-    command_name = 'ipa-otptoken-import'
+    command_name = "ipa-otptoken-import"
     description = "Import OTP tokens."
     usage = "%prog [options] <PSKC file> <output file>"
 
@@ -515,8 +541,12 @@ class OTPTokenImport(admintool.AdminTool):
     def add_options(cls, parser):
         super(OTPTokenImport, cls).add_options(parser)
 
-        parser.add_option("-k", "--keyfile", dest="keyfile",
-                          help="File containing the key used to decrypt token secrets")
+        parser.add_option(
+            "-k",
+            "--keyfile",
+            dest="keyfile",
+            help="File containing the key used to decrypt token secrets",
+        )
 
     def validate_options(self):
         super(OTPTokenImport, self).validate_options()
@@ -536,7 +566,9 @@ class OTPTokenImport(admintool.AdminTool):
         # Verify a key is provided if one is needed.
         if self.doc.keyname is not None:
             if self.safe_options.keyfile is None:  # pylint: disable=no-member
-                raise admintool.ScriptError("Encryption key required: %s!" % self.doc.keyname)
+                raise admintool.ScriptError(
+                    "Encryption key required: %s!" % self.doc.keyname
+                )
 
             # Load the keyfile.
             keyfile = self.safe_options.keyfile  # pylint: disable=no-member
@@ -548,8 +580,9 @@ class OTPTokenImport(admintool.AdminTool):
         api.finalize()
 
         try:
-            api.Backend.ldap2.connect(ccache=os.environ.get('KRB5CCNAME'),
-                                      autobind=AUTOBIND_DISABLED)
+            api.Backend.ldap2.connect(
+                ccache=os.environ.get("KRB5CCNAME"), autobind=AUTOBIND_DISABLED
+            )
         except (gssapi.exceptions.GSSError, errors.ACIError):
             raise admintool.ScriptError("Unable to connect to LDAP! Did you kinit?")
 
@@ -557,7 +590,9 @@ class OTPTokenImport(admintool.AdminTool):
             # Parse tokens
             for keypkg in self.doc.getKeyPackages():
                 try:
-                    api.Command.otptoken_add(keypkg.id, no_qrcode=True, **keypkg.options)
+                    api.Command.otptoken_add(
+                        keypkg.id, no_qrcode=True, **keypkg.options
+                    )
                 except Exception as e:
                     logger.warning("Error adding token: %s", e)
                 else:

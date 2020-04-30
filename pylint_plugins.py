@@ -24,8 +24,9 @@ def register(linter):
 def _warning_already_exists(cls, member):
     print(
         "WARNING: member '{member}' in '{cls}' already exists".format(
-            cls="{}.{}".format(cls.root().name, cls.name), member=member),
-        file=sys.stderr
+            cls="{}.{}".format(cls.root().name, cls.name), member=member
+        ),
+        file=sys.stderr,
     )
 
 
@@ -61,170 +62,120 @@ def fake_class(name_or_class_obj, members=()):
 # 'class': ['generated', 'properties']
 ipa_class_members = {
     # Python standard library & 3rd party classes
-    'socket._socketobject': ['sendall'],
-
+    "socket._socketobject": ["sendall"],
     # IPA classes
-    'ipalib.base.NameSpace': [
-        'add',
-        'mod',
-        'del',
-        'show',
-        'find'
+    "ipalib.base.NameSpace": ["add", "mod", "del", "show", "find"],
+    "ipalib.cli.Collector": ["__options"],
+    "ipalib.config.Env": [  # somehow needed for pylint on Python 2
+        "debug",
+        "startup_traceback",
+        "server",
+        "validate_api",
+        "verbose",
     ],
-    'ipalib.cli.Collector': ['__options'],
-    'ipalib.config.Env': [  # somehow needed for pylint on Python 2
-        'debug',
-        'startup_traceback',
-        'server',
-        'validate_api',
-        'verbose',
+    "ipalib.errors.ACIError": ["info",],
+    "ipalib.errors.ConversionError": ["error",],
+    "ipalib.errors.DatabaseError": ["desc",],
+    "ipalib.errors.NetworkError": ["error",],
+    "ipalib.errors.NotFound": ["reason",],
+    "ipalib.errors.PublicError": ["msg", "strerror", "kw",],
+    "ipalib.errors.SingleMatchExpected": ["found",],
+    "ipalib.errors.SkipPluginModule": ["reason",],
+    "ipalib.errors.ValidationError": ["error",],
+    "ipalib.errors.SchemaUpToDate": ["fingerprint", "ttl",],
+    "ipalib.messages.PublicMessage": ["msg", "strerror", "type", "kw",],
+    "ipalib.parameters.Param": [
+        "cli_name",
+        "cli_short_name",
+        "label",
+        "default",
+        "doc",
+        "required",
+        "multivalue",
+        "primary_key",
+        "normalizer",
+        "default_from",
+        "autofill",
+        "query",
+        "attribute",
+        "include",
+        "exclude",
+        "flags",
+        "hint",
+        "alwaysask",
+        "sortorder",
+        "option_group",
+        "no_convert",
+        "deprecated",
     ],
-    'ipalib.errors.ACIError': [
-        'info',
+    "ipalib.parameters.Bool": ["truths", "falsehoods"],
+    "ipalib.parameters.Data": [
+        "minlength",
+        "maxlength",
+        "length",
+        "pattern",
+        "pattern_errmsg",
     ],
-    'ipalib.errors.ConversionError': [
-        'error',
+    "ipalib.parameters.Str": ["noextrawhitespace"],
+    "ipalib.parameters.Password": ["confirm"],
+    "ipalib.parameters.File": ["stdin_if_missing"],
+    "ipalib.parameters.Enum": ["values"],
+    "ipalib.parameters.Number": ["minvalue", "maxvalue",],
+    "ipalib.parameters.Decimal": ["precision", "exponential", "numberclass",],
+    "ipalib.parameters.DNSNameParam": ["only_absolute", "only_relative",],
+    "ipalib.parameters.Principal": ["require_service",],
+    "ipalib.plugable.API": ["Advice",],
+    "ipalib.util.ForwarderValidationError": ["msg",],
+    "ipaserver.plugins.dns.DNSRecord": ["validatedns", "normalizedns",],
+    "ipatests.test_integration.base.IntegrationTest": [
+        {"domain": [{"name": dir(str)},]},
+        {
+            "master": [
+                {
+                    "config": [
+                        {"dirman_dn": dir(str)},
+                        {"dirman_password": dir(str)},
+                        {"admin_password": dir(str)},
+                        {"admin_name": dir(str)},
+                        {"dns_forwarder": dir(str)},
+                        {"test_dir": dir(str)},
+                        {"ad_admin_name": dir(str)},
+                        {"ad_admin_password": dir(str)},
+                        {"domain_level": dir(str)},
+                        {"fips_mode": dir(bool)},
+                    ]
+                },
+                {
+                    "domain": [
+                        {"basedn": dir(str)},
+                        {"realm": dir(str)},
+                        {"name": dir(str)},
+                    ]
+                },
+                {"external_hostname": dir(str)},
+                {"hostname": dir(str)},
+                "ip",
+                "collect_log",
+                {
+                    "run_command": [
+                        {"stdout_text": dir(str)},
+                        {"stderr_text": dir(str)},
+                        "returncode",
+                    ]
+                },
+                {"transport": ["put_file", "file_exists"]},
+                "put_file_contents",
+                "get_file_contents",
+                "ldap_connect",
+            ]
+        },
+        "replicas",
+        "clients",
+        "ad_domains",
+        {"ads": dir(list)},
+        {"ad_subdomains": dir(list)},
+        {"ad_treedomains": dir(list)},
     ],
-    'ipalib.errors.DatabaseError': [
-        'desc',
-    ],
-    'ipalib.errors.NetworkError': [
-        'error',
-    ],
-    'ipalib.errors.NotFound': [
-        'reason',
-    ],
-    'ipalib.errors.PublicError': [
-        'msg',
-        'strerror',
-        'kw',
-    ],
-    'ipalib.errors.SingleMatchExpected': [
-        'found',
-    ],
-    'ipalib.errors.SkipPluginModule': [
-        'reason',
-    ],
-    'ipalib.errors.ValidationError': [
-        'error',
-    ],
-    'ipalib.errors.SchemaUpToDate': [
-        'fingerprint',
-        'ttl',
-    ],
-    'ipalib.messages.PublicMessage': [
-        'msg',
-        'strerror',
-        'type',
-        'kw',
-    ],
-    'ipalib.parameters.Param': [
-        'cli_name',
-        'cli_short_name',
-        'label',
-        'default',
-        'doc',
-        'required',
-        'multivalue',
-        'primary_key',
-        'normalizer',
-        'default_from',
-        'autofill',
-        'query',
-        'attribute',
-        'include',
-        'exclude',
-        'flags',
-        'hint',
-        'alwaysask',
-        'sortorder',
-        'option_group',
-        'no_convert',
-        'deprecated',
-     ],
-    'ipalib.parameters.Bool': [
-        'truths',
-        'falsehoods'],
-    'ipalib.parameters.Data': [
-        'minlength',
-        'maxlength',
-        'length',
-        'pattern',
-        'pattern_errmsg',
-    ],
-    'ipalib.parameters.Str': ['noextrawhitespace'],
-    'ipalib.parameters.Password': ['confirm'],
-    'ipalib.parameters.File': ['stdin_if_missing'],
-    'ipalib.parameters.Enum': ['values'],
-    'ipalib.parameters.Number': [
-        'minvalue',
-        'maxvalue',
-    ],
-    'ipalib.parameters.Decimal': [
-        'precision',
-        'exponential',
-        'numberclass',
-    ],
-    'ipalib.parameters.DNSNameParam': [
-        'only_absolute',
-        'only_relative',
-    ],
-    'ipalib.parameters.Principal': [
-        'require_service',
-    ],
-    'ipalib.plugable.API': [
-        'Advice',
-    ],
-    'ipalib.util.ForwarderValidationError': [
-        'msg',
-    ],
-    'ipaserver.plugins.dns.DNSRecord': [
-        'validatedns',
-        'normalizedns',
-    ],
-    'ipatests.test_integration.base.IntegrationTest': [
-        {'domain': [
-            {'name': dir(str)},
-        ]},
-        {'master': [
-            {'config': [
-                {'dirman_dn': dir(str)},
-                {'dirman_password': dir(str)},
-                {'admin_password': dir(str)},
-                {'admin_name': dir(str)},
-                {'dns_forwarder': dir(str)},
-                {'test_dir': dir(str)},
-                {'ad_admin_name': dir(str)},
-                {'ad_admin_password': dir(str)},
-                {'domain_level': dir(str)},
-                {'fips_mode': dir(bool)},
-            ]},
-            {'domain': [
-                {'basedn': dir(str)},
-                {'realm': dir(str)},
-                {'name': dir(str)},
-            ]},
-            {'external_hostname': dir(str)},
-            {'hostname': dir(str)},
-            'ip',
-            'collect_log',
-            {'run_command': [
-                {'stdout_text': dir(str)},
-                {'stderr_text': dir(str)},
-                'returncode',
-            ]},
-            {'transport': ['put_file', 'file_exists']},
-            'put_file_contents',
-            'get_file_contents',
-            'ldap_connect',
-        ]},
-        'replicas',
-        'clients',
-        'ad_domains',
-        {'ads': dir(list)},
-        {'ad_subdomains': dir(list)},
-        {'ad_treedomains': dir(list)},
-    ]
 }
 
 
@@ -238,21 +189,31 @@ MANAGER.register_transform(scoped_nodes.ClassDef, fix_ipa_classes)
 
 
 def ipaplatform_constants_transform():
-    return AstroidBuilder(MANAGER).string_build(textwrap.dedent('''
+    return AstroidBuilder(MANAGER).string_build(
+        textwrap.dedent(
+            """
     from ipaplatform.base.constants import constants
     __all__ = ('constants',)
-    '''))
+    """
+        )
+    )
 
 
 def ipaplatform_paths_transform():
-    return AstroidBuilder(MANAGER).string_build(textwrap.dedent('''
+    return AstroidBuilder(MANAGER).string_build(
+        textwrap.dedent(
+            """
     from ipaplatform.base.paths import paths
     __all__ = ('paths',)
-    '''))
+    """
+        )
+    )
 
 
 def ipaplatform_services_transform():
-    return AstroidBuilder(MANAGER).string_build(textwrap.dedent('''
+    return AstroidBuilder(MANAGER).string_build(
+        textwrap.dedent(
+            """
     from ipaplatform.base.services import knownservices
     from ipaplatform.base.services import timedate_services
     from ipaplatform.base.services import service
@@ -260,58 +221,68 @@ def ipaplatform_services_transform():
     from ipaplatform.base.services import wellknownports
     __all__ = ('knownservices', 'timedate_services', 'service',
                'wellknownservices', 'wellknownports')
-    '''))
+    """
+        )
+    )
 
 
 def ipaplatform_tasks_transform():
-    return AstroidBuilder(MANAGER).string_build(textwrap.dedent('''
+    return AstroidBuilder(MANAGER).string_build(
+        textwrap.dedent(
+            """
     from ipaplatform.base.tasks import tasks
     __all__ = ('tasks',)
-    '''))
+    """
+        )
+    )
 
 
-register_module_extender(MANAGER, 'ipaplatform.constants',
-                         ipaplatform_constants_transform)
-register_module_extender(MANAGER, 'ipaplatform.paths',
-                         ipaplatform_paths_transform)
-register_module_extender(MANAGER, 'ipaplatform.services',
-                         ipaplatform_services_transform)
-register_module_extender(MANAGER, 'ipaplatform.tasks',
-                         ipaplatform_tasks_transform)
+register_module_extender(
+    MANAGER, "ipaplatform.constants", ipaplatform_constants_transform
+)
+register_module_extender(MANAGER, "ipaplatform.paths", ipaplatform_paths_transform)
+register_module_extender(
+    MANAGER, "ipaplatform.services", ipaplatform_services_transform
+)
+register_module_extender(MANAGER, "ipaplatform.tasks", ipaplatform_tasks_transform)
 
 
 def ipalib_request_transform():
     """ipalib.request.context attribute
     """
-    return AstroidBuilder(MANAGER).string_build(textwrap.dedent('''
+    return AstroidBuilder(MANAGER).string_build(
+        textwrap.dedent(
+            """
     from ipalib.request import context
     context._pylint_attr = Connection("_pylint", lambda: None)
-    '''))
+    """
+        )
+    )
 
 
-register_module_extender(MANAGER, 'ipalib.request', ipalib_request_transform)
+register_module_extender(MANAGER, "ipalib.request", ipalib_request_transform)
 
 
 class IPAChecker(BaseChecker):
     __implements__ = IAstroidChecker
 
-    name = 'ipa'
+    name = "ipa"
     msgs = {
-        'W9901': (
-            'Forbidden import %s (can\'t import from %s in %s)',
-            'ipa-forbidden-import',
-            'Used when an forbidden import is detected.',
+        "W9901": (
+            "Forbidden import %s (can't import from %s in %s)",
+            "ipa-forbidden-import",
+            "Used when an forbidden import is detected.",
         ),
     }
     options = (
         (
-            'forbidden-imports',
+            "forbidden-imports",
             {
-                'default': '',
-                'type': 'csv',
-                'metavar': '<path>[:<module>[:<module>...]][,<path>...]',
-                'help': 'Modules which are forbidden to be imported in the '
-                        'given paths',
+                "default": "",
+                "type": "csv",
+                "metavar": "<path>[:<module>[:<module>...]][,<path>...]",
+                "help": "Modules which are forbidden to be imported in the "
+                "given paths",
             },
         ),
     )
@@ -322,7 +293,7 @@ class IPAChecker(BaseChecker):
 
         self._forbidden_imports = {self._dir: []}
         for forbidden_import in self.config.forbidden_imports:
-            forbidden_import = forbidden_import.split(':')
+            forbidden_import = forbidden_import.split(":")
             path = os.path.join(self._dir, forbidden_import[0])
             path = os.path.abspath(path)
             modules = forbidden_import[1:]
@@ -346,8 +317,7 @@ class IPAChecker(BaseChecker):
         return self._dir
 
     def visit_module(self, node):
-        self._forbidden_imports_stack.append(
-            self._get_forbidden_import_rule(node))
+        self._forbidden_imports_stack.append(self._get_forbidden_import_rule(node))
 
     def leave_module(self, node):
         self._forbidden_imports_stack.pop()
@@ -357,20 +327,21 @@ class IPAChecker(BaseChecker):
         relpath = os.path.relpath(path, self._dir)
         modules = self._forbidden_imports[path]
         for module in modules:
-            module_prefix = module + '.'
+            module_prefix = module + "."
             for name in names:
                 if name == module or name.startswith(module_prefix):
-                    self.add_message('ipa-forbidden-import',
-                                     args=(name, module, relpath), node=node)
+                    self.add_message(
+                        "ipa-forbidden-import", args=(name, module, relpath), node=node
+                    )
 
-    @check_messages('ipa-forbidden-import')
+    @check_messages("ipa-forbidden-import")
     def visit_import(self, node):
         names = [n[0] for n in node.names]
         self._check_forbidden_imports(node, names)
 
-    @check_messages('ipa-forbidden-import')
+    @check_messages("ipa-forbidden-import")
     def visit_importfrom(self, node):
-        names = ['{}.{}'.format(node.modname, n[0]) for n in node.names]
+        names = ["{}.{}".format(node.modname, n[0]) for n in node.names]
         self._check_forbidden_imports(node, names)
 
 
@@ -384,8 +355,9 @@ class IPAChecker(BaseChecker):
 # required.
 #
 
-AstroidBuilder(MANAGER).string_build(textwrap.dedent(
-    """
+AstroidBuilder(MANAGER).string_build(
+    textwrap.dedent(
+        """
     from ipalib import api
     from ipalib import cli, plugable, rpc
     from ipalib.base import NameSpace
@@ -424,11 +396,13 @@ AstroidBuilder(MANAGER).string_build(textwrap.dedent(
     # ipalib.base.NameSpace
     NameSpace.find = wildcard
     """
-))
+    )
+)
 
 
-AstroidBuilder(MANAGER).string_build(textwrap.dedent(
-    """
+AstroidBuilder(MANAGER).string_build(
+    textwrap.dedent(
+        """
     from ipalib import api
     from ipapython.dn import DN
 
@@ -547,4 +521,5 @@ AstroidBuilder(MANAGER).string_build(textwrap.dedent(
     api.env.wait_for_dns = 0
     api.env.webui_prod = True
     """
-))
+    )
+)

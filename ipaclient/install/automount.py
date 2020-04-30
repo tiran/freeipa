@@ -20,10 +20,8 @@ class AutomountInstallInterface(service.ServiceInstallInterface):
     * ipa-client-install
     * ipa-client-automount
     """
+
     description = "Automount"
 
-    automount_location = knob(
-        str, None,
-        description="Automount location",
-    )
+    automount_location = knob(str, None, description="Automount location",)
     automount_location = enroll_only(automount_location)

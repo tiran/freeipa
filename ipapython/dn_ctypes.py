@@ -121,9 +121,7 @@ def _escape_dn(dn):
 
 def dn2str(dn):
     return ",".join(
-        "+".join(
-            "=".join((attr, _escape_dn(value))) for attr, value, _flag in rdn
-        )
+        "+".join("=".join((attr, _escape_dn(value))) for attr, value, _flag in rdn)
         for rdn in dn
     )
 

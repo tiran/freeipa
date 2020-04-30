@@ -31,13 +31,13 @@ class ODSExporterInstance(service.Service):
             service_desc="IPA OpenDNSSEC exporter daemon",
             fstore=fstore,
             keytab=paths.IPA_ODS_EXPORTER_KEYTAB,
-            service_prefix=u'ipa-ods-exporter'
+            service_prefix=u"ipa-ods-exporter",
         )
         self.ods_uid = None
         self.ods_gid = None
         self.enable_if_exists = False
 
-    suffix = ipautil.dn_attribute_property('_suffix')
+    suffix = ipautil.dn_attribute_property("_suffix")
 
     def create_instance(self, fqdn, realm_name):
         self.backup_state("enabled", self.is_enabled())
@@ -74,16 +74,18 @@ class ODSExporterInstance(service.Service):
     def __enable(self):
 
         try:
-            self.ldap_configure('DNSKeyExporter', self.fqdn, None,
-                                self.suffix)
+            self.ldap_configure("DNSKeyExporter", self.fqdn, None, self.suffix)
         except errors.DuplicateEntry:
             logger.error("DNSKeyExporter service already exists")
 
     def __setup_key_exporter(self):
-        directivesetter.set_directive(paths.SYSCONFIG_IPA_ODS_EXPORTER,
-                                   'SOFTHSM2_CONF',
-                                   paths.DNSSEC_SOFTHSM2_CONF,
-                                   quotes=False, separator='=')
+        directivesetter.set_directive(
+            paths.SYSCONFIG_IPA_ODS_EXPORTER,
+            "SOFTHSM2_CONF",
+            paths.DNSSEC_SOFTHSM2_CONF,
+            quotes=False,
+            separator="=",
+        )
 
     def __setup_principal(self):
         assert self.ods_uid is not None
@@ -97,14 +99,16 @@ class ODSExporterInstance(service.Service):
         installutils.kadmin_addprinc(self.principal)
 
         # Store the keytab on disk
-        installutils.create_keytab(paths.IPA_ODS_EXPORTER_KEYTAB,
-                                   self.principal)
+        installutils.create_keytab(paths.IPA_ODS_EXPORTER_KEYTAB, self.principal)
         p = self.move_service(self.principal)
         if p is None:
             # the service has already been moved, perhaps we're doing a DNS reinstall
             dns_exporter_principal_dn = DN(
-                ('krbprincipalname', self.principal),
-                ('cn', 'services'), ('cn', 'accounts'), self.suffix)
+                ("krbprincipalname", self.principal),
+                ("cn", "services"),
+                ("cn", "accounts"),
+                self.suffix,
+            )
         else:
             dns_exporter_principal_dn = p
 
@@ -112,30 +116,39 @@ class ODSExporterInstance(service.Service):
         os.chmod(self.keytab, 0o440)
         os.chown(self.keytab, 0, self.ods_gid)
 
-        dns_group = DN(('cn', 'DNS Servers'), ('cn', 'privileges'),
-                       ('cn', 'pbac'), self.suffix)
-        mod = [(ldap.MOD_ADD, 'member', dns_exporter_principal_dn)]
+        dns_group = DN(
+            ("cn", "DNS Servers"), ("cn", "privileges"), ("cn", "pbac"), self.suffix
+        )
+        mod = [(ldap.MOD_ADD, "member", dns_exporter_principal_dn)]
 
         try:
             api.Backend.ldap2.modify_s(dns_group, mod)
         except ldap.TYPE_OR_VALUE_EXISTS:
             pass
         except Exception as e:
-            logger.critical("Could not modify principal's %s entry: %s",
-                            dns_exporter_principal_dn, str(e))
+            logger.critical(
+                "Could not modify principal's %s entry: %s",
+                dns_exporter_principal_dn,
+                str(e),
+            )
             raise
 
         # limit-free connection
 
-        mod = [(ldap.MOD_REPLACE, 'nsTimeLimit', '-1'),
-               (ldap.MOD_REPLACE, 'nsSizeLimit', '-1'),
-               (ldap.MOD_REPLACE, 'nsIdleTimeout', '-1'),
-               (ldap.MOD_REPLACE, 'nsLookThroughLimit', '-1')]
+        mod = [
+            (ldap.MOD_REPLACE, "nsTimeLimit", "-1"),
+            (ldap.MOD_REPLACE, "nsSizeLimit", "-1"),
+            (ldap.MOD_REPLACE, "nsIdleTimeout", "-1"),
+            (ldap.MOD_REPLACE, "nsLookThroughLimit", "-1"),
+        ]
         try:
             api.Backend.ldap2.modify_s(dns_exporter_principal_dn, mod)
         except Exception as e:
-            logger.critical("Could not set principal's %s LDAP limits: %s",
-                            dns_exporter_principal_dn, str(e))
+            logger.critical(
+                "Could not set principal's %s LDAP limits: %s",
+                dns_exporter_principal_dn,
+                str(e),
+            )
             raise
 
     def __disable_signerd(self):

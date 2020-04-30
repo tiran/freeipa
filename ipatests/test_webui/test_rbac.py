@@ -25,67 +25,55 @@ from ipatests.test_webui.ui_driver import UI_driver
 from ipatests.test_webui.ui_driver import screenshot
 import pytest
 
-ROLE_ENTITY = 'role'
-ROLE_DEF_FACET = 'member_user'
-ROLE_PKEY = 'AAtest_role'
+ROLE_ENTITY = "role"
+ROLE_DEF_FACET = "member_user"
+ROLE_PKEY = "AAtest_role"
 ROLE_DATA = {
-    'pkey': ROLE_PKEY,
-    'add': [
-        ('textbox', 'cn', ROLE_PKEY),
-        ('textarea', 'description', 'role desc'),
-    ],
-    'mod': [
-        ('textarea', 'description', 'role desc mod'),
-    ],
+    "pkey": ROLE_PKEY,
+    "add": [("textbox", "cn", ROLE_PKEY), ("textarea", "description", "role desc"),],
+    "mod": [("textarea", "description", "role desc mod"),],
 }
 
-PRIVILEGE_ENTITY = 'privilege'
-PRIVILEGE_DEF_FACET = 'memberof_permission'
-PRIVILEGE_PKEY = 'AAtest_privilege'
+PRIVILEGE_ENTITY = "privilege"
+PRIVILEGE_DEF_FACET = "memberof_permission"
+PRIVILEGE_PKEY = "AAtest_privilege"
 PRIVILEGE_DATA = {
-    'pkey': PRIVILEGE_PKEY,
-    'add': [
-        ('textbox', 'cn', PRIVILEGE_PKEY),
-        ('textarea', 'description', 'privilege desc'),
+    "pkey": PRIVILEGE_PKEY,
+    "add": [
+        ("textbox", "cn", PRIVILEGE_PKEY),
+        ("textarea", "description", "privilege desc"),
     ],
-    'mod': [
-        ('textarea', 'description', 'privilege desc mod'),
-    ],
+    "mod": [("textarea", "description", "privilege desc mod"),],
 }
 
-PERMISSION_ENTITY = 'permission'
-PERMISSION_PKEY = 'AAtest_perm'
+PERMISSION_ENTITY = "permission"
+PERMISSION_PKEY = "AAtest_perm"
 PERMISSION_DATA = {
-    'pkey': PERMISSION_PKEY,
-    'add': [
-        ('textbox', 'cn', PERMISSION_PKEY),
-        ('checkbox', 'ipapermright', 'write'),
-        ('checkbox', 'ipapermright', 'read'),
-        ('selectbox', 'type', 'user'),
-        ('checkbox', 'attrs', 'audio'),
-        ('checkbox', 'attrs', 'cn'),
+    "pkey": PERMISSION_PKEY,
+    "add": [
+        ("textbox", "cn", PERMISSION_PKEY),
+        ("checkbox", "ipapermright", "write"),
+        ("checkbox", "ipapermright", "read"),
+        ("selectbox", "type", "user"),
+        ("checkbox", "attrs", "audio"),
+        ("checkbox", "attrs", "cn"),
     ],
-    'mod': [
-        ('checkbox', 'attrs', 'carlicense'),
-    ],
+    "mod": [("checkbox", "attrs", "carlicense"),],
 }
 
 
 @pytest.mark.tier1
 class test_rbac(UI_driver):
-
     @screenshot
     def test_crud(self):
         """
         Basic CRUD: RBAC
         """
         self.init_app()
-        self.basic_crud(ROLE_ENTITY, ROLE_DATA,
-                        default_facet=ROLE_DEF_FACET
-                        )
+        self.basic_crud(ROLE_ENTITY, ROLE_DATA, default_facet=ROLE_DEF_FACET)
 
-        self.basic_crud(PRIVILEGE_ENTITY, PRIVILEGE_DATA,
-                        default_facet=PRIVILEGE_DEF_FACET
-                        )
+        self.basic_crud(
+            PRIVILEGE_ENTITY, PRIVILEGE_DATA, default_facet=PRIVILEGE_DEF_FACET
+        )
 
         self.basic_crud(PERMISSION_ENTITY, PERMISSION_DATA)

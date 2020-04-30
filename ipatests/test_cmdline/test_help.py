@@ -46,6 +46,7 @@ class CLITestContext:
     When exception is given, asserts that exception is raised. The exception
     will be available in the ``exception`` attribute.
     """
+
     def __init__(self, exception=None):
         self.exception = exception
 
@@ -73,23 +74,23 @@ class CLITestContext:
 def test_ipa_help():
     """Test that `ipa help` only writes to stdout"""
     with CLITestContext() as ctx:
-        return_value = api.Backend.cli.run(['help'])
+        return_value = api.Backend.cli.run(["help"])
     assert return_value == 0
-    assert ctx.stderr == ''
+    assert ctx.stderr == ""
 
 
 def test_ipa_help_without_cache():
     """Test `ipa help` without schema cache"""
-    cache_dir = os.path.expanduser('~/.cache/ipa/schema/')
-    backup_dir = os.path.expanduser('~/.cache/ipa/schema.bak/')
+    cache_dir = os.path.expanduser("~/.cache/ipa/schema/")
+    backup_dir = os.path.expanduser("~/.cache/ipa/schema.bak/")
     shutil.rmtree(backup_dir, ignore_errors=True)
     if os.path.isdir(cache_dir):
         os.rename(cache_dir, backup_dir)
     try:
         with CLITestContext() as ctx:
-            return_value = api.Backend.cli.run(['help'])
+            return_value = api.Backend.cli.run(["help"])
         assert return_value == 0
-        assert ctx.stderr == ''
+        assert ctx.stderr == ""
     finally:
         shutil.rmtree(cache_dir, ignore_errors=True)
         try:
@@ -104,11 +105,11 @@ def test_ipa_without_arguments():
     with CLITestContext(exception=SystemExit) as ctx:
         api.Backend.cli.run([])
     assert ctx.exception.code == 2
-    assert ctx.stdout == ''
-    assert 'Error: Command not specified' in ctx.stderr
+    assert ctx.stdout == ""
+    assert "Error: Command not specified" in ctx.stderr
 
     with CLITestContext() as help_ctx:
-        api.Backend.cli.run(['help'])
+        api.Backend.cli.run(["help"])
     assert help_ctx.stdout in ctx.stderr
 
 
@@ -119,12 +120,12 @@ def test_bare_topic():
     match our usage string. The help should be accessed using `ipa help user`.
     """
     with CLITestContext(exception=errors.CommandError) as ctx:
-        api.Backend.cli.run(['user'])
-    assert ctx.exception.name == 'user'
-    assert ctx.stdout == ''
+        api.Backend.cli.run(["user"])
+    assert ctx.exception.name == "user"
+    assert ctx.stdout == ""
 
     with CLITestContext() as help_ctx:
-        return_value = api.Backend.cli.run(['help', 'user'])
+        return_value = api.Backend.cli.run(["help", "user"])
     assert return_value == 0
     assert help_ctx.stdout in ctx.stderr
 
@@ -133,14 +134,14 @@ def test_command_help():
     """Test that `help user-add` & `user-add -h` are equivalent and contain doc
     """
     with CLITestContext() as help_ctx:
-        return_value = api.Backend.cli.run(['help', 'user-add'])
+        return_value = api.Backend.cli.run(["help", "user-add"])
     assert return_value == 0
-    assert help_ctx.stderr == ''
+    assert help_ctx.stderr == ""
 
     with CLITestContext(exception=SystemExit) as h_ctx:
-        api.Backend.cli.run(['user-add', '-h'])
+        api.Backend.cli.run(["user-add", "-h"])
     assert h_ctx.exception.code == 0
-    assert h_ctx.stderr == ''
+    assert h_ctx.stderr == ""
 
     assert h_ctx.stdout == help_ctx.stdout
     assert unicode(user_add.doc) in help_ctx.stdout
@@ -152,14 +153,14 @@ def test_ambiguous_command_or_topic():
     One is a topic, the other is a command
     """
     with CLITestContext() as help_ctx:
-        return_value = api.Backend.cli.run(['help', 'ping'])
+        return_value = api.Backend.cli.run(["help", "ping"])
     assert return_value == 0
-    assert help_ctx.stderr == ''
+    assert help_ctx.stderr == ""
 
     with CLITestContext(exception=SystemExit) as h_ctx:
-        api.Backend.cli.run(['ping', '-h'])
+        api.Backend.cli.run(["ping", "-h"])
     assert h_ctx.exception.code == 0
-    assert h_ctx.stderr == ''
+    assert h_ctx.stderr == ""
 
     assert h_ctx.stdout != help_ctx.stdout
 
@@ -168,9 +169,9 @@ def test_multiline_description():
     """Test that all of a multi-line command description appears in output
     """
     # This assumes trust_add has multiline doc. Ensure it is so.
-    assert '\n\n' in unicode(api.Command.trust_add.doc).strip()
+    assert "\n\n" in unicode(api.Command.trust_add.doc).strip()
 
     with CLITestContext(exception=SystemExit) as help_ctx:
-        api.Backend.cli.run(['trust-add', '-h'])
+        api.Backend.cli.run(["trust-add", "-h"])
 
     assert unicode(api.Command.trust_add.doc).strip() in help_ctx.stdout

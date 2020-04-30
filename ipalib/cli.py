@@ -38,6 +38,7 @@ import termios
 import struct
 import base64
 import traceback
+
 try:
     import readline
     import rlcompleter
@@ -49,7 +50,10 @@ import six
 from six.moves import input
 
 from ipalib.util import (
-    check_client_configuration, get_pager, get_terminal_height, open_in_pager
+    check_client_configuration,
+    get_pager,
+    get_terminal_height,
+    open_in_pager,
 )
 
 if six.PY3:
@@ -57,14 +61,22 @@ if six.PY3:
 
 if six.PY2:
     reload(sys)  # pylint: disable=reload-builtin, undefined-variable
-    sys.setdefaultencoding('utf-8')  # pylint: disable=no-member
+    sys.setdefaultencoding("utf-8")  # pylint: disable=no-member
 
 from ipalib import frontend
 from ipalib import backend
 from ipalib import plugable
-from ipalib.errors import (PublicError, CommandError, HelpError, InternalError,
-                           NoSuchNamespaceError, ValidationError, NotFound,
-                           NotConfiguredError, PromptFailed)
+from ipalib.errors import (
+    PublicError,
+    CommandError,
+    HelpError,
+    InternalError,
+    NoSuchNamespaceError,
+    ValidationError,
+    NotFound,
+    NotConfiguredError,
+    PromptFailed,
+)
 from ipalib.constants import CLI_TAB, LDAP_GENERALIZED_TIME_FORMAT
 from ipalib.parameters import File, BinaryFile, Str, Enum, Any, Flag
 from ipalib.text import _
@@ -83,7 +95,7 @@ def to_cli(name):
     Command Line Interface.
     """
     assert isinstance(name, str)
-    return name.replace('_', '-')
+    return name.replace("_", "-")
 
 
 def from_cli(cli_name):
@@ -91,7 +103,7 @@ def from_cli(cli_name):
     Takes a string from the Command Line Interface and transforms it into a
     Python identifier.
     """
-    return str(cli_name).replace('-', '_')
+    return str(cli_name).replace("-", "_")
 
 
 class textui(backend.Backend):
@@ -109,9 +121,10 @@ class textui(backend.Backend):
         # unsigned shorts, hence the HHHH
         if sys.stdout.isatty():
             try:
-                winsize = fcntl.ioctl(sys.stdout, termios.TIOCGWINSZ,
-                                      struct.pack('HHHH', 0, 0, 0, 0))
-                return struct.unpack('HHHH', winsize)[1]
+                winsize = fcntl.ioctl(
+                    sys.stdout, termios.TIOCGWINSZ, struct.pack("HHHH", 0, 0, 0, 0)
+                )
+                return struct.unpack("HHHH", winsize)[1]
             except IOError:
                 pass
         return None
@@ -135,9 +148,7 @@ class textui(backend.Backend):
         6
         """
         if type(rows) not in (list, tuple):
-            raise TypeError(
-                'rows: need %r or %r; got %r' % (list, tuple, rows)
-            )
+            raise TypeError("rows: need %r or %r; got %r" % (list, tuple, rows))
         if len(rows) == 0:
             return 0
         if col is None:
@@ -146,11 +157,12 @@ class textui(backend.Backend):
 
     def __get_encoding(self, stream):
         assert stream in (sys.stdin, sys.stdout)
-        if getattr(stream, 'encoding', None) is None:
-            return 'UTF-8'
+        if getattr(stream, "encoding", None) is None:
+            return "UTF-8"
         return stream.encoding
 
     if six.PY2:
+
         def decode(self, value):
             """
             Decode text from stdin.
@@ -169,7 +181,9 @@ class textui(backend.Backend):
             assert type(unicode_text) is unicode
             encoding = self.__get_encoding(sys.stdout)
             return unicode_text.encode(encoding)
+
     else:
+
         def decode(self, value):
             return value
 
@@ -188,7 +202,7 @@ class textui(backend.Backend):
         This function also converts datetime and DNSName values to string.
         """
         if type(value) is bytes:
-            return base64.b64encode(value).decode('ascii')
+            return base64.b64encode(value).decode("ascii")
         elif type(value) is datetime.datetime:
             return value.strftime(LDAP_GENERALIZED_TIME_FORMAT)
         elif isinstance(value, DNSName):
@@ -221,7 +235,7 @@ class textui(backend.Backend):
         if width is None:
             width = self.get_tty_width()
         if width is not None and width < len(text):
-            text = text[:width - 3] + '...'
+            text = text[: width - 3] + "..."
         print(unicode(text))
 
     def print_paragraph(self, text, width=None):
@@ -290,9 +304,11 @@ class textui(backend.Backend):
         Also see `textui.print_indented`.
         """
         for (key, value) in rows:
-            self.print_indented('%s = %r' % (key, self.encode_binary(value)), indent)
+            self.print_indented("%s = %r" % (key, self.encode_binary(value)), indent)
 
-    def print_attribute(self, attr, value, format='%s: %s', indent=1, one_value_per_line=True):
+    def print_attribute(
+        self, attr, value, format="%s: %s", indent=1, one_value_per_line=True
+    ):
         """
         Print an ldap attribute.
 
@@ -323,34 +339,33 @@ class textui(backend.Backend):
                 if len(value) > 0 and type(value[0]) in (list, tuple):
                     # This is where we print failed add/remove members
                     for l in value:
-                        text = ': '.join(l)
-                        self.print_indented(format % (attr, self.encode_binary(text)), indent)
+                        text = ": ".join(l)
+                        self.print_indented(
+                            format % (attr, self.encode_binary(text)), indent
+                        )
                     return
                 else:
                     if len(value) > 0:
-                        text = ', '.join(str(v) for v in value)
+                        text = ", ".join(str(v) for v in value)
                     else:
                         return
                 line_len = self.get_tty_width()
                 if line_len and text:
-                    s_indent = '%s%s' % (
-                        CLI_TAB * indent, ' ' * (len(attr) + 2)
-                    )
+                    s_indent = "%s%s" % (CLI_TAB * indent, " " * (len(attr) + 2))
                     line_len -= len(s_indent)
-                    text = textwrap.wrap(
-                        text, line_len, break_long_words=False
-                    )
+                    text = textwrap.wrap(text, line_len, break_long_words=False)
                     if len(text) == 0:
-                        text = [u'']
+                        text = [u""]
                 else:
-                    s_indent = u''
+                    s_indent = u""
                     text = [text]
                 self.print_indented(format % (attr, text[0]), indent)
                 for line in text[1:]:
-                    self.print_plain('%s%s' % (s_indent, line))
+                    self.print_plain("%s%s" % (s_indent, line))
 
-    def print_entry1(self, entry, indent=1, attr_map={}, attr_order=['dn'],
-            one_value_per_line=True):
+    def print_entry1(
+        self, entry, indent=1, attr_map={}, attr_order=["dn"], one_value_per_line=True
+    ):
         """
         Print an ldap entry dict.
         """
@@ -361,11 +376,17 @@ class textui(backend.Backend):
         def print_attr(a):
             if attr in attr_map:
                 self.print_attribute(
-                    attr_map[attr], entry[attr], indent=indent, one_value_per_line=one_value_per_line
+                    attr_map[attr],
+                    entry[attr],
+                    indent=indent,
+                    one_value_per_line=one_value_per_line,
                 )
             else:
                 self.print_attribute(
-                    attr, entry[attr], indent=indent, one_value_per_line=one_value_per_line
+                    attr,
+                    entry[attr],
+                    indent=indent,
+                    one_value_per_line=one_value_per_line,
                 )
 
         for attr in attr_order:
@@ -375,16 +396,34 @@ class textui(backend.Backend):
         for attr in sorted(entry):
             print_attr(attr)
 
-    def print_entries(self, entries, order=None, labels=None, flags=None, print_all=True, format='%s: %s', indent=1):
+    def print_entries(
+        self,
+        entries,
+        order=None,
+        labels=None,
+        flags=None,
+        print_all=True,
+        format="%s: %s",
+        indent=1,
+    ):
         assert isinstance(entries, (list, tuple))
         first = True
         for entry in entries:
             if not first:
-                print('')
+                print("")
             first = False
             self.print_entry(entry, order, labels, flags, print_all, format, indent)
 
-    def print_entry(self, entry, order=None, labels=None, flags=None, print_all=True, format='%s: %s', indent=1):
+    def print_entry(
+        self,
+        entry,
+        order=None,
+        labels=None,
+        flags=None,
+        print_all=True,
+        format="%s: %s",
+        indent=1,
+    ):
         if isinstance(entry, (list, tuple)):
             entry = dict(entry)
         assert isinstance(entry, dict)
@@ -400,24 +439,30 @@ class textui(backend.Backend):
                 label = labels.get(key, key)
                 flag = flags.get(key, [])
                 value = entry[key]
-                if ('suppress_empty' in flag and
-                    value in [u'', '', (), [], None]):
+                if "suppress_empty" in flag and value in [u"", "", (), [], None]:
                     continue
                 if isinstance(value, dict):
                     if frontend.entry_count(value) == 0:
                         continue
-                    self.print_indented(format % (label, ''), indent)
+                    self.print_indented(format % (label, ""), indent)
                     self.print_entry(
-                        value, order, labels, flags, print_all, format,
-                        indent=indent+1
+                        value,
+                        order,
+                        labels,
+                        flags,
+                        print_all,
+                        format,
+                        indent=indent + 1,
                     )
                 else:
-                    if isinstance(value, (list, tuple)) and \
-                       all(isinstance(val, dict) for val in value):
+                    if isinstance(value, (list, tuple)) and all(
+                        isinstance(val, dict) for val in value
+                    ):
                         # this is a list of entries (dicts), not values
-                        self.print_attribute(label, u'', format, indent)
-                        self.print_entries(value, order, labels, flags, print_all,
-                                format, indent+1)
+                        self.print_attribute(label, u"", format, indent)
+                        self.print_entries(
+                            value, order, labels, flags, print_all, format, indent + 1
+                        )
                     else:
                         self.print_attribute(
                             label, value, format, indent, one_value_per_line
@@ -430,7 +475,7 @@ class textui(backend.Backend):
                     key, entry[key], format, indent, one_value_per_line
                 )
 
-    def print_dashed(self, string, above=True, below=True, indent=0, dash='-'):
+    def print_dashed(self, string, above=True, below=True, indent=0, dash="-"):
         """
         Print a string with a dashed line above and/or below.
 
@@ -469,7 +514,7 @@ class textui(backend.Backend):
         A primary header
         ================
         """
-        self.print_dashed(text, indent=0, dash='=')
+        self.print_dashed(text, indent=0, dash="=")
 
     def print_h2(self, text):
         """
@@ -483,7 +528,7 @@ class textui(backend.Backend):
           A secondary header
           ------------------
         """
-        self.print_dashed(text, indent=1, dash='-')
+        self.print_dashed(text, indent=1, dash="-")
 
     def print_name(self, name):
         """
@@ -499,7 +544,7 @@ class textui(backend.Backend):
         show-status:
         ------------
         """
-        self.print_dashed('%s:' % to_cli(name))
+        self.print_dashed("%s:" % to_cli(name))
 
     def print_header(self, msg, output):
         self.print_dashed(msg % output)
@@ -545,12 +590,10 @@ class textui(backend.Backend):
         if type(count) is not int:
             assert type(count) in (list, tuple, dict)
             count = len(count)
-        self.print_dashed(
-            self.choose_number(count, singular, plural)
-        )
+        self.print_dashed(self.choose_number(count, singular, plural))
 
     def print_error(self, text):
-        print('  ** %s **' % unicode(text))
+        print("  ** %s **" % unicode(text))
 
     def prompt_helper(self, prompt, label, prompt_func=input):
         """Prompt user for input
@@ -565,7 +608,7 @@ class textui(backend.Backend):
             raise PromptFailed(name=label)
 
     def print_prompt_attribute_error(self, attribute, error):
-        self.print_plain('>>> %s: %s' % (attribute, error))
+        self.print_plain(">>> %s: %s" % (attribute, error))
 
     def prompt(self, label, default=None, get_values=None, optional=False):
         """
@@ -573,13 +616,13 @@ class textui(backend.Backend):
         """
         # TODO: Add tab completion using readline
         if optional:
-            prompt = u'[%s]' % label
+            prompt = u"[%s]" % label
         else:
-            prompt = u'%s' % label
+            prompt = u"%s" % label
         if default is None:
-            prompt = u'%s: ' % prompt
+            prompt = u"%s: " % prompt
         else:
-            prompt = u'%s [%s]: ' % (prompt, default)
+            prompt = u"%s [%s]: " % (prompt, default)
         return self.prompt_helper(prompt, label)
 
     def prompt_yesno(self, label, default=None):
@@ -604,18 +647,18 @@ class textui(backend.Backend):
                 default_prompt = "No"
 
         if default_prompt:
-            prompt = u'%s Yes/No (default %s): ' % (label, default_prompt)
+            prompt = u"%s Yes/No (default %s): " % (label, default_prompt)
         else:
-            prompt = u'%s Yes/No: ' % label
+            prompt = u"%s Yes/No: " % label
 
         while True:
-            data = self.prompt_helper(prompt, label).lower() #pylint: disable=E1103
+            data = self.prompt_helper(prompt, label).lower()  # pylint: disable=E1103
 
-            if data in (u'yes', u'y'):
+            if data in (u"yes", u"y"):
                 return True
-            elif data in ( u'n', u'no'):
+            elif data in (u"n", u"no"):
                 return False
-            elif default is not None and data == u'':
+            elif default is not None and data == u"":
                 return default
 
         return default  # pylint consinstent return statements
@@ -626,17 +669,21 @@ class textui(backend.Backend):
         on whether there is a tty or not.
         """
         if sys.stdin.isatty():
-            prompt = u'%s: ' % unicode(label)
-            repeat_prompt = unicode(_('Enter %(label)s again to verify: ') % dict(label=label))
+            prompt = u"%s: " % unicode(label)
+            repeat_prompt = unicode(
+                _("Enter %(label)s again to verify: ") % dict(label=label)
+            )
             while True:
                 pw1 = self.prompt_helper(prompt, label, prompt_func=getpass.getpass)
                 if not confirm:
                     return pw1
-                pw2 = self.prompt_helper(repeat_prompt, label, prompt_func=getpass.getpass)
+                pw2 = self.prompt_helper(
+                    repeat_prompt, label, prompt_func=getpass.getpass
+                )
                 if pw1 == pw2:
                     return pw1
                 else:
-                    self.print_error(_('Passwords do not match!'))
+                    self.print_error(_("Passwords do not match!"))
         else:
             return self.decode(sys.stdin.readline().strip())
 
@@ -667,26 +714,28 @@ class textui(backend.Backend):
             # entry
             d = {}
             for a in attrs:
-                d[a] = e.get(a, '')
+                d[a] = e.get(a, "")
             self.print_line("%d: %s" % (i, format % d))
             i = i + 1
 
         if display_count:
-            self.print_count(entries, 'Found %d match', 'Found %d matches')
+            self.print_count(entries, "Found %d match", "Found %d matches")
 
         while True:
             try:
-                resp = self.prompt("Choose one: (1 - %s), a for all, q to quit" % counter)
+                resp = self.prompt(
+                    "Choose one: (1 - %s), a for all, q to quit" % counter
+                )
             except EOFError:
                 return -2
 
-            if resp.lower() == "q": #pylint: disable=E1103
+            if resp.lower() == "q":  # pylint: disable=E1103
                 return -2
-            if resp.lower() == "a": #pylint: disable=E1103
+            if resp.lower() == "a":  # pylint: disable=E1103
                 return -1
             try:
                 selection = int(resp) - 1
-                if (counter > selection >= 0):
+                if counter > selection >= 0:
                     break
             except Exception:
                 # fall through to the error msg
@@ -694,7 +743,7 @@ class textui(backend.Backend):
 
             self.print_line("Please enter a number between 1 and %s" % counter)
 
-        self.print_line('')
+        self.print_line("")
         return selection
 
 
@@ -702,10 +751,12 @@ class help(frontend.Local):
     """
     Display help for a command or topic.
     """
+
     class Writer:
         """
         Writer abstraction
         """
+
         def __init__(self, outfile):
             self.outfile = outfile
             self.buffer = []
@@ -734,23 +785,25 @@ class help(frontend.Local):
                     pass
 
     takes_args = (
-        Str('command?', cli_name='topic', label=_('Topic or Command'),
-            doc=_('The topic or command name.')),
+        Str(
+            "command?",
+            cli_name="topic",
+            label=_("Topic or Command"),
+            doc=_("The topic or command name."),
+        ),
     )
-    takes_options = (
-        Any('outfile?', flags=['no_option']),
-    )
+    takes_options = (Any("outfile?", flags=["no_option"]),)
 
     has_output = tuple()
 
     topic = None
 
     def _get_topic(self, topic):
-        doc = u''
+        doc = u""
         parent_topic = None
 
         for package in self.api.packages:
-            module_name = '{0}.{1}'.format(package.__name__, topic)
+            module_name = "{0}.{1}".format(package.__name__, topic)
             try:
                 module = sys.modules[module_name]
             except KeyError:
@@ -760,7 +813,7 @@ class help(frontend.Local):
                     continue
 
             if module.__doc__ is not None:
-                doc = unicode(module.__doc__ or '').strip()
+                doc = unicode(module.__doc__ or "").strip()
             try:
                 parent_topic = module.topic
             except AttributeError:
@@ -789,7 +842,7 @@ class help(frontend.Local):
 
             if c.topic is not None:
                 doc, topic_name = self._get_topic(c.topic)
-                doc = doc.split('\n', 1)[0]
+                doc = doc.split("\n", 1)[0]
                 if topic_name is None:  # a module without grouping
                     topic_name = c.topic
                     if topic_name in self._topics:
@@ -805,19 +858,19 @@ class help(frontend.Local):
                         if mod_name in self._topics[topic_name][2]:
                             self._topics[topic_name][2][mod_name][2].append(c)
                         else:
-                            self._topics[topic_name][2][mod_name] = [
-                                doc, 0, [c]]
+                            self._topics[topic_name][2][mod_name] = [doc, 0, [c]]
                             self._count_topic_mcl(topic_name, mod_name)
                         # count mcl for for the subtopic
-                        mcl = max((
-                            self._topics[topic_name][2][mod_name][1],
-                            len(c.name)))
+                        mcl = max(
+                            (self._topics[topic_name][2][mod_name][1], len(c.name))
+                        )
                         self._topics[topic_name][2][mod_name][1] = mcl
                     else:
                         self._topics[topic_name] = [
-                            topic[0].split('\n', 1)[0],
+                            topic[0].split("\n", 1)[0],
                             0,
-                            {mod_name: [doc, 0, [c]]}]
+                            {mod_name: [doc, 0, [c]]},
+                        ]
                         self._count_topic_mcl(topic_name, mod_name)
             else:
                 self._builtins.append(c)
@@ -848,8 +901,7 @@ class help(frontend.Local):
             if cmd.NO_CLI:
                 raise HelpError(topic=name)
             self.Backend.cli.build_parser(cmd).print_help(outfile)
-        elif any(name in t[2] for t in self._topics.values()
-                 if type(t[2]) is dict):
+        elif any(name in t[2] for t in self._topics.values() if type(t[2]) is dict):
             self.print_commands(name, outfile)
         elif name == "commands":
             mcl = 0
@@ -859,8 +911,11 @@ class help(frontend.Local):
                 if cmd_plugin.NO_CLI:
                     continue
                 mcl = max(mcl, len(cmd_plugin.name))
-                writer.append('{0}  {1}'.format(
-                    to_cli(cmd_plugin.name).ljust(mcl), cmd_plugin.summary))
+                writer.append(
+                    "{0}  {1}".format(
+                        to_cli(cmd_plugin.name).ljust(mcl), cmd_plugin.summary
+                    )
+                )
         else:
             raise HelpError(topic=name)
         writer.write()
@@ -869,8 +924,7 @@ class help(frontend.Local):
         writer = self.Writer(outfile)
 
         for t, topic in sorted(self._topics.items()):
-            writer.append('{0}  {1}'.format(
-                to_cli(t).ljust(self._mtl), topic[0]))
+            writer.append("{0}  {1}".format(to_cli(t).ljust(self._mtl), topic[0]))
         writer.write()
 
     def print_commands(self, topic, outfile):
@@ -881,8 +935,7 @@ class help(frontend.Local):
             for subtopic in self._topics[topic][2]:
                 doc = self._topics[topic][2][subtopic][0]
                 mcl = self._topics[topic][1]
-                writer.append('  {0}  {1}'.format(
-                    to_cli(subtopic).ljust(mcl), doc))
+                writer.append("  {0}  {1}".format(to_cli(subtopic).ljust(mcl), doc))
         else:
             # we want to display subtopic or a topic which has no subtopics
             if topic in self._topics:
@@ -907,14 +960,14 @@ class help(frontend.Local):
             writer.append(doc)
             if commands:
                 writer.append()
-                writer.append(_('Topic commands:'))
+                writer.append(_("Topic commands:"))
                 for c in commands:
                     writer.append(
-                        '  {0}  {1}'.format(
-                            to_cli(c.name).ljust(mcl), c.summary))
+                        "  {0}  {1}".format(to_cli(c.name).ljust(mcl), c.summary)
+                    )
                 writer.append()
-                writer.append(_('To get command help, use:'))
-                writer.append(_('  ipa <command> --help'))
+                writer.append(_("To get command help, use:"))
+                writer.append(_("  ipa <command> --help"))
             writer.append()
         writer.write()
 
@@ -923,11 +976,8 @@ class show_mappings(frontend.Command):
     """
     Show mapping of LDAP attributes to command-line option.
     """
-    takes_args = (
-        Str('command_name',
-            label=_('Command name'),
-        ),
-    )
+
+    takes_args = (Str("command_name", label=_("Command name"),),)
     has_output = tuple()
 
     topic = None
@@ -937,16 +987,15 @@ class show_mappings(frontend.Command):
         if command_name not in self.Command:
             raise CommandError(name=command_name)
         params = self.Command[command_name].options
-        out = [('Parameter','LDAP attribute'),
-               ('=========','==============')]
+        out = [("Parameter", "LDAP attribute"), ("=========", "==============")]
         mcl = len(out[0][0])
         for param in params():
-            if param.exclude and 'webui' in param.exclude:
+            if param.exclude and "webui" in param.exclude:
                 continue
             out.append((param.cli_name, param.param_spec))
-            mcl = max(mcl,len(param.cli_name))
+            mcl = max(mcl, len(param.cli_name))
         for item in out:
-            print(to_cli(item[0]).ljust(mcl)+' : '+item[1])
+            print(to_cli(item[0]).ljust(mcl) + " : " + item[1])
 
 
 class console(frontend.Command):
@@ -956,7 +1005,7 @@ class console(frontend.Command):
     in the `api` global variable.
     """
 
-    takes_args = ('filename?',)
+    takes_args = ("filename?",)
     has_output = tuple()
 
     topic = None
@@ -998,10 +1047,7 @@ class console(frontend.Command):
                 sys.exit("%s: %s" % (e.filename, e.strerror))
             try:
                 compiled = compile(
-                    source,
-                    filename,
-                    'exec',
-                    flags=print_function.compiler_flag
+                    source, filename, "exec", flags=print_function.compiler_flag
                 )
                 exec(compiled, globals(), local)
             except Exception:
@@ -1011,19 +1057,21 @@ class console(frontend.Command):
             if readline is not None:
                 self._setup_tab_completion(local)
             code.interact(
-                "\n".join((
-                    "(Custom IPA interactive Python console)",
-                    "    api: IPA API object",
-                    "    pp: pretty printer",
-                )),
-                local=local
+                "\n".join(
+                    (
+                        "(Custom IPA interactive Python console)",
+                        "    api: IPA API object",
+                        "    pp: pretty printer",
+                    )
+                ),
+                local=local,
             )
 
 
 class show_api(frontend.Command):
-    'Show attributes on dynamic API object'
+    "Show attributes on dynamic API object"
 
-    takes_args = ('namespaces*',)
+    takes_args = ("namespaces*",)
 
     topic = None
 
@@ -1037,29 +1085,25 @@ class show_api(frontend.Command):
             names = namespaces
         lines = self.__traverse(names)
         ml = max(len(l[1]) for l in lines)
-        self.Backend.textui.print_name('run')
+        self.Backend.textui.print_name("run")
         first = True
         for line in lines:
             if line[0] == 0 and not first:
-                print('')
+                print("")
             if first:
                 first = False
-            print('%s%s %r' % (
-                ' ' * line[0],
-                line[1].ljust(ml),
-                line[2],
-            ))
+            print("%s%s %r" % (" " * line[0], line[1].ljust(ml), line[2],))
         if len(lines) == 1:
-            s = '1 attribute shown.'
+            s = "1 attribute shown."
         else:
-            s = '%d attributes show.' % len(lines)
+            s = "%d attributes show." % len(lines)
         self.Backend.textui.print_dashed(s)
 
     def __traverse(self, names):
         lines = []
         for name in names:
             namespace = self.api[name]
-            self.__traverse_namespace('%s' % name, namespace, lines)
+            self.__traverse_namespace("%s" % name, namespace, lines)
         return lines
 
     def __traverse_namespace(self, name, namespace, lines, tab=0):
@@ -1067,7 +1111,7 @@ class show_api(frontend.Command):
         for member_name in namespace:
             member = namespace[member_name]
             lines.append((tab + 1, member_name, member))
-            if not hasattr(member, '__iter__'):
+            if not hasattr(member, "__iter__"):
                 continue
             for n in member:
                 attr = member[n]
@@ -1084,7 +1128,7 @@ cli_application_commands = (
 
 class Collector:
     def __init__(self):
-        object.__setattr__(self, '_Collector__options', {})
+        object.__setattr__(self, "_Collector__options", {})
 
     def __setattr__(self, name, value):
         if name in self.__options:
@@ -1101,6 +1145,7 @@ class Collector:
     def __todict__(self):
         return dict(self.__options)
 
+
 class CLIOptionParserFormatter(optparse.IndentedHelpFormatter):
     def format_argument(self, name, help_string):
         result = []
@@ -1108,18 +1153,20 @@ class CLIOptionParserFormatter(optparse.IndentedHelpFormatter):
         if len(name) > opt_width:
             name = "%*s%s\n" % (self.current_indent, "", name)
             indent_first = self.help_position
-        else:                       # start help on same line as name
+        else:  # start help on same line as name
             name = "%*s%-*s  " % (self.current_indent, "", opt_width, name)
             indent_first = 0
         result.append(name)
         if help_string:
             help_lines = textwrap.wrap(help_string, self.help_width)
             result.append("%*s%s\n" % (indent_first, "", help_lines[0]))
-            result.extend(["%*s%s\n" % (self.help_position, "", line)
-                           for line in help_lines[1:]])
+            result.extend(
+                ["%*s%s\n" % (self.help_position, "", line) for line in help_lines[1:]]
+            )
         elif name[-1] != "\n":
             result.append("\n")
         return "".join(result)
+
 
 class CLIOptionParser(optparse.OptionParser):
     """
@@ -1127,10 +1174,11 @@ class CLIOptionParser(optparse.OptionParser):
     arguments in CLI help. Custom formatter is used to format the argument
     list in the same way as OptionParser formats options.
     """
+
     def __init__(self, *args, **kwargs):
         self._arguments = []
-        if 'formatter' not in kwargs:
-            kwargs['formatter'] = CLIOptionParserFormatter()
+        if "formatter" not in kwargs:
+            kwargs["formatter"] = CLIOptionParserFormatter()
         optparse.OptionParser.__init__(self, *args, **kwargs)
 
     def format_option_help(self, formatter=None):
@@ -1157,6 +1205,7 @@ class CLIOptionParser(optparse.OptionParser):
     def add_argument(self, name, help_string):
         self._arguments.append((name, help_string))
 
+
 class cli(backend.Executioner):
     """
     Backend plugin for executing from command line interface.
@@ -1170,7 +1219,7 @@ class cli(backend.Executioner):
         if len(argv) == 0:
             self.Command.help(outfile=sys.stderr)
             print(file=sys.stderr)
-            print('Error: Command not specified', file=sys.stderr)
+            print("Error: Command not specified", file=sys.stderr)
             sys.exit(2)
         (key, argv) = (argv[0], argv[1:])
         name = from_cli(key)
@@ -1189,7 +1238,7 @@ class cli(backend.Executioner):
         if self.env.interactive:
             self.prompt_interactively(cmd, kw)
             try:
-                callbacks = cmd.get_callbacks('interactive_prompt')
+                callbacks = cmd.get_callbacks("interactive_prompt")
             except AttributeError:
                 pass
             else:
@@ -1214,7 +1263,9 @@ class cli(backend.Executioner):
                     if param.password and param.name in kw:
                         del kw[param.name]
                 (args, options) = cmd.params_2_args_options(**kw)
-                rv = cmd.output_for_cli(self.api.Backend.textui, result, *args, **options)
+                rv = cmd.output_for_cli(
+                    self.api.Backend.textui, result, *args, **options
+                )
                 if rv:
                     return rv
                 else:
@@ -1241,7 +1292,7 @@ class cli(backend.Executioner):
 
     def build_parser(self, cmd):
         parser = CLIOptionParser(
-            usage=' '.join(self.usage_iter(cmd)),
+            usage=" ".join(self.usage_iter(cmd)),
             description=unicode(cmd.doc),
             formatter=IPAHelpFormatter(),
         )
@@ -1258,26 +1309,23 @@ class cli(backend.Executioner):
             return option_group
 
         for option in cmd.options():
-            kw = dict(
-                dest=option.name,
-                help=unicode(option.doc),
-            )
-            if 'no_option' in option.flags:
+            kw = dict(dest=option.name, help=unicode(option.doc),)
+            if "no_option" in option.flags:
                 continue
             if option.password and self.env.interactive:
-                kw['action'] = 'store_true'
+                kw["action"] = "store_true"
             elif isinstance(option, Flag):
                 if option.default is True:
-                    kw['action'] = 'store_false'
+                    kw["action"] = "store_false"
                 else:
-                    kw['action'] = 'store_true'
+                    kw["action"] = "store_true"
             else:
-                kw['metavar'] = option.cli_metavar
+                kw["metavar"] = option.cli_metavar
 
             cli_name = to_cli(option.cli_name)
-            option_names = ['--%s' % cli_name]
+            option_names = ["--%s" % cli_name]
             if option.cli_short_name:
-                option_names.append('-%s' % option.cli_short_name)
+                option_names.append("-%s" % option.cli_short_name)
             opt = optparse.make_option(*option_names, **kw)
             if option.option_group is None:
                 parser.add_option(opt)
@@ -1286,17 +1334,17 @@ class cli(backend.Executioner):
 
             if option.deprecated_cli_aliases:
                 new_kw = dict(kw)
-                new_kw['help'] = _('Same as --%s') % cli_name
+                new_kw["help"] = _("Same as --%s") % cli_name
                 if isinstance(option, Enum):
-                    new_kw['metavar'] = 'VAL'
-                group = _get_option_group(unicode(_('Deprecated options')))
+                    new_kw["metavar"] = "VAL"
+                group = _get_option_group(unicode(_("Deprecated options")))
                 for alias in option.deprecated_cli_aliases:
-                    name = '--%s' % alias
+                    name = "--%s" % alias
                     group.add_option(optparse.make_option(name, **new_kw))
 
         for arg in cmd.args():
             name = self.__get_arg_name(arg, format_name=False)
-            if 'no_option' in arg.flags or name is None:
+            if "no_option" in arg.flags or name is None:
                 continue
             doc = unicode(arg.doc)
             parser.add_argument(name, doc)
@@ -1311,20 +1359,20 @@ class cli(backend.Executioner):
         if not format_name:
             return name
         if arg.multivalue:
-            name = '%s...' % name
+            name = "%s..." % name
         if arg.required:
             return name
         else:
-            return '[%s]' % name
+            return "[%s]" % name
 
     def usage_iter(self, cmd):
-        yield 'Usage: %%prog [global-options] %s' % to_cli(cmd.name)
+        yield "Usage: %%prog [global-options] %s" % to_cli(cmd.name)
         for arg in cmd.args():
             name = self.__get_arg_name(arg)
             if name is None:
                 continue
             yield name
-        yield '[options]'
+        yield "[options]"
 
     def prompt_interactively(self, cmd, kw):
         """
@@ -1343,8 +1391,11 @@ class cli(backend.Executioner):
                 break
 
         for param in cmd.params():
-            if (param.required and param.name not in kw) or \
-                (param.alwaysask and honor_alwaysask) or self.env.prompt_all:
+            if (
+                (param.required and param.name not in kw)
+                or (param.alwaysask and honor_alwaysask)
+                or self.env.prompt_all
+            ):
                 if param.autofill:
                     kw[param.name] = cmd.get_default_of(param.name, **kw)
                 if param.name in kw and kw[param.name] is not None:
@@ -1359,10 +1410,9 @@ class cli(backend.Executioner):
                     default = cmd.get_default_of(param.name, **kw)
                     optional = param.alwaysask or not param.required
 
-                    value = cmd.prompt_param(param,
-                                             default=default,
-                                             optional=optional,
-                                             kw=kw)
+                    value = cmd.prompt_param(
+                        param, default=default, optional=optional, kw=kw
+                    )
 
                     if value is not None:
                         kw[param.name] = value
@@ -1398,7 +1448,7 @@ class cli(backend.Executioner):
                     except IOError as e:
                         raise ValidationError(
                             name=to_cli(p.cli_name),
-                            error='%s: %s:' % (fname, e.args[1])
+                            error="%s: %s:" % (fname, e.args[1]),
                         )
                 elif p.stdin_if_missing:
                     try:
@@ -1409,9 +1459,7 @@ class cli(backend.Executioner):
                         else:
                             raw = sys.stdin.read()
                     except IOError as e:
-                        raise ValidationError(
-                            name=to_cli(p.cli_name), error=e.args[1]
-                        )
+                        raise ValidationError(name=to_cli(p.cli_name), error=e.args[1])
 
                 if raw:
                     if p.type is bytes:
@@ -1420,7 +1468,7 @@ class cli(backend.Executioner):
                         kw[p.name] = self.Backend.textui.decode(raw)
                 elif p.required:
                     raise ValidationError(
-                        name=to_cli(p.cli_name), error=_('No file to read')
+                        name=to_cli(p.cli_name), error=_("No file to read")
                     )
 
 
@@ -1432,6 +1480,7 @@ class IPAHelpFormatter(optparse.IndentedHelpFormatter):
     IPA's descriptions already have correct line breaks. This formatter
     doesn't touch them (save for removing initial/trailing whitespace).
     """
+
     def format_description(self, description):
         if description:
             return description.strip()
@@ -1451,7 +1500,7 @@ cli_plugins = (
 def run(api):
     error = None
     try:
-        (_options, argv) = api.bootstrap_with_global_options(context='cli')
+        (_options, argv) = api.bootstrap_with_global_options(context="cli")
 
         try:
             check_client_configuration(env=api.env)
@@ -1461,16 +1510,16 @@ def run(api):
         for klass in cli_plugins:
             api.add_plugin(klass)
         api.finalize()
-        if 'config_loaded' not in api.env and 'help' not in argv:
+        if "config_loaded" not in api.env and "help" not in argv:
             raise NotConfiguredError()
         sys.exit(api.Backend.cli.run(argv))
     except KeyboardInterrupt:
-        print('')
-        logger.info('operation aborted')
+        print("")
+        logger.info("operation aborted")
     except PublicError as e:
         error = e
     except Exception as e:
-        logger.exception('%s: %s', e.__class__.__name__, str(e))
+        logger.exception("%s: %s", e.__class__.__name__, str(e))
         error = InternalError()
     if error is not None:
         assert isinstance(error, PublicError)

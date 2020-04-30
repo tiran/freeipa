@@ -49,10 +49,14 @@ def get_time_source():
     ntp_servers = []
     ntp_pool = ""
 
-    if ipautil.user_input("Do you want to configure chrony "
-                          "with NTP server or pool address?", False):
-        servers = user_input("Enter NTP source server addresses separated by "
-                             "comma, or press Enter to skip", allow_empty=True)
+    if ipautil.user_input(
+        "Do you want to configure chrony " "with NTP server or pool address?", False
+    ):
+        servers = user_input(
+            "Enter NTP source server addresses separated by "
+            "comma, or press Enter to skip",
+            allow_empty=True,
+        )
         if servers:  # if user input is not '' (empty)
             logger.debug("User provided NTP server(s):")
             # cut possible multiple servers separated by comma into list
@@ -62,8 +66,10 @@ def get_time_source():
                 ntp_servers.append(server)
                 logger.debug("\t%s", server)
 
-        ntp_pool = user_input("Enter a NTP source pool address, "
-                              "or press Enter to skip", allow_empty=True)
+        ntp_pool = user_input(
+            "Enter a NTP source pool address, " "or press Enter to skip",
+            allow_empty=True,
+        )
         if ntp_pool:  # if user input is not '' (empty)
             logger.debug("User provided NTP pool:\t%s", ntp_pool)
 
@@ -88,35 +94,39 @@ def sync_chrony():
     # 3 attempts means: if first immidiate attempt fails
     # there is 10s delay between next attempts
 
-    args = [paths.CHRONYC, 'waitsync', str(sync_attempt_count), '-d']
+    args = [paths.CHRONYC, "waitsync", str(sync_attempt_count), "-d"]
 
     try:
-        logger.info('Attempting to sync time with chronyc.')
+        logger.info("Attempting to sync time with chronyc.")
         ipautil.run(args)
-        logger.info('Time synchronization was successful.')
+        logger.info("Time synchronization was successful.")
         return True
     except ipautil.CalledProcessError:
-        logger.warning('Process chronyc waitsync failed to sync time!')
+        logger.warning("Process chronyc waitsync failed to sync time!")
         logger.warning(
             "Unable to sync time with chrony server, assuming the time "
             "is in sync. Please check that 123 UDP port is opened, "
-            "and any time server is on network.")
+            "and any time server is on network."
+        )
         return False
 
 
-def configure_chrony(ntp_servers, ntp_pool=None,
-                     fstore=None, sysstore=None, debug=False):
+def configure_chrony(
+    ntp_servers, ntp_pool=None, fstore=None, sysstore=None, debug=False
+):
     """
     This method only configures chrony client with ntp_servers or ntp_pool
     """
 
     module = "chrony"
     if sysstore:
-        sysstore.backup_state(module, "enabled",
-                              services.knownservices.chronyd.is_enabled())
+        sysstore.backup_state(
+            module, "enabled", services.knownservices.chronyd.is_enabled()
+        )
 
-    aug = Augeas(flags=Augeas.NO_LOAD | Augeas.NO_MODL_AUTOLOAD,
-                 loadpath=paths.USR_SHARE_IPA_DIR)
+    aug = Augeas(
+        flags=Augeas.NO_LOAD | Augeas.NO_MODL_AUTOLOAD, loadpath=paths.USR_SHARE_IPA_DIR
+    )
 
     try:
         logger.debug("Configuring chrony")
@@ -124,23 +134,23 @@ def configure_chrony(ntp_servers, ntp_pool=None,
         aug.transform(module, chrony_conf)  # loads chrony lens file
         aug.load()  # loads augeas tree
         # augeas needs to prepend path with '/files'
-        path = '/files{path}'.format(path=chrony_conf)
+        path = "/files{path}".format(path=chrony_conf)
 
         # remove possible conflicting configuration of servers
-        aug.remove('{}/server'.format(path))
-        aug.remove('{}/pool'.format(path))
-        aug.remove('{}/peer'.format(path))
+        aug.remove("{}/server".format(path))
+        aug.remove("{}/pool".format(path))
+        aug.remove("{}/peer".format(path))
         if ntp_pool:
             logger.debug("Setting server pool:")
             logger.debug("'%s'", ntp_pool)
-            aug.set('{}/pool[last()+1]'.format(path), ntp_pool)
-            aug.set('{}/pool[last()]/iburst'.format(path), None)
+            aug.set("{}/pool[last()+1]".format(path), ntp_pool)
+            aug.set("{}/pool[last()]/iburst".format(path), None)
 
         if ntp_servers:
             logger.debug("Setting time servers:")
             for server in ntp_servers:
-                aug.set('{}/server[last()+1]'.format(path), server)
-                aug.set('{}/server[last()]/iburst'.format(path), None)
+                aug.set("{}/server[last()+1]".format(path), server)
+                aug.set("{}/server[last()]/iburst".format(path), None)
                 logger.debug("'%s'", server)
 
         # backup oginal conf file
@@ -150,7 +160,7 @@ def configure_chrony(ntp_servers, ntp_pool=None,
         logger.debug("Writing configuration to '%s'", chrony_conf)
         aug.save()
 
-        logger.info('Configuration of chrony was changed by installer.')
+        logger.info("Configuration of chrony was changed by installer.")
         configured = True
 
     except IOError:
@@ -171,7 +181,7 @@ class NTPConfigurationError(Exception):
 
 
 class NTPConflictingService(NTPConfigurationError):
-    def __init__(self, message='', conflicting_service=None):
+    def __init__(self, message="", conflicting_service=None):
         super(NTPConflictingService, self).__init__(self, message)
         self.conflicting_service = conflicting_service
 
@@ -183,13 +193,12 @@ def check_timedate_services():
     are not enabled to prevent conflicts.
     """
     for service in services.timedate_services:
-        if service == 'chronyd':
+        if service == "chronyd":
             continue
         # Make sure that the service is not enabled
         instance = services.service(service, api)
         if instance.is_enabled() or instance.is_running():
-            raise NTPConflictingService(
-                    conflicting_service=instance.service_name)
+            raise NTPConflictingService(conflicting_service=instance.service_name)
 
 
 def force_chrony(statestore):
@@ -198,15 +207,15 @@ def force_chrony(statestore):
     time&date service
     """
     for service in services.timedate_services:
-        if service == 'chronyd':
+        if service == "chronyd":
             continue
         instance = services.service(service, api)
         enabled = instance.is_enabled()
         running = instance.is_running()
 
         if enabled or running:
-            statestore.backup_state(instance.service_name, 'enabled', enabled)
-            statestore.backup_state(instance.service_name, 'running', running)
+            statestore.backup_state(instance.service_name, "enabled", enabled)
+            statestore.backup_state(instance.service_name, "running", running)
 
             if running:
                 instance.stop()
@@ -215,7 +224,7 @@ def force_chrony(statestore):
                 instance.disable()
 
 
-def restore_forced_timeservices(statestore, skip_service='chronyd'):
+def restore_forced_timeservices(statestore, skip_service="chronyd"):
     """
     Restore from installation and enable/start service that
     were disabled/stopped during installation
@@ -225,10 +234,8 @@ def restore_forced_timeservices(statestore, skip_service='chronyd'):
             continue
         if statestore.has_state(service):
             instance = services.service(service, api)
-            enabled = statestore.restore_state(instance.service_name,
-                                               'enabled')
-            running = statestore.restore_state(instance.service_name,
-                                               'running')
+            enabled = statestore.restore_state(instance.service_name, "enabled")
+            running = statestore.restore_state(instance.service_name, "running")
             if enabled:
                 instance.enable()
             if running:

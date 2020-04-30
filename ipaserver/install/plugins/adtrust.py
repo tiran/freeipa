@@ -11,8 +11,7 @@ from ipapython import ipautil
 from ipaplatform.paths import paths
 from ipaserver.install import service
 from ipaserver.install import sysupgrade
-from ipaserver.install.adtrustinstance import (
-    ADTRUSTInstance, map_Guests_to_nobody)
+from ipaserver.install.adtrustinstance import ADTRUSTInstance, map_Guests_to_nobody
 
 from ipaserver.dcerpc_common import TRUST_BIDIRECTIONAL
 
@@ -33,9 +32,10 @@ logger = logging.getLogger(__name__)
 register = Registry()
 
 DEFAULT_ID_RANGE_SIZE = 200000
-trust_read_keys_template = \
-    ["cn=adtrust agents,cn=sysaccounts,cn=etc,{basedn}",
-     "cn=trust admins,cn=groups,cn=accounts,{basedn}"]
+trust_read_keys_template = [
+    "cn=adtrust agents,cn=sysaccounts,cn=etc,{basedn}",
+    "cn=trust admins,cn=groups,cn=accounts,{basedn}",
+]
 
 
 @register()
@@ -54,37 +54,40 @@ class update_default_range(Updater):
         except errors.NotFound:
             pass
         else:
-            logger.debug("default_range: ipaDomainIDRange entry found, skip "
-                         "plugin")
+            logger.debug("default_range: ipaDomainIDRange entry found, skip " "plugin")
             return False, []
 
-        dn = DN(('cn', 'admins'), self.api.env.container_group,
-                self.api.env.basedn)
+        dn = DN(("cn", "admins"), self.api.env.container_group, self.api.env.basedn)
         try:
-            admins_entry = ldap.get_entry(dn, ['gidnumber'])
+            admins_entry = ldap.get_entry(dn, ["gidnumber"])
         except errors.NotFound:
-            logger.error("default_range: No local ID range and no admins "
-                         "group found. Cannot create default ID range")
+            logger.error(
+                "default_range: No local ID range and no admins "
+                "group found. Cannot create default ID range"
+            )
             return False, []
 
-        id_range_base_id = admins_entry['gidnumber'][0]
-        id_range_name = '%s_id_range' % self.api.env.realm
+        id_range_base_id = admins_entry["gidnumber"][0]
+        id_range_name = "%s_id_range" % self.api.env.realm
         id_range_size = DEFAULT_ID_RANGE_SIZE
 
         range_entry = [
-            dict(attr='objectclass', value='top'),
-            dict(attr='objectclass', value='ipaIDrange'),
-            dict(attr='objectclass', value='ipaDomainIDRange'),
-            dict(attr='cn', value=id_range_name),
-            dict(attr='ipabaseid', value=id_range_base_id),
-            dict(attr='ipaidrangesize', value=id_range_size),
-            dict(attr='iparangetype', value='ipa-local'),
+            dict(attr="objectclass", value="top"),
+            dict(attr="objectclass", value="ipaIDrange"),
+            dict(attr="objectclass", value="ipaDomainIDRange"),
+            dict(attr="cn", value=id_range_name),
+            dict(attr="ipabaseid", value=id_range_base_id),
+            dict(attr="ipaidrangesize", value=id_range_size),
+            dict(attr="iparangetype", value="ipa-local"),
         ]
 
-        dn = DN(('cn', '%s_id_range' % self.api.env.realm),
-                self.api.env.container_ranges, self.api.env.basedn)
+        dn = DN(
+            ("cn", "%s_id_range" % self.api.env.realm),
+            self.api.env.container_ranges,
+            self.api.env.basedn,
+        )
 
-        update = {'dn': dn, 'default': range_entry}
+        update = {"dn": dn, "default": range_entry}
 
         # Default range entry has a hard-coded range size to 200000 which is
         # a default range size in ipa-server-install. This could cause issues
@@ -94,26 +97,29 @@ class update_default_range(Updater):
         # user with an information how to fix it.
         dn = DN(self.api.env.container_dna_posix_ids, self.api.env.basedn)
         search_filter = "objectclass=dnaSharedConfig"
-        attrs = ['dnaHostname', 'dnaRemainingValues']
+        attrs = ["dnaHostname", "dnaRemainingValues"]
         try:
             (entries, _truncated) = ldap.find_entries(search_filter, attrs, dn)
         except errors.NotFound:
-            logger.warning("default_range: no dnaSharedConfig object found. "
-                           "Cannot check default range size.")
+            logger.warning(
+                "default_range: no dnaSharedConfig object found. "
+                "Cannot check default range size."
+            )
         else:
             masters = set()
             remaining_values_sum = 0
             for entry in entries:
-                hostname = entry.get('dnahostname', [None])[0]
+                hostname = entry.get("dnahostname", [None])[0]
                 if hostname is None or hostname in masters:
                     continue
-                remaining_values = entry.get('dnaremainingvalues', [''])[0]
+                remaining_values = entry.get("dnaremainingvalues", [""])[0]
                 try:
                     remaining_values = int(remaining_values)
                 except ValueError:
-                    logger.warning("default_range: could not parse "
-                                   "remaining values from '%s'",
-                                   remaining_values)
+                    logger.warning(
+                        "default_range: could not parse " "remaining values from '%s'",
+                        remaining_values,
+                    )
                     continue
                 else:
                     remaining_values_sum += remaining_values
@@ -121,13 +127,14 @@ class update_default_range(Updater):
                 masters.add(hostname)
 
             if remaining_values_sum > DEFAULT_ID_RANGE_SIZE:
-                msg = ['could not verify default ID range size',
-                       'Please use the following command to set correct ID range size',
-                       '  $ ipa range-mod %s --range-size=RANGE_SIZE' % id_range_name,
-                       'RANGE_SIZE may be computed from --idstart and --idmax options '
-                       'used during IPA server installation:',
-                       '  RANGE_SIZE = (--idmax) - (--idstart) + 1'
-                      ]
+                msg = [
+                    "could not verify default ID range size",
+                    "Please use the following command to set correct ID range size",
+                    "  $ ipa range-mod %s --range-size=RANGE_SIZE" % id_range_name,
+                    "RANGE_SIZE may be computed from --idstart and --idmax options "
+                    "used during IPA server installation:",
+                    "  RANGE_SIZE = (--idmax) - (--idstart) + 1",
+                ]
 
                 logger.error("default_range: %s", "\n".join(msg))
 
@@ -143,21 +150,25 @@ class update_default_trust_view(Updater):
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
 
-        default_trust_view_dn = DN(('cn', 'Default Trust View'),
-                                   self.api.env.container_views,
-                                   self.api.env.basedn)
+        default_trust_view_dn = DN(
+            ("cn", "Default Trust View"),
+            self.api.env.container_views,
+            self.api.env.basedn,
+        )
 
         default_trust_view_entry = [
-            dict(attr='objectclass', value='top'),
-            dict(attr='objectclass', value='ipaIDView'),
-            dict(attr='cn', value='Default Trust View'),
-            dict(attr='description', value='Default Trust View for AD users. '
-                 'Should not be deleted.'),
+            dict(attr="objectclass", value="top"),
+            dict(attr="objectclass", value="ipaIDView"),
+            dict(attr="cn", value="Default Trust View"),
+            dict(
+                attr="description",
+                value="Default Trust View for AD users. " "Should not be deleted.",
+            ),
         ]
 
         # First, see if trusts are enabled on the server
-        if not self.api.Command.adtrust_is_enabled()['result']:
-            logger.debug('AD Trusts are not enabled on this server')
+        if not self.api.Command.adtrust_is_enabled()["result"]:
+            logger.debug("AD Trusts are not enabled on this server")
             return False, []
 
         # Second, make sure the Default Trust View does not exist yet
@@ -166,16 +177,13 @@ class update_default_trust_view(Updater):
         except errors.NotFound:
             pass
         else:
-            logger.debug('Default Trust View already present on this server')
+            logger.debug("Default Trust View already present on this server")
             return False, []
 
         # We have a server with AD trust support without Default Trust View.
         # Create the Default Trust View entry.
 
-        update = {
-            'dn': default_trust_view_dn,
-            'default': default_trust_view_entry
-        }
+        update = {"dn": default_trust_view_dn, "default": default_trust_view_entry}
 
         return False, [update]
 
@@ -204,7 +212,7 @@ class update_sigden_extdom_broken_config(Updater):
         :return: True if config was fixed, False if fix is not needed
         """
         ldap = self.api.Backend.ldap2
-        basedn_attr = 'nsslapd-basedn'
+        basedn_attr = "nsslapd-basedn"
         modified = False
 
         for dn in (self.sidgen_config_dn, self.extdom_config_dn):
@@ -223,9 +231,12 @@ class update_sigden_extdom_broken_config(Updater):
                 elif configured_suffix == "$SUFFIX":
                     # configured value is wrong, fix it
                     entry.single_value[basedn_attr] = str(self.api.env.basedn)
-                    logger.debug("updating attribute %s of %s to correct "
-                                 "value %s",
-                                 basedn_attr, dn, self.api.env.basedn)
+                    logger.debug(
+                        "updating attribute %s of %s to correct " "value %s",
+                        basedn_attr,
+                        dn,
+                        self.api.env.basedn,
+                    )
                     ldap.update_entry(entry)
                     modified = True
                 else:
@@ -234,16 +245,16 @@ class update_sigden_extdom_broken_config(Updater):
         return modified
 
     def execute(self, **options):
-        if sysupgrade.get_upgrade_state('sidgen', 'config_basedn_updated'):
+        if sysupgrade.get_upgrade_state("sidgen", "config_basedn_updated"):
             logger.debug("Already done, skipping")
             return False, ()
 
         restart = False
         if self._fix_config():
-            sysupgrade.set_upgrade_state('sidgen', 'update_sids', True)
+            sysupgrade.set_upgrade_state("sidgen", "update_sids", True)
             restart = True  # DS has to be restarted to apply changes
 
-        sysupgrade.set_upgrade_state('sidgen', 'config_basedn_updated', True)
+        sysupgrade.set_upgrade_state("sidgen", "config_basedn_updated", True)
         return restart, ()
 
 
@@ -255,36 +266,37 @@ class update_sids(Updater):
     This must be run after "update_sigden_extdom_broken_config"
     https://fedorahosted.org/freeipa/ticket/5665
     """
+
     sidgen_config_dn = DN("cn=IPA SIDGEN,cn=plugins,cn=config")
 
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
 
-        if sysupgrade.get_upgrade_state('sidgen', 'update_sids') is not True:
+        if sysupgrade.get_upgrade_state("sidgen", "update_sids") is not True:
             logger.debug("SIDs do not need to be generated")
             return False, ()
 
         # check if IPA domain for AD trust has been created, and if we need to
         # regenerate missing SIDs if attribute 'ipaNTSecurityIdentifier'
         domain_IPA_AD_dn = DN(
-            ('cn', self.api.env.domain),
+            ("cn", self.api.env.domain),
             self.api.env.container_cifsdomains,
-            self.api.env.basedn)
-        attr_name = 'ipaNTSecurityIdentifier'
+            self.api.env.basedn,
+        )
+        attr_name = "ipaNTSecurityIdentifier"
 
         try:
             entry = ldap.get_entry(domain_IPA_AD_dn, attrs_list=[attr_name])
         except errors.NotFound:
-            logger.debug("IPA domain object %s is not configured",
-                         domain_IPA_AD_dn)
-            sysupgrade.set_upgrade_state('sidgen', 'update_sids', False)
+            logger.debug("IPA domain object %s is not configured", domain_IPA_AD_dn)
+            sysupgrade.set_upgrade_state("sidgen", "update_sids", False)
             return False, ()
         else:
             if not entry.single_value.get(attr_name):
                 # we need to run sidgen task
                 sidgen_task_dn = DN(
-                    "cn=generate domain sid,cn=ipa-sidgen-task,cn=tasks,"
-                    "cn=config")
+                    "cn=generate domain sid,cn=ipa-sidgen-task,cn=tasks," "cn=config"
+                )
                 sidgen_tasks_attr = {
                     "objectclass": ["top", "extensibleObject"],
                     "cn": ["sidgen"],
@@ -292,8 +304,7 @@ class update_sids(Updater):
                     "nsslapd-basedn": [self.api.env.basedn],
                 }
 
-                task_entry = ldap.make_entry(sidgen_task_dn,
-                                             **sidgen_tasks_attr)
+                task_entry = ldap.make_entry(sidgen_task_dn, **sidgen_tasks_attr)
                 try:
                     ldap.add_entry(task_entry)
                 except errors.DuplicateEntry:
@@ -312,7 +323,7 @@ class update_sids(Updater):
                 attrs_list=["cn"],
                 # more types of trusts can be stored under cn=trusts, we need
                 # the type with ipaNTTrustPartner attribute
-                filter="(&(ipaNTTrustPartner=*)(!(%s=*)))" % attr_name
+                filter="(&(ipaNTTrustPartner=*)(!(%s=*)))" % attr_name,
             )
         except errors.NotFound:
             pass
@@ -324,29 +335,31 @@ class update_sids(Updater):
                 domain = entry.single_value["cn"]
                 logger.error(
                     "Your trust to %s is broken. Please re-create it by "
-                    "running 'ipa trust-add' again.", domain)
+                    "running 'ipa trust-add' again.",
+                    domain,
+                )
 
-        sysupgrade.set_upgrade_state('sidgen', 'update_sids', False)
+        sysupgrade.set_upgrade_state("sidgen", "update_sids", False)
         return False, ()
 
 
 def get_gidNumber(ldap, env):
     # Read the gidnumber of the fallback group and returns a list with it
-    dn = DN(('cn', ADTRUSTInstance.FALLBACK_GROUP_NAME),
-            env.container_group,
-            env.basedn)
+    dn = DN(
+        ("cn", ADTRUSTInstance.FALLBACK_GROUP_NAME), env.container_group, env.basedn
+    )
 
     try:
-        entry = ldap.get_entry(dn, ['gidnumber'])
-        gidNumber = entry.get('gidnumber')
+        entry = ldap.get_entry(dn, ["gidnumber"])
+        gidNumber = entry.get("gidnumber")
     except errors.NotFound:
-        logger.error("%s not found",
-                     ADTRUSTInstance.FALLBACK_GROUP_NAME)
+        logger.error("%s not found", ADTRUSTInstance.FALLBACK_GROUP_NAME)
         return None
 
     if gidNumber is None:
-        logger.error("%s does not have a gidnumber",
-                     ADTRUSTInstance.FALLBACK_GROUP_NAME)
+        logger.error(
+            "%s does not have a gidnumber", ADTRUSTInstance.FALLBACK_GROUP_NAME
+        )
         return None
 
     return gidNumber
@@ -359,18 +372,20 @@ class update_tdo_gidnumber(Updater):
 
     The value is taken from the fallback group defined in cn=Default SMB Group.
     """
+
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
 
         # First, see if trusts are enabled on the server
-        if not self.api.Command.adtrust_is_enabled()['result']:
-            logger.debug('AD Trusts are not enabled on this server')
+        if not self.api.Command.adtrust_is_enabled()["result"]:
+            logger.debug("AD Trusts are not enabled on this server")
             return False, []
 
         gidNumber = get_gidNumber(ldap, self.api.env)
         if not gidNumber:
-            logger.error("%s does not have a gidnumber",
-                         ADTRUSTInstance.FALLBACK_GROUP_NAME)
+            logger.error(
+                "%s does not have a gidnumber", ADTRUSTInstance.FALLBACK_GROUP_NAME
+            )
             return False, ()
 
         # For each trusted domain object, add posix attributes
@@ -381,40 +396,46 @@ class update_tdo_gidnumber(Updater):
                 DN(self.api.env.container_adtrusts, self.api.env.basedn),
                 scope=ldap.SCOPE_ONELEVEL,
                 filter="(&(objectclass=ipaNTTrustedDomain)"
-                       "(objectclass=ipaIDObject))",
-                attrs_list=['gidnumber', 'uidnumber', 'objectclass',
-                            'ipantsecurityidentifier',
-                            'ipaNTTrustDirection'
-                            'uid', 'cn', 'ipantflatname'])
+                "(objectclass=ipaIDObject))",
+                attrs_list=[
+                    "gidnumber",
+                    "uidnumber",
+                    "objectclass",
+                    "ipantsecurityidentifier",
+                    "ipaNTTrustDirection" "uid",
+                    "cn",
+                    "ipantflatname",
+                ],
+            )
             for tdo in tdos:
                 # if the trusted domain object does not contain gidnumber,
                 # add the default fallback group gidnumber
-                if not tdo.get('gidnumber'):
-                    tdo['gidnumber'] = gidNumber
+                if not tdo.get("gidnumber"):
+                    tdo["gidnumber"] = gidNumber
 
                 # Generate uidNumber and ipaNTSecurityIdentifier if
                 # uidNumber is missing. We rely on sidgen plugin here
                 # to generate ipaNTSecurityIdentifier.
-                if not tdo.get('uidnumber'):
-                    tdo['uidnumber'] = ['-1']
+                if not tdo.get("uidnumber"):
+                    tdo["uidnumber"] = ["-1"]
 
-                if 'posixAccount' not in tdo.get('objectclass'):
-                    tdo['objectclass'].extend(['posixAccount'])
+                if "posixAccount" not in tdo.get("objectclass"):
+                    tdo["objectclass"].extend(["posixAccount"])
                 # Based on the flat name of a TDO,
                 # add user name FLATNAME$ (note dollar sign)
                 # to allow SSSD to map this TDO to a POSIX account
-                if not tdo.get('uid'):
-                    tdo['uid'] = ["{flatname}$".format(
-                                  flatname=tdo.single_value['ipantflatname'])]
-                if not tdo.get('homedirectory'):
-                    tdo['homedirectory'] = ['/dev/null']
+                if not tdo.get("uid"):
+                    tdo["uid"] = [
+                        "{flatname}$".format(flatname=tdo.single_value["ipantflatname"])
+                    ]
+                if not tdo.get("homedirectory"):
+                    tdo["homedirectory"] = ["/dev/null"]
 
                 # Store resulted entry
                 try:
                     ldap.update_entry(tdo)
                 except errors.ExecutionError as e:
-                    logger.warning(
-                        "Failed to update trusted domain object %s", tdo.dn)
+                    logger.warning("Failed to update trusted domain object %s", tdo.dn)
                     logger.debug("Exception during TDO update: %s", str(e))
 
         except errors.NotFound:
@@ -431,10 +452,11 @@ class update_mapping_Guests_to_nobody(Updater):
 
     Samba 4.9 became more strict on availability of builtin Guests group
     """
+
     def execute(self, **options):
         # First, see if trusts are enabled on the server
-        if not self.api.Command.adtrust_is_enabled()['result']:
-            logger.debug('AD Trusts are not enabled on this server')
+        if not self.api.Command.adtrust_is_enabled()["result"]:
+            logger.debug("AD Trusts are not enabled on this server")
             return False, []
 
         map_Guests_to_nobody()
@@ -474,18 +496,27 @@ class update_tdo_to_new_layout(Updater):
     The update to <REMOTE FLATNAME$> POSIX/SMB identities is done through
     the update plugin update_tdo_gidnumber.
     """
+
     tgt_principal_template = "krbtgt/{remote}@{local}"
     nbt_principal_template = "{nbt}$@{realm}"
-    trust_filter = \
-        "(&(objectClass=ipaNTTrustedDomain)(objectClass=ipaIDObject))"
-    trust_attrs = ("ipaNTFlatName", "ipaNTTrustPartner", "ipaNTTrustDirection",
-                   "cn", "ipaNTTrustAttributes", "ipaNTAdditionalSuffixes",
-                   "ipaNTTrustedDomainSID", "ipaNTTrustType",
-                   "ipaNTTrustAuthIncoming", "ipaNTTrustAuthOutgoing")
-    change_password_template = \
-        "change_password -pw {password} " \
-        "-e aes256-cts-hmac-sha1-96,aes128-cts-hmac-sha1-96 " \
+    trust_filter = "(&(objectClass=ipaNTTrustedDomain)(objectClass=ipaIDObject))"
+    trust_attrs = (
+        "ipaNTFlatName",
+        "ipaNTTrustPartner",
+        "ipaNTTrustDirection",
+        "cn",
+        "ipaNTTrustAttributes",
+        "ipaNTAdditionalSuffixes",
+        "ipaNTTrustedDomainSID",
+        "ipaNTTrustType",
+        "ipaNTTrustAuthIncoming",
+        "ipaNTTrustAuthOutgoing",
+    )
+    change_password_template = (
+        "change_password -pw {password} "
+        "-e aes256-cts-hmac-sha1-96,aes128-cts-hmac-sha1-96 "
         "{principal}"
+    )
 
     KRB_PRINC_CREATE_DEFAULT = 0x00000000
     KRB_PRINC_CREATE_DISABLED = 0x00000001
@@ -508,12 +539,12 @@ class update_tdo_to_new_layout(Updater):
         # structs that have `AuthType` field which should be equal to
         # `LSA_TRUST_AUTH_TYPE_CLEAR`.
         # Then AuthInfo field would contain a password as an array of bytes
-        assert(packed.count != 0)
-        assert(packed.current.count != 0)
-        assert(packed.current.array[0].AuthType == lsa.TRUST_AUTH_TYPE_CLEAR)
+        assert packed.count != 0
+        assert packed.current.count != 0
+        assert packed.current.array[0].AuthType == lsa.TRUST_AUTH_TYPE_CLEAR
         clear_value = packed.current.array[0].AuthInfo.password
 
-        return ''.join(map(chr, clear_value))
+        return "".join(map(chr, clear_value))
 
     def set_krb_principal(self, principals, password, trustdn, flags=None):
 
@@ -529,13 +560,11 @@ class update_tdo_to_new_layout(Updater):
         entry = None
         en = None
         try:
-            entry = ldap.get_entry(
-                DN(('krbprincipalname', trust_principal), trustdn))
+            entry = ldap.get_entry(DN(("krbprincipalname", trust_principal), trustdn))
             dn = entry.dn
             action = ldap.update_entry
-            ticket_flags = int(entry.single_value.get('krbticketflags', 0))
-            logger.debug("Updating Kerberos principal entry for %s",
-                         trust_principal)
+            ticket_flags = int(entry.single_value.get("krbticketflags", 0))
+            logger.debug("Updating Kerberos principal entry for %s", trust_principal)
         except errors.NotFound:
             # For a principal that must exist, we re-raise the exception
             # to let the caller to handle this situation
@@ -545,66 +574,70 @@ class update_tdo_to_new_layout(Updater):
             ticket_flags = 0
             if alias:
                 try:
-                    en = ldap.get_entry(
-                        DN(('krbprincipalname', alias), trustdn))
+                    en = ldap.get_entry(DN(("krbprincipalname", alias), trustdn))
                     ldap.delete_entry(en.dn)
-                    ticket_flags = int(en.single_value.get(
-                        'krbticketflags', 0))
+                    ticket_flags = int(en.single_value.get("krbticketflags", 0))
                 except errors.NotFound:
-                    logger.debug("Entry for alias TDO does not exist for "
-                                 "trusted domain object %s, skip it",
-                                 alias)
+                    logger.debug(
+                        "Entry for alias TDO does not exist for "
+                        "trusted domain object %s, skip it",
+                        alias,
+                    )
 
-            dn = DN(('krbprincipalname', trust_principal), trustdn)
+            dn = DN(("krbprincipalname", trust_principal), trustdn)
             entry = ldap.make_entry(dn)
-            logger.debug("Adding Kerberos principal entry for %s",
-                         trust_principal)
+            logger.debug("Adding Kerberos principal entry for %s", trust_principal)
             action = ldap.add_entry
 
         entry_data = {
-            'objectclass':
-                ['krbPrincipal', 'krbPrincipalAux',
-                 'krbTicketPolicyAux', 'top'],
-            'krbcanonicalname': [trust_principal],
-            'krbprincipalname': [trust_principal],
+            "objectclass": [
+                "krbPrincipal",
+                "krbPrincipalAux",
+                "krbTicketPolicyAux",
+                "top",
+            ],
+            "krbcanonicalname": [trust_principal],
+            "krbprincipalname": [trust_principal],
         }
 
         if flags & self.KRB_PRINC_CREATE_DISABLED:
-            entry_data['krbticketflags'] = (ticket_flags |
-                                            self.KRB_DISALLOW_ALL_TIX)
+            entry_data["krbticketflags"] = ticket_flags | self.KRB_DISALLOW_ALL_TIX
 
         if flags & self.KRB_PRINC_CREATE_AGENT_PERMISSION:
-            entry_data['objectclass'].extend(['ipaAllowedOperations'])
+            entry_data["objectclass"].extend(["ipaAllowedOperations"])
 
         if alias:
-            entry_data['krbprincipalname'].extend([alias])
+            entry_data["krbprincipalname"].extend([alias])
             if en:
-                entry_data['krbprincipalkey'] = en.single_value.get(
-                    'krbprincipalkey')
-                entry_data['krbextradata'] = en.single_value.get(
-                    'krbextradata')
-                read_keys = en.get('ipaAllowedToPerform;read_keys', [])
+                entry_data["krbprincipalkey"] = en.single_value.get("krbprincipalkey")
+                entry_data["krbextradata"] = en.single_value.get("krbextradata")
+                read_keys = en.get("ipaAllowedToPerform;read_keys", [])
                 if not read_keys:
                     # Old style, no ipaAllowedToPerform;read_keys in the entry,
                     # use defaults that ipasam should have set when creating a
                     # trust
-                    read_keys = list(map(
-                        lambda x: x.format(basedn=self.api.env.basedn),
-                        trust_read_keys_template))
-                entry_data['ipaAllowedToPerform;read_keys'] = read_keys
+                    read_keys = list(
+                        map(
+                            lambda x: x.format(basedn=self.api.env.basedn),
+                            trust_read_keys_template,
+                        )
+                    )
+                entry_data["ipaAllowedToPerform;read_keys"] = read_keys
 
         entry.update(entry_data)
         try:
             action(entry)
         except errors.EmptyModlist:
-            logger.debug("No update was required for Kerberos principal %s",
-                         trust_principal)
+            logger.debug(
+                "No update was required for Kerberos principal %s", trust_principal
+            )
 
         # If entry existed, no need to set Kerberos keys on it
         if action == ldap.update_entry:
-            logger.debug("No need to update Kerberos keys for "
-                         "existing Kerberos principal %s",
-                         trust_principal)
+            logger.debug(
+                "No need to update Kerberos keys for " "existing Kerberos principal %s",
+                trust_principal,
+            )
             return
 
         # Now that entry is updated, set its Kerberos keys.
@@ -618,23 +651,28 @@ class update_tdo_to_new_layout(Updater):
         # of the passwords and also to avoid its exposure to other processes
         # Since we don't want to record the output, make also a redacted log
         change_password = self.change_password_template.format(
-            password=password,
-            principal=trust_principal)
+            password=password, principal=trust_principal
+        )
 
         redacted = self.change_password_template.format(
-            password='<REDACTED OUT>',
-            principal=trust_principal)
-        logger.debug("Updating Kerberos keys for %s with the following "
-                     "kadmin command:\n\t%s", trust_principal, redacted)
+            password="<REDACTED OUT>", principal=trust_principal
+        )
+        logger.debug(
+            "Updating Kerberos keys for %s with the following " "kadmin command:\n\t%s",
+            trust_principal,
+            redacted,
+        )
 
-        ipautil.run([paths.KADMIN_LOCAL, "-x",
-                    "ipa-setup-override-restrictions"],
-                    stdin=change_password, skip_output=True)
+        ipautil.run(
+            [paths.KADMIN_LOCAL, "-x", "ipa-setup-override-restrictions"],
+            stdin=change_password,
+            skip_output=True,
+        )
 
     def execute(self, **options):
         # First, see if trusts are enabled on the server
-        if not self.api.Command.adtrust_is_enabled()['result']:
-            logger.debug('AD Trusts are not enabled on this server')
+        if not self.api.Command.adtrust_is_enabled()["result"]:
+            logger.debug("AD Trusts are not enabled on this server")
             return False, []
 
         # If we have no Samba bindings, this master is not a trust controller
@@ -646,8 +684,8 @@ class update_tdo_to_new_layout(Updater):
         if gidNumber is None:
             return False, []
 
-        result = self.api.Command.trustconfig_show()['result']
-        our_nbt_name = result.get('ipantflatname', [None])[0]
+        result = self.api.Command.trustconfig_show()["result"]
+        our_nbt_name = result.get("ipantflatname", [None])[0]
         if not our_nbt_name:
             return False, []
 
@@ -661,85 +699,110 @@ class update_tdo_to_new_layout(Updater):
                 base_dn=trusts_dn,
                 scope=ldap.SCOPE_ONELEVEL,
                 filter=self.trust_filter,
-                attrs_list=self.trust_attrs)
+                attrs_list=self.trust_attrs,
+            )
         except errors.EmptyResult:
             trusts = []
 
         # For every trust, retrieve its principals and convert
         for t_entry in trusts:
             t_dn = t_entry.dn
-            logger.debug('Processing trust domain object %s', str(t_dn))
-            t_realm = t_entry.single_value.get('ipaNTTrustPartner').upper()
-            direction = int(t_entry.single_value.get('ipaNTTrustDirection'))
+            logger.debug("Processing trust domain object %s", str(t_dn))
+            t_realm = t_entry.single_value.get("ipaNTTrustPartner").upper()
+            direction = int(t_entry.single_value.get("ipaNTTrustDirection"))
             passwd_incoming = self.retrieve_trust_password(
-                ndr_unpack(drsblobs.trustAuthInOutBlob,
-                           t_entry.single_value.get('ipaNTTrustAuthIncoming')))
+                ndr_unpack(
+                    drsblobs.trustAuthInOutBlob,
+                    t_entry.single_value.get("ipaNTTrustAuthIncoming"),
+                )
+            )
             passwd_outgoing = self.retrieve_trust_password(
-                ndr_unpack(drsblobs.trustAuthInOutBlob,
-                           t_entry.single_value.get('ipaNTTrustAuthOutgoing')))
+                ndr_unpack(
+                    drsblobs.trustAuthInOutBlob,
+                    t_entry.single_value.get("ipaNTTrustAuthOutgoing"),
+                )
+            )
             # For outbound and inbound trusts, process four principals total
             if (direction & TRUST_BIDIRECTIONAL) == TRUST_BIDIRECTIONAL:
                 # 1. OUTBOUND: krbtgt/<REMOTE REALM>@<OUR REALM> must exist
                 trust_principal = self.tgt_principal_template.format(
-                    remote=t_realm, local=self.api.env.realm)
+                    remote=t_realm, local=self.api.env.realm
+                )
                 try:
-                    self.set_krb_principal(trust_principal,
-                                           passwd_outgoing,
-                                           t_dn,
-                                           flags=self.KRB_PRINC_CREATE_DEFAULT)
+                    self.set_krb_principal(
+                        trust_principal,
+                        passwd_outgoing,
+                        t_dn,
+                        flags=self.KRB_PRINC_CREATE_DEFAULT,
+                    )
                 except errors.NotFound:
                     # It makes no sense to convert this one, skip the trust
                     # completely, better to re-establish one
                     logger.error(
                         "Broken trust to AD: %s not found, "
                         "please re-establish the trust to %s",
-                        trust_principal, t_realm)
+                        trust_principal,
+                        t_realm,
+                    )
                     continue
 
                 # 2. Create <REMOTE FLATNAME$>@<OUR REALM>
-                nbt_name = t_entry.single_value.get('ipaNTFlatName')
+                nbt_name = t_entry.single_value.get("ipaNTFlatName")
                 nbt_principal = self.nbt_principal_template.format(
-                    nbt=nbt_name, realm=self.api.env.realm)
+                    nbt=nbt_name, realm=self.api.env.realm
+                )
                 tgt_principal = self.tgt_principal_template.format(
-                    remote=nbt_name, local=self.api.env.realm)
-                self.set_krb_principal([nbt_principal, tgt_principal],
-                                       passwd_incoming,
-                                       t_dn,
-                                       flags=self.KRB_PRINC_CREATE_DEFAULT)
+                    remote=nbt_name, local=self.api.env.realm
+                )
+                self.set_krb_principal(
+                    [nbt_principal, tgt_principal],
+                    passwd_incoming,
+                    t_dn,
+                    flags=self.KRB_PRINC_CREATE_DEFAULT,
+                )
 
             # 3. INBOUND: krbtgt/<OUR REALM>@<REMOTE REALM> must exist
             trust_principal = self.tgt_principal_template.format(
-                remote=self.api.env.realm, local=t_realm)
+                remote=self.api.env.realm, local=t_realm
+            )
             try:
-                self.set_krb_principal(trust_principal, passwd_outgoing,
-                                       t_dn,
-                                       flags=self.KRB_PRINC_CREATE_DEFAULT)
+                self.set_krb_principal(
+                    trust_principal,
+                    passwd_outgoing,
+                    t_dn,
+                    flags=self.KRB_PRINC_CREATE_DEFAULT,
+                )
             except errors.NotFound:
                 # It makes no sense to convert this one, skip the trust
                 # completely, better to re-establish one
                 logger.error(
                     "Broken trust to AD: %s not found, "
                     "please re-establish the trust to %s",
-                    trust_principal, t_realm)
+                    trust_principal,
+                    t_realm,
+                )
                 continue
 
             # 4. Create krbtgt/<OUR FLATNAME>@<REMOTE REALM>, disabled
             nbt_principal = self.nbt_principal_template.format(
-                nbt=our_nbt_name, realm=t_realm)
+                nbt=our_nbt_name, realm=t_realm
+            )
             tgt_principal = self.tgt_principal_template.format(
-                remote=our_nbt_name, local=t_realm)
-            self.set_krb_principal([tgt_principal, nbt_principal],
-                                   passwd_incoming,
-                                   t_dn,
-                                   flags=self.KRB_PRINC_CREATE_DEFAULT |
-                                   self.KRB_PRINC_CREATE_AGENT_PERMISSION |
-                                   self.KRB_PRINC_CREATE_DISABLED)
+                remote=our_nbt_name, local=t_realm
+            )
+            self.set_krb_principal(
+                [tgt_principal, nbt_principal],
+                passwd_incoming,
+                t_dn,
+                flags=self.KRB_PRINC_CREATE_DEFAULT
+                | self.KRB_PRINC_CREATE_AGENT_PERMISSION
+                | self.KRB_PRINC_CREATE_DISABLED,
+            )
 
         return False, []
 
 
-KeyEntry = namedtuple('KeyEntry',
-                      ['kvno', 'principal', 'etype', 'key'])
+KeyEntry = namedtuple("KeyEntry", ["kvno", "principal", "etype", "key"])
 
 
 @register()
@@ -754,24 +817,28 @@ class update_host_cifs_keytabs(Updater):
     """
 
     host_princ_template = "host/{master}@{realm}"
-    valid_etypes = ['aes256-cts-hmac-sha1-96', 'aes128-cts-hmac-sha1-96']
+    valid_etypes = ["aes256-cts-hmac-sha1-96", "aes128-cts-hmac-sha1-96"]
 
     def extract_key_refs(self, keytab):
         host_princ = self.host_princ_template.format(
-            master=self.api.env.host, realm=self.api.env.realm)
-        result = ipautil.run([paths.KLIST, "-eK", "-k", keytab],
-                             capture_output=True, raiseonerr=False,
-                             nolog_output=True)
+            master=self.api.env.host, realm=self.api.env.realm
+        )
+        result = ipautil.run(
+            [paths.KLIST, "-eK", "-k", keytab],
+            capture_output=True,
+            raiseonerr=False,
+            nolog_output=True,
+        )
         if result.returncode != 0:
             return None
 
         keys_to_sync = []
         for l in result.output.splitlines():
-            if (host_princ in l and any(e in l for e in self.valid_etypes)):
+            if host_princ in l and any(e in l for e in self.valid_etypes):
 
                 els = l.split()
-                els[-2] = els[-2].strip('()')
-                els[-1] = els[-1].strip('()')
+                els[-2] = els[-2].strip("()")
+                els[-1] = els[-1].strip("()")
                 keys_to_sync.append(KeyEntry._make(els))
 
         return keys_to_sync
@@ -781,33 +848,47 @@ class update_host_cifs_keytabs(Updater):
         # prefixed with 0x, as produced by klist -K -k.
         # However, ktutil accepts hex value without 0x, so
         # we should strip first two characters.
-        stdin = dedent("""\
+        stdin = dedent(
+            """\
         rkt {keytab}
         addent -key -p {principal} -k {kvno} -e {etype}
         {key}
         wkt {keytab}
-        """).format(keytab=keytab, principal=keyentry.principal,
-                    kvno=keyentry.kvno, etype=keyentry.etype,
-                    key=keyentry.key[2:])
+        """
+        ).format(
+            keytab=keytab,
+            principal=keyentry.principal,
+            kvno=keyentry.kvno,
+            etype=keyentry.etype,
+            key=keyentry.key[2:],
+        )
 
-        result = ipautil.run([paths.KTUTIL], stdin=stdin, raiseonerr=False,
-                             umask=0o077, nolog_output=True)
+        result = ipautil.run(
+            [paths.KTUTIL],
+            stdin=stdin,
+            raiseonerr=False,
+            umask=0o077,
+            nolog_output=True,
+        )
 
         if result.returncode != 0:
-            logger.warning('Unable to update %s with new keys', keytab)
+            logger.warning("Unable to update %s with new keys", keytab)
 
     def execute(self, **options):
         # First, see if trusts are enabled on the server
-        if not self.api.Command.adtrust_is_enabled()['result']:
-            logger.debug('AD Trusts are not enabled on this server')
+        if not self.api.Command.adtrust_is_enabled()["result"]:
+            logger.debug("AD Trusts are not enabled on this server")
             return False, []
 
         # Extract keys from the host and samba keytabs
         hostkeys = self.extract_key_refs(paths.KRB5_KEYTAB)
         cifskeys = self.extract_key_refs(paths.SAMBA_KEYTAB)
         if any([hostkeys is None, cifskeys is None]):
-            logger.warning('Either %s or %s are missing or unreadable',
-                           paths.KRB5_KEYTAB, paths.SAMBA_KEYTAB)
+            logger.warning(
+                "Either %s or %s are missing or unreadable",
+                paths.KRB5_KEYTAB,
+                paths.SAMBA_KEYTAB,
+            )
             return False, []
 
         # If there are missing host keys in the samba keytab, copy them over
@@ -816,10 +897,13 @@ class update_host_cifs_keytabs(Updater):
             copied = False
             uptodate = False
             for cifskey in cifskeys:
-                if all([cifskey.principal == hostkey.principal,
-                        cifskey.etype == hostkey.etype]):
-                    if any([cifskey.key != hostkey.key,
-                            cifskey.kvno != hostkey.kvno]):
+                if all(
+                    [
+                        cifskey.principal == hostkey.principal,
+                        cifskey.etype == hostkey.etype,
+                    ]
+                ):
+                    if any([cifskey.key != hostkey.key, cifskey.kvno != hostkey.kvno]):
                         self.copy_key(paths.SAMBA_KEYTAB, hostkey)
                         copied = True
                         break
@@ -832,19 +916,18 @@ class update_host_cifs_keytabs(Updater):
 
 @register()
 class update_tdo_default_read_keys_permissions(Updater):
-    trust_filter = \
-        "(&(objectClass=krbPrincipal)(krbPrincipalName=krbtgt/{nbt}@*))"
+    trust_filter = "(&(objectClass=krbPrincipal)(krbPrincipalName=krbtgt/{nbt}@*))"
 
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
 
         # First, see if trusts are enabled on the server
-        if not self.api.Command.adtrust_is_enabled()['result']:
-            logger.debug('AD Trusts are not enabled on this server')
+        if not self.api.Command.adtrust_is_enabled()["result"]:
+            logger.debug("AD Trusts are not enabled on this server")
             return False, []
 
-        result = self.api.Command.trustconfig_show()['result']
-        our_nbt_name = result.get('ipantflatname', [None])[0]
+        result = self.api.Command.trustconfig_show()["result"]
+        our_nbt_name = result.get("ipantflatname", [None])[0]
         if not our_nbt_name:
             return False, []
 
@@ -859,29 +942,35 @@ class update_tdo_default_read_keys_permissions(Updater):
                 base_dn=trusts_dn,
                 scope=ldap.SCOPE_SUBTREE,
                 filter=trust_filter,
-                attrs_list=['*'])
+                attrs_list=["*"],
+            )
         except errors.EmptyResult:
             tdos = []
 
         for tdo in tdos:
             updates = dict()
-            oc = tdo.get('objectClass', [])
-            if 'ipaAllowedOperations' not in oc:
-                updates['objectClass'] = oc + ['ipaAllowedOperations']
+            oc = tdo.get("objectClass", [])
+            if "ipaAllowedOperations" not in oc:
+                updates["objectClass"] = oc + ["ipaAllowedOperations"]
 
-            read_keys = tdo.get('ipaAllowedToPerform;read_keys', [])
+            read_keys = tdo.get("ipaAllowedToPerform;read_keys", [])
             if not read_keys:
-                read_keys_values = list(map(
-                    lambda x: x.format(basedn=self.api.env.basedn),
-                    trust_read_keys_template))
-                updates['ipaAllowedToPerform;read_keys'] = read_keys_values
+                read_keys_values = list(
+                    map(
+                        lambda x: x.format(basedn=self.api.env.basedn),
+                        trust_read_keys_template,
+                    )
+                )
+                updates["ipaAllowedToPerform;read_keys"] = read_keys_values
 
             tdo.update(updates)
             try:
                 ldap.update_entry(tdo)
             except errors.EmptyModlist:
-                logger.debug("No update was required for TDO %s",
-                             tdo.single_value.get('krbCanonicalName'))
+                logger.debug(
+                    "No update was required for TDO %s",
+                    tdo.single_value.get("krbCanonicalName"),
+                )
 
         return False, []
 
@@ -894,46 +983,48 @@ class update_adtrust_agents_members(Updater):
     - member: krbprincipalname=cifs/master@realm,cn=services,cn=accounts,base
     - member: fqdn=master,cn=computers,cn=accounts,base
     """
+
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
 
         # First, see if trusts are enabled on the server
-        if not self.api.Command.adtrust_is_enabled()['result']:
-            logger.debug('AD Trusts are not enabled on this server')
+        if not self.api.Command.adtrust_is_enabled()["result"]:
+            logger.debug("AD Trusts are not enabled on this server")
             return False, []
 
         agents_dn = DN(
-            ('cn', 'adtrust agents'), self.api.env.container_sysaccounts,
-            self.api.env.basedn)
+            ("cn", "adtrust agents"),
+            self.api.env.container_sysaccounts,
+            self.api.env.basedn,
+        )
 
         try:
-            agents_entry = ldap.get_entry(agents_dn, ['member'])
+            agents_entry = ldap.get_entry(agents_dn, ["member"])
         except errors.NotFound:
             logger.error("No adtrust agents group found")
             return False, []
 
         # Build a list of agents from the cifs/.. members
         agents_list = []
-        members = agents_entry.get('member', [])
-        suffix = '@{}'.format(self.api.env.realm).lower()
+        members = agents_entry.get("member", [])
+        suffix = "@{}".format(self.api.env.realm).lower()
 
         for amember in members:
-            if amember[0].attr.lower() == 'krbprincipalname':
+            if amember[0].attr.lower() == "krbprincipalname":
                 # Extract krbprincipalname=cifs/hostname@realm from the DN
                 value = amember[0].value
-                if (value.lower().startswith('cifs/') and
-                        value.lower().endswith(suffix)):
+                if value.lower().startswith("cifs/") and value.lower().endswith(suffix):
                     # 5 = length of 'cifs/'
-                    hostname = value[5:-len(suffix)]
-                    agents_list.append(DN(('fqdn', hostname),
-                                       self.api.env.container_host,
-                                       self.api.env.basedn))
+                    hostname = value[5 : -len(suffix)]
+                    agents_list.append(
+                        DN(
+                            ("fqdn", hostname),
+                            self.api.env.container_host,
+                            self.api.env.basedn,
+                        )
+                    )
 
         # Add the fqdn=hostname... to the group
-        service.add_principals_to_group(
-            ldap,
-            agents_dn,
-            "member",
-            agents_list)
+        service.add_principals_to_group(ldap, agents_dn, "member", agents_list)
 
         return False, []

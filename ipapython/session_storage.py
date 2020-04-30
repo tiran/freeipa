@@ -8,10 +8,10 @@ import sys
 
 KRB5_CC_NOSUPP = -1765328137
 
-if sys.platform == 'darwin':
-    LIBKRB5_FILENAME = 'libkrb5.dylib'
+if sys.platform == "darwin":
+    LIBKRB5_FILENAME = "libkrb5.dylib"
 else:
-    LIBKRB5_FILENAME = 'libkrb5.so.3'
+    LIBKRB5_FILENAME = "libkrb5.so.3"
 
 try:
     LIBKRB5 = ctypes.CDLL(LIBKRB5_FILENAME)
@@ -25,18 +25,22 @@ krb5_enctype = krb5_int32
 krb5_octet = ctypes.c_uint8
 krb5_timestamp = krb5_int32
 
+
 class _krb5_context(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_context"""
+
     _fields_ = []
 
 
 class _krb5_ccache(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_ccache"""
+
     _fields_ = []
 
 
 class _krb5_data(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_data"""
+
     _fields_ = [
         ("magic", krb5_magic),
         ("length", ctypes.c_uint),
@@ -46,21 +50,24 @@ class _krb5_data(ctypes.Structure):  # noqa
 
 class krb5_principal_data(ctypes.Structure):  # noqa
     """krb5/krb5.h struct krb5_principal_data"""
+
     _fields_ = []
 
 
 class _krb5_keyblock(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_keyblock"""
+
     _fields_ = [
         ("magic", krb5_magic),
         ("enctype", krb5_enctype),
         ("length", ctypes.c_uint),
-        ("contents", ctypes.POINTER(krb5_octet))
+        ("contents", ctypes.POINTER(krb5_octet)),
     ]
 
 
 class _krb5_ticket_times(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_ticket_times"""
+
     _fields_ = [
         ("authtime", krb5_timestamp),
         ("starttime", krb5_timestamp),
@@ -71,11 +78,13 @@ class _krb5_ticket_times(ctypes.Structure):  # noqa
 
 class _krb5_address(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_address"""
+
     _fields_ = []
 
 
 class _krb5_authdata(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_authdata"""
+
     _fields_ = []
 
 
@@ -91,6 +100,7 @@ krb5_authdata_p = ctypes.POINTER(_krb5_authdata)
 
 class _krb5_creds(ctypes.Structure):  # noqa
     """krb5/krb5.h struct _krb5_creds"""
+
     _fields_ = [
         ("magic", krb5_magic),
         ("client", krb5_principal),
@@ -102,7 +112,7 @@ class _krb5_creds(ctypes.Structure):  # noqa
         ("addresses", ctypes.POINTER(krb5_address_p)),
         ("ticket", krb5_data),
         ("second_ticket", krb5_data),
-        ("authdata", ctypes.POINTER(krb5_authdata_p))
+        ("authdata", ctypes.POINTER(krb5_authdata_p)),
     ]
 
 
@@ -125,12 +135,12 @@ krb5_pointer = ctypes.c_void_p
 krb5_cc_cursor = krb5_pointer
 
 krb5_init_context = LIBKRB5.krb5_init_context
-krb5_init_context.argtypes = (ctypes.POINTER(krb5_context), )
+krb5_init_context.argtypes = (ctypes.POINTER(krb5_context),)
 krb5_init_context.restype = krb5_error
 krb5_init_context.errcheck = krb5_errcheck
 
 krb5_free_context = LIBKRB5.krb5_free_context
-krb5_free_context.argtypes = (krb5_context, )
+krb5_free_context.argtypes = (krb5_context,)
 krb5_free_context.restype = None
 
 krb5_free_principal = LIBKRB5.krb5_free_principal
@@ -142,30 +152,47 @@ krb5_free_data_contents.argtypes = (krb5_context, krb5_data_p)
 krb5_free_data_contents.restype = None
 
 krb5_cc_default = LIBKRB5.krb5_cc_default
-krb5_cc_default.argtypes = (krb5_context, ctypes.POINTER(krb5_ccache), )
+krb5_cc_default.argtypes = (
+    krb5_context,
+    ctypes.POINTER(krb5_ccache),
+)
 krb5_cc_default.restype = krb5_error
 krb5_cc_default.errcheck = krb5_errcheck
 
 krb5_cc_close = LIBKRB5.krb5_cc_close
-krb5_cc_close.argtypes = (krb5_context, krb5_ccache, )
+krb5_cc_close.argtypes = (
+    krb5_context,
+    krb5_ccache,
+)
 krb5_cc_close.restype = krb5_error
 krb5_cc_close.errcheck = krb5_errcheck
 
 krb5_parse_name = LIBKRB5.krb5_parse_name
-krb5_parse_name.argtypes = (krb5_context, ctypes.c_char_p,
-                            ctypes.POINTER(krb5_principal), )
+krb5_parse_name.argtypes = (
+    krb5_context,
+    ctypes.c_char_p,
+    ctypes.POINTER(krb5_principal),
+)
 krb5_parse_name.restype = krb5_error
 krb5_parse_name.errcheck = krb5_errcheck
 
 krb5_cc_set_config = LIBKRB5.krb5_cc_set_config
-krb5_cc_set_config.argtypes = (krb5_context, krb5_ccache, krb5_principal,
-                               ctypes.c_char_p, krb5_data_p, )
+krb5_cc_set_config.argtypes = (
+    krb5_context,
+    krb5_ccache,
+    krb5_principal,
+    ctypes.c_char_p,
+    krb5_data_p,
+)
 krb5_cc_set_config.restype = krb5_error
 krb5_cc_set_config.errcheck = krb5_errcheck
 
 krb5_cc_get_principal = LIBKRB5.krb5_cc_get_principal
-krb5_cc_get_principal.argtypes = (krb5_context, krb5_ccache,
-                                  ctypes.POINTER(krb5_principal), )
+krb5_cc_get_principal.argtypes = (
+    krb5_context,
+    krb5_ccache,
+    ctypes.POINTER(krb5_principal),
+)
 krb5_cc_get_principal.restype = krb5_error
 krb5_cc_get_principal.errcheck = krb5_errcheck
 
@@ -173,29 +200,44 @@ krb5_cc_get_principal.errcheck = krb5_errcheck
 # in a ctypes argtypes definition, so I explicitly listed the number of
 # arguments we actually use through the code for type checking purposes
 krb5_build_principal = LIBKRB5.krb5_build_principal
-krb5_build_principal.argtypes = (krb5_context, ctypes.POINTER(krb5_principal),
-                                 ctypes.c_uint, ctypes.c_char_p,
-                                 ctypes.c_char_p, ctypes.c_char_p,
-                                 ctypes.c_char_p, ctypes.c_char_p, )
+krb5_build_principal.argtypes = (
+    krb5_context,
+    ctypes.POINTER(krb5_principal),
+    ctypes.c_uint,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+)
 krb5_build_principal.restype = krb5_error
 krb5_build_principal.errcheck = krb5_errcheck
 
 krb5_cc_start_seq_get = LIBKRB5.krb5_cc_start_seq_get
-krb5_cc_start_seq_get.argtypes = (krb5_context, krb5_ccache,
-                                  ctypes.POINTER(krb5_cc_cursor), )
+krb5_cc_start_seq_get.argtypes = (
+    krb5_context,
+    krb5_ccache,
+    ctypes.POINTER(krb5_cc_cursor),
+)
 krb5_cc_start_seq_get.restype = krb5_error
 krb5_cc_start_seq_get.errcheck = krb5_errcheck
 
 krb5_cc_next_cred = LIBKRB5.krb5_cc_next_cred
-krb5_cc_next_cred.argtypes = (krb5_context, krb5_ccache,
-                              ctypes.POINTER(krb5_cc_cursor),
-                              ctypes.POINTER(krb5_creds), )
+krb5_cc_next_cred.argtypes = (
+    krb5_context,
+    krb5_ccache,
+    ctypes.POINTER(krb5_cc_cursor),
+    ctypes.POINTER(krb5_creds),
+)
 krb5_cc_next_cred.restype = krb5_error
 krb5_cc_next_cred.errcheck = krb5_errcheck
 
 krb5_cc_end_seq_get = LIBKRB5.krb5_cc_end_seq_get
-krb5_cc_end_seq_get.argtypes = (krb5_context, krb5_ccache,
-                                ctypes.POINTER(krb5_cc_cursor), )
+krb5_cc_end_seq_get.argtypes = (
+    krb5_context,
+    krb5_ccache,
+    ctypes.POINTER(krb5_cc_cursor),
+)
 krb5_cc_end_seq_get.restype = krb5_error
 krb5_cc_end_seq_get.errcheck = krb5_errcheck
 
@@ -205,18 +247,27 @@ krb5_free_cred_contents.restype = krb5_error
 krb5_free_cred_contents.errcheck = krb5_errcheck
 
 krb5_principal_compare = LIBKRB5.krb5_principal_compare
-krb5_principal_compare.argtypes = (krb5_context, krb5_principal,
-                                   krb5_principal, )
+krb5_principal_compare.argtypes = (
+    krb5_context,
+    krb5_principal,
+    krb5_principal,
+)
 krb5_principal_compare.restype = krb5_boolean
 
 krb5_unparse_name = LIBKRB5.krb5_unparse_name
-krb5_unparse_name.argtypes = (krb5_context, krb5_principal,
-                              ctypes.POINTER(ctypes.c_char_p), )
+krb5_unparse_name.argtypes = (
+    krb5_context,
+    krb5_principal,
+    ctypes.POINTER(ctypes.c_char_p),
+)
 krb5_unparse_name.restype = krb5_error
 krb5_unparse_name.errcheck = krb5_errcheck
 
 krb5_free_unparsed_name = LIBKRB5.krb5_free_unparsed_name
-krb5_free_unparsed_name.argtypes = (krb5_context, ctypes.c_char_p, )
+krb5_free_unparsed_name.argtypes = (
+    krb5_context,
+    ctypes.c_char_p,
+)
 krb5_free_unparsed_name.restype = None
 
 CONF_REALM = b"X-CACHECONF:"
@@ -228,11 +279,11 @@ def store_data(princ_name, key, value):
     Stores the session cookie in a hidden ccache entry.
     """
     if not isinstance(princ_name, bytes):
-        princ_name = princ_name.encode('utf-8')
+        princ_name = princ_name.encode("utf-8")
     if not isinstance(key, bytes):
-        key = key.encode('ascii')
+        key = key.encode("ascii")
     if not isinstance(value, bytes):
-        value = value.encode('utf-8')
+        value = value.encode("utf-8")
 
     # FILE ccaches grow every time an entry is stored, so we need
     # to avoid storing the same entry multiple times.
@@ -247,8 +298,7 @@ def store_data(princ_name, key, value):
     try:
         krb5_init_context(ctypes.byref(context))
 
-        krb5_parse_name(context, ctypes.c_char_p(princ_name),
-                        ctypes.byref(principal))
+        krb5_parse_name(context, ctypes.c_char_p(princ_name), ctypes.byref(principal))
 
         krb5_cc_default(context, ctypes.byref(ccache))
 
@@ -256,8 +306,7 @@ def store_data(princ_name, key, value):
         data = _krb5_data()
         data.data = buf.value
         data.length = len(buf)
-        krb5_cc_set_config(context, ccache, principal, key,
-                           ctypes.byref(data))
+        krb5_cc_set_config(context, ccache, principal, key, ctypes.byref(data))
 
     finally:
         if principal:
@@ -273,9 +322,9 @@ def get_data(princ_name, key):
     Gets the session cookie in a hidden ccache entry.
     """
     if not isinstance(princ_name, bytes):
-        princ_name = princ_name.encode('utf-8')
+        princ_name = princ_name.encode("utf-8")
     if not isinstance(key, bytes):
-        key = key.encode('utf-8')
+        key = key.encode("utf-8")
 
     context = krb5_context()
     principal = krb5_principal()
@@ -292,14 +341,19 @@ def get_data(princ_name, key):
 
         # We need to parse and then unparse the name in case the pric_name
         # passed in comes w/o a realm attached
-        krb5_parse_name(context, ctypes.c_char_p(princ_name),
-                        ctypes.byref(pname_princ))
+        krb5_parse_name(context, ctypes.c_char_p(princ_name), ctypes.byref(pname_princ))
         krb5_unparse_name(context, pname_princ, ctypes.byref(pname))
 
-        krb5_build_principal(context, ctypes.byref(srv_princ),
-                             len(CONF_REALM), ctypes.c_char_p(CONF_REALM),
-                             ctypes.c_char_p(CONF_NAME), ctypes.c_char_p(key),
-                             pname, ctypes.c_char_p(None))
+        krb5_build_principal(
+            context,
+            ctypes.byref(srv_princ),
+            len(CONF_REALM),
+            ctypes.c_char_p(CONF_REALM),
+            ctypes.c_char_p(CONF_NAME),
+            ctypes.c_char_p(key),
+            pname,
+            ctypes.c_char_p(None),
+        )
 
         # Unfortunately we can't just use krb5_cc_get_config()
         # because of bugs in some ccache handling code in krb5
@@ -314,12 +368,14 @@ def get_data(princ_name, key):
                 checkcreds = krb5_creds()
                 # the next function will throw an error and break out of the
                 # while loop when we try to access past the last cred
-                krb5_cc_next_cred(context, ccache, ctypes.byref(cursor),
-                                  ctypes.byref(checkcreds))
-                if (krb5_principal_compare(context, principal,
-                                          checkcreds.client) == 1 and
-                    krb5_principal_compare(context, srv_princ,
-                                           checkcreds.server) == 1):
+                krb5_cc_next_cred(
+                    context, ccache, ctypes.byref(cursor), ctypes.byref(checkcreds)
+                )
+                if (
+                    krb5_principal_compare(context, principal, checkcreds.client) == 1
+                    and krb5_principal_compare(context, srv_princ, checkcreds.server)
+                    == 1
+                ):
                     if got_creds:
                         krb5_free_cred_contents(context, ctypes.byref(creds))
                     creds = checkcreds
@@ -328,8 +384,7 @@ def get_data(princ_name, key):
                     # in the ccache for those ccaches that cannot delete
                     # but only always append, like FILE
                 else:
-                    krb5_free_cred_contents(context,
-                                            ctypes.byref(checkcreds))
+                    krb5_free_cred_contents(context, ctypes.byref(checkcreds))
         except KRB5Error:
             pass
         finally:
@@ -361,9 +416,9 @@ def remove_data(princ_name, key):
     Removes the hidden ccache entry with the session cookie.
     """
     if not isinstance(princ_name, bytes):
-        princ_name = princ_name.encode('utf-8')
+        princ_name = princ_name.encode("utf-8")
     if not isinstance(key, bytes):
-        key = key.encode('utf-8')
+        key = key.encode("utf-8")
 
     context = krb5_context()
     principal = krb5_principal()
@@ -372,8 +427,7 @@ def remove_data(princ_name, key):
     try:
         krb5_init_context(ctypes.byref(context))
 
-        krb5_parse_name(context, ctypes.c_char_p(princ_name),
-                        ctypes.byref(principal))
+        krb5_parse_name(context, ctypes.c_char_p(princ_name), ctypes.byref(principal))
 
         krb5_cc_default(context, ctypes.byref(ccache))
 
@@ -388,6 +442,6 @@ def remove_data(princ_name, key):
         if principal:
             krb5_free_principal(context, principal)
         if ccache:
-          krb5_cc_close(context, ccache)
+            krb5_cc_close(context, ccache)
         if context:
             krb5_free_context(context)

@@ -15,29 +15,29 @@ from ipatests.test_integration.base import IntegrationTest
 from ipatests.pytest_ipa.integration import tasks
 
 
-SELFSIGNED_CA_HELPER = 'SelfSign'
-IPA_CA_HELPER = 'IPA'
-PKINIT_STATUS_ENABLED = 'enabled'
-PKINIT_STATUS_DISABLED = 'disabled'
+SELFSIGNED_CA_HELPER = "SelfSign"
+IPA_CA_HELPER = "IPA"
+PKINIT_STATUS_ENABLED = "enabled"
+PKINIT_STATUS_DISABLED = "disabled"
 
 
 def check_pkinit_status(host, status):
     """Ensures that ipa-pkinit-manage status returns the expected state"""
-    result = host.run_command(['ipa-pkinit-manage', 'status'],
-                              raiseonerr=False)
+    result = host.run_command(["ipa-pkinit-manage", "status"], raiseonerr=False)
     assert result.returncode == 0
-    assert 'PKINIT is {}'.format(status) in result.stdout_text
+    assert "PKINIT is {}".format(status) in result.stdout_text
 
 
 def check_pkinit_tracking(host, ca_helper):
     """Ensures that the PKINIT cert is tracked by the expected helper"""
-    result = host.run_command(['getcert', 'list', '-f', paths.KDC_CERT],
-                              raiseonerr=False)
+    result = host.run_command(
+        ["getcert", "list", "-f", paths.KDC_CERT], raiseonerr=False
+    )
     assert result.returncode == 0
     # Make sure that only one request exists
-    assert result.stdout_text.count('Request ID') == 1
+    assert result.stdout_text.count("Request ID") == 1
     # Make sure that the right CA helper is used to track the cert
-    assert 'CA: {}'.format(ca_helper) in result.stdout_text
+    assert "CA: {}".format(ca_helper) in result.stdout_text
 
 
 def check_pkinit_cert_issuer(host, issuer):
@@ -67,8 +67,8 @@ def check_pkinit(host, enabled=True):
         check_pkinit_status(host, PKINIT_STATUS_ENABLED)
         check_pkinit_tracking(host, IPA_CA_HELPER)
         check_pkinit_cert_issuer(
-            host,
-            'CN=Certificate Authority,O={}'.format(host.domain.realm))
+            host, "CN=Certificate Authority,O={}".format(host.domain.realm)
+        )
     else:
         # When pkinit is disabled
         # cert is tracked by 'SelfSign' CA helper
@@ -76,8 +76,8 @@ def check_pkinit(host, enabled=True):
         check_pkinit_status(host, PKINIT_STATUS_DISABLED)
         check_pkinit_tracking(host, SELFSIGNED_CA_HELPER)
         check_pkinit_cert_issuer(
-            host,
-            'CN={},O={}'.format(host.hostname, host.domain.realm))
+            host, "CN={},O={}".format(host.hostname, host.domain.realm)
+        )
 
 
 class TestPkinitManage(IntegrationTest):
@@ -97,19 +97,19 @@ class TestPkinitManage(IntegrationTest):
     @classmethod
     def install(cls, mh):
         # Install the master with PKINIT disabled
-        tasks.install_master(cls.master, extra_args=['--no-pkinit'])
+        tasks.install_master(cls.master, extra_args=["--no-pkinit"])
         check_pkinit(cls.master, enabled=False)
 
     def test_pkinit_enable(self):
-        self.master.run_command(['ipa-pkinit-manage', 'enable'])
+        self.master.run_command(["ipa-pkinit-manage", "enable"])
         check_pkinit(self.master, enabled=True)
 
     def test_pkinit_disable(self):
-        self.master.run_command(['ipa-pkinit-manage', 'disable'])
+        self.master.run_command(["ipa-pkinit-manage", "disable"])
         check_pkinit(self.master, enabled=False)
 
     def test_pkinit_reenable(self):
-        self.master.run_command(['ipa-pkinit-manage', 'enable'])
+        self.master.run_command(["ipa-pkinit-manage", "enable"])
         check_pkinit(self.master, enabled=True)
 
     def test_pkinit_on_replica(self):
@@ -120,11 +120,12 @@ class TestPkinitManage(IntegrationTest):
         then call ipa-pkinit-manage enable. The replica must contact
         a master with a CA instance to get its KDC cert.
         """
-        tasks.install_replica(self.master, self.replicas[0], setup_ca=False,
-                              extra_args=['--no-pkinit'])
+        tasks.install_replica(
+            self.master, self.replicas[0], setup_ca=False, extra_args=["--no-pkinit"]
+        )
         check_pkinit(self.replicas[0], enabled=False)
 
-        self.replicas[0].run_command(['ipa-pkinit-manage', 'enable'])
+        self.replicas[0].run_command(["ipa-pkinit-manage", "enable"])
         check_pkinit(self.replicas[0], enabled=True)
 
 
@@ -133,6 +134,7 @@ class TestPkinitInstall(IntegrationTest):
 
     Non-regression test for issue 7795.
     """
+
     num_replicas = 0
 
     @classmethod

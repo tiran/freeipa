@@ -41,57 +41,53 @@ pytestmark = pytest.mark.tier0
 
 # certificate for CN=ipa.example.com,O=IPA
 goodcert = (
-    b'MIICAjCCAWugAwIBAgICBEUwDQYJKoZIhvcNAQEFBQAwKTEnMCUGA1UEAxMeSVBB'
-    b'IFRlc3QgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTEwMDYyNTEzMDA0MloXDTE1'
-    b'MDYyNTEzMDA0MlowKDEMMAoGA1UEChMDSVBBMRgwFgYDVQQDEw9pcGEuZXhhbXBs'
-    b'ZS5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJcZ+H6+cQaN/BlzR8OY'
-    b'kVeJgaU5tCaV9FF1m7Ws/ftPtTJUaSL1ncp6603rjA4tH1aa/B8i8xdC46+ZbY2a'
-    b'u8b9ryGcOsx2uaRpNLEQ2Fy//q1kQC8oM+iD8Nd6osF0a2wnugsgnJHPuJzhViaW'
-    b'xYgzk5DRdP81debokF3f3FX/AgMBAAGjOjA4MBEGCWCGSAGG+EIBAQQEAwIGQDAT'
-    b'BgNVHSUEDDAKBggrBgEFBQcDATAOBgNVHQ8BAf8EBAMCBPAwDQYJKoZIhvcNAQEF'
-    b'BQADgYEALD6X9V9w381AzzQPcHsjIjiX3B/AF9RCGocKZUDXkdDhsD9NZ3PLPEf1'
-    b'AMjkraKG963HPB8scyiBbbSuSh6m7TCp0eDgRpo77zNuvd3U4Qpm0Qk+KEjtHQDj'
-    b'NNG6N4ZnCQPmjFPScElvc/GgW7XMbywJy2euF+3/Uip8cnPgSH4='
+    b"MIICAjCCAWugAwIBAgICBEUwDQYJKoZIhvcNAQEFBQAwKTEnMCUGA1UEAxMeSVBB"
+    b"IFRlc3QgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTEwMDYyNTEzMDA0MloXDTE1"
+    b"MDYyNTEzMDA0MlowKDEMMAoGA1UEChMDSVBBMRgwFgYDVQQDEw9pcGEuZXhhbXBs"
+    b"ZS5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJcZ+H6+cQaN/BlzR8OY"
+    b"kVeJgaU5tCaV9FF1m7Ws/ftPtTJUaSL1ncp6603rjA4tH1aa/B8i8xdC46+ZbY2a"
+    b"u8b9ryGcOsx2uaRpNLEQ2Fy//q1kQC8oM+iD8Nd6osF0a2wnugsgnJHPuJzhViaW"
+    b"xYgzk5DRdP81debokF3f3FX/AgMBAAGjOjA4MBEGCWCGSAGG+EIBAQQEAwIGQDAT"
+    b"BgNVHSUEDDAKBggrBgEFBQcDATAOBgNVHQ8BAf8EBAMCBPAwDQYJKoZIhvcNAQEF"
+    b"BQADgYEALD6X9V9w381AzzQPcHsjIjiX3B/AF9RCGocKZUDXkdDhsD9NZ3PLPEf1"
+    b"AMjkraKG963HPB8scyiBbbSuSh6m7TCp0eDgRpo77zNuvd3U4Qpm0Qk+KEjtHQDj"
+    b"NNG6N4ZnCQPmjFPScElvc/GgW7XMbywJy2euF+3/Uip8cnPgSH4="
 )
 
 goodcert_headers = (
-    b'-----BEGIN CERTIFICATE-----\n' +
-    goodcert +
-    b'\n-----END CERTIFICATE-----'
+    b"-----BEGIN CERTIFICATE-----\n" + goodcert + b"\n-----END CERTIFICATE-----"
 )
 # The base64-encoded string 'bad cert'
 badcert = (
-    b'-----BEGIN CERTIFICATE-----\n'
-    b'YmFkIGNlcnQ=\r\n'
-    b'-----END CERTIFICATE-----'
+    b"-----BEGIN CERTIFICATE-----\n" b"YmFkIGNlcnQ=\r\n" b"-----END CERTIFICATE-----"
 )
 
 good_pkcs7 = (
-    b'-----BEGIN PKCS7-----\n'
-    b'MIIDvAYJKoZIhvcNAQcCoIIDrTCCA6kCAQExADALBgkqhkiG9w0BBwGgggOPMIID\n'
-    b'izCCAnOgAwIBAgIBATANBgkqhkiG9w0BAQsFADA2MRQwEgYDVQQKDAtFWEFNUExF\n'
-    b'LkNPTTEeMBwGA1UEAwwVQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTE3MDkyMDIw\n'
-    b'NDI1N1oXDTM3MDkyMDIwNDI1N1owNjEUMBIGA1UECgwLRVhBTVBMRS5DT00xHjAc\n'
-    b'BgNVBAMMFUNlcnRpZmljYXRlIEF1dGhvcml0eTCCASIwDQYJKoZIhvcNAQEBBQAD\n'
-    b'ggEPADCCAQoCggEBAMNojX57UCCPTtEn9tQJBS4By5NixwodKm1UqOGsiecDrB0i\n'
-    b'Pw7D6uGP6g4b6srYtbh+YsRJnfekB2L08q1dX3LVEItq2TS0WKqgZuRZkw7DvnGl\n'
-    b'eANMwjHmE8k6/E0yI3GGxJLAfDZYw6CDspLkyN9anjQwVCz5N5z5bpeqi5BeVwin\n'
-    b'O8WVF6FNn3iyL66uwOsTGEzCo3Y5HiwqYgaND73TtdsBHcIqOdRql3CC3IdoXXcW\n'
-    b'044w4Lm2E95MuY729pPBHREtyzVkYtyuoKJ8KApghIY5oCklBkRDjyFK4tE7iF/h\n'
-    b's+valeT9vcz2bHMIpvbjqAu/kqE8MjcNEFPjLhcCAwEAAaOBozCBoDAfBgNVHSME\n'
-    b'GDAWgBTUB04/d1eLhbMtBi4AB65tsAt+2TAPBgNVHRMBAf8EBTADAQH/MA4GA1Ud\n'
-    b'DwEB/wQEAwIBxjAdBgNVHQ4EFgQU1AdOP3dXi4WzLQYuAAeubbALftkwPQYIKwYB\n'
-    b'BQUHAQEEMTAvMC0GCCsGAQUFBzABhiFodHRwOi8vaXBhLWNhLmdyZXlvYWsuY29t\n'
-    b'L2NhL29jc3AwDQYJKoZIhvcNAQELBQADggEBADQFwX1uh8tqLq8SqWZWtH95j33o\n'
-    b'5Ze2dW7sVppb/wVnNauG0wDQW7uIx+Ynr7GgufXLNBMn1aP/mA2CdHk7NZz2IB1s\n'
-    b'ZvbIfE8dVxzkA+Hh9d6cdgk4eU5rGf6Fw8ScEJ/48Mmncea3uGkHcOmt+BGLA8a1\n'
-    b'wtruy+iQylOkbv36CbxKV7IsZDP106Zc+cVeOUQZnCLKmvQkotn6UJd8N1X0R2J3\n'
-    b'4/qv0rUtcCnyEBNSgpTGCRlYM4kd98Dqc5W7wUpMcsQMFxQMSYY7pFQkdLPfJEx2\n'
-    b'Mg63SPawxfAgUeukrdsF3wTIKkIBu1TVse+kvRvgmRRrfF2a4ZOv5qORe2uhADEA\n'
-    b'-----END PKCS7-----'
+    b"-----BEGIN PKCS7-----\n"
+    b"MIIDvAYJKoZIhvcNAQcCoIIDrTCCA6kCAQExADALBgkqhkiG9w0BBwGgggOPMIID\n"
+    b"izCCAnOgAwIBAgIBATANBgkqhkiG9w0BAQsFADA2MRQwEgYDVQQKDAtFWEFNUExF\n"
+    b"LkNPTTEeMBwGA1UEAwwVQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTE3MDkyMDIw\n"
+    b"NDI1N1oXDTM3MDkyMDIwNDI1N1owNjEUMBIGA1UECgwLRVhBTVBMRS5DT00xHjAc\n"
+    b"BgNVBAMMFUNlcnRpZmljYXRlIEF1dGhvcml0eTCCASIwDQYJKoZIhvcNAQEBBQAD\n"
+    b"ggEPADCCAQoCggEBAMNojX57UCCPTtEn9tQJBS4By5NixwodKm1UqOGsiecDrB0i\n"
+    b"Pw7D6uGP6g4b6srYtbh+YsRJnfekB2L08q1dX3LVEItq2TS0WKqgZuRZkw7DvnGl\n"
+    b"eANMwjHmE8k6/E0yI3GGxJLAfDZYw6CDspLkyN9anjQwVCz5N5z5bpeqi5BeVwin\n"
+    b"O8WVF6FNn3iyL66uwOsTGEzCo3Y5HiwqYgaND73TtdsBHcIqOdRql3CC3IdoXXcW\n"
+    b"044w4Lm2E95MuY729pPBHREtyzVkYtyuoKJ8KApghIY5oCklBkRDjyFK4tE7iF/h\n"
+    b"s+valeT9vcz2bHMIpvbjqAu/kqE8MjcNEFPjLhcCAwEAAaOBozCBoDAfBgNVHSME\n"
+    b"GDAWgBTUB04/d1eLhbMtBi4AB65tsAt+2TAPBgNVHRMBAf8EBTADAQH/MA4GA1Ud\n"
+    b"DwEB/wQEAwIBxjAdBgNVHQ4EFgQU1AdOP3dXi4WzLQYuAAeubbALftkwPQYIKwYB\n"
+    b"BQUHAQEEMTAvMC0GCCsGAQUFBzABhiFodHRwOi8vaXBhLWNhLmdyZXlvYWsuY29t\n"
+    b"L2NhL29jc3AwDQYJKoZIhvcNAQELBQADggEBADQFwX1uh8tqLq8SqWZWtH95j33o\n"
+    b"5Ze2dW7sVppb/wVnNauG0wDQW7uIx+Ynr7GgufXLNBMn1aP/mA2CdHk7NZz2IB1s\n"
+    b"ZvbIfE8dVxzkA+Hh9d6cdgk4eU5rGf6Fw8ScEJ/48Mmncea3uGkHcOmt+BGLA8a1\n"
+    b"wtruy+iQylOkbv36CbxKV7IsZDP106Zc+cVeOUQZnCLKmvQkotn6UJd8N1X0R2J3\n"
+    b"4/qv0rUtcCnyEBNSgpTGCRlYM4kd98Dqc5W7wUpMcsQMFxQMSYY7pFQkdLPfJEx2\n"
+    b"Mg63SPawxfAgUeukrdsF3wTIKkIBu1TVse+kvRvgmRRrfF2a4ZOv5qORe2uhADEA\n"
+    b"-----END PKCS7-----"
 )
 
-long_oid_cert = b'''
+long_oid_cert = b"""
 -----BEGIN CERTIFICATE-----
 MIIFiTCCBHGgAwIBAgITSAAAAAd1bEC5lsOdnQAAAAAABzANBgkqhkiG9w0BAQsF
 ADBLMRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxEjAQBgoJkiaJk/IsZAEZFgJhZDEe
@@ -124,9 +120,9 @@ A4UAyzZAdqaGRJBRvCZ/uFHM5wMw0LzNCL4CqKW9jfZX0Fc2tdGx8zbTYxIdgr2D
 PL25as32r3S/m4uWqoQaK0lxK5Y97eusK2rrmidy32Jctzwl29UWq8kpjRAuD8iR
 CSc7sKqOf+fn3+fKITR2/DcSVvb0SGCr5fVVnjQ=
 -----END CERTIFICATE-----
-'''
+"""
 
-ipa_demo_crt = b'''\
+ipa_demo_crt = b"""\
 -----BEGIN CERTIFICATE-----
 MIIGFTCCBP2gAwIBAgISA61CoqWtpZoTEyfLCXliPLYFMA0GCSqGSIb3DQEBCwUA
 MEoxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MSMwIQYDVQQD
@@ -162,7 +158,7 @@ wBjShMPAdSYDPRaAqnZ3BAK2UmmlpAA5tkNvqOaHBCi760zYoxT6j1an7FotG0v9
 2+W0aL34eMWKz/g4qhwk+Jiz45LLQWhHGIgXIUoNSzHgLIVuVOQI8DPsguvT6GHW
 QUs1Hx1wL7mL4U8fKCFDKA+ds2B2xWgoZg==
 -----END CERTIFICATE-----
-'''
+"""
 
 
 class test_x509:
@@ -184,12 +180,11 @@ class test_x509:
         x509.load_pem_x509_certificate(goodcert_headers)
 
         # Load a good cert with headers and leading text
-        newcert = (
-            b'leading text\n' + goodcert_headers)
+        newcert = b"leading text\n" + goodcert_headers
         x509.load_pem_x509_certificate(newcert)
 
         # Load a good cert with bad headers
-        newcert = b'-----BEGIN CERTIFICATE-----' + goodcert_headers
+        newcert = b"-----BEGIN CERTIFICATE-----" + goodcert_headers
         with pytest.raises((TypeError, ValueError)):
             x509.load_pem_x509_certificate(newcert)
 
@@ -218,24 +213,24 @@ class test_x509:
         not_after = datetime.datetime(2015, 6, 25, 13, 0, 42)
         cert = x509.load_pem_x509_certificate(goodcert_headers)
 
-        assert DN(cert.subject) == DN(('CN', 'ipa.example.com'), ('O', 'IPA'))
-        assert DN(cert.issuer) == DN(('CN', 'IPA Test Certificate Authority'))
+        assert DN(cert.subject) == DN(("CN", "ipa.example.com"), ("O", "IPA"))
+        assert DN(cert.issuer) == DN(("CN", "IPA Test Certificate Authority"))
         assert cert.serial_number == 1093
         assert cert.not_valid_before == not_before
         assert cert.not_valid_after == not_after
         assert cert.san_general_names == []
         assert cert.san_a_label_dns_names == []
-        assert cert.extended_key_usage == {'1.3.6.1.5.5.7.3.1'}
+        assert cert.extended_key_usage == {"1.3.6.1.5.5.7.3.1"}
         assert cert.extended_key_usage_bytes == (
-            b'0\x16\x06\x03U\x1d%\x01\x01\xff\x04\x0c0\n\x06\x08'
-            b'+\x06\x01\x05\x05\x07\x03\x01'
+            b"0\x16\x06\x03U\x1d%\x01\x01\xff\x04\x0c0\n\x06\x08"
+            b"+\x06\x01\x05\x05\x07\x03\x01"
         )
 
     def test_load_pkcs7_pem(self):
         certlist = x509.pkcs7_to_certs(good_pkcs7, datatype=x509.PEM)
         assert len(certlist) == 1
         cert = certlist[0]
-        assert DN(cert.subject) == DN('CN=Certificate Authority,O=EXAMPLE.COM')
+        assert DN(cert.subject) == DN("CN=Certificate Authority,O=EXAMPLE.COM")
         assert cert.serial_number == 1
 
     def test_long_oid(self):
@@ -245,39 +240,38 @@ class test_x509:
         Policies OID is longer then 80 chars.
         """
         cert = x509.load_pem_x509_certificate(long_oid_cert)
-        ext = cert.extensions.get_extension_for_class(crypto_x509.
-                                                      CertificatePolicies)
+        ext = cert.extensions.get_extension_for_class(crypto_x509.CertificatePolicies)
 
         assert len(ext.value) == 1
         assert ext.value[0].policy_identifier.dotted_string == (
-            u'1.3.6.1.4.1.311.21.8.8950086.10656446.2706058.12775672.480128.'
-            '147.13466065.13029902')
+            u"1.3.6.1.4.1.311.21.8.8950086.10656446.2706058.12775672.480128."
+            "147.13466065.13029902"
+        )
 
     def test_ipa_demo_letsencrypt(self):
         cert = x509.load_pem_x509_certificate(ipa_demo_crt)
-        assert DN(cert.subject) == DN('CN=ipa.demo1.freeipa.org')
+        assert DN(cert.subject) == DN("CN=ipa.demo1.freeipa.org")
         assert DN(cert.issuer) == DN(
-            "CN=Let's Encrypt Authority X3,O=Let's Encrypt,C=US")
-        assert cert.serial_number == 0x03ad42a2a5ada59a131327cb0979623cb605
+            "CN=Let's Encrypt Authority X3,O=Let's Encrypt,C=US"
+        )
+        assert cert.serial_number == 0x03AD42A2A5ADA59A131327CB0979623CB605
         not_before = datetime.datetime(2018, 7, 25, 5, 36, 59)
         not_after = datetime.datetime(2018, 10, 23, 5, 36, 59)
         assert cert.not_valid_before == not_before
         assert cert.not_valid_after == not_after
-        assert cert.san_general_names == [DNSName('ipa.demo1.freeipa.org')]
-        assert cert.san_a_label_dns_names == ['ipa.demo1.freeipa.org']
-        assert cert.extended_key_usage == {
-            '1.3.6.1.5.5.7.3.1', '1.3.6.1.5.5.7.3.2'
-        }
+        assert cert.san_general_names == [DNSName("ipa.demo1.freeipa.org")]
+        assert cert.san_a_label_dns_names == ["ipa.demo1.freeipa.org"]
+        assert cert.extended_key_usage == {"1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2"}
         assert cert.extended_key_usage_bytes == (
-            b'0 \x06\x03U\x1d%\x01\x01\xff\x04\x160\x14\x06\x08+\x06\x01'
-            b'\x05\x05\x07\x03\x01\x06\x08+\x06\x01\x05\x05\x07\x03\x02'
+            b"0 \x06\x03U\x1d%\x01\x01\xff\x04\x160\x14\x06\x08+\x06\x01"
+            b"\x05\x05\x07\x03\x01\x06\x08+\x06\x01\x05\x05\x07\x03\x02"
         )
 
 
 class test_ExternalCAProfile:
     def test_MSCSTemplateV1_good(self):
         o = x509.MSCSTemplateV1("MySubCA")
-        assert hexlify(o.get_ext_data()) == b'1e0e004d007900530075006200430041'
+        assert hexlify(o.get_ext_data()) == b"1e0e004d007900530075006200430041"
 
     def test_MSCSTemplateV1_bad(self):
         with pytest.raises(ValueError):
@@ -326,12 +320,11 @@ class test_ExternalCAProfile:
 
     def test_MSCSTemplateV2_good_major(self):
         o = x509.MSCSTemplateV2("1.2.3.4:4294967295")
-        assert hexlify(o.get_ext_data()) == b'300c06032a0304020500ffffffff'
+        assert hexlify(o.get_ext_data()) == b"300c06032a0304020500ffffffff"
 
     def test_MSCSTemplateV2_good_major_minor(self):
         o = x509.MSCSTemplateV2("1.2.3.4:4294967295:0")
-        assert hexlify(o.get_ext_data()) \
-            == b'300f06032a0304020500ffffffff020100'
+        assert hexlify(o.get_ext_data()) == b"300f06032a0304020500ffffffff020100"
 
     def test_MSCSTemplateV2_pickle_roundtrip(self):
         o = x509.MSCSTemplateV2("1.2.3.4:4294967295:0")
@@ -343,28 +336,24 @@ class test_ExternalCAProfile:
         Test that constructing ExternalCAProfile actually returns an
         instance of the appropriate subclass.
         """
-        assert isinstance(
-            x509.ExternalCAProfile("MySubCA"),
-            x509.MSCSTemplateV1)
-        assert isinstance(
-            x509.ExternalCAProfile("1.2.3.4:100"),
-            x509.MSCSTemplateV2)
+        assert isinstance(x509.ExternalCAProfile("MySubCA"), x509.MSCSTemplateV1)
+        assert isinstance(x509.ExternalCAProfile("1.2.3.4:100"), x509.MSCSTemplateV2)
 
     def test_write_pkispawn_config_file_MSCSTemplateV1(self):
         template = x509.MSCSTemplateV1(u"SubCA")
         expected = (
-            '[CA]\n'
-            'pki_req_ext_oid = 1.3.6.1.4.1.311.20.2\n'
-            'pki_req_ext_data = 1e0a00530075006200430041\n\n'
+            "[CA]\n"
+            "pki_req_ext_oid = 1.3.6.1.4.1.311.20.2\n"
+            "pki_req_ext_data = 1e0a00530075006200430041\n\n"
         )
         self._test_write_pkispawn_config_file(template, expected)
 
     def test_write_pkispawn_config_file_MSCSTemplateV2(self):
         template = x509.MSCSTemplateV2(u"1.2.3.4:4294967295")
         expected = (
-            '[CA]\n'
-            'pki_req_ext_oid = 1.3.6.1.4.1.311.21.7\n'
-            'pki_req_ext_data = 300c06032a0304020500ffffffff\n\n'
+            "[CA]\n"
+            "pki_req_ext_oid = 1.3.6.1.4.1.311.21.7\n"
+            "pki_req_ext_data = 300c06032a0304020500ffffffff\n\n"
         )
         self._test_write_pkispawn_config_file(template, expected)
 
@@ -378,8 +367,9 @@ class test_ExternalCAProfile:
         config.optionxform = str
         config.add_section("CA")
         config.set("CA", "pki_req_ext_oid", template.ext_oid)
-        config.set("CA", "pki_req_ext_data",
-                   hexlify(template.get_ext_data()).decode('ascii'))
+        config.set(
+            "CA", "pki_req_ext_data", hexlify(template.get_ext_data()).decode("ascii")
+        )
         out = StringIO()
         config.write(out)
         assert out.getvalue() == expected

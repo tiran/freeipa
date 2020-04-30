@@ -44,9 +44,7 @@ class Graph:
         try:
             self.vertices.remove(vertex)
         except KeyError:
-            raise ValueError(
-                "graph does not contain vertex: {0}".format(vertex)
-            )
+            raise ValueError("graph does not contain vertex: {0}".format(vertex))
 
         # delete _adjacencies
         del self._adj[vertex]
@@ -54,9 +52,7 @@ class Graph:
             adj[:] = [v for v in adj if v != vertex]
 
         # delete edges
-        self.edges = [
-            e for e in self.edges if vertex not in (e[0], e[1])
-        ]
+        self.edges = [e for e in self.edges if vertex not in (e[0], e[1])]
 
     def get_tails(self, head):
         """

@@ -19,7 +19,8 @@ class DirectiveSetter:
     with DirectiveSetter('/path/to/conf') as ds:
         ds.set(key, value)
     """
-    def __init__(self, filename, quotes=True, separator=' ', comment='#'):
+
+    def __init__(self, filename, quotes=True, separator=" ", comment="#"):
         self.filename = os.path.abspath(filename)
         self.quotes = quotes
         self.separator = separator
@@ -43,10 +44,10 @@ class DirectiveSetter:
         directory, prefix = os.path.split(self.filename)
         # use tempfile in same directory to have atomic rename
         fd, name = tempfile.mkstemp(prefix=prefix, dir=directory, text=True)
-        with io.open(fd, mode='w', closefd=True) as f:
+        with io.open(fd, mode="w", closefd=True) as f:
             for line in self.lines:
                 if not isinstance(line, str):
-                    line = line.decode('utf-8')
+                    line = line.decode("utf-8")
                 f.write(line)
             self.lines = None
             os.fchmod(f.fileno(), stat.S_IMODE(self.stat.st_mode))
@@ -64,8 +65,9 @@ class DirectiveSetter:
         finally:
             os.close(dirfd)
 
-    def set(self, directive, value, quotes=_SENTINEL, separator=_SENTINEL,
-            comment=_SENTINEL):
+    def set(
+        self, directive, value, quotes=_SENTINEL, separator=_SENTINEL, comment=_SENTINEL
+    ):
         """Set a single directive
         """
         if quotes is _SENTINEL:
@@ -76,9 +78,11 @@ class DirectiveSetter:
             comment = self.comment
         # materialize lines
         # set_directive_lines() modify item, shrink or enlage line count
-        self.lines = list(set_directive_lines(
-            quotes, separator, directive, value, self.lines, comment
-        ))
+        self.lines = list(
+            set_directive_lines(
+                quotes, separator, directive, value, self.lines, comment
+            )
+        )
 
     def setitems(self, items):
         """Set multiple directives from a dict or list with key/value pairs
@@ -90,8 +94,7 @@ class DirectiveSetter:
             self.set(k, v)
 
 
-def set_directive(filename, directive, value, quotes=True, separator=' ',
-                  comment='#'):
+def set_directive(filename, directive, value, quotes=True, separator=" ", comment="#"):
     """Set a name/value pair directive in a configuration file.
 
     A value of None means to drop the directive.
@@ -110,13 +113,13 @@ def set_directive(filename, directive, value, quotes=True, separator=' ',
                     their commented-out counterpart
     """
     st = os.stat(filename)
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         lines = list(f)  # read the whole file
         # materialize new list
-        new_lines = list(set_directive_lines(
-            quotes, separator, directive, value, lines, comment
-        ))
-    with open(filename, 'w') as f:
+        new_lines = list(
+            set_directive_lines(quotes, separator, directive, value, lines, comment)
+        )
+    with open(filename, "w") as f:
         # don't construct the whole string; write line-wise
         for line in new_lines:
             f.write(line)
@@ -136,17 +139,16 @@ def set_directive_lines(quotes, separator, k, v, lines, comment):
     new_line = ""
     if v is not None:
         v_quoted = quote_directive_value(v, '"') if quotes else v
-        new_line = ''.join([k, separator, v_quoted, '\n'])
+        new_line = "".join([k, separator, v_quoted, "\n"])
 
     # Special case: consider space as "white space" so tabs are allowed
-    if separator == ' ':
-        separator = '[ \t]+'
+    if separator == " ":
+        separator = "[ \t]+"
 
     found = False
     addnext = False  # add on next line, found a comment
-    matcher = re.compile(r'\s*{}\s*{}'.format(re.escape(k), separator))
-    cmatcher = re.compile(r'\s*{}\s*{}\s*{}'.format(comment,
-                                                    re.escape(k), separator))
+    matcher = re.compile(r"\s*{}\s*{}".format(re.escape(k), separator))
+    cmatcher = re.compile(r"\s*{}\s*{}\s*{}".format(comment, re.escape(k), separator))
     for line in lines:
         if matcher.match(line):
             found = True
@@ -168,7 +170,7 @@ def set_directive_lines(quotes, separator, k, v, lines, comment):
         yield new_line
 
 
-def get_directive(filename, directive, separator=' '):
+def get_directive(filename, directive, separator=" "):
     """
     A rather inefficient way to get a configuration directive.
 
@@ -179,8 +181,8 @@ def get_directive(filename, directive, separator=' '):
     :returns: The (unquoted) value if the directive was found, None otherwise
     """
     # Special case: consider space as "white space" so tabs are allowed
-    if separator == ' ':
-        separator = '[ \t]+'
+    if separator == " ":
+        separator = "[ \t]+"
 
     result = None
     with open(filename, "r") as fd:
@@ -188,15 +190,14 @@ def get_directive(filename, directive, separator=' '):
             if line.lstrip().startswith(directive):
                 line = line.strip()
 
-                match = re.match(
-                    r'{}\s*{}\s*(.*)'.format(directive, separator), line)
+                match = re.match(r"{}\s*{}\s*(.*)".format(directive, separator), line)
                 if match:
                     value = match.group(1)
                 else:
                     raise ValueError("Malformed directive: {}".format(line))
 
                 result = unquote_directive_value(value.strip(), '"')
-                result = result.strip(' ')
+                result = result.strip(" ")
                 break
     return result
 
@@ -212,8 +213,7 @@ def quote_directive_value(value, quote_char):
         return value
 
     return "{quote}{value}{quote}".format(
-        quote=quote_char,
-        value="".join(escape_seq(quote_char, value))
+        quote=quote_char, value="".join(escape_seq(quote_char, value))
     )
 
 
@@ -225,8 +225,7 @@ def unquote_directive_value(value, quote_char):
     :returns: processed value
     """
     unescaped_value = "".join(unescape_seq(quote_char, value))
-    if (unescaped_value.startswith(quote_char) and
-            unescaped_value.endswith(quote_char)):
+    if unescaped_value.startswith(quote_char) and unescaped_value.endswith(quote_char):
         return unescaped_value[1:-1]
 
     return unescaped_value

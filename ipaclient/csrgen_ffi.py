@@ -5,7 +5,8 @@ from ipalib import errors
 
 _ffi = FFI()
 
-_ffi.cdef('''
+_ffi.cdef(
+    """
 /* libcrypto/crypto.h */
 unsigned long OpenSSL_version_num(void);
 unsigned long SSLeay(void);
@@ -13,9 +14,10 @@ const char * OpenSSL_version(int t);
 const char * SSLeay_version(int t);
 
 #define OPENSSL_VERSION 0
-''')
+"""
+)
 
-_libcrypto = _ffi.dlopen(ctypes.util.find_library('crypto'))
+_libcrypto = _ffi.dlopen(ctypes.util.find_library("crypto"))
 
 # SSLeay_version has been renamed with OpenSSL_version in OpenSSL 1.1.0
 # LibreSSL has OpenSSL_version since 2.7.0
@@ -25,8 +27,8 @@ except AttributeError:
     OpenSSL_version = _libcrypto.SSLeay_version
 
 _version = OpenSSL_version(_libcrypto.OPENSSL_VERSION)
-_version = _ffi.string(_version).decode('utf-8')
-LIBRESSL = _version.startswith('LibreSSL')
+_version = _ffi.string(_version).decode("utf-8")
+LIBRESSL = _version.startswith("LibreSSL")
 if not _version.startswith("OpenSSL") and not LIBRESSL:
     raise ImportError("Only LibreSSL and OpenSSL are supported")
 
@@ -47,7 +49,8 @@ except AttributeError:
 # 0x00090605f == 0.9.6e release
 _openssl_version = OpenSSL_version_num()
 
-_ffi.cdef('''
+_ffi.cdef(
+    """
 typedef ... CONF;
 typedef ... CONF_METHOD;
 typedef ... BIO;
@@ -114,23 +117,29 @@ typedef struct X509_req_info_st {
     /*  d=2 hl=2 l=  0 cons: cont: 00 */
     ipa_STACK_OF_X509_ATTRIBUTE *attributes; /* [ 0 ] */
 } X509_REQ_INFO;
-''')
+"""
+)
 
 # since OpenSSL 1.1.0 req_info field is no longer pointer to X509_REQ_INFO
 if _openssl_version >= 0x10100000 and not LIBRESSL:
-    _ffi.cdef('''
+    _ffi.cdef(
+        """
     typedef struct X509_req_st {
         X509_REQ_INFO req_info;
     } X509_REQ;
-    ''')
+    """
+    )
 else:
-    _ffi.cdef('''
+    _ffi.cdef(
+        """
     typedef struct X509_req_st {
         X509_REQ_INFO *req_info;
     } X509_REQ;
-    ''')
+    """
+    )
 
-_ffi.cdef('''
+_ffi.cdef(
+    """
 X509_REQ *X509_REQ_new(void);
 void X509_REQ_free(X509_REQ *);
 EVP_PKEY *d2i_PUBKEY_bio(BIO *bp, EVP_PKEY **a);
@@ -166,7 +175,8 @@ int X509V3_EXT_REQ_add_nconf(CONF *conf, X509V3_CTX *ctx, char *section,
 /* openssl/x509v3.h */
 unsigned long ERR_get_error(void);
 char *ERR_error_string(unsigned long e, char *buf);
-''')  # noqa: E501
+"""
+)  # noqa: E501
 
 NULL = _ffi.NULL
 # openssl/conf.h
@@ -237,13 +247,13 @@ def _raise_openssl_errors():
     while code != 0:
         msg = _ffi.string(ERR_error_string(code, NULL))
         try:
-            strmsg = msg.decode('utf-8')
+            strmsg = msg.decode("utf-8")
         except UnicodeDecodeError:
             strmsg = repr(msg)
         msgs.append(strmsg)
         code = ERR_get_error()
 
-    raise errors.CSRTemplateError(reason='\n'.join(msgs))
+    raise errors.CSRTemplateError(reason="\n".join(msgs))
 
 
 def _parse_dn_section(subj, dn_sk):
@@ -253,11 +263,11 @@ def _parse_dn_section(subj, dn_sk):
 
         # Skip past any leading X. X: X, etc to allow for multiple instances
         for idx, c in enumerate(rdn_type):
-            if c in b':,.':
-                if idx+1 < len(rdn_type):
-                    rdn_type = rdn_type[idx+1:]
+            if c in b":,.":
+                if idx + 1 < len(rdn_type):
+                    rdn_type = rdn_type[idx + 1 :]
                 break
-        if rdn_type.startswith(b'+'):
+        if rdn_type.startswith(b"+"):
             rdn_type = rdn_type[1:]
             mval = -1
         else:
@@ -275,26 +285,33 @@ def _parse_dn_section(subj, dn_sk):
             oid = OBJ_txt2obj(rdn_type.upper(), 0)
         if oid == NULL:
             raise errors.CSRTemplateError(
-                reason='unrecognised attribute type: {}'
-                .format(rdn_type.decode('utf-8')))
+                reason="unrecognised attribute type: {}".format(
+                    rdn_type.decode("utf-8")
+                )
+            )
 
         if not X509_NAME_add_entry_by_OBJ(
-                subj, oid, MBSTRING_UTF8,
-                _ffi.cast("unsigned char *", v.value), -1, -1, mval):
+            subj,
+            oid,
+            MBSTRING_UTF8,
+            _ffi.cast("unsigned char *", v.value),
+            -1,
+            -1,
+            mval,
+        ):
             _raise_openssl_errors()
 
     if not X509_NAME_entry_count(subj):
-        raise errors.CSRTemplateError(
-            reason='error, subject in config file is empty')
+        raise errors.CSRTemplateError(reason="error, subject in config file is empty")
 
 
 def build_requestinfo(config, public_key_info):
-    '''
+    """
     Return a cffi buffer containing a DER-encoded CertificationRequestInfo.
 
     The returned object implements the buffer protocol.
 
-    '''
+    """
     reqdata = NULL
     req = NULL
     nconf_bio = NULL
@@ -307,25 +324,27 @@ def build_requestinfo(config, public_key_info):
             _raise_openssl_errors()
 
         nconf_bio = BIO_new_mem_buf(config, len(config))
-        errorline = _ffi.new('long[1]', [-1])
+        errorline = _ffi.new("long[1]", [-1])
         i = NCONF_load_bio(reqdata, nconf_bio, errorline)
         if i < 0:
             if errorline[0] < 0:
                 raise errors.CSRTemplateError(reason="Can't load config file")
             else:
                 raise errors.CSRTemplateError(
-                    reason='Error on line %d of config file' % errorline[0])
+                    reason="Error on line %d of config file" % errorline[0]
+                )
 
-        dn_sect = NCONF_get_string(reqdata, b'req', b'distinguished_name')
+        dn_sect = NCONF_get_string(reqdata, b"req", b"distinguished_name")
         if dn_sect == NULL:
             raise errors.CSRTemplateError(
-                reason='Unable to find "distinguished_name" key in config')
+                reason='Unable to find "distinguished_name" key in config'
+            )
 
         dn_sk = NCONF_get_section(reqdata, dn_sect)
         if dn_sk == NULL:
             raise errors.CSRTemplateError(
-                reason='Unable to find "%s" section in config' %
-                _ffi.string(dn_sect))
+                reason='Unable to find "%s" section in config' % _ffi.string(dn_sect)
+            )
 
         pubkey_bio = BIO_new_mem_buf(public_key_info, len(public_key_info))
         pubkey = d2i_PUBKEY_bio(pubkey_bio, NULL)
@@ -349,8 +368,7 @@ def build_requestinfo(config, public_key_info):
 
         extn_section = NCONF_get_string(reqdata, b"req", b"req_extensions")
         if extn_section != NULL:
-            if not X509V3_EXT_REQ_add_nconf(
-                    reqdata, ext_ctx, extn_section, req):
+            if not X509V3_EXT_REQ_add_nconf(reqdata, ext_ctx, extn_section, req):
                 _raise_openssl_errors()
 
         if _openssl_version < 0x10100000 or LIBRESSL:

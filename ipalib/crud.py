@@ -134,8 +134,8 @@ class Create(Method):
     has_output = output.standard_entry
 
     def __clone(self, param, **kw):
-        if 'optional_create' in param.flags:
-            kw['required'] = False
+        if "optional_create" in param.flags:
+            kw["required"] = False
         return param.clone(**kw) if kw else param
 
     def get_args(self):
@@ -149,13 +149,16 @@ class Create(Method):
             for option in super(Create, self).get_options():
                 yield self.__clone(option)
         for option in self.obj.params_minus(self.args):
-            attribute = 'virtual_attribute' not in option.flags
-            if 'no_create' in option.flags:
+            attribute = "virtual_attribute" not in option.flags
+            if "no_create" in option.flags:
                 continue
-            if 'ask_create' in option.flags:
+            if "ask_create" in option.flags:
                 yield option.clone(
-                    attribute=attribute, query=False, required=False,
-                    autofill=False, alwaysask=True
+                    attribute=attribute,
+                    query=False,
+                    required=False,
+                    autofill=False,
+                    alwaysask=True,
                 )
             else:
                 yield self.__clone(option, attribute=attribute)
@@ -199,27 +202,36 @@ class Update(PKQuery):
                 yield option
         for option in self.obj.params_minus_pk():
             new_flags = option.flags
-            attribute = 'virtual_attribute' not in option.flags
+            attribute = "virtual_attribute" not in option.flags
             if option.required:
                 # Required options turn into non-required, since not specifying
                 # them means that they are not changed.
                 # However, they cannot be empty (i.e. explicitly set to None).
-                new_flags = new_flags.union(['nonempty'])
-            if 'no_update' in option.flags:
+                new_flags = new_flags.union(["nonempty"])
+            if "no_update" in option.flags:
                 continue
-            if 'ask_update' in option.flags:
+            if "ask_update" in option.flags:
                 yield option.clone(
-                    attribute=attribute, query=False, required=False,
-                    autofill=False, alwaysask=True, flags=new_flags,
+                    attribute=attribute,
+                    query=False,
+                    required=False,
+                    autofill=False,
+                    alwaysask=True,
+                    flags=new_flags,
                 )
-            elif 'req_update' in option.flags:
+            elif "req_update" in option.flags:
                 yield option.clone(
-                    attribute=attribute, required=True, alwaysask=False,
+                    attribute=attribute,
+                    required=True,
+                    alwaysask=False,
                     flags=new_flags,
                 )
             else:
-                yield option.clone(attribute=attribute, required=False,
-                    autofill=False, flags=new_flags,
+                yield option.clone(
+                    attribute=attribute,
+                    required=False,
+                    autofill=False,
+                    flags=new_flags,
                 )
         if not self.extra_options_first:
             for option in super(Update, self).get_options():
@@ -243,8 +255,10 @@ class Search(Method):
 
     def get_args(self):
         yield parameters.Str(
-            'criteria?', noextrawhitespace=False,
-            doc=_('A string searched in all relevant object attributes'))
+            "criteria?",
+            noextrawhitespace=False,
+            doc=_("A string searched in all relevant object attributes"),
+        )
         for arg in super(Search, self).get_args():
             yield arg
 
@@ -253,18 +267,25 @@ class Search(Method):
             for option in super(Search, self).get_options():
                 yield option
         for option in self.obj.params_minus(self.args):
-            attribute = 'virtual_attribute' not in option.flags
-            if 'no_search' in option.flags:
+            attribute = "virtual_attribute" not in option.flags
+            if "no_search" in option.flags:
                 continue
-            if 'ask_search' in option.flags:
+            if "ask_search" in option.flags:
                 yield option.clone(
-                    attribute=attribute, query=True, required=False,
-                    autofill=False, alwaysask=True
+                    attribute=attribute,
+                    query=True,
+                    required=False,
+                    autofill=False,
+                    alwaysask=True,
                 )
             elif isinstance(option, parameters.Flag):
                 yield option.clone_retype(
-                    option.name, parameters.Bool,
-                    attribute=attribute, query=True, required=False, autofill=False
+                    option.name,
+                    parameters.Bool,
+                    attribute=attribute,
+                    query=True,
+                    required=False,
+                    autofill=False,
                 )
             else:
                 yield option.clone(
@@ -295,7 +316,7 @@ class CrudBackend(backend.Connectible):
         This method should return a dict of the exact entry as it was created
         in the backing store, including any automatically created attributes.
         """
-        raise NotImplementedError('%s.create()' % self.name)
+        raise NotImplementedError("%s.create()" % self.name)
 
     def retrieve(self, primary_key, attributes):
         """
@@ -310,7 +331,7 @@ class CrudBackend(backend.Connectible):
         representing that entry.  If no such entry exists, this method
         should return None.
         """
-        raise NotImplementedError('%s.retrieve()' % self.name)
+        raise NotImplementedError("%s.retrieve()" % self.name)
 
     def update(self, primary_key, **kw):
         """
@@ -324,7 +345,7 @@ class CrudBackend(backend.Connectible):
         exists in the backing store.  If no such entry exists, this method
         should return None.
         """
-        raise NotImplementedError('%s.update()' % self.name)
+        raise NotImplementedError("%s.update()" % self.name)
 
     def delete(self, primary_key):
         """
@@ -333,7 +354,7 @@ class CrudBackend(backend.Connectible):
         This method should take one required argument, the primary_key of the
         entry to delete.
         """
-        raise NotImplementedError('%s.delete()' % self.name)
+        raise NotImplementedError("%s.delete()" % self.name)
 
     def search(self, **kw):
         """
@@ -348,4 +369,4 @@ class CrudBackend(backend.Connectible):
         entries, where each entry is a dict.  If no entries are matched,
         this method should return an empty iterable.
         """
-        raise NotImplementedError('%s.search()' % self.name)
+        raise NotImplementedError("%s.search()" % self.name)

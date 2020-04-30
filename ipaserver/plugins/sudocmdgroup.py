@@ -28,10 +28,12 @@ from .baseldap import (
     LDAPSearch,
     LDAPRetrieve,
     LDAPAddMember,
-    LDAPRemoveMember)
+    LDAPRemoveMember,
+)
 from ipalib import _, ngettext
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Groups of Sudo Commands
 
 Manage groups of Sudo Commands.
@@ -52,143 +54,155 @@ EXAMPLES:
 
  Show a Sudo Command Group:
    ipa sudocmdgroup-show admincmds
-""")
+"""
+)
 
 register = Registry()
 
-topic = 'sudo'
+topic = "sudo"
+
 
 @register()
 class sudocmdgroup(LDAPObject):
     """
     Sudo Command Group object.
     """
+
     container_dn = api.env.container_sudocmdgroup
-    object_name = _('sudo command group')
-    object_name_plural = _('sudo command groups')
-    object_class = ['ipaobject', 'ipasudocmdgrp']
-    permission_filter_objectclasses = ['ipasudocmdgrp']
+    object_name = _("sudo command group")
+    object_name_plural = _("sudo command groups")
+    object_class = ["ipaobject", "ipasudocmdgrp"]
+    permission_filter_objectclasses = ["ipasudocmdgrp"]
     default_attributes = [
-        'cn', 'description', 'member',
+        "cn",
+        "description",
+        "member",
     ]
-    uuid_attribute = 'ipauniqueid'
+    uuid_attribute = "ipauniqueid"
     attribute_members = {
-        'member': ['sudocmd'],
+        "member": ["sudocmd"],
     }
     managed_permissions = {
-        'System: Read Sudo Command Groups': {
-            'replaces_global_anonymous_aci': True,
-            'ipapermbindruletype': 'all',
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'businesscategory', 'cn', 'description', 'ipauniqueid',
-                'member', 'o', 'objectclass', 'ou', 'owner', 'seealso',
-                'memberuser', 'memberhost',
+        "System: Read Sudo Command Groups": {
+            "replaces_global_anonymous_aci": True,
+            "ipapermbindruletype": "all",
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {
+                "businesscategory",
+                "cn",
+                "description",
+                "ipauniqueid",
+                "member",
+                "o",
+                "objectclass",
+                "ou",
+                "owner",
+                "seealso",
+                "memberuser",
+                "memberhost",
             },
         },
-        'System: Add Sudo Command Group': {
-            'ipapermright': {'add'},
-            'replaces': [
+        "System: Add Sudo Command Group": {
+            "ipapermright": {"add"},
+            "replaces": [
                 '(target = "ldap:///cn=*,cn=sudocmdgroups,cn=sudo,$SUFFIX")(version 3.0;acl "permission:Add Sudo command group";allow (add) groupdn = "ldap:///cn=Add Sudo command group,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'Sudo Administrator'},
+            "default_privileges": {"Sudo Administrator"},
         },
-        'System: Delete Sudo Command Group': {
-            'ipapermright': {'delete'},
-            'replaces': [
+        "System: Delete Sudo Command Group": {
+            "ipapermright": {"delete"},
+            "replaces": [
                 '(target = "ldap:///cn=*,cn=sudocmdgroups,cn=sudo,$SUFFIX")(version 3.0;acl "permission:Delete Sudo command group";allow (delete) groupdn = "ldap:///cn=Delete Sudo command group,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'Sudo Administrator'},
+            "default_privileges": {"Sudo Administrator"},
         },
-        'System: Modify Sudo Command Group': {
-            'ipapermright': {'write'},
-            'ipapermdefaultattr': {'description'},
-            'default_privileges': {'Sudo Administrator'},
+        "System: Modify Sudo Command Group": {
+            "ipapermright": {"write"},
+            "ipapermdefaultattr": {"description"},
+            "default_privileges": {"Sudo Administrator"},
         },
-        'System: Manage Sudo Command Group Membership': {
-            'ipapermright': {'write'},
-            'ipapermdefaultattr': {'member'},
-            'replaces': [
+        "System: Manage Sudo Command Group Membership": {
+            "ipapermright": {"write"},
+            "ipapermdefaultattr": {"member"},
+            "replaces": [
                 '(targetattr = "member")(target = "ldap:///cn=*,cn=sudocmdgroups,cn=sudo,$SUFFIX")(version 3.0;acl "permission:Manage Sudo command group membership";allow (write) groupdn = "ldap:///cn=Manage Sudo command group membership,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'Sudo Administrator'},
+            "default_privileges": {"Sudo Administrator"},
         },
     }
 
-    label = _('Sudo Command Groups')
-    label_singular = _('Sudo Command Group')
+    label = _("Sudo Command Groups")
+    label_singular = _("Sudo Command Group")
 
     takes_params = (
-        Str('cn',
-            cli_name='sudocmdgroup_name',
-            label=_('Sudo Command Group'),
+        Str(
+            "cn",
+            cli_name="sudocmdgroup_name",
+            label=_("Sudo Command Group"),
             primary_key=True,
             normalizer=lambda value: value.lower(),
         ),
-        Str('description?',
-            cli_name='desc',
-            label=_('Description'),
-            doc=_('Group description'),
+        Str(
+            "description?",
+            cli_name="desc",
+            label=_("Description"),
+            doc=_("Group description"),
         ),
-        Str('membercmd_sudocmd?',
-            label=_('Commands'),
-            flags=['no_create', 'no_update', 'no_search'],
+        Str(
+            "membercmd_sudocmd?",
+            label=_("Commands"),
+            flags=["no_create", "no_update", "no_search"],
         ),
-        Str('membercmd_sudocmdgroup?',
-            label=_('Sudo Command Groups'),
-            flags=['no_create', 'no_update', 'no_search'],
+        Str(
+            "membercmd_sudocmdgroup?",
+            label=_("Sudo Command Groups"),
+            flags=["no_create", "no_update", "no_search"],
         ),
     )
-
 
 
 @register()
 class sudocmdgroup_add(LDAPCreate):
-    __doc__ = _('Create new Sudo Command Group.')
+    __doc__ = _("Create new Sudo Command Group.")
 
     msg_summary = _('Added Sudo Command Group "%(value)s"')
 
 
-
 @register()
 class sudocmdgroup_del(LDAPDelete):
-    __doc__ = _('Delete Sudo Command Group.')
+    __doc__ = _("Delete Sudo Command Group.")
 
     msg_summary = _('Deleted Sudo Command Group "%(value)s"')
 
 
-
 @register()
 class sudocmdgroup_mod(LDAPUpdate):
-    __doc__ = _('Modify Sudo Command Group.')
+    __doc__ = _("Modify Sudo Command Group.")
 
     msg_summary = _('Modified Sudo Command Group "%(value)s"')
 
 
-
 @register()
 class sudocmdgroup_find(LDAPSearch):
-    __doc__ = _('Search for Sudo Command Groups.')
+    __doc__ = _("Search for Sudo Command Groups.")
 
     msg_summary = ngettext(
-        '%(count)d Sudo Command Group matched',
-        '%(count)d Sudo Command Groups matched', 0
+        "%(count)d Sudo Command Group matched",
+        "%(count)d Sudo Command Groups matched",
+        0,
     )
-
 
 
 @register()
 class sudocmdgroup_show(LDAPRetrieve):
-    __doc__ = _('Display Sudo Command Group.')
-
+    __doc__ = _("Display Sudo Command Group.")
 
 
 @register()
 class sudocmdgroup_add_member(LDAPAddMember):
-    __doc__ = _('Add members to Sudo Command Group.')
-
+    __doc__ = _("Add members to Sudo Command Group.")
 
 
 @register()
 class sudocmdgroup_remove_member(LDAPRemoveMember):
-    __doc__ = _('Remove members from Sudo Command Group.')
+    __doc__ = _("Remove members from Sudo Command Group.")

@@ -70,9 +70,7 @@ def parse_options():
     usage = "%prog [options]\n"
     parser = OptionParser(usage=usage)
     parser.add_option(
-        "--server",
-        dest="server",
-        help="FQDN of IPA server to connect to",
+        "--server", dest="server", help="FQDN of IPA server to connect to",
     )
     parser.add_option(
         "--netbios-name",
@@ -195,9 +193,7 @@ def retrieve_domain_information(api):
     # We flatten the whole trust list because it should be non-overlapping
     result = api.Command.trust_find()["result"]
     for forest in result:
-        r = api.Command.trustdomain_find(forest["cn"][0], all=True, raw=True)[
-            "result"
-        ]
+        r = api.Command.trustdomain_find(forest["cn"][0], all=True, raw=True)["result"]
         # We don't need to process forest root info separately
         # as trustdomain_find() returns it as well
         for dom in r:
@@ -213,8 +209,7 @@ def retrieve_domain_information(api):
             r_idrange = api.Command.idrange_show(r_idrange_name)["result"]
             r_dom["range_id_min"] = int(r_idrange["ipabaseid"][0])
             r_dom["range_id_max"] = (
-                int(r_idrange["ipabaseid"][0]) +
-                int(r_idrange["ipaidrangesize"][0]) - 1
+                int(r_idrange["ipabaseid"][0]) + int(r_idrange["ipaidrangesize"][0]) - 1
             )
             domains.append(r_dom)
     return domains
@@ -306,8 +301,7 @@ def retrieve_service_principal(
         ipautil.run(args, stdin=password + "\n" + password, encoding="utf-8")
     except ipautil.CalledProcessError as e:
         logger.error(
-            "Cannot set machine account password at IPA DC. Error: %s",
-            e,
+            "Cannot set machine account password at IPA DC. Error: %s", e,
         )
         raise
 
@@ -337,9 +331,7 @@ def populate_samba_databases(fstore, statestore, options, domain, password):
     # Next, make sure we can set machine account credentials
     # the workaround with tdbtool is temporary until 'net' utility
     # will not provide us a way to perform 'offline join' procedure
-    secrets_key = "SECRETS/MACHINE_LAST_CHANGE_TIME/{}".format(
-        domain["netbios_name"]
-    )
+    secrets_key = "SECRETS/MACHINE_LAST_CHANGE_TIME/{}".format(domain["netbios_name"])
     args = [paths.TDBTOOL, paths.SECRETS_TDB, "store", secrets_key, "2\\00"]
     try:
         ipautil.run(args)
@@ -385,10 +377,7 @@ def configure_default_groupmap(fstore, statestore, options, domain):
         ipautil.run(args)
     except ipautil.CalledProcessError as e:
         if "already mapped to SID S-1-5-32-546" not in e.stdout:
-            logger.error(
-                'Cannot map BUILTIN\\Guests to a group "nobody". Error: %s',
-                e
-            )
+            logger.error('Cannot map BUILTIN\\Guests to a group "nobody". Error: %s', e)
             raise
 
 
@@ -413,8 +402,7 @@ def harden_configuration(fstore, statestore, options, domain):
     # Allow Samba to access NFS-shared content
     if not options.no_nfs:
         set_selinux_booleans(
-            constants.SELINUX_BOOLEAN_SMBSERVICE["reshare_nfs_with_samba"],
-            statestore,
+            constants.SELINUX_BOOLEAN_SMBSERVICE["reshare_nfs_with_samba"], statestore,
         )
 
 
@@ -467,8 +455,7 @@ def uninstall(fstore, statestore, options):
             )
         except ipautil.CalledProcessError as e:
             if e.returncode != 5:
-                logger.critical("Failed to remove old key for %s",
-                                api.env.smb_princ)
+                logger.critical("Failed to remove old key for %s", api.env.smb_princ)
 
     with use_api_as_principal(api.env.host_princ, paths.KRB5_KEYTAB):
         try:
@@ -479,8 +466,7 @@ def uninstall(fstore, statestore, options):
             logger.debug("No SMB service principal exists, OK to proceed")
         except errors.PublicError as e:
             logger.error(
-                "Cannot connect to the server due to "
-                "a generic error: %s", e,
+                "Cannot connect to the server due to " "a generic error: %s", e,
             )
 
 
@@ -532,15 +518,18 @@ def run():
             uninstall(fstore, statestore, options)
             try:
                 keys = (
-                    "configured", "hardening", "groupmap", "tdb",
-                    "service.principal", "smb.conf"
+                    "configured",
+                    "hardening",
+                    "groupmap",
+                    "tdb",
+                    "service.principal",
+                    "smb.conf",
                 )
                 for key in keys:
                     statestore.delete_state("domain_member", key)
             except Exception as e:
                 print(
-                    "Error: Failed to remove the domain_member statestores: "
-                    "%s" % e
+                    "Error: Failed to remove the domain_member statestores: " "%s" % e
                 )
                 return 1
             else:
@@ -579,13 +568,10 @@ def run():
         else:
             autodiscover = True
             if not ds.servers:
-                print(
-                    "Autodiscovery was successful but didn't return a server"
-                )
+                print("Autodiscovery was successful but didn't return a server")
                 return 1
             logger.debug(
-                "Autodiscovery success, possible servers %s",
-                ",".join(ds.servers),
+                "Autodiscovery success, possible servers %s", ",".join(ds.servers),
             )
             server = ds.servers[0]
     else:
@@ -647,7 +633,8 @@ def run():
         except AttributeError:
             logger.error(
                 "Chosen IPA master %s does not have support to "
-                "set up Samba domain members", server,
+                "set up Samba domain members",
+                server,
             )
             return 1
         except errors.VersionError as e:
@@ -657,8 +644,7 @@ def run():
             logger.debug("No SMB service principal exists, OK to proceed")
         except errors.PublicError as e:
             logger.error(
-                "Cannot connect to the server due to "
-                "a generic error: %s", e,
+                "Cannot connect to the server due to " "a generic error: %s", e,
             )
             return 1
 
@@ -676,9 +662,11 @@ def run():
         domains = retrieve_domain_information(api)
         if len(domains) == 0:
             # logger.error() produces both log file and stderr output
-            logger.error("No configured trust controller detected "
-                         "on IPA masters. Use ipa-adtrust-install on an IPA "
-                         "master to configure trust controller role.")
+            logger.error(
+                "No configured trust controller detected "
+                "on IPA masters. Use ipa-adtrust-install on an IPA "
+                "master to configure trust controller role."
+            )
             return 1
 
         str_info = pretty_print_domain_information(domains)
@@ -693,58 +681,39 @@ def run():
 
         # 2. Create SMB service principal, if we are here, the command exists
         if (
-            not statestore.get_state("domain_member", "service.principal") or
-            options.force
+            not statestore.get_state("domain_member", "service.principal")
+            or options.force
         ):
             service_add_smb(api.env.host, options.netbiosname)
-            statestore.backup_state(
-                "domain_member", "service.principal", "configured"
-            )
+            statestore.backup_state("domain_member", "service.principal", "configured")
 
         # 3. Generate machine account password for reuse
-        password = generate_smb_machine_account(
-            fstore, statestore, options, domains[0]
-        )
+        password = generate_smb_machine_account(fstore, statestore, options, domains[0])
 
         # 4. Now that we have all domains retrieved, we can generate smb.conf
-        if (
-            not statestore.get_state("domain_member", "smb.conf") or
-            options.force
-        ):
+        if not statestore.get_state("domain_member", "smb.conf") or options.force:
             configure_smb_conf(fstore, statestore, options, domains)
             statestore.backup_state("domain_member", "smb.conf", "configured")
 
         # 5. Create SMB service
-        if statestore.get_state("domain_member",
-                                "service.principal") == "configured":
+        if statestore.get_state("domain_member", "service.principal") == "configured":
             retrieve_service_principal(
-                fstore, statestore, options, domains[0],
-                api.env.smb_princ, password
+                fstore, statestore, options, domains[0], api.env.smb_princ, password
             )
-            statestore.backup_state(
-                "domain_member", "service.principal", "configured"
-            )
+            statestore.backup_state("domain_member", "service.principal", "configured")
 
         # 6. Configure databases to contain proper details
         if not statestore.get_state("domain_member", "tdb") or options.force:
-            populate_samba_databases(
-                fstore, statestore, options, domains[0], password
-            )
+            populate_samba_databases(fstore, statestore, options, domains[0], password)
             statestore.backup_state("domain_member", "tdb", "configured")
 
         # 7. Configure default group mapping
-        if (
-            not statestore.get_state("domain_member", "groupmap") or
-            options.force
-        ):
+        if not statestore.get_state("domain_member", "groupmap") or options.force:
             configure_default_groupmap(fstore, statestore, options, domains[0])
             statestore.backup_state("domain_member", "groupmap", "configured")
 
         # 8. Enable SELinux policies
-        if (
-            not statestore.get_state("domain_member", "hardening") or
-            options.force
-        ):
+        if not statestore.get_state("domain_member", "hardening") or options.force:
             harden_configuration(fstore, statestore, options, domains[0])
             statestore.backup_state("domain_member", "hardening", "configured")
 

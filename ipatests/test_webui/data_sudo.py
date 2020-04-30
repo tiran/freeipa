@@ -17,66 +17,54 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-RULE_ENTITY = 'sudorule'
-CMDENTITY = 'sudocmd'
-CMDGROUP_ENTITY = 'sudocmdgroup'
-CMDGROUP_DEF_FACET = 'member_sudocmd'
+RULE_ENTITY = "sudorule"
+CMDENTITY = "sudocmd"
+CMDGROUP_ENTITY = "sudocmdgroup"
+CMDGROUP_DEF_FACET = "member_sudocmd"
 
-RULE_PKEY = 'itestsudorule'
+RULE_PKEY = "itestsudorule"
 RULE_DATA = {
-    'pkey': RULE_PKEY,
-    'add': [
-        ('textbox', 'cn', RULE_PKEY),
-    ],
-    'mod': [
-        ('textarea', 'description', 'itestsudorule desc'),
-    ],
+    "pkey": RULE_PKEY,
+    "add": [("textbox", "cn", RULE_PKEY),],
+    "mod": [("textarea", "description", "itestsudorule desc"),],
 }
 
-CMD_PKEY = 'itestsudocmd'
+CMD_PKEY = "itestsudocmd"
 CMD_DATA = {
-    'pkey': CMD_PKEY,
-    'add': [
-        ('textbox', 'sudocmd', CMD_PKEY),
-        ('textarea', 'description', 'itestsudocmd desc'),
+    "pkey": CMD_PKEY,
+    "add": [
+        ("textbox", "sudocmd", CMD_PKEY),
+        ("textarea", "description", "itestsudocmd desc"),
     ],
-    'mod': [
-        ('textarea', 'description', 'itestsudocmd desc mod'),
-    ],
+    "mod": [("textarea", "description", "itestsudocmd desc mod"),],
 }
 
-CMD_PKEY2 = 'itestsudocmd2'
+CMD_PKEY2 = "itestsudocmd2"
 CMD_DATA2 = {
-    'pkey': CMD_PKEY2,
-    'add': [
-        ('textbox', 'sudocmd', CMD_PKEY2),
-        ('textarea', 'description', 'itestsudocmd2 desc'),
+    "pkey": CMD_PKEY2,
+    "add": [
+        ("textbox", "sudocmd", CMD_PKEY2),
+        ("textarea", "description", "itestsudocmd2 desc"),
     ],
-    'mod': [
-        ('textarea', 'description', 'itestsudocmd2 desc mod'),
-    ],
+    "mod": [("textarea", "description", "itestsudocmd2 desc mod"),],
 }
 
-CMD_GROUP_PKEY = 'itestsudocmdgroup'
+CMD_GROUP_PKEY = "itestsudocmdgroup"
 CMDGROUP_DATA = {
-    'pkey': CMD_GROUP_PKEY,
-    'add': [
-        ('textbox', 'cn', CMD_GROUP_PKEY),
-        ('textarea', 'description', 'itestsudocmdgroup desc'),
+    "pkey": CMD_GROUP_PKEY,
+    "add": [
+        ("textbox", "cn", CMD_GROUP_PKEY),
+        ("textarea", "description", "itestsudocmdgroup desc"),
     ],
-    'mod': [
-        ('textarea', 'description', 'itestsudocmdgroup desc mod'),
-    ],
+    "mod": [("textarea", "description", "itestsudocmdgroup desc mod"),],
 }
 
-CMD_GROUP_PKEY2 = 'itestsudocmdgroup2'
+CMD_GROUP_PKEY2 = "itestsudocmdgroup2"
 CMDGROUP_DATA2 = {
-    'pkey': CMD_GROUP_PKEY2,
-    'add': [
-        ('textbox', 'cn', CMD_GROUP_PKEY2),
-        ('textarea', 'description', 'itestsudocmdgroup2 desc'),
+    "pkey": CMD_GROUP_PKEY2,
+    "add": [
+        ("textbox", "cn", CMD_GROUP_PKEY2),
+        ("textarea", "description", "itestsudocmdgroup2 desc"),
     ],
-    'mod': [
-        ('textarea', 'description', 'itestsudocmdgroup2 desc mod'),
-    ],
+    "mod": [("textarea", "description", "itestsudocmdgroup2 desc mod"),],
 }

@@ -52,7 +52,7 @@ class otptoken_add(MethodOverride):
         qr.make()
         qr.print_ascii(out=qr_output, tty=False)
 
-        encoding = getattr(sys.stdout, 'encoding', None)
+        encoding = getattr(sys.stdout, "encoding", None)
         if encoding is None:
             encoding = locale.getpreferredencoding(False)
 
@@ -63,10 +63,12 @@ class otptoken_add(MethodOverride):
                 version,
                 output,
                 message=ResultFormattingError(
-                    message=_("Unable to display QR code using the configured "
-                              "output encoding. Please use the token URI to "
-                              "configure your OTP device")
-                )
+                    message=_(
+                        "Unable to display QR code using the configured "
+                        "output encoding. Please use the token URI to "
+                        "configure your OTP device"
+                    )
+                ),
             )
             return None
 
@@ -80,8 +82,9 @@ class otptoken_add(MethodOverride):
                     message=ResultFormattingError(
                         message=_(
                             "QR code width is greater than that of the output "
-                            "tty. Please resize your terminal.")
-                    )
+                            "tty. Please resize your terminal."
+                        )
+                    ),
                 )
 
         return qr
@@ -89,22 +92,21 @@ class otptoken_add(MethodOverride):
     def output_for_cli(self, textui, output, *args, **options):
         # copy-pasted from ipalib/Frontend.__do_call()
         # because option handling is broken on client-side
-        if 'version' in options:
+        if "version" in options:
             pass
         elif self.api.env.skip_version_check:
-            options['version'] = u'2.0'
+            options["version"] = u"2.0"
         else:
-            options['version'] = API_VERSION
+            options["version"] = API_VERSION
 
-        uri = output['result'].get('uri', None)
+        uri = output["result"].get("uri", None)
 
-        if uri is not None and not options.get('no_qrcode', False):
-            qr = self._get_qrcode(output, uri, options['version'])
+        if uri is not None and not options.get("no_qrcode", False):
+            qr = self._get_qrcode(output, uri, options["version"])
         else:
             qr = None
 
-        rv = super(otptoken_add, self).output_for_cli(
-                textui, output, *args, **options)
+        rv = super(otptoken_add, self).output_for_cli(textui, output, *args, **options)
 
         if qr is not None:
             print("\n")
@@ -132,30 +134,29 @@ class HTTPSHandler(urllib.request.HTTPSHandler):
         # pylint: disable=no-member
         return self.do_open(self.__inner, req)
 
+
 @register()
 class otptoken_sync(Local):
-    __doc__ = _('Synchronize an OTP token.')
+    __doc__ = _("Synchronize an OTP token.")
 
-    header = 'X-IPA-TokenSync-Result'
+    header = "X-IPA-TokenSync-Result"
 
     takes_options = (
-        Str('user', label=_('User ID')),
-        Password('password', label=_('Password'), confirm=False),
-        Password('first_code', label=_('First Code'), confirm=False),
-        Password('second_code', label=_('Second Code'), confirm=False),
+        Str("user", label=_("User ID")),
+        Password("password", label=_("Password"), confirm=False),
+        Password("first_code", label=_("First Code"), confirm=False),
+        Password("second_code", label=_("Second Code"), confirm=False),
     )
 
-    takes_args = (
-        Str('token?', label=_('Token ID')),
-    )
+    takes_args = (Str("token?", label=_("Token ID")),)
 
     def forward(self, *args, **kwargs):
-        status = {'result': {self.header: 'unknown'}}
+        status = {"result": {self.header: "unknown"}}
 
         # Get the sync URI.
         segments = list(urllib.parse.urlparse(self.api.env.xmlrpc_uri))
-        assert segments[0] == 'https' # Ensure encryption.
-        segments[2] = segments[2].replace('/xml', '/session/sync_token')
+        assert segments[0] == "https"  # Ensure encryption.
+        segments[2] = segments[2].replace("/xml", "/session/sync_token")
         # urlunparse *can* take one argument
         # pylint: disable=too-many-function-args
         sync_uri = urllib.parse.urlunparse(segments)
@@ -165,26 +166,29 @@ class otptoken_sync(Local):
         query = {k: v for k, v in kwargs.items() if k in options}
         if args and args[0] is not None:
             # sync_token converts token name to token DN
-            query['token'] = args[0]
+            query["token"] = args[0]
         query = urllib.parse.urlencode(query)
-        query = query.encode('utf-8')
+        query = query.encode("utf-8")
 
         # Sync the token.
         # pylint: disable=E1101
         handler = HTTPSHandler(
             cafile=api.env.tls_ca_cert,
             tls_version_min=api.env.tls_version_min,
-            tls_version_max=api.env.tls_version_max)
+            tls_version_max=api.env.tls_version_max,
+        )
         rsp = urllib.request.build_opener(handler).open(sync_uri, query)
         if rsp.getcode() == 200:
-            status['result'][self.header] = rsp.info().get(self.header, 'unknown')
+            status["result"][self.header] = rsp.info().get(self.header, "unknown")
         rsp.close()
 
         return status
 
     def output_for_cli(self, textui, result, *keys, **options):
-        textui.print_plain({
-            'ok': 'Token synchronized.',
-            'error': 'Error contacting server!',
-            'invalid-credentials': 'Invalid Credentials!',
-        }.get(result['result'][self.header], 'Unknown Error!'))
+        textui.print_plain(
+            {
+                "ok": "Token synchronized.",
+                "error": "Error contacting server!",
+                "invalid-credentials": "Invalid Credentials!",
+            }.get(result["result"][self.header], "Unknown Error!")
+        )

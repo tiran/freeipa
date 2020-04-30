@@ -40,8 +40,13 @@ from ipalib.constants import IPA_CA_CN, IPA_CA_RECORD
 from ipalib.crud import Create, PKQuery, Retrieve, Search
 from ipalib.frontend import Method, Object
 from ipalib.parameters import (
-    Bytes, Certificate, CertificateSigningRequest, DateTime, DNParam,
-    DNSNameParam, Principal
+    Bytes,
+    Certificate,
+    CertificateSigningRequest,
+    DateTime,
+    DNParam,
+    DNSNameParam,
+    Principal,
 )
 from ipalib.plugable import Registry
 from .virtual import VirtualCommand
@@ -53,106 +58,219 @@ from ipalib import output
 from ipapython import dnsutil, kerberos
 from ipapython.dn import DN
 from ipaserver.plugins.service import normalize_principal, validate_realm
-from ipaserver.masters import (
-    ENABLED_SERVICE, CONFIGURED_SERVICE, is_service_enabled
-)
+from ipaserver.masters import ENABLED_SERVICE, CONFIGURED_SERVICE, is_service_enabled
 
 try:
     import pyhbac
 except ImportError:
-    raise errors.SkipPluginModule(reason=_('pyhbac is not installed.'))
+    raise errors.SkipPluginModule(reason=_("pyhbac is not installed."))
 
 if six.PY3:
     unicode = str
 
-__doc__ = _("""
+__doc__ = (
+    _(
+        """
 IPA certificate operations
-""") + _("""
+"""
+    )
+    + _(
+        """
 Implements a set of commands for managing server SSL certificates.
-""") + _("""
+"""
+    )
+    + _(
+        """
 Certificate requests exist in the form of a Certificate Signing Request (CSR)
 in PEM format.
-""") + _("""
+"""
+    )
+    + _(
+        """
 The dogtag CA uses just the CN value of the CSR and forces the rest of the
 subject to values configured in the server.
-""") + _("""
+"""
+    )
+    + _(
+        """
 A certificate is stored with a service principal and a service principal
 needs a host.
-""") + _("""
+"""
+    )
+    + _(
+        """
 In order to request a certificate:
-""") + _("""
+"""
+    )
+    + _(
+        """
 * The host must exist
 * The service must exist (or you use the --add option to automatically add it)
-""") + _("""
+"""
+    )
+    + _(
+        """
 SEARCHING:
-""") + _("""
+"""
+    )
+    + _(
+        """
 Certificates may be searched on by certificate subject, serial number,
 revocation reason, validity dates and the issued date.
-""") + _("""
+"""
+    )
+    + _(
+        """
 When searching on dates the _from date does a >= search and the _to date
 does a <= search. When combined these are done as an AND.
-""") + _("""
+"""
+    )
+    + _(
+        """
 Dates are treated as GMT to match the dates in the certificates.
-""") + _("""
+"""
+    )
+    + _(
+        """
 The date format is YYYY-mm-dd.
-""") + _("""
+"""
+    )
+    + _(
+        """
 EXAMPLES:
-""") + _("""
+"""
+    )
+    + _(
+        """
  Request a new certificate and add the principal:
    ipa cert-request --add --principal=HTTP/lion.example.com example.csr
-""") + _("""
+"""
+    )
+    + _(
+        """
  Retrieve an existing certificate:
    ipa cert-show 1032
-""") + _("""
+"""
+    )
+    + _(
+        """
  Revoke a certificate (see RFC 5280 for reason details):
    ipa cert-revoke --revocation-reason=6 1032
-""") + _("""
+"""
+    )
+    + _(
+        """
  Remove a certificate from revocation hold status:
    ipa cert-remove-hold 1032
-""") + _("""
+"""
+    )
+    + _(
+        """
  Check the status of a signing request:
    ipa cert-status 10
-""") + _("""
+"""
+    )
+    + _(
+        """
  Search for certificates by hostname:
    ipa cert-find --subject=ipaserver.example.com
-""") + _("""
+"""
+    )
+    + _(
+        """
  Search for revoked certificates by reason:
    ipa cert-find --revocation-reason=5
-""") + _("""
+"""
+    )
+    + _(
+        """
  Search for certificates based on issuance date
    ipa cert-find --issuedon-from=2013-02-01 --issuedon-to=2013-02-07
-""") + _("""
+"""
+    )
+    + _(
+        """
  Search for certificates owned by a specific user:
    ipa cert-find --user=user
-""") + _("""
+"""
+    )
+    + _(
+        """
  Examine a certificate:
    ipa cert-find --file=cert.pem --all
-""") + _("""
+"""
+    )
+    + _(
+        """
  Verify that a certificate is owned by a specific user:
    ipa cert-find --file=cert.pem --user=user
-""") + _("""
+"""
+    )
+    + _(
+        """
 IPA currently immediately issues (or declines) all certificate requests so
 the status of a request is not normally useful. This is for future use
 or the case where a CA does not immediately issue a certificate.
-""") + _("""
+"""
+    )
+    + _(
+        """
 The following revocation reasons are supported:
 
-""") + _("""    * 0 - unspecified
-""") + _("""    * 1 - keyCompromise
-""") + _("""    * 2 - cACompromise
-""") + _("""    * 3 - affiliationChanged
-""") + _("""    * 4 - superseded
-""") + _("""    * 5 - cessationOfOperation
-""") + _("""    * 6 - certificateHold
-""") + _("""    * 8 - removeFromCRL
-""") + _("""    * 9 - privilegeWithdrawn
-""") + _("""    * 10 - aACompromise
-""") + _("""
+"""
+    )
+    + _(
+        """    * 0 - unspecified
+"""
+    )
+    + _(
+        """    * 1 - keyCompromise
+"""
+    )
+    + _(
+        """    * 2 - cACompromise
+"""
+    )
+    + _(
+        """    * 3 - affiliationChanged
+"""
+    )
+    + _(
+        """    * 4 - superseded
+"""
+    )
+    + _(
+        """    * 5 - cessationOfOperation
+"""
+    )
+    + _(
+        """    * 6 - certificateHold
+"""
+    )
+    + _(
+        """    * 8 - removeFromCRL
+"""
+    )
+    + _(
+        """    * 9 - privilegeWithdrawn
+"""
+    )
+    + _(
+        """    * 10 - aACompromise
+"""
+    )
+    + _(
+        """
 Note that reason code 7 is not used.  See RFC 5280 for more details:
-""") + _("""
+"""
+    )
+    + _(
+        """
 http://www.ietf.org/rfc/rfc5280.txt
 
-""")
+"""
+    )
+)
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +278,7 @@ USER, HOST, KRBTGT, SERVICE = range(4)
 
 register = Registry()
 
-PKIDATE_FORMAT = '%Y-%m-%d'
+PKIDATE_FORMAT = "%Y-%m-%d"
 
 
 def _acl_make_request(principal_type, principal, ca_id, profile_id):
@@ -169,23 +287,21 @@ def _acl_make_request(principal_type, principal, ca_id, profile_id):
     req = pyhbac.HbacRequest()
     req.targethost.name = ca_id
     req.service.name = profile_id
-    if principal_type == 'user':
+    if principal_type == "user":
         req.user.name = principal.username
-    elif principal_type == 'host':
+    elif principal_type == "host":
         req.user.name = principal.hostname
-    elif principal_type == 'service':
+    elif principal_type == "service":
         req.user.name = unicode(principal)
     groups = []
-    if principal_type == 'user':
-        user_obj = api.Command.user_show(
-            str(principal.username))['result']
-        groups = user_obj.get('memberof_group', [])
-        groups += user_obj.get('memberofindirect_group', [])
-    elif principal_type == 'host':
-        host_obj = api.Command.host_show(
-            str(principal.hostname))['result']
-        groups = host_obj.get('memberof_hostgroup', [])
-        groups += host_obj.get('memberofindirect_hostgroup', [])
+    if principal_type == "user":
+        user_obj = api.Command.user_show(str(principal.username))["result"]
+        groups = user_obj.get("memberof_group", [])
+        groups += user_obj.get("memberofindirect_group", [])
+    elif principal_type == "host":
+        host_obj = api.Command.host_show(str(principal.hostname))["result"]
+        groups = host_obj.get("memberof_hostgroup", [])
+        groups += host_obj.get("memberofindirect_hostgroup", [])
     req.user.groups = sorted(set(groups))
     return req
 
@@ -196,41 +312,42 @@ def _acl_make_rule(principal_type, obj):
     ``principal_type``
         String in {'user', 'host', 'service'}
     """
-    rule = pyhbac.HbacRule(obj['cn'][0])
-    rule.enabled = obj['ipaenabledflag'][0]
+    rule = pyhbac.HbacRule(obj["cn"][0])
+    rule.enabled = obj["ipaenabledflag"][0]
     rule.srchosts.category = {pyhbac.HBAC_CATEGORY_ALL}
 
     # add CA(s)
-    if 'ipacacategory' in obj and obj['ipacacategory'][0].lower() == 'all':
+    if "ipacacategory" in obj and obj["ipacacategory"][0].lower() == "all":
         rule.targethosts.category = {pyhbac.HBAC_CATEGORY_ALL}
     else:
         # For compatibility with pre-lightweight-CAs CA ACLs,
         # no CA members implies the host authority (only)
-        rule.targethosts.names = obj.get('ipamemberca_ca', [IPA_CA_CN])
+        rule.targethosts.names = obj.get("ipamemberca_ca", [IPA_CA_CN])
 
     # add profiles
-    if ('ipacertprofilecategory' in obj
-            and obj['ipacertprofilecategory'][0].lower() == 'all'):
+    if (
+        "ipacertprofilecategory" in obj
+        and obj["ipacertprofilecategory"][0].lower() == "all"
+    ):
         rule.services.category = {pyhbac.HBAC_CATEGORY_ALL}
     else:
-        attr = 'ipamembercertprofile_certprofile'
+        attr = "ipamembercertprofile_certprofile"
         rule.services.names = obj.get(attr, [])
 
     # add principals and principal's groups
-    category_attr = '{}category'.format(principal_type)
-    if category_attr in obj and obj[category_attr][0].lower() == 'all':
+    category_attr = "{}category".format(principal_type)
+    if category_attr in obj and obj[category_attr][0].lower() == "all":
         rule.users.category = {pyhbac.HBAC_CATEGORY_ALL}
     else:
-        if principal_type == 'user':
-            rule.users.names = obj.get('memberuser_user', [])
-            rule.users.groups = obj.get('memberuser_group', [])
-        elif principal_type == 'host':
-            rule.users.names = obj.get('memberhost_host', [])
-            rule.users.groups = obj.get('memberhost_hostgroup', [])
-        elif principal_type == 'service':
+        if principal_type == "user":
+            rule.users.names = obj.get("memberuser_user", [])
+            rule.users.groups = obj.get("memberuser_group", [])
+        elif principal_type == "host":
+            rule.users.names = obj.get("memberhost_host", [])
+            rule.users.groups = obj.get("memberhost_hostgroup", [])
+        elif principal_type == "service":
             rule.users.names = [
-                unicode(principal)
-                for principal in obj.get('memberservice_service', [])
+                unicode(principal) for principal in obj.get("memberservice_service", [])
             ]
 
     return rule
@@ -238,13 +355,13 @@ def _acl_make_rule(principal_type, obj):
 
 def acl_evaluate(principal, ca_id, profile_id):
     if principal.is_user:
-        principal_type = 'user'
+        principal_type = "user"
     elif principal.is_host:
-        principal_type = 'host'
+        principal_type = "host"
     else:
-        principal_type = 'service'
+        principal_type = "service"
     req = _acl_make_request(principal_type, principal, ca_id, profile_id)
-    acls = api.Command.caacl_find(no_members=False)['result']
+    acls = api.Command.caacl_find(no_members=False)["result"]
     rules = [_acl_make_rule(principal_type, obj) for obj in acls]
     return req.evaluate(rules) == pyhbac.HBAC_EVAL_ALLOW
 
@@ -277,39 +394,39 @@ def normalize_serial_number(num):
 
 
 def ca_enabled_check(_api):
-    if not _api.Command.ca_is_enabled()['result']:
-        raise errors.NotFound(reason=_('CA is not configured'))
+    if not _api.Command.ca_is_enabled()["result"]:
+        raise errors.NotFound(reason=_("CA is not configured"))
 
 
 def caacl_check(principal, ca, profile_id):
     if not acl_evaluate(principal, ca, profile_id):
-        raise errors.ACIError(info=_(
+        raise errors.ACIError(
+            info=_(
                 "Principal '%(principal)s' "
                 "is not permitted to use CA '%(ca)s' "
                 "with profile '%(profile_id)s' for certificate issuance."
-            ) % dict(
-                principal=unicode(principal),
-                ca=ca,
-                profile_id=profile_id
             )
+            % dict(principal=unicode(principal), ca=ca, profile_id=profile_id)
         )
 
 
 def ca_kdc_check(api_instance, hostname):
     master_dn = api_instance.Object.server.get_dn(unicode(hostname))
-    kdc_dn = DN(('cn', 'KDC'), master_dn)
+    kdc_dn = DN(("cn", "KDC"), master_dn)
     wanted = {ENABLED_SERVICE, CONFIGURED_SERVICE}
     try:
-        kdc_entry = api_instance.Backend.ldap2.get_entry(
-            kdc_dn, ['ipaConfigString'])
-        if not wanted.intersection(kdc_entry['ipaConfigString']):
+        kdc_entry = api_instance.Backend.ldap2.get_entry(kdc_dn, ["ipaConfigString"])
+        if not wanted.intersection(kdc_entry["ipaConfigString"]):
             raise errors.NotFound(
-                reason=_("enabledService/configuredService not in "
-                         "ipaConfigString kdc entry"))
+                reason=_(
+                    "enabledService/configuredService not in "
+                    "ipaConfigString kdc entry"
+                )
+            )
     except errors.NotFound:
         raise errors.ACIError(
-            info=_("Host '%(hostname)s' is not an active KDC")
-            % dict(hostname=hostname))
+            info=_("Host '%(hostname)s' is not an active KDC") % dict(hostname=hostname)
+        )
 
 
 def bind_principal_can_manage_cert(cert):
@@ -319,7 +436,7 @@ def bind_principal_can_manage_cert(cert):
         A python-cryptography ``Certificate`` object.
 
     """
-    bind_principal = kerberos.Principal(getattr(context, 'principal'))
+    bind_principal = kerberos.Principal(getattr(context, "principal"))
     if not bind_principal.is_host:
         return False
 
@@ -327,8 +444,7 @@ def bind_principal_can_manage_cert(cert):
 
     # Verify that hostname matches subject of cert.
     # We check the "most-specific" CN value.
-    cns = cert.subject.get_attributes_for_oid(
-            cryptography.x509.oid.NameOID.COMMON_NAME)
+    cns = cert.subject.get_attributes_for_oid(cryptography.x509.oid.NameOID.COMMON_NAME)
     if len(cns) == 0:
         return False  # no CN in subject
     else:
@@ -338,123 +454,123 @@ def bind_principal_can_manage_cert(cert):
 class BaseCertObject(Object):
     takes_params = (
         Str(
-            'cacn?',
-            cli_name='ca',
+            "cacn?",
+            cli_name="ca",
             default=IPA_CA_CN,
             autofill=True,
-            label=_('Issuing CA'),
-            doc=_('Name of issuing CA'),
-            flags={'no_create', 'no_update', 'no_search'},
+            label=_("Issuing CA"),
+            doc=_("Name of issuing CA"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Certificate(
-            'certificate',
+            "certificate",
             label=_("Certificate"),
             doc=_("Base-64 encoded certificate."),
-            flags={'no_create', 'no_update', 'no_search'},
+            flags={"no_create", "no_update", "no_search"},
         ),
         Bytes(
-            'certificate_chain*',
+            "certificate_chain*",
             label=_("Certificate chain"),
             doc=_("X.509 certificate chain"),
-            flags={'no_create', 'no_update', 'no_search'},
+            flags={"no_create", "no_update", "no_search"},
         ),
         DNParam(
-            'subject',
-            label=_('Subject'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "subject",
+            label=_("Subject"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'san_rfc822name*',
-            label=_('Subject email address'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_rfc822name*",
+            label=_("Subject email address"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         DNSNameParam(
-            'san_dnsname*',
-            label=_('Subject DNS name'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_dnsname*",
+            label=_("Subject DNS name"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'san_x400address*',
-            label=_('Subject X.400 address'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_x400address*",
+            label=_("Subject X.400 address"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         DNParam(
-            'san_directoryname*',
-            label=_('Subject directory name'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_directoryname*",
+            label=_("Subject directory name"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'san_edipartyname*',
-            label=_('Subject EDI Party name'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_edipartyname*",
+            label=_("Subject EDI Party name"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'san_uri*',
-            label=_('Subject URI'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_uri*",
+            label=_("Subject URI"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'san_ipaddress*',
-            label=_('Subject IP Address'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_ipaddress*",
+            label=_("Subject IP Address"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'san_oid*',
-            label=_('Subject OID'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_oid*",
+            label=_("Subject OID"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Principal(
-            'san_other_upn*',
-            label=_('Subject UPN'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_other_upn*",
+            label=_("Subject UPN"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Principal(
-            'san_other_kpn*',
-            label=_('Subject Kerberos principal name'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_other_kpn*",
+            label=_("Subject Kerberos principal name"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'san_other*',
-            label=_('Subject Other Name'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "san_other*",
+            label=_("Subject Other Name"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         DNParam(
-            'issuer',
-            label=_('Issuer'),
-            doc=_('Issuer DN'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "issuer",
+            label=_("Issuer"),
+            doc=_("Issuer DN"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         DateTime(
-            'valid_not_before',
-            label=_('Not Before'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "valid_not_before",
+            label=_("Not Before"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         DateTime(
-            'valid_not_after',
-            label=_('Not After'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "valid_not_after",
+            label=_("Not After"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'sha1_fingerprint',
-            label=_('Fingerprint (SHA1)'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "sha1_fingerprint",
+            label=_("Fingerprint (SHA1)"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'sha256_fingerprint',
-            label=_('Fingerprint (SHA256)'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "sha256_fingerprint",
+            label=_("Fingerprint (SHA256)"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Int(
-            'serial_number',
-            label=_('Serial number'),
-            doc=_('Serial number in decimal or if prefixed with 0x in hexadecimal'),
+            "serial_number",
+            label=_("Serial number"),
+            doc=_("Serial number in decimal or if prefixed with 0x in hexadecimal"),
             normalizer=normalize_serial_number,
-            flags={'no_create', 'no_update', 'no_search'},
+            flags={"no_create", "no_update", "no_search"},
         ),
         Str(
-            'serial_number_hex',
-            label=_('Serial number (hex)'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "serial_number_hex",
+            label=_("Serial number (hex)"),
+            flags={"no_create", "no_update", "no_search"},
         ),
     )
 
@@ -476,24 +592,22 @@ class BaseCertObject(Object):
         Name extension are examined.)
 
         """
-        if 'certificate' in obj:
-            cert = x509.load_der_x509_certificate(
-                base64.b64decode(obj['certificate']))
-            obj['subject'] = DN(cert.subject)
-            obj['issuer'] = DN(cert.issuer)
-            obj['serial_number'] = cert.serial_number
-            obj['valid_not_before'] = x509.format_datetime(
-                    cert.not_valid_before)
-            obj['valid_not_after'] = x509.format_datetime(
-                    cert.not_valid_after)
+        if "certificate" in obj:
+            cert = x509.load_der_x509_certificate(base64.b64decode(obj["certificate"]))
+            obj["subject"] = DN(cert.subject)
+            obj["issuer"] = DN(cert.issuer)
+            obj["serial_number"] = cert.serial_number
+            obj["valid_not_before"] = x509.format_datetime(cert.not_valid_before)
+            obj["valid_not_after"] = x509.format_datetime(cert.not_valid_after)
             if full:
-                obj['sha1_fingerprint'] = x509.to_hex_with_colons(
-                    cert.fingerprint(hashes.SHA1()))
-                obj['sha256_fingerprint'] = x509.to_hex_with_colons(
-                    cert.fingerprint(hashes.SHA256()))
+                obj["sha1_fingerprint"] = x509.to_hex_with_colons(
+                    cert.fingerprint(hashes.SHA1())
+                )
+                obj["sha256_fingerprint"] = x509.to_hex_with_colons(
+                    cert.fingerprint(hashes.SHA256())
+                )
 
-            general_names = x509.process_othernames(
-                    cert.san_general_names)
+            general_names = x509.process_othernames(cert.san_general_names)
 
             for gn in general_names:
                 try:
@@ -502,33 +616,41 @@ class BaseCertObject(Object):
                     # Invalid GeneralName (i.e. not a valid X.509 cert);
                     # don't fail but log something about it
                     logger.warning(
-                        "Encountered bad GeneralName; skipping", exc_info=True)
+                        "Encountered bad GeneralName; skipping", exc_info=True
+                    )
 
-        serial_number = obj.get('serial_number')
+        serial_number = obj.get("serial_number")
         if serial_number is not None:
-            obj['serial_number_hex'] = u'0x%X' % serial_number
+            obj["serial_number_hex"] = u"0x%X" % serial_number
 
     def _add_san_attribute(self, obj, full, gn):
         name_type_map = {
-            cryptography.x509.RFC822Name:
-                ('san_rfc822name', attrgetter('value')),
-            cryptography.x509.DNSName: ('san_dnsname', attrgetter('value')),
+            cryptography.x509.RFC822Name: ("san_rfc822name", attrgetter("value")),
+            cryptography.x509.DNSName: ("san_dnsname", attrgetter("value")),
             # cryptography.x509.???: 'san_x400address',
-            cryptography.x509.DirectoryName:
-                ('san_directoryname', lambda x: DN(x.value)),
+            cryptography.x509.DirectoryName: (
+                "san_directoryname",
+                lambda x: DN(x.value),
+            ),
             # cryptography.x509.???: 'san_edipartyname',
-            cryptography.x509.UniformResourceIdentifier:
-                ('san_uri', attrgetter('value')),
-            cryptography.x509.IPAddress:
-                ('san_ipaddress', attrgetter('value')),
-            cryptography.x509.RegisteredID:
-                ('san_oid', attrgetter('value.dotted_string')),
-            cryptography.x509.OtherName: ('san_other', _format_othername),
-            x509.UPN: ('san_other_upn', attrgetter('name')),
-            x509.KRB5PrincipalName: ('san_other_kpn', attrgetter('name')),
+            cryptography.x509.UniformResourceIdentifier: (
+                "san_uri",
+                attrgetter("value"),
+            ),
+            cryptography.x509.IPAddress: ("san_ipaddress", attrgetter("value")),
+            cryptography.x509.RegisteredID: (
+                "san_oid",
+                attrgetter("value.dotted_string"),
+            ),
+            cryptography.x509.OtherName: ("san_other", _format_othername),
+            x509.UPN: ("san_other_upn", attrgetter("name")),
+            x509.KRB5PrincipalName: ("san_other_kpn", attrgetter("name")),
         }
         default_attrs = {
-            'san_rfc822name', 'san_dnsname', 'san_other_upn', 'san_other_kpn',
+            "san_rfc822name",
+            "san_dnsname",
+            "san_other_upn",
+            "san_other_kpn",
         }
 
         if type(gn) not in name_type_map:
@@ -540,23 +662,22 @@ class BaseCertObject(Object):
             attr_value = self.params[attr_name].type(format_name(gn))
             obj.setdefault(attr_name, []).append(attr_value)
 
-        if full and attr_name.startswith('san_other_'):
+        if full and attr_name.startswith("san_other_"):
             # also include known otherName in generic otherName attribute
-            attr_value = self.params['san_other'].type(_format_othername(gn))
-            obj.setdefault('san_other', []).append(attr_value)
+            attr_value = self.params["san_other"].type(_format_othername(gn))
+            obj.setdefault("san_other", []).append(attr_value)
 
 
 def _format_othername(on):
     """Format a python-cryptography OtherName for display."""
-    return u'{}:{}'.format(
-        on.type_id.dotted_string,
-        base64.b64encode(on.value).decode('ascii')
+    return u"{}:{}".format(
+        on.type_id.dotted_string, base64.b64encode(on.value).decode("ascii")
     )
 
 
 class BaseCertMethod(Method):
     def get_options(self):
-        yield self.obj.params['cacn'].clone(query=True)
+        yield self.obj.params["cacn"].clone(query=True)
 
         for option in super(BaseCertMethod, self).get_options():
             yield option
@@ -566,67 +687,63 @@ class BaseCertMethod(Method):
 class certreq(BaseCertObject):
     takes_params = BaseCertObject.takes_params + (
         Str(
-            'request_type',
-            default=u'pkcs10',
+            "request_type",
+            default=u"pkcs10",
             autofill=True,
-            flags={'no_option', 'no_update', 'no_update', 'no_search'},
+            flags={"no_option", "no_update", "no_update", "no_search"},
         ),
         Str(
-            'profile_id?', validate_profile_id,
+            "profile_id?",
+            validate_profile_id,
             label=_("Profile ID"),
             doc=_("Certificate Profile to use"),
-            flags={'no_update', 'no_update', 'no_search'},
+            flags={"no_update", "no_update", "no_search"},
         ),
         Str(
-            'cert_request_status',
-            label=_('Request status'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "cert_request_status",
+            label=_("Request status"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Int(
-            'request_id',
-            label=_('Request id'),
+            "request_id",
+            label=_("Request id"),
             primary_key=True,
-            flags={'no_create', 'no_update', 'no_search', 'no_output'},
+            flags={"no_create", "no_update", "no_search", "no_output"},
         ),
     )
 
 
 _chain_flag = Flag(
-    'chain',
-    default=False,
-    doc=_('Include certificate chain in output'),
+    "chain", default=False, doc=_("Include certificate chain in output"),
 )
 
 
 @register()
 class cert_request(Create, BaseCertMethod, VirtualCommand):
-    __doc__ = _('Submit a certificate signing request.')
+    __doc__ = _("Submit a certificate signing request.")
 
-    obj_name = 'certreq'
-    attr_name = 'request'
+    obj_name = "certreq"
+    attr_name = "request"
 
     takes_args = (
-        CertificateSigningRequest(
-            'csr',
-            label=_('CSR'),
-            cli_name='csr_file',
-        ),
+        CertificateSigningRequest("csr", label=_("CSR"), cli_name="csr_file",),
     )
-    operation="request certificate"
+    operation = "request certificate"
 
     takes_options = (
         Principal(
-            'principal',
+            "principal",
             validate_realm,
-            label=_('Principal'),
-            doc=_('Principal for this certificate (e.g. HTTP/test.example.com)'),
-            normalizer=normalize_principal
+            label=_("Principal"),
+            doc=_("Principal for this certificate (e.g. HTTP/test.example.com)"),
+            normalizer=normalize_principal,
         ),
         Flag(
-            'add',
+            "add",
             doc=_(
                 "automatically add the principal if it doesn't exist "
-                "(service principals only)"),
+                "(service principals only)"
+            ),
         ),
         _chain_flag,
     )
@@ -634,7 +751,7 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
     def get_args(self):
         # FIXME: the 'no_create' flag is ignored for positional arguments
         for arg in super(cert_request, self).get_args():
-            if arg.name == 'request_id':
+            if arg.name == "request_id":
                 continue
             yield arg
 
@@ -643,17 +760,17 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
 
         ldap = self.api.Backend.ldap2
         realm = unicode(self.api.env.realm)
-        add = kw.get('add')
-        request_type = kw.get('request_type')
-        profile_id = kw.get('profile_id', self.Backend.ra.DEFAULT_PROFILE)
+        add = kw.get("add")
+        request_type = kw.get("request_type")
+        profile_id = kw.get("profile_id", self.Backend.ra.DEFAULT_PROFILE)
 
         # Check that requested authority exists (done before CA ACL
         # enforcement so that user gets better error message if
         # referencing nonexistant CA) and look up authority ID.
         #
-        ca = kw['cacn']
-        ca_obj = api.Command.ca_show(ca, all=all, chain=chain)['result']
-        ca_id = ca_obj['ipacaid'][0]
+        ca = kw["cacn"]
+        ca_obj = api.Command.ca_show(ca, all=all, chain=chain)["result"]
+        ca_id = ca_obj["ipacaid"][0]
 
         """
         Access control is partially handled by the ACI titled
@@ -665,7 +782,7 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
         Binding with a user principal one needs to be in the request_certs
         taskgroup (directly or indirectly via role membership).
         """
-        principal_arg = kw.get('principal')
+        principal_arg = kw.get("principal")
 
         if principal_to_principal_type(principal_arg) == KRBTGT:
             principal_obj = None
@@ -674,30 +791,29 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
             # Allow krbtgt to use only the KDC certprofile
             if profile_id != self.Backend.ra.KDC_PROFILE:
                 raise errors.ACIError(
-                    info=_("krbtgt certs can use only the %s profile") % (
-                           self.Backend.ra.KDC_PROFILE))
+                    info=_("krbtgt certs can use only the %s profile")
+                    % (self.Backend.ra.KDC_PROFILE)
+                )
 
             # Allow only our own realm krbtgt for now; no trusted realms.
-            if principal != kerberos.Principal((u'krbtgt', realm),
-                                               realm=realm):
+            if principal != kerberos.Principal((u"krbtgt", realm), realm=realm):
                 raise errors.NotFound("Not our realm's krbtgt")
 
         else:
             principal_obj = self.lookup_or_add_principal(principal_arg, add)
-            if 'krbcanonicalname' in principal_obj:
-                principal = principal_obj['krbcanonicalname'][0]
+            if "krbcanonicalname" in principal_obj:
+                principal = principal_obj["krbcanonicalname"][0]
             else:
-                principal = principal_obj['krbprincipalname'][0]
+                principal = principal_obj["krbprincipalname"][0]
 
         principal_string = unicode(principal)
         principal_type = principal_to_principal_type(principal)
 
-        bind_principal = kerberos.Principal(getattr(context, 'principal'))
+        bind_principal = kerberos.Principal(getattr(context, "principal"))
         bind_principal_string = unicode(bind_principal)
         bind_principal_type = principal_to_principal_type(bind_principal)
 
-        if (bind_principal_string != principal_string and
-                bind_principal_type != HOST):
+        if bind_principal_string != principal_string and bind_principal_type != HOST:
             # Can the bound principal request certs for another principal?
             self.check_access()
 
@@ -715,7 +831,8 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
 
         try:
             ext_san = csr.extensions.get_extension_for_oid(
-                cryptography.x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                cryptography.x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+            )
         except cryptography.x509.extensions.ExtensionNotFound:
             ext_san = None
 
@@ -723,48 +840,55 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
         #
         # We only look at the "most specific" CN value
         cns = csr.subject.get_attributes_for_oid(
-                cryptography.x509.oid.NameOID.COMMON_NAME)
+            cryptography.x509.oid.NameOID.COMMON_NAME
+        )
         if len(cns) == 0:
-            raise errors.ValidationError(name='csr',
-                error=_("No Common Name was found in subject of request."))
+            raise errors.ValidationError(
+                name="csr", error=_("No Common Name was found in subject of request.")
+            )
         cn = cns[-1].value  # "most specific" is end of list
 
         if principal_type in (SERVICE, HOST):
             if not _dns_name_matches_principal(cn, principal, principal_obj):
                 raise errors.ValidationError(
-                    name='csr',
+                    name="csr",
                     error=_(
                         "hostname in subject of request '%(cn)s' does not "
                         "match name or aliases of principal '%(principal)s'"
-                        ) % dict(cn=cn, principal=principal))
+                    )
+                    % dict(cn=cn, principal=principal),
+                )
         elif principal_type == KRBTGT and not bypass_caacl:
             if cn.lower() != bind_principal.hostname.lower():
                 raise errors.ACIError(
-                    info=_("hostname in subject of request '%(cn)s' "
-                           "does not match principal hostname "
-                           "'%(hostname)s'") % dict(
-                                cn=cn, hostname=bind_principal.hostname))
+                    info=_(
+                        "hostname in subject of request '%(cn)s' "
+                        "does not match principal hostname "
+                        "'%(hostname)s'"
+                    )
+                    % dict(cn=cn, hostname=bind_principal.hostname)
+                )
         elif principal_type == USER:
             # check user name
             if cn != principal.username:
                 raise errors.ValidationError(
-                    name='csr',
-                    error=_("DN commonName does not match user's login")
+                    name="csr", error=_("DN commonName does not match user's login")
                 )
 
             # check email address
             #
             # fail if any email addr from DN does not appear in ldap entry
             email_addrs = csr.subject.get_attributes_for_oid(
-                    cryptography.x509.oid.NameOID.EMAIL_ADDRESS)
+                cryptography.x509.oid.NameOID.EMAIL_ADDRESS
+            )
             csr_emails = [attr.value for attr in email_addrs]
-            if not _emails_are_valid(csr_emails,
-                                     principal_obj.get('mail', [])):
+            if not _emails_are_valid(csr_emails, principal_obj.get("mail", [])):
                 raise errors.ValidationError(
-                    name='csr',
+                    name="csr",
                     error=_(
                         "DN emailAddress does not match "
-                        "any of user's email addresses")
+                        "any of user's email addresses"
+                    ),
                 )
 
         if principal_type != KRBTGT:
@@ -772,8 +896,12 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
             dn = principal_obj.dn
             if not ldap.can_write(dn, "usercertificate"):
                 raise errors.ACIError(
-                    info=_("Insufficient 'write' privilege to the "
-                           "'userCertificate' attribute of entry '%s'.") % dn)
+                    info=_(
+                        "Insufficient 'write' privilege to the "
+                        "'userCertificate' attribute of entry '%s'."
+                    )
+                    % dn
+                )
 
         # During SAN validation, we collect IPAddressName values,
         # and *qualified* DNS names, and then ensure that all
@@ -791,10 +919,12 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
             if isinstance(gn, cryptography.x509.general_name.DNSName):
                 if principal.is_user:
                     raise errors.ValidationError(
-                        name='csr',
+                        name="csr",
                         error=_(
                             "subject alt name type %s is forbidden "
-                            "for user principals") % "DNSName"
+                            "for user principals"
+                        )
+                        % "DNSName",
                     )
 
                 name = gn.value
@@ -802,9 +932,11 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
                 # Special case: if the DNS name is ipa-ca.$DOMAIN and if the
                 # subject principal is the HTTP service for an IPA server
                 # then allow the name.
-                if name == f'{IPA_CA_RECORD}.{self.api.env.domain}' \
-                        and principal.is_service \
-                        and principal.service_name == 'HTTP':
+                if (
+                    name == f"{IPA_CA_RECORD}.{self.api.env.domain}"
+                    and principal.is_service
+                    and principal.service_name == "HTTP"
+                ):
                     try:
                         self.api.Command.server_show(principal.hostname)
                     except errors.NotFound:
@@ -826,21 +958,27 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
                 alt_principal_obj = None
                 try:
                     if principal_type == HOST:
-                        alt_principal_obj = api.Command['host_show'](
-                            name, all=True)
+                        alt_principal_obj = api.Command["host_show"](name, all=True)
                     elif principal_type == KRBTGT:
                         alt_principal = kerberos.Principal(
-                            (u'host', name), principal.realm)
+                            (u"host", name), principal.realm
+                        )
                     elif principal_type == SERVICE:
-                        alt_principal_obj = api.Command['service_show'](
-                            alt_principal, all=True)
+                        alt_principal_obj = api.Command["service_show"](
+                            alt_principal, all=True
+                        )
                 except errors.NotFound:
                     # We don't want to issue any certificates referencing
                     # machines we don't know about. Nothing is stored in this
                     # host record related to this certificate.
-                    raise errors.NotFound(reason=_('The service principal for '
-                        'subject alt name %s in certificate request does not '
-                        'exist') % name)
+                    raise errors.NotFound(
+                        reason=_(
+                            "The service principal for "
+                            "subject alt name %s in certificate request does not "
+                            "exist"
+                        )
+                        % name
+                    )
 
                 if alt_principal_obj is not None:
                     # We found an alternative principal.
@@ -857,7 +995,8 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
                     # Remember that even a TLD can have an A record!
                     #
                     if _dns_name_matches_principal(
-                            name, alt_principal, alt_principal_obj):
+                        name, alt_principal, alt_principal_obj
+                    ):
                         san_dnsnames.add(name)
                     else:
                         # Unqualified SAN DNS names are a valid use case.
@@ -866,11 +1005,15 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
                         pass
 
                     # Now check write access and caacl
-                    altdn = alt_principal_obj['result']['dn']
+                    altdn = alt_principal_obj["result"]["dn"]
                     if not ldap.can_write(altdn, "usercertificate"):
-                        raise errors.ACIError(info=_(
-                            "Insufficient privilege to create a certificate "
-                            "with subject alt name '%s'.") % name)
+                        raise errors.ACIError(
+                            info=_(
+                                "Insufficient privilege to create a certificate "
+                                "with subject alt name '%s'."
+                            )
+                            % name
+                        )
                 if not bypass_caacl:
                     if principal_type == KRBTGT:
                         ca_kdc_check(ldap, alt_principal.hostname)
@@ -879,40 +1022,47 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
 
             elif isinstance(gn, (x509.KRB5PrincipalName, x509.UPN)):
                 if principal_type == KRBTGT:
-                        principal_obj = dict()
-                        principal_obj['krbprincipalname'] = [
-                            kerberos.Principal((u'krbtgt', realm), realm)]
-                if not _principal_name_matches_principal(
-                        gn.name, principal_obj):
+                    principal_obj = dict()
+                    principal_obj["krbprincipalname"] = [
+                        kerberos.Principal((u"krbtgt", realm), realm)
+                    ]
+                if not _principal_name_matches_principal(gn.name, principal_obj):
                     raise errors.ValidationError(
-                        name='csr',
+                        name="csr",
                         error=_(
                             "Principal '%s' in subject alt name does not "
-                            "match requested principal") % gn.name)
+                            "match requested principal"
+                        )
+                        % gn.name,
+                    )
             elif isinstance(gn, cryptography.x509.general_name.RFC822Name):
                 if principal_type == USER:
-                    if not _emails_are_valid([gn.value],
-                                             principal_obj.get('mail', [])):
+                    if not _emails_are_valid([gn.value], principal_obj.get("mail", [])):
                         raise errors.ValidationError(
-                            name='csr',
+                            name="csr",
                             error=_(
                                 "RFC822Name does not match "
-                                "any of user's email addresses")
+                                "any of user's email addresses"
+                            ),
                         )
                 else:
                     raise errors.ValidationError(
-                        name='csr',
+                        name="csr",
                         error=_(
                             "subject alt name type %s is forbidden "
-                            "for non-user principals") % "RFC822Name"
+                            "for non-user principals"
+                        )
+                        % "RFC822Name",
                     )
             elif isinstance(gn, cryptography.x509.general_name.IPAddress):
                 if principal.is_user:
                     raise errors.ValidationError(
-                        name='csr',
+                        name="csr",
                         error=_(
                             "subject alt name type %s is forbidden "
-                            "for user principals") % "IPAddress"
+                            "for user principals"
+                        )
+                        % "IPAddress",
                     )
 
                 # collect the value; we will validate it after we
@@ -920,8 +1070,8 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
                 san_ipaddrs.add(gn.value)
             else:
                 raise errors.ACIError(
-                    info=_("Subject alt name type %s is forbidden")
-                    % type(gn).__name__)
+                    info=_("Subject alt name type %s is forbidden") % type(gn).__name__
+                )
 
         if san_ipaddrs:
             _validate_san_ips(san_ipaddrs, san_dnsnames)
@@ -931,14 +1081,15 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
             # re-serialise to PEM, in case the user-supplied data has
             # extraneous material that will cause Dogtag to freak out
             # keep it as string not bytes, it is required later
-            csr_pem = csr.public_bytes(
-                serialization.Encoding.PEM).decode('utf-8')
+            csr_pem = csr.public_bytes(serialization.Encoding.PEM).decode("utf-8")
             result = self.Backend.ra.request_certificate(
-                csr_pem, profile_id, ca_id, request_type=request_type)
+                csr_pem, profile_id, ca_id, request_type=request_type
+            )
         except errors.HTTPRequestError as e:
             if e.status == 409:  # pylint: disable=no-member
                 raise errors.CertificateOperationError(
-                    error=_("CA '%s' is disabled") % ca)
+                    error=_("CA '%s' is disabled") % ca
+                )
             else:
                 raise e
 
@@ -947,52 +1098,51 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
                 self.obj._parse(result, all)
             except ValueError as e:
                 self.add_message(
-                    messages.CertificateInvalid(
-                        subject=principal,
-                        reason=e,
-                    )
+                    messages.CertificateInvalid(subject=principal, reason=e,)
                 )
-            result['request_id'] = int(result['request_id'])
-            result['cacn'] = ca_obj['cn'][0]
+            result["request_id"] = int(result["request_id"])
+            result["cacn"] = ca_obj["cn"][0]
 
         # Success? Then add it to the principal's entry
         # (unless the profile tells us not to)
-        profile = api.Command['certprofile_show'](profile_id)
-        store = profile['result']['ipacertprofilestoreissued'][0] == 'TRUE'
-        if store and 'certificate' in result:
-            cert = result.get('certificate')
-            kwargs = dict(addattr=u'usercertificate={}'.format(cert))
+        profile = api.Command["certprofile_show"](profile_id)
+        store = profile["result"]["ipacertprofilestoreissued"][0] == "TRUE"
+        if store and "certificate" in result:
+            cert = result.get("certificate")
+            kwargs = dict(addattr=u"usercertificate={}".format(cert))
             # note: we call different commands for the different
             # principal types because handling of 'userCertificate'
             # vs. 'userCertificate;binary' varies by plugin.
             if principal_type == SERVICE:
-                api.Command['service_mod'](principal_string, **kwargs)
+                api.Command["service_mod"](principal_string, **kwargs)
             elif principal_type == HOST:
-                api.Command['host_mod'](principal.hostname, **kwargs)
+                api.Command["host_mod"](principal.hostname, **kwargs)
             elif principal_type == USER:
-                api.Command['user_mod'](principal.username, **kwargs)
+                api.Command["user_mod"](principal.username, **kwargs)
             elif principal_type == KRBTGT:
-                logger.error("Profiles used to store cert should't be "
-                             "used for krbtgt certificates")
+                logger.error(
+                    "Profiles used to store cert should't be "
+                    "used for krbtgt certificates"
+                )
 
-        if 'certificate_chain' in ca_obj:
+        if "certificate_chain" in ca_obj:
             cert = x509.load_der_x509_certificate(
-                base64.b64decode(result['certificate']))
+                base64.b64decode(result["certificate"])
+            )
             cert = cert.public_bytes(serialization.Encoding.DER)
-            result['certificate_chain'] = [cert] + ca_obj['certificate_chain']
+            result["certificate_chain"] = [cert] + ca_obj["certificate_chain"]
 
-        return dict(
-            result=result,
-            value=pkey_to_value(int(result['request_id']), kw),
-        )
+        return dict(result=result, value=pkey_to_value(int(result["request_id"]), kw),)
 
     def lookup_principal(self, principal):
         """
         Look up a principal's account.  Only works for users, hosts, services.
         """
         return self.api.Backend.ldap2.find_entry_by_attr(
-            'krbprincipalname', principal, 'krbprincipalaux',
-            base_dn=DN(self.api.env.container_accounts, self.api.env.basedn)
+            "krbprincipalname",
+            principal,
+            "krbprincipalaux",
+            base_dn=DN(self.api.env.container_accounts, self.api.env.basedn),
         )
 
     def lookup_or_add_principal(self, principal, add):
@@ -1016,20 +1166,20 @@ class cert_request(Create, BaseCertMethod, VirtualCommand):
         except errors.NotFound:
             if add:
                 if principal.is_service and not principal.is_host:
-                    self.api.Command.service_add(
-                        str(principal), all=True, force=True)
+                    self.api.Command.service_add(str(principal), all=True, force=True)
                     return self.lookup_principal(principal)  # we want an LDAPEntry
                 else:
                     if principal.is_user:
-                        princtype_str = _('user')
+                        princtype_str = _("user")
                     else:
-                        princtype_str = _('host')
+                        princtype_str = _("host")
                     raise errors.OperationNotSupportedForPrincipalType(
-                        operation=_("'add' option"),
-                        principal_type=princtype_str)
+                        operation=_("'add' option"), principal_type=princtype_str
+                    )
             else:
                 raise errors.NotFound(
-                    reason=_("The principal for this request doesn't exist."))
+                    reason=_("The principal for this request doesn't exist.")
+                )
 
 
 def _emails_are_valid(csr_emails, principal_emails):
@@ -1039,11 +1189,11 @@ def _emails_are_valid(csr_emails, principal_emails):
     """
 
     def lower_domain(email):
-        email_splitted = email.split('@', 1)
+        email_splitted = email.split("@", 1)
         if len(email_splitted) > 1:
             email_splitted[1] = email_splitted[1].lower()
 
-        return '@'.join(email_splitted)
+        return "@".join(email_splitted)
 
     principal_emails_lower = set(map(lower_domain, principal_emails))
     csr_emails_lower = set(map(lower_domain, csr_emails))
@@ -1056,7 +1206,7 @@ def principal_to_principal_type(principal):
         return USER
     elif principal.is_host:
         return HOST
-    elif principal.service_name == 'krbtgt':
+    elif principal.service_name == "krbtgt":
         return KRBTGT
     else:
         return SERVICE
@@ -1075,7 +1225,7 @@ def _dns_name_matches_principal(name, principal, principal_obj):
     if principal_obj is None:
         return False
 
-    for alias in principal_obj.get('krbprincipalname', []):
+    for alias in principal_obj.get("krbprincipalname", []):
         # we can only compare them if both subject principal and
         # the alias are service or host principals
         if not (alias.is_service and principal.is_service):
@@ -1106,7 +1256,7 @@ def _principal_name_matches_principal(name, principal_obj):
     except ValueError:
         return False
 
-    return principal in principal_obj.get('krbprincipalname', [])
+    return principal in principal_obj.get("krbprincipalname", [])
 
 
 def _validate_san_ips(san_ipaddrs, san_dnsnames):
@@ -1143,10 +1293,9 @@ def _validate_san_ips(san_ipaddrs, san_dnsnames):
     unreachable_ips = san_ip_set - six.viewkeys(reachable)
     if len(unreachable_ips) > 0:
         raise errors.ValidationError(
-            name='csr',
-            error=_(
-                "IP address in subjectAltName (%s) unreachable from DNS names"
-            ) % ', '.join(unreachable_ips)
+            name="csr",
+            error=_("IP address in subjectAltName (%s) unreachable from DNS names")
+            % ", ".join(unreachable_ips),
         )
 
     # Collect PTR records for each IP address
@@ -1154,16 +1303,15 @@ def _validate_san_ips(san_ipaddrs, san_dnsnames):
     for ip in san_ipaddrs:
         ptrs = _ip_ptr_records(unicode(ip))
         if len(ptrs) > 0:
-            ptrs_by_ip[unicode(ip)] = set(s.rstrip('.') for s in ptrs)
+            ptrs_by_ip[unicode(ip)] = set(s.rstrip(".") for s in ptrs)
 
     # Each iPAddressName must have a corresponding PTR record.
     missing_ptrs = san_ip_set - six.viewkeys(ptrs_by_ip)
     if len(missing_ptrs) > 0:
         raise errors.ValidationError(
-            name='csr',
-            error=_(
-                "IP address in subjectAltName (%s) does not have PTR record"
-            ) % ', '.join(missing_ptrs)
+            name="csr",
+            error=_("IP address in subjectAltName (%s) does not have PTR record")
+            % ", ".join(missing_ptrs),
         )
 
     # PTRs and forward records must form a loop
@@ -1172,10 +1320,9 @@ def _validate_san_ips(san_ipaddrs, san_dnsnames):
         # this IP address (via A/AAAA records)
         if len(ptrs - reachable.get(ip, set())) > 0:
             raise errors.ValidationError(
-                name='csr',
-                error=_(
-                    "PTR record for SAN IP (%s) does not match A/AAAA records"
-                ) % ip
+                name="csr",
+                error=_("PTR record for SAN IP (%s) does not match A/AAAA records")
+                % ip,
             )
 
 
@@ -1197,22 +1344,21 @@ def _san_ip_update_reachable(reachable, dnsname, cname_depth):
     name = fqdn.relativize(zone)
 
     try:
-        result = api.Command['dnsrecord_show'](zone, name)['result']
+        result = api.Command["dnsrecord_show"](zone, name)["result"]
     except errors.NotFound as nf:
         logger.debug("Skipping IPs for %s: %s", dnsname, nf)
         return  # nothing to do
 
-    for ip in itertools.chain(result.get('arecord', ()),
-                              result.get('aaaarecord', ())):
+    for ip in itertools.chain(result.get("arecord", ()), result.get("aaaarecord", ())):
         # add this forward relationship to the 'reachable' dict
         names = reachable.get(ip, set())
-        names.add(dnsname.rstrip('.'))
+        names.add(dnsname.rstrip("."))
         reachable[ip] = names
 
     if cname_depth > 0:
-        for cname in result.get('cnamerecord', []):
-            if not cname.endswith('.'):
-                cname = u'%s.%s' % (cname, zone)
+        for cname in result.get("cnamerecord", []):
+            if not cname.endswith("."):
+                cname = u"%s.%s" % (cname, zone)
             _san_ip_update_reachable(reachable, cname, cname_depth - 1)
 
 
@@ -1227,22 +1373,22 @@ def _ip_ptr_records(ip):
     try:
         zone = dnsutil.DNSName(resolver.zone_for_name(rname))
         name = rname.relativize(zone)
-        result = api.Command['dnsrecord_show'](zone, name)['result']
+        result = api.Command["dnsrecord_show"](zone, name)["result"]
     except resolver.NoNameservers:
         ptrs = set()  # if there's no zone, there are no records
     except errors.NotFound:
         ptrs = set()
     else:
-        ptrs = set(result.get('ptrrecord', []))
+        ptrs = set(result.get("ptrrecord", []))
     return ptrs
 
 
 @register()
 class cert_status(Retrieve, BaseCertMethod, VirtualCommand):
-    __doc__ = _('Check the status of a certificate signing request.')
+    __doc__ = _("Check the status of a certificate signing request.")
 
-    obj_name = 'certreq'
-    attr_name = 'status'
+    obj_name = "certreq"
+    attr_name = "status"
 
     operation = "certificate status"
 
@@ -1255,7 +1401,7 @@ class cert_status(Retrieve, BaseCertMethod, VirtualCommand):
         # target CA in request data, so we cannot check.  So for
         # now, there is nothing we can do with the 'cacn' option
         # but check if the specified CA exists.
-        self.api.Command.ca_show(kw['cacn'])
+        self.api.Command.ca_show(kw["cacn"])
 
         return dict(
             result=self.Backend.ra.check_request_status(str(request_id)),
@@ -1267,48 +1413,50 @@ class cert_status(Retrieve, BaseCertMethod, VirtualCommand):
 class cert(BaseCertObject):
     takes_params = BaseCertObject.takes_params + (
         Str(
-            'status',
-            label=_('Status'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "status", label=_("Status"), flags={"no_create", "no_update", "no_search"},
         ),
         Flag(
-            'revoked',
-            label=_('Revoked'),
-            flags={'no_create', 'no_update', 'no_search'},
+            "revoked",
+            label=_("Revoked"),
+            flags={"no_create", "no_update", "no_search"},
         ),
         Int(
-            'revocation_reason',
-            label=_('Revocation reason'),
-            doc=_('Reason for revoking the certificate (0-10). Type '
-                  '"ipa help cert" for revocation reason details. '),
+            "revocation_reason",
+            label=_("Revocation reason"),
+            doc=_(
+                "Reason for revoking the certificate (0-10). Type "
+                '"ipa help cert" for revocation reason details. '
+            ),
             minvalue=0,
             maxvalue=10,
-            flags={'no_create', 'no_update'},
+            flags={"no_create", "no_update"},
         ),
     )
 
     def get_params(self):
         for param in super(cert, self).get_params():
-            if param.name == 'serial_number':
+            if param.name == "serial_number":
                 param = param.clone(primary_key=True)
-            elif param.name in ('certificate', 'issuer'):
-                param = param.clone(flags=param.flags - {'no_search'})
+            elif param.name in ("certificate", "issuer"):
+                param = param.clone(flags=param.flags - {"no_search"})
             yield param
 
         for owner, search_key in self._owners():
             yield search_key.clone_rename(
-                'owner_{0}'.format(owner.name),
+                "owner_{0}".format(owner.name),
                 required=False,
                 multivalue=True,
                 primary_key=False,
                 label=_("Owner %s") % owner.object_name,
-                flags={'no_create', 'no_update', 'no_search'},
+                flags={"no_create", "no_update", "no_search"},
             )
 
     def _owners(self):
-        for obj_name, search_key in [('user', None),
-                                     ('host', None),
-                                     ('service', 'krbprincipalname')]:
+        for obj_name, search_key in [
+            ("user", None),
+            ("host", None),
+            ("service", "krbprincipalname"),
+        ]:
             obj = self.api.Object[obj_name]
             if search_key is None:
                 pkey = obj.primary_key
@@ -1317,13 +1465,13 @@ class cert(BaseCertObject):
             yield obj, pkey
 
     def _fill_owners(self, obj):
-        dns = obj.pop('owner', None)
+        dns = obj.pop("owner", None)
         if dns is None:
             return
 
         for owner, _search_key in self._owners():
             container_dn = DN(owner.container_dn, self.api.env.basedn)
-            name = 'owner_' + owner.name
+            name = "owner_" + owner.name
             for dn in dns:
                 if dn.endswith(container_dn, 1):
                     value = owner.get_primary_key_from_dn(dn)
@@ -1338,99 +1486,104 @@ class CertMethod(BaseCertMethod):
         for o in self.has_output:
             if isinstance(o, (output.Entry, output.ListOfEntries)):
                 yield Flag(
-                    'no_members',
+                    "no_members",
                     doc=_("Suppress processing of membership attributes."),
-                    exclude='webui',
-                    flags={'no_output'},
+                    exclude="webui",
+                    flags={"no_output"},
                 )
                 break
 
 
 @register()
 class cert_show(Retrieve, CertMethod, VirtualCommand):
-    __doc__ = _('Retrieve an existing certificate.')
+    __doc__ = _("Retrieve an existing certificate.")
 
     takes_options = (
-        Str('out?',
-            label=_('Output filename'),
-            doc=_('File to store the certificate in.'),
-            exclude='webui',
+        Str(
+            "out?",
+            label=_("Output filename"),
+            doc=_("File to store the certificate in."),
+            exclude="webui",
         ),
         _chain_flag,
     )
 
-    operation="retrieve certificate"
+    operation = "retrieve certificate"
 
-    def execute(self, serial_number, all=False, raw=False, no_members=False,
-                chain=False, **options):
+    def execute(
+        self,
+        serial_number,
+        all=False,
+        raw=False,
+        no_members=False,
+        chain=False,
+        **options
+    ):
         ca_enabled_check(self.api)
 
         # Dogtag lightweight CAs have shared serial number domain, so
         # we don't tell Dogtag the issuer (but we check the cert after).
         #
         result = self.Backend.ra.get_certificate(str(serial_number))
-        cert = x509.load_der_x509_certificate(
-                    base64.b64decode(result['certificate']))
+        cert = x509.load_der_x509_certificate(base64.b64decode(result["certificate"]))
 
         try:
             self.check_access()
         except errors.ACIError as acierr:
-            logger.debug("Not granted by ACI to retrieve certificate, "
-                         "looking at principal")
+            logger.debug(
+                "Not granted by ACI to retrieve certificate, " "looking at principal"
+            )
             if not bind_principal_can_manage_cert(cert):
                 raise acierr  # pylint: disable=E0702
 
-        ca_obj = api.Command.ca_show(
-            options['cacn'],
-            all=all,
-            chain=chain,
-        )['result']
-        if DN(cert.issuer) != DN(ca_obj['ipacasubjectdn'][0]):
+        ca_obj = api.Command.ca_show(options["cacn"], all=all, chain=chain,)["result"]
+        if DN(cert.issuer) != DN(ca_obj["ipacasubjectdn"][0]):
             # DN of cert differs from what we requested
             raise errors.NotFound(
-                reason=_("Certificate with serial number %(serial)s "
-                    "issued by CA '%(ca)s' not found")
-                    % dict(serial=serial_number, ca=options['cacn']))
+                reason=_(
+                    "Certificate with serial number %(serial)s "
+                    "issued by CA '%(ca)s' not found"
+                )
+                % dict(serial=serial_number, ca=options["cacn"])
+            )
 
-        der_cert = base64.b64decode(result['certificate'])
+        der_cert = base64.b64decode(result["certificate"])
 
         if all or not no_members:
             ldap = self.api.Backend.ldap2
-            filter = ldap.make_filter_from_attr('usercertificate', der_cert)
+            filter = ldap.make_filter_from_attr("usercertificate", der_cert)
             try:
-                entries = ldap.get_entries(base_dn=self.api.env.basedn,
-                                           filter=filter,
-                                           attrs_list=[''])
+                entries = ldap.get_entries(
+                    base_dn=self.api.env.basedn, filter=filter, attrs_list=[""]
+                )
             except errors.EmptyResult:
                 entries = []
             for entry in entries:
-                result.setdefault('owner', []).append(entry.dn)
+                result.setdefault("owner", []).append(entry.dn)
 
         if not raw:
-            result['certificate'] = result['certificate'].replace('\r\n', '')
+            result["certificate"] = result["certificate"].replace("\r\n", "")
             self.obj._parse(result, all)
-            result['revoked'] = ('revocation_reason' in result)
+            result["revoked"] = "revocation_reason" in result
             self.obj._fill_owners(result)
-            result['cacn'] = ca_obj['cn'][0]
+            result["cacn"] = ca_obj["cn"][0]
 
-        if 'certificate_chain' in ca_obj:
-            result['certificate_chain'] = (
-                [der_cert] + ca_obj['certificate_chain'])
+        if "certificate_chain" in ca_obj:
+            result["certificate_chain"] = [der_cert] + ca_obj["certificate_chain"]
 
         return dict(result=result, value=pkey_to_value(serial_number, options))
 
 
 @register()
 class cert_revoke(PKQuery, CertMethod, VirtualCommand):
-    __doc__ = _('Revoke a certificate.')
+    __doc__ = _("Revoke a certificate.")
 
     operation = "revoke certificate"
 
     def get_options(self):
         # FIXME: The default is 0.  Is this really an Int param?
-        yield self.obj.params['revocation_reason'].clone(
-            default=0,
-            autofill=True,
+        yield self.obj.params["revocation_reason"].clone(
+            default=0, autofill=True,
         )
 
         for option in super(cert_revoke, self).get_options():
@@ -1441,36 +1594,40 @@ class cert_revoke(PKQuery, CertMethod, VirtualCommand):
 
         # Make sure that the cert specified by issuer+serial exists.
         # Will raise NotFound if it does not.
-        resp = api.Command.cert_show(unicode(serial_number), cacn=kw['cacn'])
+        resp = api.Command.cert_show(unicode(serial_number), cacn=kw["cacn"])
 
         try:
             self.check_access()
         except errors.ACIError as acierr:
-            logger.debug("Not granted by ACI to revoke certificate, "
-                         "looking at principal")
+            logger.debug(
+                "Not granted by ACI to revoke certificate, " "looking at principal"
+            )
             try:
                 cert = x509.load_der_x509_certificate(
-                    base64.b64decode(resp['result']['certificate']))
+                    base64.b64decode(resp["result"]["certificate"])
+                )
                 if not bind_principal_can_manage_cert(cert):
                     raise acierr
             except errors.NotImplementedError:
                 raise acierr
-        revocation_reason = kw['revocation_reason']
+        revocation_reason = kw["revocation_reason"]
         if revocation_reason == 7:
-            raise errors.CertificateOperationError(error=_('7 is not a valid revocation reason'))
+            raise errors.CertificateOperationError(
+                error=_("7 is not a valid revocation reason")
+            )
         return dict(
             # Dogtag lightweight CAs have shared serial number domain, so
             # we don't tell Dogtag the issuer (but we already checked that
             # the given serial was issued by the named ca).
             result=self.Backend.ra.revoke_certificate(
-                str(serial_number), revocation_reason=revocation_reason)
+                str(serial_number), revocation_reason=revocation_reason
+            )
         )
-
 
 
 @register()
 class cert_remove_hold(PKQuery, CertMethod, VirtualCommand):
-    __doc__ = _('Take a revoked certificate off hold.')
+    __doc__ = _("Take a revoked certificate off hold.")
 
     operation = "certificate remove hold"
 
@@ -1479,95 +1636,106 @@ class cert_remove_hold(PKQuery, CertMethod, VirtualCommand):
 
         # Make sure that the cert specified by issuer+serial exists.
         # Will raise NotFound if it does not.
-        api.Command.cert_show(serial_number, cacn=kw['cacn'])
+        api.Command.cert_show(serial_number, cacn=kw["cacn"])
 
         self.check_access()
         return dict(
             # Dogtag lightweight CAs have shared serial number domain, so
             # we don't tell Dogtag the issuer (but we already checked that
             # the given serial was issued by the named ca).
-            result=self.Backend.ra.take_certificate_off_hold(
-                str(serial_number))
+            result=self.Backend.ra.take_certificate_off_hold(str(serial_number))
         )
 
 
 @register()
 class cert_find(Search, CertMethod):
-    __doc__ = _('Search for existing certificates.')
+    __doc__ = _("Search for existing certificates.")
 
     takes_options = (
-        Str('subject?',
-            label=_('Subject'),
-            doc=_('Match cn attribute in subject'),
+        Str(
+            "subject?",
+            label=_("Subject"),
+            doc=_("Match cn attribute in subject"),
             autofill=False,
         ),
-        Int('min_serial_number?',
+        Int(
+            "min_serial_number?",
             doc=_("minimum serial number"),
             autofill=False,
             minvalue=0,
             maxvalue=2147483647,
         ),
-        Int('max_serial_number?',
+        Int(
+            "max_serial_number?",
             doc=_("maximum serial number"),
             autofill=False,
             minvalue=0,
             maxvalue=2147483647,
         ),
-        Flag('exactly?',
-            doc=_('match the common name exactly'),
-            autofill=False,
-        ),
-        DateTime('validnotafter_from?',
-            doc=_('Valid not after from this date (YYYY-mm-dd)'),
+        Flag("exactly?", doc=_("match the common name exactly"), autofill=False,),
+        DateTime(
+            "validnotafter_from?",
+            doc=_("Valid not after from this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        DateTime('validnotafter_to?',
-            doc=_('Valid not after to this date (YYYY-mm-dd)'),
+        DateTime(
+            "validnotafter_to?",
+            doc=_("Valid not after to this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        DateTime('validnotbefore_from?',
-            doc=_('Valid not before from this date (YYYY-mm-dd)'),
+        DateTime(
+            "validnotbefore_from?",
+            doc=_("Valid not before from this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        DateTime('validnotbefore_to?',
-            doc=_('Valid not before to this date (YYYY-mm-dd)'),
+        DateTime(
+            "validnotbefore_to?",
+            doc=_("Valid not before to this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        DateTime('issuedon_from?',
-            doc=_('Issued on from this date (YYYY-mm-dd)'),
+        DateTime(
+            "issuedon_from?",
+            doc=_("Issued on from this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        DateTime('issuedon_to?',
-            doc=_('Issued on to this date (YYYY-mm-dd)'),
+        DateTime(
+            "issuedon_to?",
+            doc=_("Issued on to this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        DateTime('revokedon_from?',
-            doc=_('Revoked on from this date (YYYY-mm-dd)'),
+        DateTime(
+            "revokedon_from?",
+            doc=_("Revoked on from this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        DateTime('revokedon_to?',
-            doc=_('Revoked on to this date (YYYY-mm-dd)'),
+        DateTime(
+            "revokedon_to?",
+            doc=_("Revoked on to this date (YYYY-mm-dd)"),
             normalizer=normalize_pkidate,
             autofill=False,
         ),
-        Flag('pkey_only?',
+        Flag(
+            "pkey_only?",
             label=_("Primary key only"),
-            doc=_("Results should contain primary key attribute only "
-                  "(\"certificate\")"),
+            doc=_(
+                "Results should contain primary key attribute only " '("certificate")'
+            ),
         ),
-        Int('timelimit?',
-            label=_('Time Limit'),
-            doc=_('Time limit of search in seconds (0 is unlimited)'),
+        Int(
+            "timelimit?",
+            label=_("Time Limit"),
+            doc=_("Time limit of search in seconds (0 is unlimited)"),
             minvalue=0,
         ),
-        Int('sizelimit?',
+        Int(
+            "sizelimit?",
             label=_("Size Limit"),
             doc=_("Maximum number of entries returned (0 is unlimited)"),
             minvalue=0,
@@ -1575,15 +1743,16 @@ class cert_find(Search, CertMethod):
     )
 
     msg_summary = ngettext(
-        '%(count)d certificate matched', '%(count)d certificates matched', 0
+        "%(count)d certificate matched", "%(count)d certificates matched", 0
     )
 
     def get_options(self):
         for option in super(cert_find, self).get_options():
-            if option.name == 'no_members':
-                option = option.clone(default=True,
-                                      flags=set(option.flags) | {'no_option'})
-            elif option.name == 'cacn':
+            if option.name == "no_members":
+                option = option.clone(
+                    default=True, flags=set(option.flags) | {"no_option"}
+                )
+            elif option.name == "cacn":
                 # make CA optional, so that user may directly
                 # specify Issuer DN instead
                 option = option.clone(default=None, autofill=None)
@@ -1591,25 +1760,29 @@ class cert_find(Search, CertMethod):
 
         for owner, search_key in self.obj._owners():
             yield search_key.clone_rename(
-                '{0}'.format(owner.name),
+                "{0}".format(owner.name),
                 required=False,
                 multivalue=True,
                 primary_key=False,
                 query=True,
-                cli_name='{0}s'.format(owner.name),
-                doc=(_("Search for certificates with these owner %s.") %
-                     owner.object_name_plural),
+                cli_name="{0}s".format(owner.name),
+                doc=(
+                    _("Search for certificates with these owner %s.")
+                    % owner.object_name_plural
+                ),
                 label=owner.object_name,
             )
             yield search_key.clone_rename(
-                'no_{0}'.format(owner.name),
+                "no_{0}".format(owner.name),
                 required=False,
                 multivalue=True,
                 primary_key=False,
                 query=True,
-                cli_name='no_{0}s'.format(owner.name),
-                doc=(_("Search for certificates without these owner %s.") %
-                     owner.object_name_plural),
+                cli_name="no_{0}s".format(owner.name),
+                doc=(
+                    _("Search for certificates without these owner %s.")
+                    % owner.object_name_plural
+                ),
                 label=owner.object_name,
             )
 
@@ -1620,14 +1793,15 @@ class cert_find(Search, CertMethod):
         result = collections.OrderedDict()
 
         try:
-            cert = options['certificate']
+            cert = options["certificate"]
         except KeyError:
             return result, False, False
 
-        obj = {'serial_number': cert.serial_number}
+        obj = {"serial_number": cert.serial_number}
         if not pkey_only:
-            obj['certificate'] = base64.b64encode(
-                cert.public_bytes(x509.Encoding.DER)).decode('ascii')
+            obj["certificate"] = base64.b64encode(
+                cert.public_bytes(x509.Encoding.DER)
+            ).decode("ascii")
 
         result[self._get_cert_key(cert)] = obj
 
@@ -1635,14 +1809,21 @@ class cert_find(Search, CertMethod):
 
     def _ca_search(self, raw, pkey_only, exactly, **options):
         ra_options = {}
-        for name in ('revocation_reason',
-                     'issuer',
-                     'subject',
-                     'min_serial_number', 'max_serial_number',
-                     'validnotafter_from', 'validnotafter_to',
-                     'validnotbefore_from', 'validnotbefore_to',
-                     'issuedon_from', 'issuedon_to',
-                     'revokedon_from', 'revokedon_to'):
+        for name in (
+            "revocation_reason",
+            "issuer",
+            "subject",
+            "min_serial_number",
+            "max_serial_number",
+            "validnotafter_from",
+            "validnotafter_to",
+            "validnotbefore_from",
+            "validnotbefore_to",
+            "issuedon_from",
+            "issuedon_to",
+            "revokedon_from",
+            "revokedon_to",
+        ):
             try:
                 value = options[name]
             except KeyError:
@@ -1653,7 +1834,7 @@ class cert_find(Search, CertMethod):
                 value = unicode(value)
             ra_options[name] = value
         if exactly:
-            ra_options['exactly'] = True
+            ra_options["exactly"] = True
 
         result = collections.OrderedDict()
         complete = bool(ra_options)
@@ -1667,17 +1848,17 @@ class cert_find(Search, CertMethod):
         # IPA enforces that subject CN is either a hostname or a username.
         # The complete flag is left to False to catch overrides.
         if not ra_options:
-            services = options.get('service', ())
-            hosts = options.get('host', ())
-            users = options.get('user', ())
+            services = options.get("service", ())
+            hosts = options.get("host", ())
+            users = options.get("user", ())
             if len(services) == 1 and not hosts and not users:
                 principal = kerberos.Principal(services[0])
                 if principal.is_service:
-                    ra_options['subject'] = principal.hostname
+                    ra_options["subject"] = principal.hostname
             elif len(hosts) == 1 and not services and not users:
-                ra_options['subject'] = hosts[0]
+                ra_options["subject"] = hosts[0]
             elif len(users) == 1 and not services and not hosts:
-                ra_options['subject'] = users[0]
+                ra_options["subject"] = users[0]
 
         try:
             ca_enabled_check(self.api)
@@ -1686,16 +1867,13 @@ class cert_find(Search, CertMethod):
                 raise
             return result, False, complete
 
-        ca_objs = self.api.Command.ca_find(
-            timelimit=0,
-            sizelimit=0,
-        )['result']
-        ca_objs = {DN(ca['ipacasubjectdn'][0]): ca for ca in ca_objs}
+        ca_objs = self.api.Command.ca_find(timelimit=0, sizelimit=0,)["result"]
+        ca_objs = {DN(ca["ipacasubjectdn"][0]): ca for ca in ca_objs}
 
         ra = self.api.Backend.ra
         for ra_obj in ra.find(ra_options):
-            issuer = DN(ra_obj['issuer'])
-            serial_number = ra_obj['serial_number']
+            issuer = DN(ra_obj["issuer"])
+            serial_number = ra_obj["serial_number"]
 
             try:
                 ca_obj = ca_objs[issuer]
@@ -1703,21 +1881,23 @@ class cert_find(Search, CertMethod):
                 continue
 
             if pkey_only:
-                obj = {'serial_number': serial_number}
+                obj = {"serial_number": serial_number}
             else:
                 obj = ra_obj
 
                 if not raw:
-                    obj['issuer'] = issuer
-                    obj['subject'] = DN(ra_obj['subject'])
-                    obj['valid_not_before'] = (
-                        convert_pkidatetime(obj['valid_not_before']))
-                    obj['valid_not_after'] = (
-                        convert_pkidatetime(obj['valid_not_after']))
-                    obj['revoked'] = (
-                        ra_obj['status'] in (u'REVOKED', u'REVOKED_EXPIRED'))
+                    obj["issuer"] = issuer
+                    obj["subject"] = DN(ra_obj["subject"])
+                    obj["valid_not_before"] = convert_pkidatetime(
+                        obj["valid_not_before"]
+                    )
+                    obj["valid_not_after"] = convert_pkidatetime(obj["valid_not_after"])
+                    obj["revoked"] = ra_obj["status"] in (
+                        u"REVOKED",
+                        u"REVOKED_EXPIRED",
+                    )
 
-            obj['cacn'] = ca_obj['cn'][0]
+            obj["cacn"] = ca_obj["cn"][0]
 
             result[issuer, serial_number] = obj
 
@@ -1728,35 +1908,31 @@ class cert_find(Search, CertMethod):
 
         filters = []
         for owner, search_key in self.obj._owners():
-            for prefix, rule in (('', ldap.MATCH_ALL),
-                                 ('no_', ldap.MATCH_NONE)):
+            for prefix, rule in (("", ldap.MATCH_ALL), ("no_", ldap.MATCH_NONE)):
                 try:
                     value = options[prefix + owner.name]
                 except KeyError:
                     continue
 
                 filter = ldap.make_filter_from_attr(
-                    'objectclass',
-                    owner.object_class,
-                    ldap.MATCH_ALL)
+                    "objectclass", owner.object_class, ldap.MATCH_ALL
+                )
                 if filter not in filters:
                     filters.append(filter)
 
-                filter = ldap.make_filter_from_attr(
-                    search_key.name,
-                    value,
-                    rule)
+                filter = ldap.make_filter_from_attr(search_key.name, value, rule)
                 filters.append(filter)
 
         result = collections.OrderedDict()
         complete = bool(filters)
 
-        cert = options.get('certificate')
+        cert = options.get("certificate")
         if cert is not None:
             filter = ldap.make_filter_from_attr(
-                'usercertificate', cert.public_bytes(x509.Encoding.DER))
+                "usercertificate", cert.public_bytes(x509.Encoding.DER)
+            )
         else:
-            filter = '(usercertificate=*)'
+            filter = "(usercertificate=*)"
         filters.append(filter)
 
         filter = ldap.combine_filters(filters, ldap.MATCH_ALL)
@@ -1764,7 +1940,7 @@ class cert_find(Search, CertMethod):
             entries, truncated = ldap.find_entries(
                 base_dn=self.api.env.basedn,
                 filter=filter,
-                attrs_list=['usercertificate'],
+                attrs_list=["usercertificate"],
                 time_limit=0,
                 size_limit=0,
             )
@@ -1779,52 +1955,60 @@ class cert_find(Search, CertMethod):
 
             truncated = bool(truncated)
 
-        ca_enabled = getattr(context, 'ca_enabled')
+        ca_enabled = getattr(context, "ca_enabled")
         for entry in entries:
-            for attr in ('usercertificate', 'usercertificate;binary'):
+            for attr in ("usercertificate", "usercertificate;binary"):
                 for cert in entry.get(attr, []):
                     cert_key = self._get_cert_key(cert)
                     try:
                         obj = result[cert_key]
                     except KeyError:
-                        obj = {'serial_number': cert.serial_number}
+                        obj = {"serial_number": cert.serial_number}
                         if not pkey_only and (all or not ca_enabled):
                             # Retrieving certificate details is now deferred
                             # until after all certificates are collected.
                             # For the case of CA-less we need to keep
                             # the certificate because getting it again later
                             # would require unnecessary LDAP searches.
-                            obj['certificate'] = (
-                                base64.b64encode(
-                                    cert.public_bytes(x509.Encoding.DER))
-                                .decode('ascii'))
+                            obj["certificate"] = base64.b64encode(
+                                cert.public_bytes(x509.Encoding.DER)
+                            ).decode("ascii")
 
                         result[cert_key] = obj
 
                     if not pkey_only and (all or not no_members):
-                        owners = obj.setdefault('owner', [])
+                        owners = obj.setdefault("owner", [])
                         if entry.dn not in owners:
                             owners.append(entry.dn)
 
         return result, truncated, complete
 
-    def execute(self, criteria=None, all=False, raw=False, pkey_only=False,
-                no_members=True, timelimit=None, sizelimit=None, **options):
+    def execute(
+        self,
+        criteria=None,
+        all=False,
+        raw=False,
+        pkey_only=False,
+        no_members=True,
+        timelimit=None,
+        sizelimit=None,
+        **options
+    ):
         # Store ca_enabled status in the context to save making the API
         # call multiple times.
-        ca_enabled = self.api.Command.ca_is_enabled()['result']
-        setattr(context, 'ca_enabled', ca_enabled)
+        ca_enabled = self.api.Command.ca_is_enabled()["result"]
+        setattr(context, "ca_enabled", ca_enabled)
 
-        if 'cacn' in options:
-            ca_obj = api.Command.ca_show(options['cacn'])['result']
-            ca_sdn = unicode(ca_obj['ipacasubjectdn'][0])
-            if 'issuer' in options:
-                if DN(ca_sdn) != DN(options['issuer']):
+        if "cacn" in options:
+            ca_obj = api.Command.ca_show(options["cacn"])["result"]
+            ca_sdn = unicode(ca_obj["ipacasubjectdn"][0])
+            if "issuer" in options:
+                if DN(ca_sdn) != DN(options["issuer"]):
                     # client has provided both 'ca' and 'issuer' but
                     # issuer DNs don't match; result must be empty
                     return dict(result=[], count=0, truncated=False)
             else:
-                options['issuer'] = ca_sdn
+                options["issuer"] = ca_sdn
 
         if criteria is not None:
             return dict(result=[], count=0, truncated=False)
@@ -1839,15 +2023,10 @@ class cert_find(Search, CertMethod):
         truncated = False
         complete = False
 
-        for sub_search in (self._cert_search,
-                           self._ca_search,
-                           self._ldap_search):
+        for sub_search in (self._cert_search, self._ca_search, self._ldap_search):
             sub_result, sub_truncated, sub_complete = sub_search(
-                all=all,
-                raw=raw,
-                pkey_only=pkey_only,
-                no_members=no_members,
-                **options)
+                all=all, raw=raw, pkey_only=pkey_only, no_members=no_members, **options
+            )
 
             if sub_complete:
                 for key in tuple(result):
@@ -1873,25 +2052,26 @@ class cert_find(Search, CertMethod):
                 ra = self.api.Backend.ra
 
             for key, obj in six.iteritems(result):
-                if all and 'cacn' in obj:
+                if all and "cacn" in obj:
                     _issuer, serial_number = key
-                    cacn = obj['cacn']
+                    cacn = obj["cacn"]
 
                     try:
                         ca_obj = ca_objs[cacn]
                     except KeyError:
-                        ca_obj = ca_objs[cacn] = (
-                            self.api.Command.ca_show(cacn, all=True)['result'])
+                        ca_obj = ca_objs[cacn] = self.api.Command.ca_show(
+                            cacn, all=True
+                        )["result"]
 
                     obj.update(ra.get_certificate(str(serial_number)))
                     if not raw:
-                        obj['certificate'] = (
-                            obj['certificate'].replace('\r\n', ''))
+                        obj["certificate"] = obj["certificate"].replace("\r\n", "")
 
-                    if 'certificate_chain' in ca_obj:
-                        cert_der = base64.b64decode(obj['certificate'])
-                        obj['certificate_chain'] = (
-                            [cert_der] + ca_obj['certificate_chain'])
+                    if "certificate_chain" in ca_obj:
+                        cert_der = base64.b64decode(obj["certificate"])
+                        obj["certificate_chain"] = [cert_der] + ca_obj[
+                            "certificate_chain"
+                        ]
 
                 if not raw:
                     self.obj._parse(obj, all)
@@ -1900,31 +2080,30 @@ class cert_find(Search, CertMethod):
                         # certificate unless requested. It is kept in the
                         # entry from _ldap_search() so its attributes can
                         # be retrieved.
-                        obj.pop('certificate', None)
+                        obj.pop("certificate", None)
                     self.obj._fill_owners(obj)
 
         result = list(six.itervalues(result))
-        if (len(result) > sizelimit > 0):
+        if len(result) > sizelimit > 0:
             if not truncated:
-                self.add_message(messages.SearchResultTruncated(
-                        reason=errors.SizeLimitExceeded()))
+                self.add_message(
+                    messages.SearchResultTruncated(reason=errors.SizeLimitExceeded())
+                )
             result = result[:sizelimit]
             truncated = True
 
-        ret = dict(
-            result=result
-        )
-        ret['count'] = len(ret['result'])
-        ret['truncated'] = bool(truncated)
+        ret = dict(result=result)
+        ret["count"] = len(ret["result"])
+        ret["truncated"] = bool(truncated)
         return ret
 
 
 @register()
 class ca_is_enabled(Command):
-    __doc__ = _('Checks if any of the servers has the CA service enabled.')
+    __doc__ = _("Checks if any of the servers has the CA service enabled.")
     NO_CLI = True
     has_output = output.standard_value
 
     def execute(self, *args, **options):
-        result = is_service_enabled('CA', conn=self.api.Backend.ldap2)
+        result = is_service_enabled("CA", conn=self.api.Backend.ldap2)
         return dict(result=result, value=pkey_to_value(None, options))

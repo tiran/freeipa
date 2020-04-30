@@ -32,9 +32,15 @@ from ipalib.parameters import create_param, Param, Str, Flag
 from ipalib.parameters import Password  # pylint: disable=unused-import
 from ipalib.output import Output, Entry, ListOfEntries
 from ipalib.text import _
-from ipalib.errors import (ZeroArgumentError, MaxArgumentError, OverlapError,
-    VersionError, OptionError,
-    ValidationError, ConversionError)
+from ipalib.errors import (
+    ZeroArgumentError,
+    MaxArgumentError,
+    OverlapError,
+    VersionError,
+    OptionError,
+    ValidationError,
+    ConversionError,
+)
 from ipalib import errors, messages
 from ipalib.request import context, context_frame
 from ipalib.util import classproperty, json_serialize
@@ -44,12 +50,14 @@ if six.PY3:
 
 logger = logging.getLogger(__name__)
 
-RULE_FLAG = 'validation_rule'
+RULE_FLAG = "validation_rule"
+
 
 def rule(obj):
     assert not hasattr(obj, RULE_FLAG)
     setattr(obj, RULE_FLAG, True)
     return obj
+
 
 def is_rule(obj):
     return callable(obj) and getattr(obj, RULE_FLAG, False) is True
@@ -226,11 +234,12 @@ class HasParam(Plugin):
     of ``api.env.context``, subclasses can override this with implementations
     that consider arbitrary ``api.env`` values.
     """
+
     # HasParam is the base class for most frontend plugins, that make it to users
     # This flag indicates that the command should not be available in the cli
     NO_CLI = False
 
-    def _get_param_iterable(self, name, verb='takes'):
+    def _get_param_iterable(self, name, verb="takes"):
         """
         Return an iterable of params defined by the attribute named ``name``.
 
@@ -289,7 +298,7 @@ class HasParam(Plugin):
 
         Also see `HasParam._filter_param_by_context()`.
         """
-        src_name = verb + '_' + name
+        src_name = verb + "_" + name
         src = getattr(self, src_name, None)
         if type(src) is tuple:
             return src
@@ -300,9 +309,8 @@ class HasParam(Plugin):
         if src is None:
             return tuple()
         raise TypeError(
-            '%s.%s must be a tuple, callable, or spec; got %r' % (
-                self.name, src_name, src
-            )
+            "%s.%s must be a tuple, callable, or spec; got %r"
+            % (self.name, src_name, src)
         )
 
     def _filter_param_by_context(self, name, env=None):
@@ -337,16 +345,14 @@ class HasParam(Plugin):
         >>> list(eg._filter_param_by_context('args', another))
         [Str('not_bar', exclude=['bar']), Str('both')]
         """
-        env = getattr(self, 'env', env)
-        get_name = 'get_' + name
+        env = getattr(self, "env", env)
+        get_name = "get_" + name
         if not hasattr(self, get_name):
-            raise NotImplementedError(
-                '%s.%s()' % (self.name, get_name)
-            )
+            raise NotImplementedError("%s.%s()" % (self.name, get_name))
         get = getattr(self, get_name)
         if not callable(get):
             raise TypeError(
-                '%s.%s must be a callable; got %r' % (self.name, get_name, get)
+                "%s.%s must be a callable; got %r" % (self.name, get_name, get)
             )
         for spec in get():
             param = create_param(spec)
@@ -354,12 +360,9 @@ class HasParam(Plugin):
                 yield param
 
     def _create_param_namespace(self, name, env=None):
-        namespace = NameSpace(
-            self._filter_param_by_context(name, env),
-            sort=False
-        )
+        namespace = NameSpace(self._filter_param_by_context(name, env), sort=False)
         if not self.api.is_production_mode():
-            check = getattr(self, 'check_' + name, None)
+            check = getattr(self, "check_" + name, None)
             if callable(check):
                 check(namespace)
         setattr(self, name, namespace)
@@ -406,30 +409,30 @@ class Command(HasParam):
     takes_options = tuple()
     takes_args = tuple()
     # Create stubs for attributes that are set in _on_finalize()
-    args = Plugin.finalize_attr('args')
-    options = Plugin.finalize_attr('options')
-    params = Plugin.finalize_attr('params')
-    params_by_default = Plugin.finalize_attr('params_by_default')
+    args = Plugin.finalize_attr("args")
+    options = Plugin.finalize_attr("options")
+    params = Plugin.finalize_attr("params")
+    params_by_default = Plugin.finalize_attr("params_by_default")
     obj = None
 
     use_output_validation = True
-    output = Plugin.finalize_attr('output')
-    has_output = ('result',)
-    output_params = Plugin.finalize_attr('output_params')
+    output = Plugin.finalize_attr("output")
+    has_output = ("result",)
+    output_params = Plugin.finalize_attr("output_params")
     has_output_params = tuple()
 
     internal_options = tuple()
 
     msg_summary = None
-    msg_truncated = _('Results are truncated, try a more specific search')
+    msg_truncated = _("Results are truncated, try a more specific search")
 
-    callback_types = ('interactive_prompt',)
+    callback_types = ("interactive_prompt",)
 
     api_version = API_VERSION
 
     @classmethod
     def __topic_getter(cls):
-        return cls.__module__.rpartition('.')[2]
+        return cls.__module__.rpartition(".")[2]
 
     topic = classproperty(__topic_getter)
 
@@ -446,47 +449,40 @@ class Command(HasParam):
         """
         self.ensure_finalized()
         with context_frame():
-            self.context.principal = getattr(context, 'principal', None)
+            self.context.principal = getattr(context, "principal", None)
             return self.__do_call(*args, **options)
 
     def __do_call(self, *args, **options):
         self.context.__messages = []
-        if 'version' in options:
-            self.verify_client_version(unicode(options['version']))
+        if "version" in options:
+            self.verify_client_version(unicode(options["version"]))
         elif self.api.env.skip_version_check and not self.api.env.in_server:
-            options['version'] = u'2.0'
+            options["version"] = u"2.0"
         else:
-            options['version'] = self.api_version
+            options["version"] = self.api_version
             if self.api.env.in_server:
                 # add message only on server side
                 self.add_message(
-                    messages.VersionMissing(server_version=self.api_version))
+                    messages.VersionMissing(server_version=self.api_version)
+                )
         params = self.args_options_2_params(*args, **options)
-        logger.debug(
-            'raw: %s(%s)', self.name, ', '.join(self._repr_iter(**params))
-        )
+        logger.debug("raw: %s(%s)", self.name, ", ".join(self._repr_iter(**params)))
         if self.api.env.in_server:
             params.update(self.get_default(**params))
         params = self.normalize(**params)
         params = self.convert(**params)
-        logger.debug(
-            '%s(%s)', self.name, ', '.join(self._repr_iter(**params))
-        )
+        logger.debug("%s(%s)", self.name, ", ".join(self._repr_iter(**params)))
         if self.api.env.in_server:
             self.validate(**params)
         (args, options) = self.params_2_args_options(**params)
         ret = self.run(*args, **options)
         if isinstance(ret, dict):
             for message in self.context.__messages:
-                messages.add_message(options['version'], ret, message)
-        if (
-            isinstance(ret, dict)
-            and 'summary' in self.output
-            and 'summary' not in ret
-        ):
-            ret['summary'] = self.get_summary_default(ret)
+                messages.add_message(options["version"], ret, message)
+        if isinstance(ret, dict) and "summary" in self.output and "summary" not in ret:
+            ret["summary"] = self.get_summary_default(ret)
         if self.use_output_validation and (self.output or ret is not None):
-            self.validate_output(ret, options['version'])
+            self.validate_output(ret, options["version"])
         return ret
 
     def add_message(self, message):
@@ -518,7 +514,7 @@ class Command(HasParam):
             if option.name not in params:
                 continue
             value = params[option.name]
-            yield '%s=%r' % (option.name, option.safe_value(value))
+            yield "%s=%r" % (option.name, option.safe_value(value))
 
     def args_options_2_params(self, *args, **options):
         """
@@ -560,8 +556,7 @@ class Command(HasParam):
         # If any options remain, they are either internal or unknown
         unused_keys = set(options).difference(self.internal_options)
         if unused_keys:
-            raise OptionError(_('Unknown option: %(option)s'),
-                option=unused_keys.pop())
+            raise OptionError(_("Unknown option: %(option)s"), option=unused_keys.pop())
 
     def args_options_2_entry(self, *args, **options):
         """
@@ -603,10 +598,9 @@ class Command(HasParam):
     def __params_2_options(self, params):
         for name in self.options:
             if name in params:
-                yield(name, params[name])
+                yield (name, params[name])
 
-    def prompt_param(self, param, default=None, optional=False, kw=dict(),
-                     label=None):
+    def prompt_param(self, param, default=None, optional=False, kw=dict(), label=None):
         """
         Prompts the user for the value of given parameter.
 
@@ -628,8 +622,9 @@ class Command(HasParam):
                 return param(raw, **kw)
             except (ValidationError, ConversionError) as e:
                 # Display error and prompt again
-                self.Backend.textui.print_prompt_attribute_error(unicode(label),
-                                                             unicode(e.error))
+                self.Backend.textui.print_prompt_attribute_error(
+                    unicode(label), unicode(e.error)
+                )
 
     def normalize(self, **kw):
         """
@@ -648,9 +643,7 @@ class Command(HasParam):
         >>> c.normalize(first=u'JOHN', last=u'DOE')
         {'last': u'DOE', 'first': u'john'}
         """
-        return dict(
-            (k, self.params[k].normalize(v)) for (k, v) in kw.items()
-        )
+        return dict((k, self.params[k].normalize(v)) for (k, v) in kw.items())
 
     def convert(self, **kw):
         """
@@ -668,9 +661,7 @@ class Command(HasParam):
         >>> c.convert(one=1, two=2)
         {'two': u'2', 'one': 1}
         """
-        return dict(
-            (k, self.params[k].convert(v)) for (k, v) in kw.items()
-        )
+        return dict((k, self.params[k].convert(v)) for (k, v) in kw.items())
 
     def __convert_iter(self, kw):
         for param in self.params():
@@ -695,8 +686,11 @@ class Command(HasParam):
         {}
         """
         if _params is None:
-            _params = [p.name for p in self.params()
-                       if p.name not in kw and (p.required or p.autofill)]
+            _params = [
+                p.name
+                for p in self.params()
+                if p.name not in kw and (p.required or p.autofill)
+            ]
         return dict(self.__get_default_iter(_params, kw))
 
     def get_default_of(self, _name, **kw):
@@ -775,14 +769,14 @@ class Command(HasParam):
         try:
             client_apiver = APIVersion(client_version)
         except ValueError:
-            raise VersionError(cver=client_version,
-                               sver=self.api_version,
-                               server=self.env.xmlrpc_uri)
+            raise VersionError(
+                cver=client_version, sver=self.api_version, server=self.env.xmlrpc_uri
+            )
 
         if client_apiver.major != server_apiver.major:
-            raise VersionError(cver=client_version,
-                               sver=self.api_version,
-                               server=self.env.xmlrpc_uri)
+            raise VersionError(
+                cver=client_version, sver=self.api_version, server=self.env.xmlrpc_uri
+            )
 
     def run(self, *args, **options):
         """
@@ -813,19 +807,18 @@ class Command(HasParam):
         ...         return self.api.Backend.ldap.add(**kw)
         ...
         """
-        raise NotImplementedError('%s.execute()' % self.name)
+        raise NotImplementedError("%s.execute()" % self.name)
 
     def forward(self, *args, **kw):
         """
         Forward call over RPC to this same command on server.
         """
         try:
-            return self.Backend.rpcclient.forward(self.forwarded_name,
-                                                  *args, **kw)
+            return self.Backend.rpcclient.forward(self.forwarded_name, *args, **kw)
         except errors.RequirementError as e:
-            if self.api.env.context != 'cli':
+            if self.api.env.context != "cli":
                 raise
-            name = getattr(e, 'name', None)
+            name = getattr(e, "name", None)
             if name is None or name not in self.params:
                 raise
             raise errors.RequirementError(name=self.params[name].cli_name)
@@ -840,13 +833,14 @@ class Command(HasParam):
         loaded in self.api to determine what their custom `Command.get_args`
         and `Command.get_options` methods should yield.
         """
-        self._create_param_namespace('args')
+        self._create_param_namespace("args")
         if len(self.args) == 0 or not self.args[-1].multivalue:
             self.max_args = len(self.args)
         else:
             self.max_args = None
-        self._create_param_namespace('options')
+        self._create_param_namespace("options")
         params_nosort = tuple(self.args()) + tuple(self.options())
+
         def get_key(p):
             if p.required:
                 if p.sortorder < 0:
@@ -855,10 +849,8 @@ class Command(HasParam):
                     return 0
                 return 1
             return 2
-        self.params = NameSpace(
-            sorted(params_nosort, key=get_key),
-            sort=False
-        )
+
+        self.params = NameSpace(sorted(params_nosort, key=get_key), sort=False)
         # Sort params so that the ones with default_from come after the ones
         # that the default_from might depend on and save the result in
         # params_by_default namespace.
@@ -877,20 +869,22 @@ class Command(HasParam):
             params.insert(pos, i)
         self.params_by_default = NameSpace(params, sort=False)
         self.output = NameSpace(self._iter_output(), sort=False)
-        self._create_param_namespace('output_params')
+        self._create_param_namespace("output_params")
         super(Command, self)._on_finalize()
 
     def _iter_output(self):
         if type(self.has_output) is not tuple:
-            raise TypeError('%s.has_output: need a %r; got a %r: %r' % (
-                self.name, tuple, type(self.has_output), self.has_output)
+            raise TypeError(
+                "%s.has_output: need a %r; got a %r: %r"
+                % (self.name, tuple, type(self.has_output), self.has_output)
             )
         for (i, o) in enumerate(self.has_output):
             if isinstance(o, str):
                 o = Output(o)
             if not isinstance(o, Output):
-                raise TypeError('%s.has_output[%d]: need a %r; got a %r: %r' % (
-                    self.name, i, (str, Output), type(o), o)
+                raise TypeError(
+                    "%s.has_output[%d]: need a %r; got a %r: %r"
+                    % (self.name, i, (str, Output), type(o), o)
                 )
             yield o
 
@@ -904,7 +898,7 @@ class Command(HasParam):
         determined.  For an example of why this can be useful, see the
         `ipalib.crud.Create` subclass.
         """
-        for arg in self._get_param_iterable('args'):
+        for arg in self._get_param_iterable("args"):
             yield arg
 
     def check_args(self, args):
@@ -918,13 +912,11 @@ class Command(HasParam):
         for arg in args():
             if optional and arg.required:
                 raise ValueError(
-                    '%s: required argument after optional in %s arguments %s' % (arg.name,
-                    self.name, [x.param_spec for x in args()])
+                    "%s: required argument after optional in %s arguments %s"
+                    % (arg.name, self.name, [x.param_spec for x in args()])
                 )
             if multivalue:
-                raise ValueError(
-                    '%s: only final argument can be multivalue' % arg.name
-                )
+                raise ValueError("%s: only final argument can be multivalue" % arg.name)
             if not arg.required:
                 optional = True
             if arg.multivalue:
@@ -944,62 +936,70 @@ class Command(HasParam):
         determined.  For an example of why this can be useful, see the
         `ipalib.crud.Create` subclass.
         """
-        for option in self._get_param_iterable('options'):
+        for option in self._get_param_iterable("options"):
             yield option
         for o in self.has_output:
             if isinstance(o, (Entry, ListOfEntries)):
-                yield Flag('all',
-                    cli_name='all',
-                    doc=_('Retrieve and print all attributes from the server. Affects command output.'),
-                    exclude='webui',
-                    flags=['no_output'],
+                yield Flag(
+                    "all",
+                    cli_name="all",
+                    doc=_(
+                        "Retrieve and print all attributes from the server. Affects command output."
+                    ),
+                    exclude="webui",
+                    flags=["no_output"],
                 )
-                yield Flag('raw',
-                    cli_name='raw',
-                    doc=_('Print entries as stored on the server. Only affects output format.'),
-                    exclude='webui',
-                    flags=['no_output'],
+                yield Flag(
+                    "raw",
+                    cli_name="raw",
+                    doc=_(
+                        "Print entries as stored on the server. Only affects output format."
+                    ),
+                    exclude="webui",
+                    flags=["no_output"],
                 )
                 break
-        yield Str('version?',
-            doc=_('Client version. Used to determine if server will accept request.'),
-            exclude='webui',
-            flags=['no_option', 'no_output'],
+        yield Str(
+            "version?",
+            doc=_("Client version. Used to determine if server will accept request."),
+            exclude="webui",
+            flags=["no_option", "no_output"],
         )
 
     def validate_output(self, output, version=API_VERSION):
         """
         Validate the return value to make sure it meets the interface contract.
         """
-        nice = '%s.validate_output()' % self.name
+        nice = "%s.validate_output()" % self.name
         if not isinstance(output, dict):
-            raise TypeError('%s: need a %r; got a %r: %r' % (
-                nice, dict, type(output), output)
+            raise TypeError(
+                "%s: need a %r; got a %r: %r" % (nice, dict, type(output), output)
             )
         expected_set = set(self.output)
-        actual_set = set(output) - set(['messages'])
+        actual_set = set(output) - set(["messages"])
         if expected_set != actual_set:
             missing = expected_set - actual_set
             if missing:
-                raise ValueError('%s: missing keys %r in %r' % (
-                    nice, sorted(missing), output)
+                raise ValueError(
+                    "%s: missing keys %r in %r" % (nice, sorted(missing), output)
                 )
             extra = actual_set - expected_set
             if extra:
-                raise ValueError('%s: unexpected keys %r in %r' % (
-                    nice, sorted(extra), output)
+                raise ValueError(
+                    "%s: unexpected keys %r in %r" % (nice, sorted(extra), output)
                 )
         for o in self.output():
             value = output[o.name]
             if not (o.type is None or isinstance(value, o.type)):
-                raise TypeError('%s:\n  output[%r]: need %r; got %r: %r' % (
-                    nice, o.name, o.type, type(value), value)
+                raise TypeError(
+                    "%s:\n  output[%r]: need %r; got %r: %r"
+                    % (nice, o.name, o.type, type(value), value)
                 )
             if callable(o.validate):
                 o.validate(self, value, version)
 
     def get_output_params(self):
-        for param in self._get_param_iterable('output_params', verb='has'):
+        for param in self._get_param_iterable("output_params", verb="has"):
             yield param
 
     def get_summary_default(self, output):
@@ -1015,13 +1015,13 @@ class Command(HasParam):
             warning=logger.warning,
             error=logger.error,
         )
-        for message in output.get('messages', ()):
+        for message in output.get("messages", ()):
             try:
-                function = logger_functions[message['type']]
+                function = logger_functions[message["type"]]
             except KeyError:
-                logger.error('Server sent a message with a wrong type')
+                logger.error("Server sent a message with a wrong type")
                 function = logger.error
-            function(message.get('message'))
+            function(message.get("message"))
 
     def output_for_cli(self, textui, output, *args, **options):
         """
@@ -1052,26 +1052,26 @@ class Command(HasParam):
             labels[p.name] = unicode(p.label)
             flags[p.name] = p.flags
 
-        if options.get('all', False):
-            order.insert(0, 'dn')
+        if options.get("all", False):
+            order.insert(0, "dn")
             print_all = True
         else:
             print_all = False
 
-        if options.get('raw', False):
+        if options.get("raw", False):
             labels = None
 
         for o in self.output:
             outp = self.output[o]
-            if 'no_display' in outp.flags:
+            if "no_display" in outp.flags:
                 continue
             result = output.get(o)
 
-            if o == 'value':
+            if o == "value":
                 continue
-            if o.lower() == 'count' and result == 0:
+            if o.lower() == "count" and result == 0:
                 rv = 1
-            elif o.lower() == 'failed':
+            elif o.lower() == "failed":
                 if entry_count(result) == 0:
                     # Don't display an empty failed list
                     continue
@@ -1086,7 +1086,7 @@ class Command(HasParam):
             elif isinstance(result, dict):
                 textui.print_entry(result, order, labels, flags, print_all)
             elif isinstance(result, unicode):
-                if o == 'summary':
+                if o == "summary":
                     textui.print_summary(result)
                 else:
                     textui.print_indented(result)
@@ -1095,22 +1095,18 @@ class Command(HasParam):
                 # success or failure. Ignore these.
                 pass
             elif isinstance(result, int):
-                textui.print_count(result, '%s %%d' % unicode(self.output[o].doc))
+                textui.print_count(result, "%s %%d" % unicode(self.output[o].doc))
 
         return rv
 
     # list of attributes we want exported to JSON
-    json_friendly_attributes = (
-        'name', 'doc', 'NO_CLI'
-    )
+    json_friendly_attributes = ("name", "doc", "NO_CLI")
 
     def __json__(self):
-        json_dict = dict(
-            (a, getattr(self, a)) for a in self.json_friendly_attributes
-        )
+        json_dict = dict((a, getattr(self, a)) for a in self.json_friendly_attributes)
 
-        json_dict['takes_args'] = list(self.get_args())
-        json_dict['takes_options'] = list(self.get_options())
+        json_dict["takes_args"] = list(self.get_args())
+        json_dict["takes_options"] = list(self.get_options())
 
         return json_dict
 
@@ -1123,7 +1119,7 @@ class Command(HasParam):
         for callback in callbacks:
             if callback is None:
                 try:
-                    yield getattr(cls, '%s_callback' % callback_type)
+                    yield getattr(cls, "%s_callback" % callback_type)
                 except AttributeError:
                     pass
             else:
@@ -1156,7 +1152,7 @@ class Command(HasParam):
     @classmethod
     def register_interactive_prompt_callback(cls, callback, first=False):
         """Shortcut for register_callback('interactive_prompt', ...)"""
-        cls.register_callback('interactive_prompt', callback, first)
+        cls.register_callback("interactive_prompt", callback, first)
 
     def interactive_prompt_callback(self, kw):
         pass
@@ -1173,9 +1169,7 @@ class LocalOrRemote(Command):
     """
 
     takes_options = (
-        Flag('server?',
-            doc=_('Forward to server instead of running locally'),
-        ),
+        Flag("server?", doc=_("Forward to server instead of running locally"),),
     )
 
     def run(self, *args, **options):
@@ -1188,7 +1182,7 @@ class LocalOrRemote(Command):
         When running in a server context, this command is always executed
         locally and the value of ``options['server']`` is ignored.
         """
-        if options.get('server', False) and not self.env.in_server:
+        if options.get("server", False) and not self.env.in_server:
             return self.forward(*args, **options)
         return self.execute(*args, **options)
 
@@ -1213,11 +1207,11 @@ class Local(Command):
 
 class Object(HasParam):
     # Create stubs for attributes that are set in _on_finalize()
-    backend = Plugin.finalize_attr('backend')
-    methods = Plugin.finalize_attr('methods')
-    params = Plugin.finalize_attr('params')
-    primary_key = Plugin.finalize_attr('primary_key')
-    params_minus_pk = Plugin.finalize_attr('params_minus_pk')
+    backend = Plugin.finalize_attr("backend")
+    methods = Plugin.finalize_attr("methods")
+    params = Plugin.finalize_attr("params")
+    primary_key = Plugin.finalize_attr("primary_key")
+    params_minus_pk = Plugin.finalize_attr("params_minus_pk")
 
     # Can override in subclasses:
     backend_name = None
@@ -1225,16 +1219,14 @@ class Object(HasParam):
 
     def _on_finalize(self):
         self.methods = NameSpace(
-            self.__get_attrs('Method'), sort=False, name_attr='attr_name'
+            self.__get_attrs("Method"), sort=False, name_attr="attr_name"
         )
-        self._create_param_namespace('params')
+        self._create_param_namespace("params")
         pkeys = [p for p in self.params() if p.primary_key]
         if len(pkeys) > 1:
             raise ValueError(
-                '%s (Object) has multiple primary keys: %s' % (
-                    self.name,
-                    ', '.join(p.name for p in pkeys),
-                )
+                "%s (Object) has multiple primary keys: %s"
+                % (self.name, ", ".join(p.name for p in pkeys),)
             )
         if len(pkeys) == 1:
             self.primary_key = pkeys[0]
@@ -1245,7 +1237,7 @@ class Object(HasParam):
             self.primary_key = None
             self.params_minus_pk = self.params
 
-        if 'Backend' in self.api and self.backend_name in self.api.Backend:
+        if "Backend" in self.api and self.backend_name in self.api.Backend:
             self.backend = self.api.Backend[self.backend_name]
 
         super(Object, self)._on_finalize()
@@ -1266,14 +1258,14 @@ class Object(HasParam):
         """
         Construct an LDAP DN.
         """
-        raise NotImplementedError('%s.get_dn()' % self.name)
+        raise NotImplementedError("%s.get_dn()" % self.name)
 
     def __get_attrs(self, name):
         if name not in self.api:
             return
         namespace = self.api[name]
         assert type(namespace) is APINameSpace
-        for plugin in namespace(): # Equivalent to dict.itervalues()
+        for plugin in namespace():  # Equivalent to dict.itervalues()
             if plugin is not namespace[plugin.name]:
                 continue
             if plugin.obj_name == self.name:
@@ -1283,22 +1275,22 @@ class Object(HasParam):
         """
         This method gets called by `HasParam._create_param_namespace()`.
         """
-        for spec in self._get_param_iterable('params'):
+        for spec in self._get_param_iterable("params"):
             assert isinstance(spec, (str, Param))
             yield create_param(spec)
 
     json_friendly_attributes = (
-        'name', 'takes_params',
+        "name",
+        "takes_params",
     )
 
     def __json__(self):
         json_dict = dict(
-            (a, json_serialize(getattr(self, a)))
-            for a in self.json_friendly_attributes
+            (a, json_serialize(getattr(self, a))) for a in self.json_friendly_attributes
         )
         if self.primary_key:
-            json_dict['primary_key'] = self.primary_key.name
-        json_dict['methods'] = list(self.methods)
+            json_dict["primary_key"] = self.primary_key.name
+        json_dict["methods"] = list(self.methods)
         return json_dict
 
 
@@ -1336,11 +1328,12 @@ class Attribute(Plugin):
     In practice the `Attribute` class is not used directly, but rather is
     only the base class for the `Method` class.  Also see the `Object` class.
     """
-    obj_version = '1'
+
+    obj_version = "1"
 
     @property
     def obj_name(self):
-        return self.name.partition('_')[0]
+        return self.name.partition("_")[0]
 
     @property
     def obj_full_name(self):
@@ -1351,9 +1344,9 @@ class Attribute(Plugin):
 
     @property
     def attr_name(self):
-        prefix = '{}_'.format(self.obj_name)
+        prefix = "{}_".format(self.obj_name)
         assert self.name.startswith(prefix)
-        return self.name[len(prefix):]
+        return self.name[len(prefix) :]
 
     @property
     def obj(self):
@@ -1429,13 +1422,14 @@ class Method(Attribute, Command):
     The `Attribute` base class implements the naming convention for the
     attribute-to-object association.  Also see the `Object` class.
     """
+
     extra_options_first = False
     extra_args_first = False
 
     def get_output_params(self):
         if self.obj is not None:
             for param in self.obj.params():
-                if 'no_output' in param.flags:
+                if "no_output" in param.flags:
                     continue
                 yield param
         for param in super(Method, self).get_output_params():
@@ -1468,12 +1462,11 @@ class Updater(Plugin):
     >>> api.Updater.my_update # doctest:+ELLIPSIS
     ipalib.frontend.my_update()
     """
+
     def execute(self, **options):
-        raise NotImplementedError('%s.execute()' % self.name)
+        raise NotImplementedError("%s.execute()" % self.name)
 
     def __call__(self, **options):
-        logger.debug(
-            'raw: %s', self.name
-        )
+        logger.debug("raw: %s", self.name)
 
         return self.execute(**options)

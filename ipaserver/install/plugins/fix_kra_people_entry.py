@@ -24,6 +24,7 @@ class fix_kra_people_entry(Updater):
     https://pagure.io/freeipa/issue/8084.
 
     """
+
     def execute(self, **options):
         kra = krainstance.KRAInstance(self.api.env.realm)
         if not kra.is_installed():
@@ -33,7 +34,7 @@ class fix_kra_people_entry(Updater):
         entry = self.api.Backend.ldap2.get_entry(krainstance.KRA_AGENT_DN)
 
         # check description attribute
-        description_values = entry.get('description', [])
+        description_values = entry.get("description", [])
         if len(description_values) < 1:
             # missing 'description' attribute is unexpected, but we can
             # add it
@@ -42,11 +43,11 @@ class fix_kra_people_entry(Updater):
             # There should only be one value, so we will take the first value.
             # But ignore the serial number when comparing, just in case.
             description = description_values[0]
-            parts = description.split(';', 2)  # see below for syntax
+            parts = description.split(";", 2)  # see below for syntax
 
             if len(parts) < 3:
                 do_fix = True  # syntax error (not expected)
-            elif parts[2] != '{};{}'.format(DN(cert.issuer), DN(cert.subject)):
+            elif parts[2] != "{};{}".format(DN(cert.issuer), DN(cert.subject)):
                 # issuer/subject does not match cert.  THIS is the condition
                 # caused by issue 8084, which we want to fix.
                 do_fix = True
@@ -64,11 +65,9 @@ class fix_kra_people_entry(Updater):
             # will at least mean THIS replica can authenticate to the KRA.
 
             logger.debug("Fixing KRA user entry 'description' attribute")
-            entry['description'] = [
-                '2;{};{};{}'.format(
-                    cert.serial_number,
-                    DN(cert.issuer),
-                    DN(cert.subject)
+            entry["description"] = [
+                "2;{};{};{}".format(
+                    cert.serial_number, DN(cert.issuer), DN(cert.subject)
                 )
             ]
             self.api.Backend.ldap2.update_entry(entry)

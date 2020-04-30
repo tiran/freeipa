@@ -85,10 +85,10 @@ if six.PY3:
     unicode = str
 
 
-ENABLED = u'enabled'
-CONFIGURED = u'configured'
-HIDDEN = u'hidden'
-ABSENT = u'absent'
+ENABLED = u"enabled"
+CONFIGURED = u"configured"
+HIDDEN = u"hidden"
+ABSENT = u"absent"
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -105,9 +105,9 @@ class LDAPBasedProperty:
         self.attr_name = attr_name
         self.name = name
         # for hidden services, insert hidden before '_server' suffix
-        if attr_name.endswith(u'_server'):
-            parts = attr_name.rsplit(u'_', 1)
-            self.attr_name_hidden = u'{}_hidden_server'.format(parts[0])
+        if attr_name.endswith(u"_server"):
+            parts = attr_name.rsplit(u"_", 1)
+            self.attr_name_hidden = u"{}_hidden_server".format(parts[0])
         else:
             self.attr_name_hidden = None
 
@@ -132,9 +132,10 @@ class BaseServerRole(LDAPBasedProperty):
         this methods returns such a dict given server and role status
         """
         return {
-            u'role_servrole': self.name,
-            u'server_server': server,
-            u'status': status}
+            u"role_servrole": self.name,
+            u"server_server": server,
+            u"status": status,
+        }
 
     @abc.abstractmethod
     def create_search_params(self, ldap, api_instance, server=None):
@@ -167,24 +168,23 @@ class BaseServerRole(LDAPBasedProperty):
 
         :returns: list of masters on which the role is absent
         """
-        search_base = DN(api_instance.env.container_masters,
-                         api_instance.env.basedn)
-        search_filter = '(objectclass=ipaConfigObject)'
-        attrs_list = ['cn']
+        search_base = DN(api_instance.env.container_masters, api_instance.env.basedn)
+        search_filter = "(objectclass=ipaConfigObject)"
+        attrs_list = ["cn"]
 
         all_masters = ldap2.get_entries(
             search_base,
             filter=search_filter,
             scope=SCOPE_ONELEVEL,
-            attrs_list=attrs_list)
+            attrs_list=attrs_list,
+        )
 
-        all_master_cns = set(m['cn'][0] for m in all_masters)
-        enabled_configured_masters = set(r[u'server_server'] for r in result)
+        all_master_cns = set(m["cn"][0] for m in all_masters)
+        enabled_configured_masters = set(r[u"server_server"] for r in result)
 
         absent_masters = all_master_cns.difference(enabled_configured_masters)
 
-        return [self.create_role_status_dict(m, ABSENT) for m in
-                absent_masters]
+        return [self.create_role_status_dict(m, ABSENT) for m in absent_masters]
 
     def status(self, api_instance, server=None, attrs_list=("*",)):
         """
@@ -202,13 +202,13 @@ class BaseServerRole(LDAPBasedProperty):
         """
         ldap2 = api_instance.Backend.ldap2
         search_base, search_filter = self.create_search_params(
-            ldap2, api_instance, server=server)
+            ldap2, api_instance, server=server
+        )
 
         try:
             entries = ldap2.get_entries(
-                search_base,
-                filter=search_filter,
-                attrs_list=attrs_list)
+                search_base, filter=search_filter, attrs_list=attrs_list
+            )
         except errors.EmptyResult:
             entries = []
 
@@ -218,10 +218,9 @@ class BaseServerRole(LDAPBasedProperty):
         result = self.get_result_from_entries(entries)
 
         if server is None:
-            result.extend(
-                self._fill_in_absent_masters(ldap2, api_instance, result))
+            result.extend(self._fill_in_absent_masters(ldap2, api_instance, result))
 
-        return sorted(result, key=lambda x: x[u'server_server'])
+        return sorted(result, key=lambda x: x[u"server_server"])
 
 
 class ServerAttribute(LDAPBasedProperty):
@@ -237,9 +236,14 @@ class ServerAttribute(LDAPBasedProperty):
         associated with the presence of server attribute
     """
 
-    def __init__(self, attr_name, name, associated_role_name,
-                 associated_service_name,
-                 ipa_config_string_value):
+    def __init__(
+        self,
+        attr_name,
+        name,
+        associated_role_name,
+        associated_service_name,
+        ipa_config_string_value,
+    ):
         super(ServerAttribute, self).__init__(attr_name, name)
 
         self.associated_role_name = associated_role_name
@@ -253,20 +257,22 @@ class ServerAttribute(LDAPBasedProperty):
                 return inst
 
         raise NotImplementedError(
-            "{}: no valid associated role found".format(self.attr_name))
+            "{}: no valid associated role found".format(self.attr_name)
+        )
 
     def create_search_filter(self, ldap):
         """
         Create search filter which matches LDAP data corresponding to the
         attribute
         """
-        svc_filter = ldap.make_filter_from_attr(
-            'cn', self.associated_service_name)
+        svc_filter = ldap.make_filter_from_attr("cn", self.associated_service_name)
 
         configstring_filter = ldap.make_filter_from_attr(
-            'ipaConfigString', self.ipa_config_string_value)
+            "ipaConfigString", self.ipa_config_string_value
+        )
         return ldap.combine_filters(
-            [svc_filter, configstring_filter], rules=ldap.MATCH_ALL)
+            [svc_filter, configstring_filter], rules=ldap.MATCH_ALL
+        )
 
     def get(self, api_instance):
         """
@@ -275,8 +281,7 @@ class ServerAttribute(LDAPBasedProperty):
         :returns: master FQDN
         """
         ldap2 = api_instance.Backend.ldap2
-        search_base = DN(api_instance.env.container_masters,
-                         api_instance.env.basedn)
+        search_base = DN(api_instance.env.container_masters, api_instance.env.basedn)
 
         search_filter = self.create_search_filter(ldap2)
 
@@ -285,29 +290,36 @@ class ServerAttribute(LDAPBasedProperty):
         except errors.EmptyResult:
             return []
 
-        master_cns = {e.dn[1]['cn'] for e in entries}
+        master_cns = {e.dn[1]["cn"] for e in entries}
 
-        associated_role_providers = set(
-            self._get_assoc_role_providers(api_instance))
+        associated_role_providers = set(self._get_assoc_role_providers(api_instance))
 
         if not master_cns.issubset(associated_role_providers):
             raise errors.ValidationError(
                 name=self.name,
-                error=_("all masters must have %(role)s role enabled" %
-                        {'role': self.associated_role.name})
+                error=_(
+                    "all masters must have %(role)s role enabled"
+                    % {"role": self.associated_role.name}
+                ),
             )
 
         return sorted(master_cns)
 
     def _get_master_dns(self, api_instance, servers):
         return [
-            DN(('cn', server), api_instance.env.container_masters,
-               api_instance.env.basedn) for server in servers]
+            DN(
+                ("cn", server),
+                api_instance.env.container_masters,
+                api_instance.env.basedn,
+            )
+            for server in servers
+        ]
 
     def _get_masters_service_entries(self, ldap, master_dns):
         service_dns = [
-            DN(('cn', self.associated_service_name), master_dn) for master_dn
-            in master_dns]
+            DN(("cn", self.associated_service_name), master_dn)
+            for master_dn in master_dns
+        ]
 
         return [ldap.get_entry(service_dn) for service_dn in service_dns]
 
@@ -318,11 +330,11 @@ class ServerAttribute(LDAPBasedProperty):
         :param ldap: LDAP connection object
         :param service_entry: associated service entry
         """
-        ipa_config_string = service_entry.get('ipaConfigString', [])
+        ipa_config_string = service_entry.get("ipaConfigString", [])
 
         ipa_config_string.append(self.ipa_config_string_value)
 
-        service_entry['ipaConfigString'] = ipa_config_string
+        service_entry["ipaConfigString"] = ipa_config_string
         ldap.update_entry(service_entry)
 
     def _remove_attribute_from_svc_entry(self, ldap, service_entry):
@@ -335,11 +347,11 @@ class ServerAttribute(LDAPBasedProperty):
         :param ldap: LDAP connection object
         :param service_entry: associated service entry
         """
-        ipa_config_string = service_entry.get('ipaConfigString', [])
+        ipa_config_string = service_entry.get("ipaConfigString", [])
 
         for value in ipa_config_string:
             if value.lower() == self.ipa_config_string_value.lower():
-                service_entry['ipaConfigString'].remove(value)
+                service_entry["ipaConfigString"].remove(value)
 
         ldap.update_entry(service_entry)
 
@@ -350,9 +362,9 @@ class ServerAttribute(LDAPBasedProperty):
         role, as all services are started.
         """
         return [
-            r[u'server_server']
+            r[u"server_server"]
             for r in self.associated_role.status(api_instance)
-            if r[u'status'] in {ENABLED, HIDDEN, CONFIGURED}
+            if r[u"status"] in {ENABLED, HIDDEN, CONFIGURED}
         ]
 
     def _remove(self, api_instance, masters):
@@ -388,18 +400,18 @@ class ServerAttribute(LDAPBasedProperty):
         for service_entry in service_entries:
             self._add_attribute_to_svc_entry(ldap, service_entry)
 
-    def _check_receiving_masters_having_associated_role(self, api_instance,
-                                                      masters):
-        assoc_role_providers = set(
-            self._get_assoc_role_providers(api_instance))
+    def _check_receiving_masters_having_associated_role(self, api_instance, masters):
+        assoc_role_providers = set(self._get_assoc_role_providers(api_instance))
         masters_set = set(masters)
         masters_without_role = masters_set - assoc_role_providers
 
         if masters_without_role:
             raise errors.ValidationError(
-                name=', '.join(sorted(masters_without_role)),
-                error=_("must have %(role)s role enabled" %
-                        {'role': self.associated_role.name})
+                name=", ".join(sorted(masters_without_role)),
+                error=_(
+                    "must have %(role)s role enabled"
+                    % {"role": self.associated_role.name}
+                ),
             )
 
     def set(self, api_instance, masters):
@@ -419,8 +431,7 @@ class ServerAttribute(LDAPBasedProperty):
         if sorted(old_masters) == sorted(masters):
             raise errors.EmptyModlist
 
-        self._check_receiving_masters_having_associated_role(
-            api_instance, masters)
+        self._check_receiving_masters_having_associated_role(api_instance, masters)
 
         if old_masters:
             self._remove(api_instance, old_masters)
@@ -439,8 +450,8 @@ class SingleValuedServerAttribute(ServerAttribute):
     def set(self, api_instance, masters):
         if len(masters) > 1:
             raise errors.ValidationError(
-                name=self.attr_name,
-                error=_("must be enabled only on a single master"))
+                name=self.attr_name, error=_("must be enabled only on a single master")
+            )
 
         super(SingleValuedServerAttribute, self).set(api_instance, masters)
 
@@ -454,7 +465,7 @@ class SingleValuedServerAttribute(ServerAttribute):
         return masters
 
 
-_Service = namedtuple('Service', ['name', 'enabled', 'hidden'])
+_Service = namedtuple("Service", ["name", "enabled", "hidden"])
 
 
 class ServiceBasedRole(BaseServerRole):
@@ -475,11 +486,13 @@ class ServiceBasedRole(BaseServerRole):
                 "{}: Mismatch between component services and search result "
                 "(expected: {}, got: {})".format(
                     self.__class__.__name__,
-                    ', '.join(sorted(self.component_services)),
-                    ', '.join(sorted(s.name for s in services))))
+                    ", ".join(sorted(self.component_services)),
+                    ", ".join(sorted(s.name for s in services)),
+                )
+            )
 
     def _get_service(self, entry):
-        entry_cn = entry['cn'][0]
+        entry_cn = entry["cn"][0]
 
         enabled = self._is_service_enabled(entry)
         hidden = self._is_service_hidden(entry)
@@ -496,7 +509,7 @@ class ServiceBasedRole(BaseServerRole):
         :param entry: LDAPEntry of the service
         :returns: True if the service entry is enabled, False otherwise
         """
-        ipaconfigstring_values = set(entry.get('ipaConfigString', []))
+        ipaconfigstring_values = set(entry.get("ipaConfigString", []))
         return ENABLED_SERVICE in ipaconfigstring_values
 
     def _is_service_hidden(self, entry):
@@ -505,7 +518,7 @@ class ServiceBasedRole(BaseServerRole):
         :param entry: LDAPEntry of the service
         :returns: True if the service entry is enabled, False otherwise
         """
-        ipaconfigstring_values = set(entry.get('ipaConfigString', []))
+        ipaconfigstring_values = set(entry.get("ipaConfigString", []))
         return HIDDEN_SERVICE in ipaconfigstring_values
 
     def _get_services_by_masters(self, entries):
@@ -516,7 +529,7 @@ class ServiceBasedRole(BaseServerRole):
         services_by_master = defaultdict(list)
         for e in entries:
             service = self._get_service(e)
-            master_cn = e.dn[1]['cn']
+            master_cn = e.dn[1]["cn"]
 
             services_by_master[master_cn].append(service)
 
@@ -543,24 +556,21 @@ class ServiceBasedRole(BaseServerRole):
         return result
 
     def create_search_params(self, ldap, api_instance, server=None):
-        search_base = DN(api_instance.env.container_masters,
-                         api_instance.env.basedn)
+        search_base = DN(api_instance.env.container_masters, api_instance.env.basedn)
 
         search_filter = ldap.make_filter_from_attr(
-            'cn',
-            self.component_services,
-            rules=ldap.MATCH_ANY,
-            exact=True
+            "cn", self.component_services, rules=ldap.MATCH_ANY, exact=True
         )
 
         if server is not None:
-            search_base = DN(('cn', server), search_base)
+            search_base = DN(("cn", server), search_base)
 
         return search_base, search_filter
 
     def status(self, api_instance, server=None):
         return super(ServiceBasedRole, self).status(
-            api_instance, server=server, attrs_list=('ipaConfigString', 'cn'))
+            api_instance, server=server, attrs_list=("ipaConfigString", "cn")
+        )
 
 
 class ADtrustBasedRole(BaseServerRole):
@@ -573,30 +583,24 @@ class ADtrustBasedRole(BaseServerRole):
         result = []
 
         for e in entries:
-            result.append(
-                self.create_role_status_dict(e['fqdn'][0], ENABLED)
-            )
+            result.append(self.create_role_status_dict(e["fqdn"][0], ENABLED))
         return result
 
     def create_search_params(self, ldap, api_instance, server=None):
-        search_base = DN(
-            api_instance.env.container_host, api_instance.env.basedn)
+        search_base = DN(api_instance.env.container_host, api_instance.env.basedn)
 
         search_filter = ldap.make_filter_from_attr(
             "memberof",
-            DN(('cn', 'adtrust agents'),
-               api_instance.env.container_sysaccounts,
-               api_instance.env.basedn)
+            DN(
+                ("cn", "adtrust agents"),
+                api_instance.env.container_sysaccounts,
+                api_instance.env.basedn,
+            ),
         )
         if server is not None:
-            server_filter = ldap.make_filter_from_attr(
-                'fqdn',
-                server,
-                exact=True
-            )
+            server_filter = ldap.make_filter_from_attr("fqdn", server, exact=True)
             search_filter = ldap.combine_filters(
-                [search_filter, server_filter],
-                rules=ldap.MATCH_ALL
+                [search_filter, server_filter], rules=ldap.MATCH_ALL
             )
 
         return search_base, search_filter
@@ -607,28 +611,18 @@ role_instances = (
     ServiceBasedRole(
         u"ad_trust_controller_server",
         u"AD trust controller",
-        component_services=['ADTRUST']
+        component_services=["ADTRUST"],
     ),
+    ServiceBasedRole(u"ca_server_server", u"CA server", component_services=["CA"]),
     ServiceBasedRole(
-        u"ca_server_server",
-        u"CA server",
-        component_services=['CA']
-    ),
-    ServiceBasedRole(
-        u"dns_server_server",
-        u"DNS server",
-        component_services=['DNS', 'DNSKeySync']
+        u"dns_server_server", u"DNS server", component_services=["DNS", "DNSKeySync"]
     ),
     ServiceBasedRole(
         u"ipa_master_server",
         u"IPA master",
-        component_services=['HTTP', 'KDC', 'KPASSWD']
+        component_services=["HTTP", "KDC", "KPASSWD"],
     ),
-    ServiceBasedRole(
-        u"kra_server_server",
-        u"KRA server",
-        component_services=['KRA']
-    )
+    ServiceBasedRole(u"kra_server_server", u"KRA server", component_services=["KRA"]),
 )
 
 attribute_instances = (
@@ -651,6 +645,6 @@ attribute_instances = (
         u"PKINIT enabled server",
         u"ipa_master_server",
         u"KDC",
-        u"pkinitEnabled"
-    )
+        u"pkinitEnabled",
+    ),
 )

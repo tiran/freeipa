@@ -122,9 +122,7 @@ parser.add_argument(
     "--kdcproxy", action="store_true", help="Use KRB5 over HTTPS (KDC-Proxy)"
 )
 parser.add_argument(
-    "--debug",
-    action="store_true",
-    help="Enable debug mode for lite-server and KRB5",
+    "--debug", action="store_true", help="Enable debug mode for lite-server and KRB5",
 )
 parser.add_argument(
     "--remote-server",

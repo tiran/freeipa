@@ -40,30 +40,29 @@ pytestmark = pytest.mark.tier0
 #    raw: the value being set (possibly a string repr)
 #    value: the expected value after the lightweight conversion
 good_vars = (
-    ('a_string', u'Hello world!', u'Hello world!'),
-    ('trailing_whitespace', u' value  ', u'value'),
-    ('an_int', 42, 42),
-    ('int_repr', ' 42 ', 42),
-    ('not_a_float', '3.14', u'3.14'),
-    ('true', True, True),
-    ('true_repr', ' True ', True),
-    ('false', False, False),
-    ('false_repr', ' False ', False),
-    ('none', None, None),
-    ('none_repr', ' None ', None),
-    ('empty', '', None),
-
+    ("a_string", u"Hello world!", u"Hello world!"),
+    ("trailing_whitespace", u" value  ", u"value"),
+    ("an_int", 42, 42),
+    ("int_repr", " 42 ", 42),
+    ("not_a_float", "3.14", u"3.14"),
+    ("true", True, True),
+    ("true_repr", " True ", True),
+    ("false", False, False),
+    ("false_repr", " False ", False),
+    ("none", None, None),
+    ("none_repr", " None ", None),
+    ("empty", "", None),
     # These verify that the implied conversion is case-sensitive:
-    ('not_true', u' true ', u'true'),
-    ('not_false', u' false ', u'false'),
-    ('not_none', u' none ', u'none'),
+    ("not_true", u" true ", u"true"),
+    ("not_false", u" false ", u"false"),
+    ("not_none", u" none ", u"none"),
 )
 
 
 bad_names = (
-    ('CamelCase', u'value'),
-    ('_leading_underscore', u'value'),
-    ('trailing_underscore_', u'value'),
+    ("CamelCase", u"value"),
+    ("_leading_underscore", u"value"),
+    ("trailing_underscore_", u"value"),
 )
 
 
@@ -167,7 +166,7 @@ class test_Env(ClassChecker):
         o.__lock__()
         assert o.__islocked__() is True
         e = raises(Exception, o.__lock__)
-        assert str(e) == 'Env.__lock__() already called'
+        assert str(e) == "Env.__lock__() already called"
 
         # Also test with base.lock() function:
         o = self.cls()
@@ -175,7 +174,7 @@ class test_Env(ClassChecker):
         assert base.lock(o) is o
         assert o.__islocked__() is True
         e = raises(AssertionError, base.lock, o)
-        assert str(e) == 'already locked: %r' % o
+        assert str(e) == "already locked: %r" % o
 
     def test_islocked(self):
         """
@@ -203,14 +202,14 @@ class test_Env(ClassChecker):
 
             # Test that value cannot be overridden once set:
             e = raises(AttributeError, setattr, o, name, raw)
-            assert str(e) == OVERRIDE_ERROR % ('Env', name, value, raw)
+            assert str(e) == OVERRIDE_ERROR % ("Env", name, value, raw)
 
         # Test that values cannot be set once locked:
         o = self.cls()
         o.__lock__()
         for (name, raw, value) in good_vars:
             e = raises(AttributeError, setattr, o, name, raw)
-            assert str(e) == SET_ERROR % ('Env', name, raw)
+            assert str(e) == SET_ERROR % ("Env", name, raw)
 
         # Test that name is tested with check_name():
         o = self.cls()
@@ -233,14 +232,14 @@ class test_Env(ClassChecker):
 
             # Test that value cannot be overridden once set:
             e = raises(AttributeError, o.__setitem__, key, raw)
-            assert str(e) == OVERRIDE_ERROR % ('Env', key, value, raw)
+            assert str(e) == OVERRIDE_ERROR % ("Env", key, value, raw)
 
         # Test that values cannot be set once locked:
         o = self.cls()
         o.__lock__()
         for (key, raw, value) in good_vars:
             e = raises(AttributeError, o.__setitem__, key, raw)
-            assert str(e) == SET_ERROR % ('Env', key, raw)
+            assert str(e) == SET_ERROR % ("Env", key, raw)
 
         # Test that name is tested with check_name():
         o = self.cls()
@@ -253,11 +252,11 @@ class test_Env(ClassChecker):
         Test the `ipalib.config.Env.__getitem__` method.
         """
         o = self.cls()
-        value = u'some value'
+        value = u"some value"
         o.key = value
         assert o.key is value
-        assert o['key'] is value
-        for name in ('one', 'two'):
+        assert o["key"] is value
+        for name in ("one", "two"):
             e = raises(KeyError, getitem, o, name)
             assert str(e) == repr(name)
 
@@ -270,11 +269,11 @@ class test_Env(ClassChecker):
         o = self.cls()
         o.one = 1
         assert o.one == 1
-        for key in ('one', 'two'):
+        for key in ("one", "two"):
             e = raises(AttributeError, delattr, o, key)
-            assert str(e) == DEL_ERROR % ('Env', key)
+            assert str(e) == DEL_ERROR % ("Env", key)
             e = raises(AttributeError, delitem, o, key)
-            assert str(e) == '__delitem__'
+            assert str(e) == "__delitem__"
 
     def test_contains(self):
         """
@@ -282,10 +281,10 @@ class test_Env(ClassChecker):
         """
         o = self.cls()
         items = [
-            ('one', 1),
-            ('two', 2),
-            ('three', 3),
-            ('four', 4),
+            ("one", 1),
+            ("two", 2),
+            ("three", 3),
+            ("four", 4),
         ]
         for (key, value) in items:
             assert key not in o
@@ -299,8 +298,8 @@ class test_Env(ClassChecker):
         o = self.cls()
         assert len(o) == 0
         for i in range(1, 11):
-            key = 'key%d' % i
-            value = u'value %d' % i
+            key = "key%d" % i
+            value = u"value %d" % i
             o[key] = value
             assert o[key] is value
             assert len(o) == i
@@ -311,9 +310,9 @@ class test_Env(ClassChecker):
         """
         o = self.cls()
         default_keys = tuple(o)
-        keys = ('one', 'two', 'three', 'four', 'five')
+        keys = ("one", "two", "three", "four", "five")
         for key in keys:
-            o[key] = 'the value'
+            o[key] = "the value"
         assert list(o) == sorted(keys + default_keys)
 
     def test_merge(self):
@@ -321,16 +320,16 @@ class test_Env(ClassChecker):
         Test the `ipalib.config.Env._merge` method.
         """
         group1 = (
-            ('key1', u'value 1'),
-            ('key2', u'value 2'),
-            ('key3', u'value 3'),
-            ('key4', u'value 4'),
+            ("key1", u"value 1"),
+            ("key2", u"value 2"),
+            ("key3", u"value 3"),
+            ("key4", u"value 4"),
         )
         group2 = (
-            ('key0', u'Value 0'),
-            ('key2', u'Value 2'),
-            ('key4', u'Value 4'),
-            ('key5', u'Value 5'),
+            ("key0", u"Value 0"),
+            ("key2", u"Value 2"),
+            ("key4", u"Value 4"),
+            ("key5", u"Value 5"),
         )
         o = self.cls()
         assert o._merge(**dict(group1)) == (4, 4)
@@ -344,7 +343,7 @@ class test_Env(ClassChecker):
         expected = dict(group2)
         expected.update(dict(group1))
         assert list(o) == sorted(expected)
-        assert expected['key2'] == 'value 2'  # And not 'Value 2'
+        assert expected["key2"] == "value 2"  # And not 'Value 2'
         for (key, value) in expected.items():
             assert getattr(o, key) is value
             assert o[key] is value
@@ -360,7 +359,7 @@ class test_Env(ClassChecker):
         assert callable(tmp.join)
 
         # Test a config file that doesn't exist
-        no_exist = tmp.join('no_exist.conf')
+        no_exist = tmp.join("no_exist.conf")
         assert not path.exists(no_exist)
         o = self.cls()
         o._bootstrap()
@@ -370,43 +369,45 @@ class test_Env(ClassChecker):
         assert tuple(o) == keys
 
         # Test an empty config file
-        empty = tmp.touch('empty.conf')
+        empty = tmp.touch("empty.conf")
         assert path.isfile(empty)
         assert o._merge_from_file(empty) == (0, 0)
         assert tuple(o) == keys
 
         # Test a mal-formed config file:
-        bad = tmp.join('bad.conf')
-        open(bad, 'w').write(config_bad)
+        bad = tmp.join("bad.conf")
+        open(bad, "w").write(config_bad)
         assert path.isfile(bad)
         assert o._merge_from_file(bad) is None
         assert tuple(o) == keys
 
         # Test a valid config file that tries to override
-        override = tmp.join('override.conf')
-        open(override, 'w').write(config_override)
+        override = tmp.join("override.conf")
+        open(override, "w").write(config_override)
         assert path.isfile(override)
         assert o._merge_from_file(override) == (4, 6)
         for (k, v) in orig.items():
             assert o[k] is v
-        assert list(o) == sorted(keys + ('key0', 'key1', 'key2', 'key3', 'config_loaded'))
+        assert list(o) == sorted(
+            keys + ("key0", "key1", "key2", "key3", "config_loaded")
+        )
         for i in range(4):
-            assert o['key%d' % i] == ('var%d' % i)
+            assert o["key%d" % i] == ("var%d" % i)
         keys = tuple(o)
 
         # Test a valid config file with type conversion
-        good = tmp.join('good.conf')
-        open(good, 'w').write(config_good)
+        good = tmp.join("good.conf")
+        open(good, "w").write(config_good)
         assert path.isfile(good)
         assert o._merge_from_file(good) == (6, 6)
-        added = ('string', 'null', 'yes', 'no', 'number', 'floating')
+        added = ("string", "null", "yes", "no", "number", "floating")
         assert list(o) == sorted(keys + added)
-        assert o.string == 'Hello world!'
+        assert o.string == "Hello world!"
         assert o.null is None
         assert o.yes is True
         assert o.no is False
         assert o.number == 42
-        assert o.floating == '3.14'
+        assert o.floating == "3.14"
 
     def new(self, in_tree=False):
         """
@@ -426,11 +427,11 @@ class test_Env(ClassChecker):
         Helper method used in testing bootstrap related methods below.
         """
         (o, home) = self.new()
-        assert o._isdone('_bootstrap') is False
+        assert o._isdone("_bootstrap") is False
         o._bootstrap(**overrides)
-        assert o._isdone('_bootstrap') is True
+        assert o._isdone("_bootstrap") is True
         e = raises(Exception, o._bootstrap)
-        assert str(e) == 'Env._bootstrap() already called'
+        assert str(e) == "Env._bootstrap() already called"
         return (o, home)
 
     def test_bootstrap(self):
@@ -446,39 +447,32 @@ class test_Env(ClassChecker):
         assert o.script == path.abspath(sys.argv[0])
         assert o.bin == path.dirname(path.abspath(sys.argv[0]))
         assert o.home == home.path
-        assert o.dot_ipa == home.join('.ipa')
+        assert o.dot_ipa == home.join(".ipa")
         assert o.in_tree is False
-        assert o.context == 'default'
-        assert o.confdir == '/etc/ipa'
-        assert o.conf == '/etc/ipa/default.conf'
+        assert o.context == "default"
+        assert o.confdir == "/etc/ipa"
+        assert o.conf == "/etc/ipa/default.conf"
         assert o.conf_default == o.conf
 
         # Test overriding values created by _bootstrap()
-        (o, home) = self.bootstrap(in_tree='True', context='server')
+        (o, home) = self.bootstrap(in_tree="True", context="server")
         assert o.in_tree is True
-        assert o.context == 'server'
-        assert o.conf == home.join('.ipa', 'server.conf')
-        (o, home) = self.bootstrap(conf='/my/wacky/whatever.conf')
+        assert o.context == "server"
+        assert o.conf == home.join(".ipa", "server.conf")
+        (o, home) = self.bootstrap(conf="/my/wacky/whatever.conf")
         assert o.in_tree is False
-        assert o.context == 'default'
-        assert o.conf == '/my/wacky/whatever.conf'
-        assert o.conf_default == '/etc/ipa/default.conf'
-        (o, home) = self.bootstrap(conf_default='/my/wacky/default.conf')
+        assert o.context == "default"
+        assert o.conf == "/my/wacky/whatever.conf"
+        assert o.conf_default == "/etc/ipa/default.conf"
+        (o, home) = self.bootstrap(conf_default="/my/wacky/default.conf")
         assert o.in_tree is False
-        assert o.context == 'default'
-        assert o.conf == '/etc/ipa/default.conf'
-        assert o.conf_default == '/my/wacky/default.conf'
+        assert o.context == "default"
+        assert o.conf == "/etc/ipa/default.conf"
+        assert o.conf_default == "/my/wacky/default.conf"
 
         # Test various overrides and types conversion
-        kw = dict(
-            yes=True,
-            no=False,
-            num=42,
-            msg='Hello, world!',
-        )
-        override = dict(
-            (k, u' %s ' % v) for (k, v) in kw.items()
-        )
+        kw = dict(yes=True, no=False, num=42, msg="Hello, world!",)
+        override = dict((k, u" %s " % v) for (k, v) in kw.items())
         (o, home) = self.new()
         for key in kw:
             assert key not in o
@@ -498,22 +492,22 @@ class test_Env(ClassChecker):
             o.context = ctx
 
         # Check that calls cascade down the chain:
-        set_here = ('in_server', 'logdir', 'log')
-        assert o._isdone('_bootstrap') is False
-        assert o._isdone('_finalize_core') is False
-        assert o._isdone('_finalize') is False
+        set_here = ("in_server", "logdir", "log")
+        assert o._isdone("_bootstrap") is False
+        assert o._isdone("_finalize_core") is False
+        assert o._isdone("_finalize") is False
         for key in set_here:
             assert key not in o
         o._finalize_core(**defaults)
-        assert o._isdone('_bootstrap') is True
-        assert o._isdone('_finalize_core') is True
-        assert o._isdone('_finalize') is False  # Should not cascade
+        assert o._isdone("_bootstrap") is True
+        assert o._isdone("_finalize_core") is True
+        assert o._isdone("_finalize") is False  # Should not cascade
         for key in set_here:
             assert key in o
 
         # Check that it can't be called twice:
         e = raises(Exception, o._finalize_core)
-        assert str(e) == 'Env._finalize_core() already called'
+        assert str(e) == "Env._finalize_core() already called"
 
         return (o, home)
 
@@ -524,53 +518,51 @@ class test_Env(ClassChecker):
         # Test that correct defaults are generated:
         (o, home) = self.finalize_core(None)
         assert o.in_server is False
-        assert o.logdir == home.join('.ipa', 'log')
-        assert o.log == home.join('.ipa', 'log', 'default.log')
+        assert o.logdir == home.join(".ipa", "log")
+        assert o.log == home.join(".ipa", "log", "default.log")
 
         # Test with context='server'
-        (o, home) = self.finalize_core('server')
+        (o, home) = self.finalize_core("server")
         assert o.in_server is True
-        assert o.logdir == home.join('.ipa', 'log')
-        assert o.log == home.join('.ipa', 'log', 'server.log')
+        assert o.logdir == home.join(".ipa", "log")
+        assert o.log == home.join(".ipa", "log", "server.log")
 
         # Test that **defaults can't set in_server, logdir, nor log:
-        (o, home) = self.finalize_core(None,
-            in_server='IN_SERVER',
-            logdir='LOGDIR',
-            log='LOG',
+        (o, home) = self.finalize_core(
+            None, in_server="IN_SERVER", logdir="LOGDIR", log="LOG",
         )
         assert o.in_server is False
-        assert o.logdir == home.join('.ipa', 'log')
-        assert o.log == home.join('.ipa', 'log', 'default.log')
+        assert o.logdir == home.join(".ipa", "log")
+        assert o.log == home.join(".ipa", "log", "default.log")
 
         # Test loading config file, plus test some in-tree stuff
-        (o, home) = self.bootstrap(in_tree=True, context='server')
-        for key in ('yes', 'no', 'number'):
+        (o, home) = self.bootstrap(in_tree=True, context="server")
+        for key in ("yes", "no", "number"):
             assert key not in o
-        home.write(config_good, '.ipa', 'server.conf')
-        home.write(config_default, '.ipa', 'default.conf')
+        home.write(config_good, ".ipa", "server.conf")
+        home.write(config_default, ".ipa", "default.conf")
         o._finalize_core()
         assert o.in_tree is True
-        assert o.context == 'server'
+        assert o.context == "server"
         assert o.in_server is True
-        assert o.logdir == home.join('.ipa', 'log')
-        assert o.log == home.join('.ipa', 'log', 'server.log')
+        assert o.logdir == home.join(".ipa", "log")
+        assert o.log == home.join(".ipa", "log", "server.log")
         assert o.yes is True
         assert o.no is False
         assert o.number == 42
-        assert o.not_in_other == 'foo_bar'
+        assert o.not_in_other == "foo_bar"
 
         # Test using DEFAULT_CONFIG:
         defaults = dict(constants.DEFAULT_CONFIG)
         (o, home) = self.finalize_core(None, **defaults)
-        list_o = [key for key in o if key != 'fips_mode']
+        list_o = [key for key in o if key != "fips_mode"]
         assert list_o == sorted(defaults)
         for (key, value) in defaults.items():
             if value is object:
                 continue
-            if key == 'mode':
+            if key == "mode":
                 continue
-            assert o[key] == value, '%r is %r; should be %r' % (key, o[key], value)
+            assert o[key] == value, "%r is %r; should be %r" % (key, o[key], value)
 
     def test_finalize(self):
         """
@@ -578,17 +570,17 @@ class test_Env(ClassChecker):
         """
         # Check that calls cascade up the chain:
         o, _home = self.new(in_tree=True)
-        assert o._isdone('_bootstrap') is False
-        assert o._isdone('_finalize_core') is False
-        assert o._isdone('_finalize') is False
+        assert o._isdone("_bootstrap") is False
+        assert o._isdone("_finalize_core") is False
+        assert o._isdone("_finalize") is False
         o._finalize()
-        assert o._isdone('_bootstrap') is True
-        assert o._isdone('_finalize_core') is True
-        assert o._isdone('_finalize') is True
+        assert o._isdone("_bootstrap") is True
+        assert o._isdone("_finalize_core") is True
+        assert o._isdone("_finalize") is True
 
         # Check that it can't be called twice:
         e = raises(Exception, o._finalize)
-        assert str(e) == 'Env._finalize() already called'
+        assert str(e) == "Env._finalize() already called"
 
         # Check that _finalize() calls __lock__()
         o, _home = self.new(in_tree=True)
@@ -596,15 +588,15 @@ class test_Env(ClassChecker):
         o._finalize()
         assert o.__islocked__() is True
         e = raises(Exception, o.__lock__)
-        assert str(e) == 'Env.__lock__() already called'
+        assert str(e) == "Env.__lock__() already called"
 
         # Check that **lastchance works
         o, _home = self.finalize_core(None)
-        key = 'just_one_more_key'
-        value = u'with one more value'
+        key = "just_one_more_key"
+        value = u"with one more value"
         lastchance = {key: value}
         assert key not in o
-        assert o._isdone('_finalize') is False
+        assert o._isdone("_finalize") is False
         o._finalize(**lastchance)
         assert key in o
         assert o[key] is value

@@ -30,7 +30,8 @@ class TestInstallClient(IntegrationTest):
 
         related: https://pagure.io/freeipa/issue/8082
         """
-        tasks.install_client(self.master, self.clients[0],
-                             extra_args=['--ssh-trust-dns'])
-        result = self.clients[0].run_command(['cat', '/etc/ssh/ssh_config'])
-        assert 'HostKeyAlgorithms' not in result.stdout_text
+        tasks.install_client(
+            self.master, self.clients[0], extra_args=["--ssh-trust-dns"]
+        )
+        result = self.clients[0].run_command(["cat", "/etc/ssh/ssh_config"])
+        assert "HostKeyAlgorithms" not in result.stdout_text

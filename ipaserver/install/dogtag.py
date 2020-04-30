@@ -18,16 +18,15 @@ class DogtagInstallInterface(service.ServiceInstallInterface):
     """
 
     ca_file = knob(
-        str, None,
-        description="location of CA PKCS#12 file",
-        cli_metavar='FILE',
+        str, None, description="location of CA PKCS#12 file", cli_metavar="FILE",
     )
     ca_file = prepare_only(ca_file)
     ca_file = replica_install_only(ca_file)
 
     pki_config_override = knob(
-        str, None,
-        cli_names='--pki-config-override',
+        str,
+        None,
+        cli_names="--pki-config-override",
         description="Path to ini file with config overrides.",
     )
 

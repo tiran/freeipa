@@ -44,19 +44,28 @@ logger = logging.getLogger(__name__)
 
 
 class LDAPUpdater(admintool.AdminTool):
-    command_name = 'ipa-ldap-updater'
+    command_name = "ipa-ldap-updater"
 
     usage = "%prog [options] input_file(s)\n"
 
     @classmethod
     def add_options(cls, parser):
         super(LDAPUpdater, cls).add_options(parser, debug_option=True)
-        parser.add_option("-u", '--upgrade', action="store_true",
-            dest="upgrade", default=False,
-            help="upgrade an installed server in offline mode")
-        parser.add_option("-S", '--schema-file', action="append",
+        parser.add_option(
+            "-u",
+            "--upgrade",
+            action="store_true",
+            dest="upgrade",
+            default=False,
+            help="upgrade an installed server in offline mode",
+        )
+        parser.add_option(
+            "-S",
+            "--schema-file",
+            action="append",
             dest="schema_files",
-            help="custom schema ldif file to use (implies -s)")
+            help="custom schema ldif file to use (implies -s)",
+        )
 
     @classmethod
     def get_command_class(cls, options, args):
@@ -72,10 +81,13 @@ class LDAPUpdater(admintool.AdminTool):
         self.files = self.args
 
         if not (self.files or options.schema_files):
-            logger.info("To execute overall IPA upgrade please use "
-                        "'ipa-server-upgrade' command")
-            raise admintool.ScriptError("No update files or schema file were "
-                                        "specified")
+            logger.info(
+                "To execute overall IPA upgrade please use "
+                "'ipa-server-upgrade' command"
+            )
+            raise admintool.ScriptError(
+                "No update files or schema file were " "specified"
+            )
 
         for filename in self.files:
             if not os.path.exists(filename):
@@ -87,12 +99,12 @@ class LDAPUpdater(admintool.AdminTool):
             raise admintool.ScriptError(e)
 
     def setup_logging(self):
-        super(LDAPUpdater, self).setup_logging(log_file_mode='a')
+        super(LDAPUpdater, self).setup_logging(log_file_mode="a")
 
     def run(self):
         super(LDAPUpdater, self).run()
 
-        api.bootstrap(in_server=True, context='updates', confdir=paths.ETC_IPA)
+        api.bootstrap(in_server=True, context="updates", confdir=paths.ETC_IPA)
         api.finalize()
 
     def handle_error(self, exception):
@@ -108,21 +120,19 @@ class LDAPUpdater_Upgrade(LDAPUpdater):
         options = self.options
 
         realm = api.env.realm
-        upgrade = IPAUpgrade(realm, self.files,
-                             schema_files=options.schema_files)
+        upgrade = IPAUpgrade(realm, self.files, schema_files=options.schema_files)
 
         try:
             upgrade.create_instance()
         except BadSyntax:
-            raise admintool.ScriptError(
-                'Bad syntax detected in upgrade file(s).', 1)
+            raise admintool.ScriptError("Bad syntax detected in upgrade file(s).", 1)
         except RuntimeError:
-            raise admintool.ScriptError('IPA upgrade failed.', 1)
+            raise admintool.ScriptError("IPA upgrade failed.", 1)
         else:
             if upgrade.modified:
-                logger.info('Update complete')
+                logger.info("Update complete")
             else:
-                logger.info('Update complete, no data were modified')
+                logger.info("Update complete, no data were modified")
 
         api.Backend.ldap2.disconnect()
 
@@ -138,13 +148,11 @@ class LDAPUpdater_NonUpgrade(LDAPUpdater):
         modified = False
 
         if options.schema_files:
-            modified = schemaupdate.update_schema(
-                options.schema_files,
-                ldapi=True) or modified
+            modified = (
+                schemaupdate.update_schema(options.schema_files, ldapi=True) or modified
+            )
 
-        ld = LDAPUpdate(
-            sub_dict={},
-            ldapi=True)
+        ld = LDAPUpdate(sub_dict={}, ldapi=True)
 
         if not self.files:
             self.files = ld.get_all_files(UPDATES_DIR)
@@ -152,8 +160,8 @@ class LDAPUpdater_NonUpgrade(LDAPUpdater):
         modified = ld.update(self.files) or modified
 
         if modified:
-            logger.info('Update complete')
+            logger.info("Update complete")
         else:
-            logger.info('Update complete, no data were modified')
+            logger.info("Update complete, no data were modified")
 
         api.Backend.ldap2.disconnect()

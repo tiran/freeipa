@@ -37,8 +37,12 @@ import ldap as _ldap
 from ipalib import krb_utils
 from ipaplatform.paths import paths
 from ipapython.dn import DN
-from ipapython.ipaldap import (LDAPClient, AUTOBIND_AUTO, AUTOBIND_ENABLED,
-                               AUTOBIND_DISABLED)
+from ipapython.ipaldap import (
+    LDAPClient,
+    AUTOBIND_AUTO,
+    AUTOBIND_ENABLED,
+    AUTOBIND_DISABLED,
+)
 
 from ipalib import Registry, errors, _
 from ipalib.crud import CrudBackend
@@ -58,11 +62,10 @@ class ldap2(CrudBackend, LDAPClient):
     """
 
     def __init__(self, api):
-        force_schema_updates = api.env.context in ('installer', 'updates')
+        force_schema_updates = api.env.context in ("installer", "updates")
 
         CrudBackend.__init__(self, api)
-        LDAPClient.__init__(self, None,
-                            force_schema_updates=force_schema_updates)
+        LDAPClient.__init__(self, None, force_schema_updates=force_schema_updates)
 
         self._time_limit = float(LDAPClient.time_limit)
         self._size_limit = int(LDAPClient.size_limit)
@@ -74,36 +77,38 @@ class ldap2(CrudBackend, LDAPClient):
     @property
     def time_limit(self):
         if self._time_limit is None:
-            return float(self.get_ipa_config().single_value.get(
-                'ipasearchtimelimit', 2))
+            return float(
+                self.get_ipa_config().single_value.get("ipasearchtimelimit", 2)
+            )
         return self._time_limit
 
     @time_limit.setter
     def time_limit(self, val):
         if val is not None:
             val = float(val)
-        object.__setattr__(self, '_time_limit', val)
+        object.__setattr__(self, "_time_limit", val)
 
     @time_limit.deleter
     def time_limit(self):
-        object.__setattr__(self, '_time_limit', int(LDAPClient.size_limit))
+        object.__setattr__(self, "_time_limit", int(LDAPClient.size_limit))
 
     @property
     def size_limit(self):
         if self._size_limit is None:
-            return int(self.get_ipa_config().single_value.get(
-                'ipasearchrecordslimit', 0))
+            return int(
+                self.get_ipa_config().single_value.get("ipasearchrecordslimit", 0)
+            )
         return self._size_limit
 
     @size_limit.setter
     def size_limit(self, val):
         if val is not None:
             val = int(val)
-        object.__setattr__(self, '_size_limit', val)
+        object.__setattr__(self, "_size_limit", val)
 
     @size_limit.deleter
     def size_limit(self):
-        object.__setattr__(self, '_size_limit', float(LDAPClient.time_limit))
+        object.__setattr__(self, "_size_limit", float(LDAPClient.time_limit))
 
     def _connect(self):
         # Connectible.conn is a proxy to thread-local storage;
@@ -118,9 +123,17 @@ class ldap2(CrudBackend, LDAPClient):
         return self.ldap_uri
 
     def create_connection(
-            self, ccache=None, bind_dn=None, bind_pw='', cacert=None,
-            autobind=AUTOBIND_AUTO, serverctrls=None, clientctrls=None,
-            time_limit=_missing, size_limit=_missing):
+        self,
+        ccache=None,
+        bind_dn=None,
+        bind_pw="",
+        cacert=None,
+        autobind=AUTOBIND_AUTO,
+        serverctrls=None,
+        clientctrls=None,
+        time_limit=_missing,
+        size_limit=_missing,
+    ):
         """
         Connect to LDAP server.
 
@@ -142,20 +155,22 @@ class ldap2(CrudBackend, LDAPClient):
         Extends backend.Connectible.create_connection.
         """
         if bind_dn is None:
-            bind_dn = DN(('cn', 'directory manager'))
+            bind_dn = DN(("cn", "directory manager"))
         assert isinstance(bind_dn, DN)
 
         if cacert is None:
             cacert = paths.IPA_CA_CRT
 
         if time_limit is not _missing:
-            object.__setattr__(self, 'time_limit', time_limit)
+            object.__setattr__(self, "time_limit", time_limit)
         if size_limit is not _missing:
-            object.__setattr__(self, 'size_limit', size_limit)
+            object.__setattr__(self, "size_limit", size_limit)
 
-        client = LDAPClient(self.ldap_uri,
-                            force_schema_updates=self._force_schema_updates,
-                            cacert=cacert)
+        client = LDAPClient(
+            self.ldap_uri,
+            force_schema_updates=self._force_schema_updates,
+            cacert=cacert,
+        )
         conn = client._conn
 
         with client.error_handler():
@@ -169,16 +184,20 @@ class ldap2(CrudBackend, LDAPClient):
                 if maxssf < minssf:
                     conn.set_option(_ldap.OPT_X_SASL_SSF_MAX, minssf)
 
-        ldapi = self.ldap_uri.startswith('ldapi://')
+        ldapi = self.ldap_uri.startswith("ldapi://")
 
         if bind_pw:
-            client.simple_bind(bind_dn, bind_pw,
-                               server_controls=serverctrls,
-                               client_controls=clientctrls)
+            client.simple_bind(
+                bind_dn,
+                bind_pw,
+                server_controls=serverctrls,
+                client_controls=clientctrls,
+            )
         elif autobind != AUTOBIND_DISABLED and os.getegid() == 0 and ldapi:
             try:
-                client.external_bind(server_controls=serverctrls,
-                                     client_controls=clientctrls)
+                client.external_bind(
+                    server_controls=serverctrls, client_controls=clientctrls
+                )
             except errors.NotFound:
                 if autobind == AUTOBIND_ENABLED:
                     # autobind was required and failed, raise
@@ -189,15 +208,14 @@ class ldap2(CrudBackend, LDAPClient):
                 with client.error_handler():
                     conn.set_option(_ldap.OPT_HOST_NAME, self.api.env.host)
             if ccache is None:
-                os.environ.pop('KRB5CCNAME', None)
+                os.environ.pop("KRB5CCNAME", None)
             else:
-                os.environ['KRB5CCNAME'] = ccache
+                os.environ["KRB5CCNAME"] = ccache
 
             principal = krb_utils.get_principal(ccache_name=ccache)
 
-            client.gssapi_bind(server_controls=serverctrls,
-                               client_controls=clientctrls)
-            setattr(context, 'principal', principal)
+            client.gssapi_bind(server_controls=serverctrls, client_controls=clientctrls)
+            setattr(context, "principal", principal)
 
         return conn
 
@@ -210,8 +228,8 @@ class ldap2(CrudBackend, LDAPClient):
             # ignore when trying to unbind multiple times
             pass
 
-        object.__delattr__(self, 'time_limit')
-        object.__delattr__(self, 'size_limit')
+        object.__delattr__(self, "time_limit")
+        object.__delattr__(self, "size_limit")
 
     def get_ipa_config(self, attrs_list=None):
         """Returns the IPA configuration entry (dn, entry_attrs)."""
@@ -220,7 +238,7 @@ class ldap2(CrudBackend, LDAPClient):
         assert isinstance(dn, DN)
 
         try:
-            config_entry = getattr(context, 'config_entry')
+            config_entry = getattr(context, "config_entry")
             if config_entry.conn.conn is self.conn:
                 return config_entry
         except AttributeError:
@@ -230,8 +248,12 @@ class ldap2(CrudBackend, LDAPClient):
             # use find_entries here lest we hit an infinite recursion when
             # ldap2.get_entries tries to determine default time/size limits
             (entries, truncated) = self.find_entries(
-                None, attrs_list, base_dn=dn, scope=self.SCOPE_BASE,
-                time_limit=2, size_limit=10
+                None,
+                attrs_list,
+                base_dn=dn,
+                scope=self.SCOPE_BASE,
+                time_limit=2,
+                size_limit=10,
             )
             self.handle_truncated_result(truncated)
             config_entry = entries[0]
@@ -255,23 +277,32 @@ class ldap2(CrudBackend, LDAPClient):
         except AttributeError:
             pass
 
-        upg_dn = DN(('cn', 'UPG Definition'), ('cn', 'Definitions'), ('cn', 'Managed Entries'),
-                    ('cn', 'etc'), self.api.env.basedn)
+        upg_dn = DN(
+            ("cn", "UPG Definition"),
+            ("cn", "Definitions"),
+            ("cn", "Managed Entries"),
+            ("cn", "etc"),
+            self.api.env.basedn,
+        )
 
         try:
             with self.error_handler():
-                upg_entries = self.conn.search_s(str(upg_dn), _ldap.SCOPE_BASE,
-                                                 attrlist=['*'])
+                upg_entries = self.conn.search_s(
+                    str(upg_dn), _ldap.SCOPE_BASE, attrlist=["*"]
+                )
                 upg_entries = self._convert_result(upg_entries)
         except errors.NotFound:
             upg_entries = None
-        if not upg_entries or 'originfilter' not in upg_entries[0]:
-            raise errors.ACIError(info=_(
-                'Could not read UPG Definition originfilter. '
-                'Check your permissions.'))
-        org_filter = upg_entries[0].single_value['originfilter']
+        if not upg_entries or "originfilter" not in upg_entries[0]:
+            raise errors.ACIError(
+                info=_(
+                    "Could not read UPG Definition originfilter. "
+                    "Check your permissions."
+                )
+            )
+        org_filter = upg_entries[0].single_value["originfilter"]
 
-        has_upg = '(objectclass=disable)' not in org_filter
+        has_upg = "(objectclass=disable)" not in org_filter
         context.has_upg = has_upg
         return has_upg
 
@@ -292,10 +323,10 @@ class ldap2(CrudBackend, LDAPClient):
         assert isinstance(dn, DN)
 
         attrs = self.get_effective_rights(dn, [attr])
-        if 'attributelevelrights' in attrs:
-            attr_rights = attrs.get('attributelevelrights')[0]
-            (attr, rights) = attr_rights.split(':')
-            if 'w' in rights:
+        if "attributelevelrights" in attrs:
+            attr_rights = attrs.get("attributelevelrights")[0]
+            (attr, rights) = attr_rights.split(":")
+            if "w" in rights:
                 return True
 
         return False
@@ -307,10 +338,10 @@ class ldap2(CrudBackend, LDAPClient):
         assert isinstance(dn, DN)
 
         attrs = self.get_effective_rights(dn, [attr])
-        if 'attributelevelrights' in attrs:
-            attr_rights = attrs.get('attributelevelrights')[0]
-            (attr, rights) = attr_rights.split(':')
-            if 'r' in rights:
+        if "attributelevelrights" in attrs:
+            attr_rights = attrs.get("attributelevelrights")[0]
+            (attr, rights) = attr_rights.split(":")
+            if "r" in rights:
                 return True
 
         return False
@@ -332,9 +363,9 @@ class ldap2(CrudBackend, LDAPClient):
         assert isinstance(dn, DN)
 
         attrs = self.get_effective_rights(dn, ["*"])
-        if 'entrylevelrights' in attrs:
-            entry_rights = attrs['entrylevelrights'][0]
-            if 'd' in entry_rights:
+        if "entrylevelrights" in attrs:
+            entry_rights = attrs["entrylevelrights"][0]
+            if "d" in entry_rights:
                 return True
 
         return False
@@ -363,26 +394,26 @@ class ldap2(CrudBackend, LDAPClient):
                 parent_dn,
                 _ldap.SCOPE_ONELEVEL,
                 # rdn value of template entry is: template_<objcls>_objectclass
-                '(cn=template_{}_objectclass)'.format(objectclass),
+                "(cn=template_{}_objectclass)".format(objectclass),
                 # request tempalate entry with given objectclass
-                ['cn@{}'.format(objectclass)],
+                ["cn@{}".format(objectclass)],
                 get_effective_rights=True,
             )[0]
-            return 'a' in entry['entrylevelrights'][0]
+            return "a" in entry["entrylevelrights"][0]
         except errors.NotFound:
             return False
 
-    def modify_password(self, dn, new_pass, old_pass='', otp='', skip_bind=False):
+    def modify_password(self, dn, new_pass, old_pass="", otp="", skip_bind=False):
         """Set user password."""
 
         assert isinstance(dn, DN)
 
         # The python-ldap passwd command doesn't verify the old password
         # so we'll do a simple bind to validate it.
-        if not skip_bind and old_pass != '':
+        if not skip_bind and old_pass != "":
             pw = old_pass
-            if (otp):
-                pw = old_pass+otp
+            if otp:
+                pw = old_pass + otp
 
             with LDAPClient(self.ldap_uri, force_schema_updates=False) as conn:
                 conn.simple_bind(dn, pw)
@@ -393,7 +424,7 @@ class ldap2(CrudBackend, LDAPClient):
             new_pass = self.encode(new_pass)
             self.conn.passwd_s(str(dn), old_pass, new_pass)
 
-    def add_entry_to_group(self, dn, group_dn, member_attr='member', allow_same=False):
+    def add_entry_to_group(self, dn, group_dn, member_attr="member", allow_same=False):
         """
         Add entry designaed by dn to group group_dn in the member attribute
         member_attr.
@@ -407,10 +438,13 @@ class ldap2(CrudBackend, LDAPClient):
 
         logger.debug(
             "add_entry_to_group: dn=%s group_dn=%s member_attr=%s",
-            dn, group_dn, member_attr)
+            dn,
+            group_dn,
+            member_attr,
+        )
 
         # check if the entry exists
-        entry = self.get_entry(dn, [''])
+        entry = self.get_entry(dn, [""])
         dn = entry.dn
 
         # check if we're not trying to add group into itself
@@ -423,14 +457,13 @@ class ldap2(CrudBackend, LDAPClient):
         # update group entry
         try:
             with self.error_handler():
-                modlist = [(a, b, self.encode(c))
-                           for a, b, c in modlist]
+                modlist = [(a, b, self.encode(c)) for a, b, c in modlist]
                 self.conn.modify_s(str(group_dn), modlist)
         except errors.DuplicateEntry:
             # TYPE_OR_VALUE_EXISTS
             raise errors.AlreadyGroupMember()
 
-    def remove_entry_from_group(self, dn, group_dn, member_attr='member'):
+    def remove_entry_from_group(self, dn, group_dn, member_attr="member"):
         """Remove entry from group."""
 
         assert isinstance(dn, DN)
@@ -438,7 +471,10 @@ class ldap2(CrudBackend, LDAPClient):
 
         logger.debug(
             "remove_entry_from_group: dn=%s group_dn=%s member_attr=%s",
-            dn, group_dn, member_attr)
+            dn,
+            group_dn,
+            member_attr,
+        )
 
         # remove dn from group entry's `member_attr` attribute
         modlist = [(_ldap.MOD_DELETE, member_attr, [dn])]
@@ -446,8 +482,7 @@ class ldap2(CrudBackend, LDAPClient):
         # update group entry
         try:
             with self.error_handler():
-                modlist = [(a, b, self.encode(c))
-                           for a, b, c in modlist]
+                modlist = [(a, b, self.encode(c)) for a, b, c in modlist]
                 self.conn.modify_s(str(group_dn), modlist)
         except errors.MidairCollision:
             raise errors.NotGroupMember()
@@ -459,23 +494,23 @@ class ldap2(CrudBackend, LDAPClient):
         assert isinstance(active, bool)
 
         # get the entry in question
-        entry_attrs = self.get_entry(dn, ['nsaccountlock'])
+        entry_attrs = self.get_entry(dn, ["nsaccountlock"])
 
         # check nsAccountLock attribute
-        account_lock_attr = entry_attrs.get('nsaccountlock', ['false'])
+        account_lock_attr = entry_attrs.get("nsaccountlock", ["false"])
         account_lock_attr = account_lock_attr[0].lower()
         if active:
-            if account_lock_attr == 'false':
+            if account_lock_attr == "false":
                 raise errors.AlreadyActive()
         else:
-            if account_lock_attr == 'true':
+            if account_lock_attr == "true":
                 raise errors.AlreadyInactive()
 
         # LDAP expects string instead of Bool but it also requires it to be TRUE or FALSE,
         # not True or False as Python stringification does. Thus, we uppercase it.
         account_lock_attr = str(not active).upper()
 
-        entry_attrs['nsaccountlock'] = account_lock_attr
+        entry_attrs["nsaccountlock"] = account_lock_attr
         self.update_entry(entry_attrs)
 
     def activate_entry(self, dn):
@@ -498,8 +533,10 @@ class ldap2(CrudBackend, LDAPClient):
         # We need to do this directly using the LDAP library because we
         # don't have read access to krbprincipalkey so we need to delete
         # it in the blind.
-        mod = [(_ldap.MOD_REPLACE, 'krbprincipalkey', None),
-               (_ldap.MOD_REPLACE, 'krblastpwdchange', None)]
+        mod = [
+            (_ldap.MOD_REPLACE, "krbprincipalkey", None),
+            (_ldap.MOD_REPLACE, "krblastpwdchange", None),
+        ]
 
         with self.error_handler():
             self.conn.modify_s(str(dn), mod)
@@ -519,10 +556,10 @@ class ldap2(CrudBackend, LDAPClient):
 
         Extends CrudBackend.create.
         """
-        assert 'dn' in kw
-        dn = kw['dn']
+        assert "dn" in kw
+        dn = kw["dn"]
         assert isinstance(dn, DN)
-        del kw['dn']
+        del kw["dn"]
         self.add_entry(self.make_entry(dn, kw))
         return self._get_normalized_entry_for_crud(dn)
 
@@ -565,11 +602,11 @@ class ldap2(CrudBackend, LDAPClient):
         Extends CrudBackend.search.
         """
         # get keyword arguments
-        filter = kw.pop('filter', None)
-        attrs_list = kw.pop('attrs_list', None)
-        base_dn = kw.pop('base_dn', DN())
+        filter = kw.pop("filter", None)
+        attrs_list = kw.pop("attrs_list", None)
+        base_dn = kw.pop("base_dn", DN())
         assert isinstance(base_dn, DN)
-        scope = kw.pop('scope', self.SCOPE_SUBTREE)
+        scope = kw.pop("scope", self.SCOPE_SUBTREE)
 
         # generate filter
         filter_tmp = self.make_filter(kw)
@@ -578,13 +615,11 @@ class ldap2(CrudBackend, LDAPClient):
         else:
             filter = filter_tmp
         if not filter:
-            filter = '(objectClass=*)'
+            filter = "(objectClass=*)"
 
         # find entries and normalize the output for CRUD
         output = []
-        (entries, truncated) = self.find_entries(
-            filter, attrs_list, base_dn, scope
-        )
+        (entries, truncated) = self.find_entries(filter, attrs_list, base_dn, scope)
         for entry_attrs in entries:
             output.append(entry_attrs)
 

@@ -17,54 +17,58 @@ from ipatests.test_xmlrpc.tracker.stageuser_plugin import StageUserTracker
 from ipatests.test_xmlrpc.tracker.ca_plugin import CATracker
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def default_profile(request, xmlrpc_setup):
-    name = 'caIPAserviceCert'
-    desc = u'Standard profile for network services'
+    name = "caIPAserviceCert"
+    desc = u"Standard profile for network services"
     tracker = CertprofileTracker(name, store=True, desc=desc)
     tracker.track_create()
     return tracker
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def default_acl(request, xmlrpc_setup):
-    name = u'hosts_services_caIPAserviceCert'
-    tracker = CAACLTracker(name, service_category=u'all', host_category=u'all')
+    name = u"hosts_services_caIPAserviceCert"
+    tracker = CAACLTracker(name, service_category=u"all", host_category=u"all")
     tracker.track_create()
-    tracker.attrs.update(
-        {u'ipamembercertprofile_certprofile': [u'caIPAserviceCert']})
+    tracker.attrs.update({u"ipamembercertprofile_certprofile": [u"caIPAserviceCert"]})
     return tracker
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def crud_acl(request, xmlrpc_setup):
-    name = u'crud-acl'
+    name = u"crud-acl"
     tracker = CAACLTracker(name)
 
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def category_acl(request, xmlrpc_setup):
-    name = u'category_acl'
-    tracker = CAACLTracker(name, ipacertprofile_category=u'all',
-                           user_category=u'all', service_category=u'all',
-                           host_category=u'all', ipaca_category=u'all')
+    name = u"category_acl"
+    tracker = CAACLTracker(
+        name,
+        ipacertprofile_category=u"all",
+        user_category=u"all",
+        service_category=u"all",
+        host_category=u"all",
+        ipaca_category=u"all",
+    )
 
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def caacl_test_ca(request, xmlrpc_setup):
-    name = u'caacl-test-ca'
-    subject = u'CN=caacl test subca,O=test industries inc.'
+    name = u"caacl-test-ca"
+    subject = u"CN=caacl test subca,O=test industries inc."
     return CATracker(name, subject).make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def staged_user(request, xmlrpc_setup):
-    name = u'st-user'
-    tracker = StageUserTracker(name, u'stage', u'test')
+    name = u"st-user"
+    tracker = StageUserTracker(name, u"stage", u"test")
 
     return tracker.make_fixture(request)
 
@@ -118,7 +122,8 @@ class TestCAACLMembers(XMLRPC_test):
             servicecategory=None,
             ipacertprofilecategory=None,
             usercategory=None,
-            ipacacategory=None)
+            ipacacategory=None,
+        )
         category_acl.update(updates)
 
     def test_add_profile(self, category_acl, default_profile):
@@ -140,33 +145,35 @@ class TestCAACLMembers(XMLRPC_test):
 
     def test_add_invalid_value_service(self, category_acl, default_profile):
         res = category_acl.add_service(service=default_profile.name, track=False)
-        assert len(res['failed']) == 1
-        assert(res['failed']['memberservice']['service'][0][0].startswith(default_profile.name))
+        assert len(res["failed"]) == 1
+        assert res["failed"]["memberservice"]["service"][0][0].startswith(
+            default_profile.name
+        )
 
     # the same for other types
 
     def test_add_invalid_value_user(self, category_acl, default_profile):
         res = category_acl.add_user(user=default_profile.name, track=False)
-        assert len(res['failed']) == 1
+        assert len(res["failed"]) == 1
 
         res = category_acl.add_user(group=default_profile.name, track=False)
-        assert len(res['failed']) == 1
+        assert len(res["failed"]) == 1
 
     def test_add_invalid_value_host(self, category_acl, default_profile):
         res = category_acl.add_host(host=default_profile.name, track=False)
-        assert len(res['failed']) == 1
+        assert len(res["failed"]) == 1
 
         res = category_acl.add_host(hostgroup=default_profile.name, track=False)
-        assert len(res['failed']) == 1
+        assert len(res["failed"]) == 1
 
     def test_add_invalid_value_profile(self, category_acl):
         res = category_acl.add_profile(certprofile=category_acl.name, track=False)
-        assert len(res['failed']) == 1
+        assert len(res["failed"]) == 1
 
     def test_add_invalid_value_ca(self, category_acl):
         res = category_acl.add_ca(ca=category_acl.name, track=False)
-        assert len(res['failed']) == 1
+        assert len(res["failed"]) == 1
 
     def test_add_staged_user_to_acl(self, category_acl, staged_user):
         res = category_acl.add_user(user=staged_user.name, track=False)
-        assert len(res['failed']) == 1
+        assert len(res["failed"]) == 1

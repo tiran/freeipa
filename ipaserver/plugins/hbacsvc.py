@@ -25,7 +25,8 @@ from .baseldap import LDAPUpdate, LDAPSearch, LDAPRetrieve
 
 from ipalib import _, ngettext
 
-__doc__ = _("""
+__doc__ = _(
+    """
 HBAC Services
 
 The PAM services that HBAC can control access to. The name used here
@@ -46,106 +47,110 @@ EXAMPLES:
  Delete an HBAC service:
    ipa hbacsvc-del tftp
 
-""")
+"""
+)
 
 register = Registry()
 
-topic = 'hbac'
+topic = "hbac"
+
 
 @register()
 class hbacsvc(LDAPObject):
     """
     HBAC Service object.
     """
+
     container_dn = api.env.container_hbacservice
-    object_name = _('HBAC service')
-    object_name_plural = _('HBAC services')
-    object_class = [ 'ipaobject', 'ipahbacservice' ]
-    permission_filter_objectclasses = ['ipahbacservice']
-    default_attributes = ['cn', 'description', 'memberof']
-    uuid_attribute = 'ipauniqueid'
+    object_name = _("HBAC service")
+    object_name_plural = _("HBAC services")
+    object_class = ["ipaobject", "ipahbacservice"]
+    permission_filter_objectclasses = ["ipahbacservice"]
+    default_attributes = ["cn", "description", "memberof"]
+    uuid_attribute = "ipauniqueid"
     attribute_members = {
-        'memberof': ['hbacsvcgroup'],
+        "memberof": ["hbacsvcgroup"],
     }
     managed_permissions = {
-        'System: Read HBAC Services': {
-            'replaces_global_anonymous_aci': True,
-            'ipapermbindruletype': 'all',
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'cn', 'description', 'ipauniqueid', 'memberof', 'objectclass',
+        "System: Read HBAC Services": {
+            "replaces_global_anonymous_aci": True,
+            "ipapermbindruletype": "all",
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {
+                "cn",
+                "description",
+                "ipauniqueid",
+                "memberof",
+                "objectclass",
             },
         },
-        'System: Add HBAC Services': {
-            'ipapermright': {'add'},
-            'replaces': [
+        "System: Add HBAC Services": {
+            "ipapermright": {"add"},
+            "replaces": [
                 '(target = "ldap:///cn=*,cn=hbacservices,cn=hbac,$SUFFIX")(version 3.0;acl "permission:Add HBAC services";allow (add) groupdn = "ldap:///cn=Add HBAC services,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'HBAC Administrator'},
+            "default_privileges": {"HBAC Administrator"},
         },
-        'System: Delete HBAC Services': {
-            'ipapermright': {'delete'},
-            'replaces': [
+        "System: Delete HBAC Services": {
+            "ipapermright": {"delete"},
+            "replaces": [
                 '(target = "ldap:///cn=*,cn=hbacservices,cn=hbac,$SUFFIX")(version 3.0;acl "permission:Delete HBAC services";allow (delete) groupdn = "ldap:///cn=Delete HBAC services,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'HBAC Administrator'},
+            "default_privileges": {"HBAC Administrator"},
         },
     }
 
-    label = _('HBAC Services')
-    label_singular = _('HBAC Service')
+    label = _("HBAC Services")
+    label_singular = _("HBAC Service")
 
     takes_params = (
-        Str('cn',
-            cli_name='service',
-            label=_('Service name'),
-            doc=_('HBAC service'),
+        Str(
+            "cn",
+            cli_name="service",
+            label=_("Service name"),
+            doc=_("HBAC service"),
             primary_key=True,
             normalizer=lambda value: value.lower(),
         ),
-        Str('description?',
-            cli_name='desc',
-            label=_('Description'),
-            doc=_('HBAC service description'),
+        Str(
+            "description?",
+            cli_name="desc",
+            label=_("Description"),
+            doc=_("HBAC service description"),
         ),
     )
-
 
 
 @register()
 class hbacsvc_add(LDAPCreate):
-    __doc__ = _('Add a new HBAC service.')
+    __doc__ = _("Add a new HBAC service.")
 
     msg_summary = _('Added HBAC service "%(value)s"')
 
 
-
 @register()
 class hbacsvc_del(LDAPDelete):
-    __doc__ = _('Delete an existing HBAC service.')
+    __doc__ = _("Delete an existing HBAC service.")
 
     msg_summary = _('Deleted HBAC service "%(value)s"')
 
 
-
 @register()
 class hbacsvc_mod(LDAPUpdate):
-    __doc__ = _('Modify an HBAC service.')
+    __doc__ = _("Modify an HBAC service.")
 
     msg_summary = _('Modified HBAC service "%(value)s"')
 
 
-
 @register()
 class hbacsvc_find(LDAPSearch):
-    __doc__ = _('Search for HBAC services.')
+    __doc__ = _("Search for HBAC services.")
 
     msg_summary = ngettext(
-        '%(count)d HBAC service matched', '%(count)d HBAC services matched', 0
+        "%(count)d HBAC service matched", "%(count)d HBAC services matched", 0
     )
-
 
 
 @register()
 class hbacsvc_show(LDAPRetrieve):
-    __doc__ = _('Display information about an HBAC service.')
+    __doc__ = _("Display information about an HBAC service.")

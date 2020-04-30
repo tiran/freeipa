@@ -27,10 +27,11 @@ import pytest
 
 pytestmark = pytest.mark.tier0
 
+
 def test_client_has_capability():
-    assert capabilities['messages'] == u'2.52'
-    assert client_has_capability(u'2.52', 'messages')
-    assert client_has_capability(u'2.60', 'messages')
-    assert client_has_capability(u'3.0', 'messages')
-    assert not client_has_capability(u'2.11', 'messages')
-    assert not client_has_capability(u'0.1', 'messages')
+    assert capabilities["messages"] == u"2.52"
+    assert client_has_capability(u"2.52", "messages")
+    assert client_has_capability(u"2.60", "messages")
+    assert client_has_capability(u"3.0", "messages")
+    assert not client_has_capability(u"2.11", "messages")
+    assert not client_has_capability(u"0.1", "messages")

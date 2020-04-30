@@ -54,7 +54,7 @@ SCHEMA_FILENAMES = (
 
 
 def _sha1_file(filename):
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         return sha1(f.read()).hexdigest()
 
 
@@ -67,7 +67,7 @@ def add_ca_schema():
         source_fname = os.path.join(ipautil.SHARE_DIR, schema_fname)
         target_fname = os.path.join(schema_dirname(SERVERID), schema_fname)
         if not os.path.exists(source_fname):
-            root_logger.debug('File does not exist: %s', source_fname)
+            root_logger.debug("File does not exist: %s", source_fname)
             continue
         if os.path.exists(target_fname):
             target_sha1 = _sha1_file(target_fname)
@@ -75,41 +75,45 @@ def add_ca_schema():
             if target_sha1 != source_sha1:
                 target_size = os.stat(target_fname).st_size
                 source_size = os.stat(source_fname).st_size
-                root_logger.info('Target file %s exists but the content is '
-                                 'different', target_fname)
-                root_logger.info('\tTarget file: sha1: %s, size: %s B',
-                                 target_sha1, target_size)
-                root_logger.info('\tSource file: sha1: %s, size: %s B',
-                                 source_sha1, source_size)
-                if not ipautil.user_input("Do you want replace %s file?" %
-                                          target_fname, True):
+                root_logger.info(
+                    "Target file %s exists but the content is " "different",
+                    target_fname,
+                )
+                root_logger.info(
+                    "\tTarget file: sha1: %s, size: %s B", target_sha1, target_size
+                )
+                root_logger.info(
+                    "\tSource file: sha1: %s, size: %s B", source_sha1, source_size
+                )
+                if not ipautil.user_input(
+                    "Do you want replace %s file?" % target_fname, True
+                ):
                     continue
 
             else:
-                root_logger.info(
-                    'Target exists, not overwriting: %s', target_fname)
+                root_logger.info("Target exists, not overwriting: %s", target_fname)
                 continue
         try:
             shutil.copyfile(source_fname, target_fname)
         except IOError as e:
-            root_logger.warning('Could not install %s: %s', target_fname, e)
+            root_logger.warning("Could not install %s: %s", target_fname, e)
         else:
-            root_logger.info('Installed %s', target_fname)
-        os.chmod(target_fname, 0o440)    # read access for dirsrv user/group
+            root_logger.info("Installed %s", target_fname)
+        os.chmod(target_fname, 0o440)  # read access for dirsrv user/group
         os.chown(target_fname, pki_pent.pw_uid, ds_pent.pw_gid)
 
 
 def restart_pki_ds():
     """Restart the CA DS instance to pick up schema changes
     """
-    root_logger.info('Restarting CA DS')
-    services.service('dirsrv').restart(SERVERID)
+    root_logger.info("Restarting CA DS")
+    services.service("dirsrv").restart(SERVERID)
 
 
 # The ipa-3-0 set_directive() has very loose comparision of directive
 # which would cause multiple NSSCipherSuite to be added so provide
 # a custom function for it.
-def set_directive(filename, directive, value, quotes=True, separator=' '):
+def set_directive(filename, directive, value, quotes=True, separator=" "):
     """Set a name/value pair directive in a configuration file.
 
        A value of None means to drop the directive.
@@ -125,10 +129,9 @@ def set_directive(filename, directive, value, quotes=True, separator=' '):
             valueset = True
             if value is not None:
                 if quotes:
-                    newfile.append('%s%s"%s"\n' %
-                                   (directive, separator, value))
+                    newfile.append('%s%s"%s"\n' % (directive, separator, value))
                 else:
-                    newfile.append('%s%s%s\n' % (directive, separator, value))
+                    newfile.append("%s%s%s\n" % (directive, separator, value))
         else:
             newfile.append(line)
     fd.close()
@@ -137,7 +140,7 @@ def set_directive(filename, directive, value, quotes=True, separator=' '):
             if quotes:
                 newfile.append('%s%s"%s"\n' % (directive, separator, value))
             else:
-                newfile.append('%s%s%s\n' % (directive, separator, value))
+                newfile.append("%s%s%s\n" % (directive, separator, value))
 
     fd = open(filename, "w")
     fd.write("".join(newfile))
@@ -146,33 +149,33 @@ def set_directive(filename, directive, value, quotes=True, separator=' '):
 
 
 def update_mod_nss_cipher_suite():
-    add_ciphers = ['ecdhe_rsa_aes_128_sha', 'ecdhe_rsa_aes_256_sha']
-    ciphers = installutils.get_directive(NSS_CONF, 'NSSCipherSuite')
+    add_ciphers = ["ecdhe_rsa_aes_128_sha", "ecdhe_rsa_aes_256_sha"]
+    ciphers = installutils.get_directive(NSS_CONF, "NSSCipherSuite")
 
     # Run through once to see if any of the new ciphers are there but
     # disabled. If they are then enable them.
-    lciphers = ciphers.split(',')
+    lciphers = ciphers.split(",")
     new_ciphers = []
     for cipher in lciphers:
         for add in add_ciphers:
             if cipher.endswith(add):
-                if cipher.startswith('-'):
-                    cipher = '+%s' % add
+                if cipher.startswith("-"):
+                    cipher = "+%s" % add
         new_ciphers.append(cipher)
 
     # Run through again and add remaining ciphers as enabled.
     for add in add_ciphers:
         if add not in ciphers:
-            new_ciphers.append('+%s' % add)
+            new_ciphers.append("+%s" % add)
 
-    ciphers = ','.join(new_ciphers)
-    set_directive(NSS_CONF, 'NSSCipherSuite', ciphers, False)
-    root_logger.info('Updated Apache cipher list')
+    ciphers = ",".join(new_ciphers)
+    set_directive(NSS_CONF, "NSSCipherSuite", ciphers, False)
+    root_logger.info("Updated Apache cipher list")
 
 
 def restart_http():
-    root_logger.info('Restarting HTTP')
-    fstore = sysrestore.FileStore('/var/lib/ipa/sysrestore')
+    root_logger.info("Restarting HTTP")
+    fstore = sysrestore.FileStore("/var/lib/ipa/sysrestore")
     http = HTTPInstance(fstore)
     http.restart()
 
@@ -183,15 +186,15 @@ def main():
     standard_logging_setup(verbose=True)
 
     # In 3.0, restarting needs access to api.env
-    api.bootstrap_with_global_options(context='server')
+    api.bootstrap_with_global_options(context="server")
 
     add_ca_schema()
     restart_pki_ds()
     update_mod_nss_cipher_suite()
     restart_http()
 
-    root_logger.info('Schema updated successfully')
+    root_logger.info("Schema updated successfully")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

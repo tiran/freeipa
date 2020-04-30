@@ -25,15 +25,20 @@ from optparse import OptionGroup  # pylint: disable=deprecated-module
 import gssapi
 
 from ipalib.constants import (
-    RENEWAL_CA_NAME, RENEWAL_REUSE_CA_NAME, RENEWAL_SELFSIGNED_CA_NAME,
-    IPA_CA_CN)
+    RENEWAL_CA_NAME,
+    RENEWAL_REUSE_CA_NAME,
+    RENEWAL_SELFSIGNED_CA_NAME,
+    IPA_CA_CN,
+)
 from ipalib.install import certmonger, certstore
 from ipapython import admintool, ipautil
-from ipapython.certdb import (EMPTY_TRUST_FLAGS,
-                              EXTERNAL_CA_TRUST_FLAGS,
-                              TrustFlags,
-                              parse_trust_flags,
-                              get_ca_nickname)
+from ipapython.certdb import (
+    EMPTY_TRUST_FLAGS,
+    EXTERNAL_CA_TRUST_FLAGS,
+    TrustFlags,
+    parse_trust_flags,
+    get_ca_nickname,
+)
 from ipapython.dn import DN
 from ipaplatform.paths import paths
 from ipalib import api, errors, x509
@@ -43,64 +48,87 @@ logger = logging.getLogger(__name__)
 
 
 class CACertManage(admintool.AdminTool):
-    command_name = 'ipa-cacert-manage'
+    command_name = "ipa-cacert-manage"
 
-    usage = "%prog renew [options]\n%prog install [options] CERTFILE\n" \
-            "%prog delete [options] NICKNAME\n%prog list"
+    usage = (
+        "%prog renew [options]\n%prog install [options] CERTFILE\n"
+        "%prog delete [options] NICKNAME\n%prog list"
+    )
 
     description = "Manage CA certificates."
 
-    cert_nickname = 'caSigningCert cert-pki-ca'
+    cert_nickname = "caSigningCert cert-pki-ca"
 
     @classmethod
     def add_options(cls, parser):
         super(CACertManage, cls).add_options(parser)
 
         parser.add_option(
-            "-p", "--password", dest='password',
-            help="Directory Manager password")
+            "-p", "--password", dest="password", help="Directory Manager password"
+        )
 
         renew_group = OptionGroup(parser, "Renew options")
         renew_group.add_option(
-            "--self-signed", dest='self_signed',
-            action='store_true',
-            help="Sign the renewed certificate by itself")
+            "--self-signed",
+            dest="self_signed",
+            action="store_true",
+            help="Sign the renewed certificate by itself",
+        )
         renew_group.add_option(
-            "--external-ca", dest='self_signed',
-            action='store_false',
-            help="Sign the renewed certificate by external CA")
+            "--external-ca",
+            dest="self_signed",
+            action="store_false",
+            help="Sign the renewed certificate by external CA",
+        )
         ext_cas = tuple(x.value for x in x509.ExternalCAType)
         renew_group.add_option(
-            "--external-ca-type", dest="external_ca_type",
-            type="choice", choices=ext_cas,
+            "--external-ca-type",
+            dest="external_ca_type",
+            type="choice",
+            choices=ext_cas,
             metavar="{{{0}}}".format(",".join(ext_cas)),
-            help="Type of the external CA. Default: generic")
+            help="Type of the external CA. Default: generic",
+        )
         renew_group.add_option(
-            "--external-ca-profile", dest="external_ca_profile",
-            type='constructor', constructor=x509.ExternalCAProfile,
-            default=None, metavar="PROFILE-SPEC",
+            "--external-ca-profile",
+            dest="external_ca_profile",
+            type="constructor",
+            constructor=x509.ExternalCAProfile,
+            default=None,
+            metavar="PROFILE-SPEC",
             help="Specify the certificate profile/template to use "
-                 "at the external CA")
+            "at the external CA",
+        )
         renew_group.add_option(
-            "--external-cert-file", dest="external_cert_files",
-            action="append", metavar="FILE",
+            "--external-cert-file",
+            dest="external_cert_files",
+            action="append",
+            metavar="FILE",
             help="File containing the IPA CA certificate and the external CA "
-                 "certificate chain")
+            "certificate chain",
+        )
         parser.add_option_group(renew_group)
 
         install_group = OptionGroup(parser, "Install options")
         install_group.add_option(
-            "-n", "--nickname", dest='nickname',
-            help="Nickname for the certificate")
+            "-n", "--nickname", dest="nickname", help="Nickname for the certificate"
+        )
         install_group.add_option(
-            "-t", "--trust-flags", dest='trust_flags', default='C,,',
-            help="Trust flags for the certificate in certutil format")
+            "-t",
+            "--trust-flags",
+            dest="trust_flags",
+            default="C,,",
+            help="Trust flags for the certificate in certutil format",
+        )
         parser.add_option_group(install_group)
 
         delete_group = OptionGroup(parser, "Delete options")
         delete_group.add_option(
-            "-f", "--force", action='store_true',
-            help="Force removing the CA even if chain validation fails")
+            "-f",
+            "--force",
+            action="store_true",
+            help="Force removing the CA even if chain validation fails",
+        )
         parser.add_option_group(delete_group)
 
     def validate_options(self):
@@ -115,18 +143,18 @@ class CACertManage(admintool.AdminTool):
 
         command = self.command = self.args[0]
 
-        if command == 'renew':
+        if command == "renew":
             pass
-        elif command == 'install':
+        elif command == "install":
             if len(self.args) < 2:
                 parser.error("certificate file name not provided")
-        elif command == 'list':
+        elif command == "list":
             pass
-        elif command == 'delete':
+        elif command == "delete":
             if len(self.args) < 2:
                 parser.error("nickname not provided")
         else:
-            parser.error("unknown command \"%s\"" % command)
+            parser.error('unknown command "%s"' % command)
 
     def run(self):
         command = self.command
@@ -137,13 +165,13 @@ class CACertManage(admintool.AdminTool):
         self.ldap_connect()
 
         try:
-            if command == 'renew':
+            if command == "renew":
                 return self.renew()
-            elif command == 'install':
+            elif command == "install":
                 return self.install()
-            elif command == 'list':
+            elif command == "list":
                 return self.list()
-            elif command == 'delete':
+            elif command == "delete":
                 return self.delete()
             else:
                 raise NotImplementedError
@@ -154,26 +182,26 @@ class CACertManage(admintool.AdminTool):
         password = self.options.password
         if not password:
             try:
-                api.Backend.ldap2.connect(ccache=os.environ.get('KRB5CCNAME'))
+                api.Backend.ldap2.connect(ccache=os.environ.get("KRB5CCNAME"))
             except (gssapi.exceptions.GSSError, errors.ACIError):
                 pass
             else:
                 return
 
             password = installutils.read_password(
-                "Directory Manager", confirm=False, validate=False)
+                "Directory Manager", confirm=False, validate=False
+            )
             if password is None:
-                raise admintool.ScriptError(
-                    "Directory Manager password required")
+                raise admintool.ScriptError("Directory Manager password required")
 
         api.Backend.ldap2.connect(bind_pw=password)
 
     def _get_ca_request_id(self, ca_name):
         """Lookup tracking request for IPA CA, using given ca-name."""
         criteria = {
-            'cert-database': paths.PKI_TOMCAT_ALIAS_DIR,
-            'cert-nickname': self.cert_nickname,
-            'ca-name': ca_name,
+            "cert-database": paths.PKI_TOMCAT_ALIAS_DIR,
+            "cert-nickname": self.cert_nickname,
+            "ca-name": ca_name,
         }
         return certmonger.get_request_id(criteria)
 
@@ -190,9 +218,9 @@ class CACertManage(admintool.AdminTool):
             self.request_id = self._get_ca_request_id(RENEWAL_REUSE_CA_NAME)
             if self.request_id is None:
                 raise admintool.ScriptError(
-                    "CA certificate is not tracked by certmonger")
-        logger.debug(
-            "Found certmonger request id %r", self.request_id)
+                    "CA certificate is not tracked by certmonger"
+                )
+        logger.debug("Found certmonger request id %r", self.request_id)
 
         db = certs.CertDB(api.env.realm, nssdir=paths.PKI_TOMCAT_ALIAS_DIR)
         cert = db.get_cert_from_db(self.cert_nickname)
@@ -241,31 +269,38 @@ class CACertManage(admintool.AdminTool):
         if not options.external_ca_type:
             options.external_ca_type = x509.ExternalCAType.GENERIC.value
 
-        if options.external_ca_type == x509.ExternalCAType.MS_CS.value \
-                and options.external_ca_profile is None:
+        if (
+            options.external_ca_type == x509.ExternalCAType.MS_CS.value
+            and options.external_ca_profile is None
+        ):
             options.external_ca_profile = x509.MSCSTemplateV1(u"SubCA")
 
         if options.external_ca_profile is not None:
             # check that profile is valid for the external ca type
-            if options.external_ca_type \
-                    not in options.external_ca_profile.valid_for:
+            if options.external_ca_type not in options.external_ca_profile.valid_for:
                 raise admintool.ScriptError(
                     "External CA profile specification '{}' "
-                    "cannot be used with external CA type '{}'."
-                    .format(
+                    "cannot be used with external CA type '{}'.".format(
                         options.external_ca_profile.unparsed_input,
-                        options.external_ca_type)
+                        options.external_ca_type,
                     )
+                )
 
         self.resubmit_request(
-            RENEWAL_REUSE_CA_NAME,
-            profile=options.external_ca_profile)
+            RENEWAL_REUSE_CA_NAME, profile=options.external_ca_profile
+        )
 
-        print(("The next step is to get %s signed by your CA and re-run "
-              "ipa-cacert-manage as:" % paths.IPA_CA_CSR))
-        print("ipa-cacert-manage renew "
-              "--external-cert-file=/path/to/signed_certificate "
-              "--external-cert-file=/path/to/external_ca_certificate")
+        print(
+            (
+                "The next step is to get %s signed by your CA and re-run "
+                "ipa-cacert-manage as:" % paths.IPA_CA_CSR
+            )
+        )
+        print(
+            "ipa-cacert-manage renew "
+            "--external-cert-file=/path/to/signed_certificate "
+            "--external-cert-file=/path/to/external_ca_certificate"
+        )
 
     def renew_external_step_2(self, ca, old_cert):
         print("Importing the renewed CA certificate, please wait")
@@ -276,9 +311,10 @@ class CACertManage(admintool.AdminTool):
         old_spki = old_cert.public_key_info_bytes
 
         cert_file, ca_file = installutils.load_external_cert(
-            options.external_cert_files, DN(old_cert.subject))
+            options.external_cert_files, DN(old_cert.subject)
+        )
 
-        with open(cert_file.name, 'rb') as f:
+        with open(cert_file.name, "rb") as f:
             new_cert_data = f.read()
         new_cert = x509.load_pem_x509_certificate(new_cert_data)
         new_spki = new_cert.public_key_info_bytes
@@ -287,67 +323,76 @@ class CACertManage(admintool.AdminTool):
             raise admintool.ScriptError(
                 "Subject name mismatch (visit "
                 "http://www.freeipa.org/page/Troubleshooting for "
-                "troubleshooting guide)")
+                "troubleshooting guide)"
+            )
         if new_cert.subject_bytes != old_cert.subject_bytes:
             raise admintool.ScriptError(
                 "Subject name encoding mismatch (visit "
                 "http://www.freeipa.org/page/Troubleshooting for "
-                "troubleshooting guide)")
+                "troubleshooting guide)"
+            )
         if new_spki != old_spki:
             raise admintool.ScriptError(
                 "Subject public key info mismatch (visit "
                 "http://www.freeipa.org/page/Troubleshooting for "
-                "troubleshooting guide)")
+                "troubleshooting guide)"
+            )
 
         with certs.NSSDatabase() as tmpdb:
             tmpdb.create_db()
-            tmpdb.add_cert(old_cert, 'IPA CA', EXTERNAL_CA_TRUST_FLAGS)
+            tmpdb.add_cert(old_cert, "IPA CA", EXTERNAL_CA_TRUST_FLAGS)
 
             try:
-                tmpdb.add_cert(new_cert, 'IPA CA', EXTERNAL_CA_TRUST_FLAGS)
+                tmpdb.add_cert(new_cert, "IPA CA", EXTERNAL_CA_TRUST_FLAGS)
             except ipautil.CalledProcessError as e:
                 raise admintool.ScriptError(
-                    "Not compatible with the current CA certificate: %s" % e)
+                    "Not compatible with the current CA certificate: %s" % e
+                )
 
             ca_certs = x509.load_certificate_list_from_file(ca_file.name)
             for ca_cert in ca_certs:
                 tmpdb.add_cert(
-                    ca_cert, str(DN(ca_cert.subject)), EXTERNAL_CA_TRUST_FLAGS)
+                    ca_cert, str(DN(ca_cert.subject)), EXTERNAL_CA_TRUST_FLAGS
+                )
 
             try:
-                tmpdb.verify_ca_cert_validity('IPA CA')
+                tmpdb.verify_ca_cert_validity("IPA CA")
             except ValueError as e:
                 raise admintool.ScriptError(
                     "Not a valid CA certificate: %s (visit "
                     "http://www.freeipa.org/page/Troubleshooting for "
-                    "troubleshooting guide)" % e)
+                    "troubleshooting guide)" % e
+                )
 
-            trust_chain = tmpdb.get_trust_chain('IPA CA')[:-1]
+            trust_chain = tmpdb.get_trust_chain("IPA CA")[:-1]
             for nickname in trust_chain:
                 try:
                     ca_cert = tmpdb.get_cert(nickname)
                 except RuntimeError:
                     break
                 certstore.put_ca_cert_nss(
-                    conn,
-                    api.env.basedn,
-                    ca_cert,
-                    nickname,
-                    EMPTY_TRUST_FLAGS)
+                    conn, api.env.basedn, ca_cert, nickname, EMPTY_TRUST_FLAGS
+                )
 
-        dn = DN(('cn', self.cert_nickname), ('cn', 'ca_renewal'),
-                ('cn', 'ipa'), ('cn', 'etc'), api.env.basedn)
+        dn = DN(
+            ("cn", self.cert_nickname),
+            ("cn", "ca_renewal"),
+            ("cn", "ipa"),
+            ("cn", "etc"),
+            api.env.basedn,
+        )
 
         try:
-            entry = conn.get_entry(dn, ['usercertificate'])
-            entry['usercertificate'] = [new_cert]
+            entry = conn.get_entry(dn, ["usercertificate"])
+            entry["usercertificate"] = [new_cert]
             conn.update_entry(entry)
         except errors.NotFound:
             entry = conn.make_entry(
                 dn,
-                objectclass=['top', 'pkiuser', 'nscontainer'],
+                objectclass=["top", "pkiuser", "nscontainer"],
                 cn=[self.cert_nickname],
-                usercertificate=[new_cert])
+                usercertificate=[new_cert],
+            )
             conn.add_entry(entry)
         except errors.EmptyModlist:
             pass
@@ -375,34 +420,40 @@ class CACertManage(admintool.AdminTool):
             cm_template = profile.unparsed_input
 
         logger.debug("resubmitting certmonger request '%s'", self.request_id)
-        certmonger.resubmit_request(self.request_id, ca=ca, profile=cm_profile,
-                                    template_v2=cm_template, is_ca=True)
+        certmonger.resubmit_request(
+            self.request_id,
+            ca=ca,
+            profile=cm_profile,
+            template_v2=cm_template,
+            is_ca=True,
+        )
         try:
             state = certmonger.wait_for_request(self.request_id, timeout)
         except RuntimeError:
             raise admintool.ScriptError(
                 "Resubmitting certmonger request '%s' timed out, "
-                "please check the request manually" % self.request_id)
-        ca_error = certmonger.get_request_value(self.request_id, 'ca-error')
-        if state != 'MONITORING' or ca_error:
+                "please check the request manually" % self.request_id
+            )
+        ca_error = certmonger.get_request_value(self.request_id, "ca-error")
+        if state != "MONITORING" or ca_error:
             raise admintool.ScriptError(
                 "Error resubmitting certmonger request '%s', "
-                "please check the request manually" % self.request_id)
+                "please check the request manually" % self.request_id
+            )
 
         logger.debug("modifying certmonger request '%s'", self.request_id)
-        certmonger.modify(self.request_id,
-                          ca=RENEWAL_CA_NAME,
-                          profile='', template_v2='')
+        certmonger.modify(
+            self.request_id, ca=RENEWAL_CA_NAME, profile="", template_v2=""
+        )
 
     def install(self):
         print("Installing CA certificate, please wait")
 
         options = self.options
 
-        ca_certs = certstore.get_ca_certs_nss(api.Backend.ldap2,
-                                              api.env.basedn,
-                                              api.env.realm,
-                                              False)
+        ca_certs = certstore.get_ca_certs_nss(
+            api.Backend.ldap2, api.env.basedn, api.env.realm, False
+        )
 
         with certs.NSSDatabase() as tmpdb:
             tmpdb.create_db()
@@ -413,7 +464,8 @@ class CACertManage(admintool.AdminTool):
             if len(imported) > 1 and options.nickname:
                 raise admintool.ScriptError(
                     "Nickname can only be used if only a single "
-                    "certificate is loaded")
+                    "certificate is loaded"
+                )
 
             # If a nickname was provided re-import the cert
             if options.nickname:
@@ -438,46 +490,51 @@ class CACertManage(admintool.AdminTool):
                     raise admintool.ScriptError(
                         "Not a valid CA certificate: %s (visit "
                         "http://www.freeipa.org/page/Troubleshooting for "
-                        "troubleshooting guide)" % e)
+                        "troubleshooting guide)" % e
+                    )
                 else:
                     print("Verified %s" % nickname)
 
-            trust_flags = options.trust_flags.split(',')
-            if (set(options.trust_flags) - set(',CPTcgpuw') or
-                    len(trust_flags) not in [3, 4]):
+            trust_flags = options.trust_flags.split(",")
+            if set(options.trust_flags) - set(",CPTcgpuw") or len(trust_flags) not in [
+                3,
+                4,
+            ]:
                 raise admintool.ScriptError("Invalid trust flags")
 
             extra_flags = trust_flags[3:]
             extra_usages = set()
             if extra_flags:
-                if 'C' in extra_flags[0]:
+                if "C" in extra_flags[0]:
                     extra_usages.add(x509.EKU_PKINIT_KDC)
-                if 'T' in extra_flags[0]:
+                if "T" in extra_flags[0]:
                     extra_usages.add(x509.EKU_PKINIT_CLIENT_AUTH)
 
-            trust_flags = parse_trust_flags(','.join(trust_flags[:3]))
-            trust_flags = TrustFlags(trust_flags.has_key,
-                                     trust_flags.trusted,
-                                     trust_flags.ca,
-                                     trust_flags.usages | extra_usages)
+            trust_flags = parse_trust_flags(",".join(trust_flags[:3]))
+            trust_flags = TrustFlags(
+                trust_flags.has_key,
+                trust_flags.trusted,
+                trust_flags.ca,
+                trust_flags.usages | extra_usages,
+            )
 
             for nickname, _trust_flags in imported:
                 try:
                     cert = tmpdb.get_cert(nickname)
                     certstore.put_ca_cert_nss(
-                        api.Backend.ldap2, api.env.basedn, cert, nickname,
-                        trust_flags)
+                        api.Backend.ldap2, api.env.basedn, cert, nickname, trust_flags
+                    )
                 except ValueError as e:
                     raise admintool.ScriptError(
-                        "Failed to install the certificate: %s" % e)
+                        "Failed to install the certificate: %s" % e
+                    )
 
         print("CA certificate successfully installed")
 
     def list(self):
-        ca_certs = certstore.get_ca_certs_nss(api.Backend.ldap2,
-                                              api.env.basedn,
-                                              api.env.realm,
-                                              False)
+        ca_certs = certstore.get_ca_certs_nss(
+            api.Backend.ldap2, api.env.basedn, api.env.realm, False
+        )
         for _ca_cert, ca_nickname, _ca_trust_flags in ca_certs:
             print(ca_nickname)
 
@@ -486,10 +543,9 @@ class CACertManage(admintool.AdminTool):
         nickname = self.args[1]
         conn = api.Backend.ldap2
 
-        ca_certs = certstore.get_ca_certs_nss(api.Backend.ldap2,
-                                              api.env.basedn,
-                                              api.env.realm,
-                                              False)
+        ca_certs = certstore.get_ca_certs_nss(
+            api.Backend.ldap2, api.env.basedn, api.env.realm, False
+        )
 
         ipa_ca_nickname = get_ca_nickname(api.env.realm)
 
@@ -498,16 +554,14 @@ class CACertManage(admintool.AdminTool):
             if ca_nickname == nickname:
                 if ca_nickname == ipa_ca_nickname:
                     raise admintool.ScriptError(
-                        'The IPA CA cannot be removed with this tool'
+                        "The IPA CA cannot be removed with this tool"
                     )
                 else:
                     found = True
                     break
 
         if not found:
-            raise admintool.ScriptError(
-                'Unknown CA \'{}\''.format(nickname)
-            )
+            raise admintool.ScriptError("Unknown CA '{}'".format(nickname))
 
         with certs.NSSDatabase() as tmpdb:
             tmpdb.create_db()
@@ -522,14 +576,15 @@ class CACertManage(admintool.AdminTool):
                 if ca_nickname == nickname:
                     continue
                 if ipa_ca_nickname == nickname:
-                    raise admintool.ScriptError(
-                        "The IPA CA cannot be removed")
+                    raise admintool.ScriptError("The IPA CA cannot be removed")
                 logger.debug("Verifying %s", ca_nickname)
                 try:
                     tmpdb.verify_ca_cert_validity(ca_nickname)
                 except ValueError as e:
-                    msg = "Verifying \'%s\' failed. Removing part of the " \
-                          "chain? %s" % (nickname, e)
+                    msg = "Verifying '%s' failed. Removing part of the " "chain? %s" % (
+                        nickname,
+                        e,
+                    )
                     if options.force:
                         print(msg)
                         continue
@@ -539,9 +594,10 @@ class CACertManage(admintool.AdminTool):
 
         for _ca_cert, ca_nickname, _ca_trust_flags in ca_certs:
             if ca_nickname == nickname:
-                container_dn = DN(('cn', 'certificates'), ('cn', 'ipa'),
-                                  ('cn', 'etc'), api.env.basedn)
-                dn = DN(('cn', nickname), container_dn)
+                container_dn = DN(
+                    ("cn", "certificates"), ("cn", "ipa"), ("cn", "etc"), api.env.basedn
+                )
+                dn = DN(("cn", nickname), container_dn)
                 logger.debug("Deleting %s", ca_nickname)
                 conn.delete_entry(dn)
                 return
@@ -557,9 +613,10 @@ def update_ipa_ca_entry(api, cert):
     """
     try:
         entry = api.Backend.ldap2.get_entry(
-            DN(('cn', IPA_CA_CN), api.env.container_ca, api.env.basedn),
-            ['ipacaissuerdn'])
-        entry['ipacaissuerdn'] = [DN(cert.issuer)]
+            DN(("cn", IPA_CA_CN), api.env.container_ca, api.env.basedn),
+            ["ipacaissuerdn"],
+        )
+        entry["ipacaissuerdn"] = [DN(cert.issuer)]
         api.Backend.ldap2.update_entry(entry)
     except errors.EmptyModlist:
         pass

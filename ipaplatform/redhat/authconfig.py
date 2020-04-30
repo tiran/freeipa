@@ -28,7 +28,7 @@ from ipapython import ipautil
 from ipapython.admintool import ScriptError
 import os
 
-FILES_TO_NOT_BACKUP = ['passwd', 'group', 'shadow', 'gshadow']
+FILES_TO_NOT_BACKUP = ["passwd", "group", "shadow", "gshadow"]
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +39,12 @@ def get_auth_tool():
 
 @six.add_metaclass(abc.ABCMeta)
 class RedHatAuthToolBase:
-
     @abc.abstractmethod
     def configure(self, sssd, mkhomedir, statestore, sudo=True):
         pass
 
     @abc.abstractmethod
-    def unconfigure(self, fstore, statestore,
-                    was_sssd_installed,
-                    was_sssd_configured):
+    def unconfigure(self, fstore, statestore, was_sssd_installed, was_sssd_configured):
         pass
 
     @abc.abstractmethod
@@ -70,11 +67,9 @@ class RedHatAuthToolBase:
 
 
 class RedHatAuthSelect(RedHatAuthToolBase):
-
     def _get_authselect_current_output(self):
         try:
-            current = ipautil.run(
-                [paths.AUTHSELECT, "current", "--raw"])
+            current = ipautil.run([paths.AUTHSELECT, "current", "--raw"])
         except ipautil.CalledProcessError:
             logger.debug("Current configuration not managed by authselect")
             return None
@@ -95,7 +90,7 @@ class RedHatAuthSelect(RedHatAuthToolBase):
         output_text = output_text.strip()
         if not output_text:
             return None
-        output_items = output_text.split(' ')
+        output_items = output_text.split(" ")
         profile = output_items[0]
         features = output_items[1:]
         return profile, features
@@ -110,9 +105,8 @@ class RedHatAuthSelect(RedHatAuthToolBase):
         # pre-install state
         cfg = self._parse_authselect_output()
         if cfg:
-            statestore.backup_state('authselect', 'profile', cfg[0])
-            statestore.backup_state(
-                    'authselect', 'features_list', " ".join(cfg[1]))
+            statestore.backup_state("authselect", "profile", cfg[0])
+            statestore.backup_state("authselect", "features_list", " ".join(cfg[1]))
         else:
             # cfg = None means that the current conf is not managed by
             # authselect but by authconfig.
@@ -124,58 +118,56 @@ class RedHatAuthSelect(RedHatAuthToolBase):
                 "WARNING: The configuration pre-client installation is not "
                 "managed by authselect and cannot be backed up. "
                 "Uninstallation may not be able to revert to the original "
-                "state.")
+                "state."
+            )
 
         cmd = [paths.AUTHSELECT, "select", "sssd"]
         if mkhomedir:
             cmd.append("with-mkhomedir")
-            statestore.backup_state('authselect', 'mkhomedir', True)
+            statestore.backup_state("authselect", "mkhomedir", True)
         if sudo:
             cmd.append("with-sudo")
         cmd.append("--force")
 
         ipautil.run(cmd)
 
-    def unconfigure(
-        self, fstore, statestore, was_sssd_installed, was_sssd_configured
-    ):
-        if not statestore.has_state('authselect') and was_sssd_installed:
+    def unconfigure(self, fstore, statestore, was_sssd_installed, was_sssd_configured):
+        if not statestore.has_state("authselect") and was_sssd_installed:
             logger.warning(
                 "WARNING: Unable to revert to the pre-installation state "
                 "('authconfig' tool has been deprecated in favor of "
                 "'authselect'). The default sssd profile will be used "
-                "instead.")
+                "instead."
+            )
             # Build the equivalent command line that will be displayed
             # to the user
             # This is a copy-paste of unconfigure code, except that it
             # creates the command line but does not actually call it
             authconfig = RedHatAuthConfig()
             authconfig.prepare_unconfigure(
-                fstore, statestore, was_sssd_installed, was_sssd_configured)
+                fstore, statestore, was_sssd_installed, was_sssd_configured
+            )
             args = authconfig.build_args()
             logger.warning(
                 "The authconfig arguments would have been: authconfig %s",
-                " ".join(args))
+                " ".join(args),
+            )
 
-            profile = 'sssd'
+            profile = "sssd"
             features = []
         else:
-            profile = statestore.restore_state('authselect', 'profile')
+            profile = statestore.restore_state("authselect", "profile")
             if not profile:
-                profile = 'sssd'
-            features_state = statestore.restore_state(
-                'authselect', 'features_list'
-            )
-            statestore.delete_state('authselect', 'mkhomedir')
+                profile = "sssd"
+            features_state = statestore.restore_state("authselect", "features_list")
+            statestore.delete_state("authselect", "mkhomedir")
             # https://pagure.io/freeipa/issue/8054
             if fstore.has_file(paths.NSSWITCH_CONF):
                 logger.info("Restoring user-nsswitch.conf")
                 fstore.restore_file(paths.NSSWITCH_CONF)
             # only non-empty features, https://pagure.io/freeipa/issue/7776
             if features_state is not None:
-                features = [
-                    f.strip() for f in features_state.split(' ') if f.strip()
-                ]
+                features = [f.strip() for f in features_state.split(" ") if f.strip()]
             else:
                 features = []
 
@@ -192,7 +184,7 @@ class RedHatAuthSelect(RedHatAuthToolBase):
         if not os.path.exists(path):
             os.makedirs(path)
 
-        with open(os.path.join(path, "authselect.backup"), 'w') as f:
+        with open(os.path.join(path, "authselect.backup"), "w") as f:
             f.write(current)
 
     def restore(self, path):
@@ -208,17 +200,18 @@ class RedHatAuthSelect(RedHatAuthToolBase):
 
     def set_nisdomain(self, nisdomain):
         try:
-            with open(paths.SYSCONF_NETWORK, 'r') as f:
+            with open(paths.SYSCONF_NETWORK, "r") as f:
                 content = [
-                    line for line in f
-                    if not line.strip().upper().startswith('NISDOMAIN')
+                    line
+                    for line in f
+                    if not line.strip().upper().startswith("NISDOMAIN")
                 ]
         except IOError:
             content = []
 
         content.append("NISDOMAIN={}\n".format(nisdomain))
 
-        with open(paths.SYSCONF_NETWORK, 'w') as f:
+        with open(paths.SYSCONF_NETWORK, "w") as f:
             f.writelines(content)
 
 
@@ -293,37 +286,37 @@ class RedHatAuthConfig(RedHatAuthToolBase):
 
     def configure(self, sssd, mkhomedir, statestore, sudo=True):
         if sssd:
-            statestore.backup_state('authconfig', 'sssd', True)
-            statestore.backup_state('authconfig', 'sssdauth', True)
+            statestore.backup_state("authconfig", "sssd", True)
+            statestore.backup_state("authconfig", "sssdauth", True)
             self.enable("sssd")
             self.enable("sssdauth")
         else:
-            statestore.backup_state('authconfig', 'ldap', True)
+            statestore.backup_state("authconfig", "ldap", True)
             self.enable("ldap")
             self.enable("forcelegacy")
 
-            statestore.backup_state('authconfig', 'krb5', True)
+            statestore.backup_state("authconfig", "krb5", True)
             self.enable("krb5")
             self.add_option("nostart")
 
         if mkhomedir:
-            statestore.backup_state('authconfig', 'mkhomedir', True)
+            statestore.backup_state("authconfig", "mkhomedir", True)
             self.enable("mkhomedir")
 
         self.execute()
         self.reset()
 
-    def prepare_unconfigure(self, fstore, statestore,
-                            was_sssd_installed,
-                            was_sssd_configured):
-        if statestore.has_state('authconfig'):
+    def prepare_unconfigure(
+        self, fstore, statestore, was_sssd_installed, was_sssd_configured
+    ):
+        if statestore.has_state("authconfig"):
             # disable only those configurations that we enabled during install
-            for conf in ('ldap', 'krb5', 'sssd', 'sssdauth', 'mkhomedir'):
-                cnf = statestore.restore_state('authconfig', conf)
+            for conf in ("ldap", "krb5", "sssd", "sssdauth", "mkhomedir"):
+                cnf = statestore.restore_state("authconfig", conf)
                 # Do not disable sssd, as this can cause issues with its later
                 # uses. Remove it from statestore however, so that it becomes
                 # empty at the end of uninstall process.
-                if cnf and conf != 'sssd':
+                if cnf and conf != "sssd":
                     self.disable(conf)
         else:
             # There was no authconfig status store
@@ -331,17 +324,16 @@ class RedHatAuthConfig(RedHatAuthToolBase):
             # Fall back to old logic
             self.disable("ldap")
             self.disable("krb5")
-            if not(was_sssd_installed and was_sssd_configured):
+            if not (was_sssd_installed and was_sssd_configured):
                 # Only disable sssdauth. Disabling sssd would cause issues
                 # with its later uses.
                 self.disable("sssdauth")
             self.disable("mkhomedir")
 
-    def unconfigure(self, fstore, statestore,
-                    was_sssd_installed,
-                    was_sssd_configured):
+    def unconfigure(self, fstore, statestore, was_sssd_installed, was_sssd_configured):
         self.prepare_unconfigure(
-            fstore, statestore, was_sssd_installed, was_sssd_configured)
+            fstore, statestore, was_sssd_installed, was_sssd_configured
+        )
         self.execute()
         self.reset()
 

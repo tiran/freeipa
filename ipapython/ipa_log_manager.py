@@ -22,35 +22,41 @@ import re
 import time
 
 # Module exports
-__all__ = ['standard_logging_setup',
-           'ISO8601_UTC_DATETIME_FMT',
-           'LOGGING_FORMAT_STDERR', 'LOGGING_FORMAT_STDOUT', 'LOGGING_FORMAT_FILE']
+__all__ = [
+    "standard_logging_setup",
+    "ISO8601_UTC_DATETIME_FMT",
+    "LOGGING_FORMAT_STDERR",
+    "LOGGING_FORMAT_STDOUT",
+    "LOGGING_FORMAT_FILE",
+]
 
 # Format string for time.strftime() to produce a ISO 8601 date time
 # formatted string in the UTC time zone.
-ISO8601_UTC_DATETIME_FMT = '%Y-%m-%dT%H:%M:%SZ'
+ISO8601_UTC_DATETIME_FMT = "%Y-%m-%dT%H:%M:%SZ"
 
 # Logging format string for use with logging stderr handlers
-LOGGING_FORMAT_STDERR = 'ipa: %(levelname)s: %(message)s'
+LOGGING_FORMAT_STDERR = "ipa: %(levelname)s: %(message)s"
 
 # Logging format string for use with logging stdout handlers
-LOGGING_FORMAT_STDOUT = '[%(asctime)s %(name)s] <%(levelname)s>: %(message)s'
+LOGGING_FORMAT_STDOUT = "[%(asctime)s %(name)s] <%(levelname)s>: %(message)s"
 
 # Logging format string for use with logging file handlers
-LOGGING_FORMAT_FILE = '\t'.join([
-    '%(asctime)s',
-    '%(process)d',
-    '%(threadName)s',
-    '%(name)s',
-    '%(levelname)s',
-    '%(message)s',
-])
+LOGGING_FORMAT_FILE = "\t".join(
+    [
+        "%(asctime)s",
+        "%(process)d",
+        "%(threadName)s",
+        "%(name)s",
+        "%(levelname)s",
+        "%(message)s",
+    ]
+)
 
 # Used by standard_logging_setup() for console message
-LOGGING_FORMAT_STANDARD_CONSOLE = '%(name)-12s: %(levelname)-8s %(message)s'
+LOGGING_FORMAT_STANDARD_CONSOLE = "%(name)-12s: %(levelname)-8s %(message)s"
 
 # Used by standard_logging_setup() for file message
-LOGGING_FORMAT_STANDARD_FILE = '%(asctime)s %(levelname)s %(message)s'
+LOGGING_FORMAT_STANDARD_FILE = "%(asctime)s %(levelname)s %(message)s"
 
 
 class Filter:
@@ -59,19 +65,18 @@ class Filter:
         self.level = level
 
     def filter(self, record):
-        return (not self.regexp.match(record.name) or
-                record.levelno >= self.level)
+        return not self.regexp.match(record.name) or record.levelno >= self.level
 
 
 class Formatter(logging.Formatter):
-    def __init__(
-            self, fmt=LOGGING_FORMAT_STDOUT, datefmt=ISO8601_UTC_DATETIME_FMT):
+    def __init__(self, fmt=LOGGING_FORMAT_STDOUT, datefmt=ISO8601_UTC_DATETIME_FMT):
         super(Formatter, self).__init__(fmt, datefmt)
         self.converter = time.gmtime
 
 
-def standard_logging_setup(filename=None, verbose=False, debug=False,
-                           filemode='w', console_format=None):
+def standard_logging_setup(
+    filename=None, verbose=False, debug=False, filemode="w", console_format=None
+):
     if console_format is None:
         console_format = LOGGING_FORMAT_STANDARD_CONSOLE
 
@@ -107,13 +112,13 @@ def convert_log_level(value):
     except ValueError:
         try:
             level = {
-                'debug': logging.DEBUG,
-                'info': logging.INFO,
-                'warn': logging.WARNING,
-                'warning': logging.WARNING,
-                'error': logging.ERROR,
-                'critical': logging.CRITICAL
+                "debug": logging.DEBUG,
+                "info": logging.INFO,
+                "warn": logging.WARNING,
+                "warning": logging.WARNING,
+                "error": logging.ERROR,
+                "critical": logging.CRITICAL,
             }[value.lower()]
         except KeyError:
-            raise ValueError('unknown log level (%s)' % value)
+            raise ValueError("unknown log level (%s)" % value)
     return level

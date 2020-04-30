@@ -67,12 +67,12 @@ DEFAULT_OUTPUT_ENV = {
 }
 
 DEFAULT_INPUT_ENV = {
-    'NTPSERVER': 'ntp.clock.test',
+    "NTPSERVER": "ntp.clock.test",
 }
 
 DEFAULT_INPUT_DICT = {
-    'ntp_server': 'ntp.clock.test',
-    'domains': [],
+    "ntp_server": "ntp.clock.test",
+    "domains": [],
 }
 
 
@@ -132,7 +132,7 @@ class CheckConfig:
 
     def test_from_json_file(self):
         file = write_tmp_file(json.dumps(self.get_input_dict()))
-        conf = config.Config.from_env({'IPATEST_JSON_CONFIG': file.name})
+        conf = config.Config.from_env({"IPATEST_JSON_CONFIG": file.name})
         assert_deepequal(self.get_output_dict(), conf.to_dict())
         self.check_config(conf)
 
@@ -153,14 +153,15 @@ class TestEmptyConfig(CheckConfig):
 class TestMinimalConfig(CheckConfig):
     extra_input_dict = dict(
         domains=[
-            dict(name='ipadomain.test', type='IPA', hosts=[
-                dict(name='master', ip='192.0.2.1', host_type=None),
-            ]),
+            dict(
+                name="ipadomain.test",
+                type="IPA",
+                hosts=[dict(name="master", ip="192.0.2.1", host_type=None),],
+            ),
         ],
     )
     extra_input_env = dict(
-        MASTER='master.ipadomain.test',
-        BEAKERMASTER1_IP_env1='192.0.2.1',
+        MASTER="master.ipadomain.test", BEAKERMASTER1_IP_env1="192.0.2.1",
     )
     extra_output_dict = dict(
         domains=[
@@ -169,7 +170,7 @@ class TestMinimalConfig(CheckConfig):
                 name="ipadomain.test",
                 hosts=[
                     dict(
-                        name='master.ipadomain.test',
+                        name="master.ipadomain.test",
                         ip="192.0.2.1",
                         external_hostname="master.ipadomain.test",
                         role="master",
@@ -196,89 +197,130 @@ class TestMinimalConfig(CheckConfig):
 
     def check_config(self, conf):
         assert len(conf.domains) == 1
-        assert conf.domains[0].name == 'ipadomain.test'
-        assert conf.domains[0].type == 'IPA'
+        assert conf.domains[0].name == "ipadomain.test"
+        assert conf.domains[0].type == "IPA"
         assert len(conf.domains[0].hosts) == 1
 
         master = conf.domains[0].master
         assert master == conf.domains[0].hosts[0]
-        assert master.hostname == 'master.ipadomain.test'
-        assert master.role == 'master'
+        assert master.hostname == "master.ipadomain.test"
+        assert master.role == "master"
 
         assert conf.domains[0].replicas == []
         assert conf.domains[0].clients == []
-        assert conf.domains[0].hosts_by_role('replica') == []
-        assert conf.domains[0].host_by_role('master') == master
+        assert conf.domains[0].hosts_by_role("replica") == []
+        assert conf.domains[0].host_by_role("master") == master
 
 
 class TestComplexConfig(CheckConfig):
     extra_input_dict = dict(
         domains=[
-            dict(name='ipadomain.test', type='IPA', hosts=[
-                dict(name='master', ip='192.0.2.1', role='master',
-                     host_type=None),
-                dict(name='replica1', ip='192.0.2.2', role='replica',
-                     host_type=None),
-                dict(name='replica2', ip='192.0.2.3', role='replica',
-                     external_hostname='r2.ipadomain.test', host_type=None),
-                dict(name='client1', ip='192.0.2.4', role='client',
-                     host_type=None),
-                dict(name='client2', ip='192.0.2.5', role='client',
-                     external_hostname='c2.ipadomain.test', host_type=None),
-                dict(name='extra', ip='192.0.2.6', role='extrarole',
-                     host_type=None),
-                dict(name='extram1', ip='192.0.2.7', role='extrarolem',
-                     host_type=None),
-                dict(name='extram2', ip='192.0.2.8', role='extrarolem',
-                     external_hostname='e2.ipadomain.test', host_type=None),
-            ]),
-            dict(name='addomain.test', type='AD', hosts=[
-                dict(name='ad', ip='192.0.2.33', role='ad', host_type=None),
-            ]),
-            dict(name='ipadomain2.test', type='IPA', hosts=[
-                dict(name='master.ipadomain2.test', ip='192.0.2.65',
-                     host_type=None),
-            ]),
-            dict(name='adsubdomain.test', type='AD_SUBDOMAIN', hosts=[
-                dict(name='child_ad', ip='192.0.2.77', role='ad_subdomain',
-                     host_type=None),
-            ]),
-            dict(name='adtreedomain.test', type='AD_TREEDOMAIN', hosts=[
-                dict(name='tree_ad', ip='192.0.2.88', role='ad_treedomain',
-                     host_type=None),
-            ]),
-
+            dict(
+                name="ipadomain.test",
+                type="IPA",
+                hosts=[
+                    dict(name="master", ip="192.0.2.1", role="master", host_type=None),
+                    dict(
+                        name="replica1", ip="192.0.2.2", role="replica", host_type=None
+                    ),
+                    dict(
+                        name="replica2",
+                        ip="192.0.2.3",
+                        role="replica",
+                        external_hostname="r2.ipadomain.test",
+                        host_type=None,
+                    ),
+                    dict(name="client1", ip="192.0.2.4", role="client", host_type=None),
+                    dict(
+                        name="client2",
+                        ip="192.0.2.5",
+                        role="client",
+                        external_hostname="c2.ipadomain.test",
+                        host_type=None,
+                    ),
+                    dict(
+                        name="extra", ip="192.0.2.6", role="extrarole", host_type=None
+                    ),
+                    dict(
+                        name="extram1",
+                        ip="192.0.2.7",
+                        role="extrarolem",
+                        host_type=None,
+                    ),
+                    dict(
+                        name="extram2",
+                        ip="192.0.2.8",
+                        role="extrarolem",
+                        external_hostname="e2.ipadomain.test",
+                        host_type=None,
+                    ),
+                ],
+            ),
+            dict(
+                name="addomain.test",
+                type="AD",
+                hosts=[dict(name="ad", ip="192.0.2.33", role="ad", host_type=None),],
+            ),
+            dict(
+                name="ipadomain2.test",
+                type="IPA",
+                hosts=[
+                    dict(
+                        name="master.ipadomain2.test", ip="192.0.2.65", host_type=None
+                    ),
+                ],
+            ),
+            dict(
+                name="adsubdomain.test",
+                type="AD_SUBDOMAIN",
+                hosts=[
+                    dict(
+                        name="child_ad",
+                        ip="192.0.2.77",
+                        role="ad_subdomain",
+                        host_type=None,
+                    ),
+                ],
+            ),
+            dict(
+                name="adtreedomain.test",
+                type="AD_TREEDOMAIN",
+                hosts=[
+                    dict(
+                        name="tree_ad",
+                        ip="192.0.2.88",
+                        role="ad_treedomain",
+                        host_type=None,
+                    ),
+                ],
+            ),
         ],
     )
     extra_input_env = dict(
-        MASTER='master.ipadomain.test',
-        BEAKERMASTER1_IP_env1='192.0.2.1',
-        REPLICA='replica1.ipadomain.test replica2.ipadomain.test',
-        BEAKERREPLICA1_IP_env1='192.0.2.2',
-        BEAKERREPLICA2_IP_env1='192.0.2.3',
-        BEAKERREPLICA2_env1='r2.ipadomain.test',
-        CLIENT='client1.ipadomain.test client2.ipadomain.test',
-        BEAKERCLIENT1_IP_env1='192.0.2.4',
-        BEAKERCLIENT2_IP_env1='192.0.2.5',
-        BEAKERCLIENT2_env1='c2.ipadomain.test',
-        TESTHOST_EXTRAROLE_env1='extra.ipadomain.test',
-        BEAKEREXTRAROLE1_IP_env1='192.0.2.6',
-        TESTHOST_EXTRAROLEM_env1='extram1.ipadomain.test extram2.ipadomain.test',
-        BEAKEREXTRAROLEM1_IP_env1='192.0.2.7',
-        BEAKEREXTRAROLEM2_IP_env1='192.0.2.8',
-        BEAKEREXTRAROLEM2_env1='e2.ipadomain.test',
-
-        AD_env2='ad.addomain.test',
-        BEAKERAD1_IP_env2='192.0.2.33',
-
-        MASTER_env3='master.ipadomain2.test',
-        BEAKERMASTER1_IP_env3='192.0.2.65',
-
-        AD_SUBDOMAIN_env4='child_ad.adsubdomain.test',
-        BEAKERAD_SUBDOMAIN1_IP_env4='192.0.2.77',
-
-        AD_TREEDOMAIN_env5='tree_ad.adtreedomain.test',
-        BEAKERAD_TREEDOMAIN1_IP_env5='192.0.2.88',
+        MASTER="master.ipadomain.test",
+        BEAKERMASTER1_IP_env1="192.0.2.1",
+        REPLICA="replica1.ipadomain.test replica2.ipadomain.test",
+        BEAKERREPLICA1_IP_env1="192.0.2.2",
+        BEAKERREPLICA2_IP_env1="192.0.2.3",
+        BEAKERREPLICA2_env1="r2.ipadomain.test",
+        CLIENT="client1.ipadomain.test client2.ipadomain.test",
+        BEAKERCLIENT1_IP_env1="192.0.2.4",
+        BEAKERCLIENT2_IP_env1="192.0.2.5",
+        BEAKERCLIENT2_env1="c2.ipadomain.test",
+        TESTHOST_EXTRAROLE_env1="extra.ipadomain.test",
+        BEAKEREXTRAROLE1_IP_env1="192.0.2.6",
+        TESTHOST_EXTRAROLEM_env1="extram1.ipadomain.test extram2.ipadomain.test",
+        BEAKEREXTRAROLEM1_IP_env1="192.0.2.7",
+        BEAKEREXTRAROLEM2_IP_env1="192.0.2.8",
+        BEAKEREXTRAROLEM2_env1="e2.ipadomain.test",
+        AD_env2="ad.addomain.test",
+        BEAKERAD1_IP_env2="192.0.2.33",
+        MASTER_env3="master.ipadomain2.test",
+        BEAKERMASTER1_IP_env3="192.0.2.65",
+        AD_SUBDOMAIN_env4="child_ad.adsubdomain.test",
+        BEAKERAD_SUBDOMAIN1_IP_env4="192.0.2.77",
+        AD_TREEDOMAIN_env5="tree_ad.adtreedomain.test",
+        BEAKERAD_TREEDOMAIN1_IP_env5="192.0.2.88",
     )
     extra_output_dict = dict(
         domains=[
@@ -287,56 +329,56 @@ class TestComplexConfig(CheckConfig):
                 name="ipadomain.test",
                 hosts=[
                     dict(
-                        name='master.ipadomain.test',
+                        name="master.ipadomain.test",
                         ip="192.0.2.1",
                         external_hostname="master.ipadomain.test",
                         role="master",
                         host_type=None,
                     ),
                     dict(
-                        name='replica1.ipadomain.test',
+                        name="replica1.ipadomain.test",
                         ip="192.0.2.2",
                         external_hostname="replica1.ipadomain.test",
                         role="replica",
                         host_type=None,
                     ),
                     dict(
-                        name='replica2.ipadomain.test',
+                        name="replica2.ipadomain.test",
                         ip="192.0.2.3",
                         external_hostname="r2.ipadomain.test",
                         role="replica",
                         host_type=None,
                     ),
                     dict(
-                        name='client1.ipadomain.test',
+                        name="client1.ipadomain.test",
                         ip="192.0.2.4",
                         external_hostname="client1.ipadomain.test",
                         role="client",
                         host_type=None,
                     ),
                     dict(
-                        name='client2.ipadomain.test',
+                        name="client2.ipadomain.test",
                         ip="192.0.2.5",
                         external_hostname="c2.ipadomain.test",
                         role="client",
                         host_type=None,
                     ),
                     dict(
-                        name='extra.ipadomain.test',
+                        name="extra.ipadomain.test",
                         ip="192.0.2.6",
                         external_hostname="extra.ipadomain.test",
                         role="extrarole",
                         host_type=None,
                     ),
                     dict(
-                        name='extram1.ipadomain.test',
+                        name="extram1.ipadomain.test",
                         ip="192.0.2.7",
                         external_hostname="extram1.ipadomain.test",
                         role="extrarolem",
                         host_type=None,
                     ),
                     dict(
-                        name='extram2.ipadomain.test',
+                        name="extram2.ipadomain.test",
                         ip="192.0.2.8",
                         external_hostname="e2.ipadomain.test",
                         role="extrarolem",
@@ -349,7 +391,7 @@ class TestComplexConfig(CheckConfig):
                 name="addomain.test",
                 hosts=[
                     dict(
-                        name='ad.addomain.test',
+                        name="ad.addomain.test",
                         ip="192.0.2.33",
                         external_hostname="ad.addomain.test",
                         role="ad",
@@ -362,7 +404,7 @@ class TestComplexConfig(CheckConfig):
                 name="ipadomain2.test",
                 hosts=[
                     dict(
-                        name='master.ipadomain2.test',
+                        name="master.ipadomain2.test",
                         ip="192.0.2.65",
                         external_hostname="master.ipadomain2.test",
                         role="master",
@@ -375,7 +417,7 @@ class TestComplexConfig(CheckConfig):
                 name="adsubdomain.test",
                 hosts=[
                     dict(
-                        name='child_ad.adsubdomain.test',
+                        name="child_ad.adsubdomain.test",
                         ip="192.0.2.77",
                         external_hostname="child_ad.adsubdomain.test",
                         role="ad_subdomain",
@@ -388,7 +430,7 @@ class TestComplexConfig(CheckConfig):
                 name="adtreedomain.test",
                 hosts=[
                     dict(
-                        name='tree_ad.adtreedomain.test',
+                        name="tree_ad.adtreedomain.test",
                         ip="192.0.2.88",
                         external_hostname="tree_ad.adtreedomain.test",
                         role="ad_treedomain",
@@ -396,7 +438,6 @@ class TestComplexConfig(CheckConfig):
                     ),
                 ],
             ),
-
         ],
     )
     extra_output_env = extend_dict(
@@ -404,7 +445,6 @@ class TestComplexConfig(CheckConfig):
         DOMAIN_env1="ipadomain.test",
         RELM_env1="IPADOMAIN.TEST",
         BASEDN_env1="dc=ipadomain,dc=test",
-
         MASTER_env1="master.ipadomain.test",
         BEAKERMASTER_env1="master.ipadomain.test",
         BEAKERMASTER_IP_env1="192.0.2.1",
@@ -414,7 +454,6 @@ class TestComplexConfig(CheckConfig):
         MASTER1_env1="master.ipadomain.test",
         BEAKERMASTER1_env1="master.ipadomain.test",
         BEAKERMASTER1_IP_env1="192.0.2.1",
-
         REPLICA_env1="replica1.ipadomain.test replica2.ipadomain.test",
         BEAKERREPLICA_env1="replica1.ipadomain.test r2.ipadomain.test",
         BEAKERREPLICA_IP_env1="192.0.2.2 192.0.2.3",
@@ -428,11 +467,10 @@ class TestComplexConfig(CheckConfig):
         SLAVE="replica1.ipadomain.test replica2.ipadomain.test",
         BEAKERSLAVE="replica1.ipadomain.test r2.ipadomain.test",
         SLAVEIP="192.0.2.2 192.0.2.3",
-
         CLIENT_env1="client1.ipadomain.test client2.ipadomain.test",
         BEAKERCLIENT_env1="client1.ipadomain.test c2.ipadomain.test",
-        BEAKERCLIENT='client1.ipadomain.test',
-        BEAKERCLIENT2='c2.ipadomain.test',
+        BEAKERCLIENT="client1.ipadomain.test",
+        BEAKERCLIENT2="c2.ipadomain.test",
         BEAKERCLIENT_IP_env1="192.0.2.4 192.0.2.5",
         CLIENT="client1.ipadomain.test",
         CLIENT2="client2.ipadomain.test",
@@ -442,14 +480,12 @@ class TestComplexConfig(CheckConfig):
         CLIENT2_env1="client2.ipadomain.test",
         BEAKERCLIENT2_env1="c2.ipadomain.test",
         BEAKERCLIENT2_IP_env1="192.0.2.5",
-
         TESTHOST_EXTRAROLE_env1="extra.ipadomain.test",
         BEAKEREXTRAROLE_env1="extra.ipadomain.test",
         BEAKEREXTRAROLE_IP_env1="192.0.2.6",
         TESTHOST_EXTRAROLE1_env1="extra.ipadomain.test",
         BEAKEREXTRAROLE1_env1="extra.ipadomain.test",
         BEAKEREXTRAROLE1_IP_env1="192.0.2.6",
-
         TESTHOST_EXTRAROLEM_env1="extram1.ipadomain.test extram2.ipadomain.test",
         BEAKEREXTRAROLEM_env1="extram1.ipadomain.test e2.ipadomain.test",
         BEAKEREXTRAROLEM_IP_env1="192.0.2.7 192.0.2.8",
@@ -459,7 +495,6 @@ class TestComplexConfig(CheckConfig):
         TESTHOST_EXTRAROLEM2_env1="extram2.ipadomain.test",
         BEAKEREXTRAROLEM2_env1="e2.ipadomain.test",
         BEAKEREXTRAROLEM2_IP_env1="192.0.2.8",
-
         DOMAIN_env2="addomain.test",
         RELM_env2="ADDOMAIN.TEST",
         BASEDN_env2="dc=addomain,dc=test",
@@ -469,7 +504,6 @@ class TestComplexConfig(CheckConfig):
         AD1_env2="ad.addomain.test",
         BEAKERAD1_env2="ad.addomain.test",
         BEAKERAD1_IP_env2="192.0.2.33",
-
         DOMAIN_env3="ipadomain2.test",
         RELM_env3="IPADOMAIN2.TEST",
         BASEDN_env3="dc=ipadomain2,dc=test",
@@ -479,62 +513,73 @@ class TestComplexConfig(CheckConfig):
         MASTER1_env3="master.ipadomain2.test",
         BEAKERMASTER1_env3="master.ipadomain2.test",
         BEAKERMASTER1_IP_env3="192.0.2.65",
-
         DOMAIN_env4="adsubdomain.test",
         RELM_env4="ADSUBDOMAIN.TEST",
-        AD_SUBDOMAIN_env4='child_ad.adsubdomain.test',
-        AD_SUBDOMAIN1_env4='child_ad.adsubdomain.test',
-        BEAKERAD_SUBDOMAIN1_IP_env4='192.0.2.77',
-        BEAKERAD_SUBDOMAIN1_env4='child_ad.adsubdomain.test',
-        BEAKERAD_SUBDOMAIN_IP_env4='192.0.2.77',
-        BEAKERAD_SUBDOMAIN_env4='child_ad.adsubdomain.test',
-        BASEDN_env4='dc=adsubdomain,dc=test',
-
+        AD_SUBDOMAIN_env4="child_ad.adsubdomain.test",
+        AD_SUBDOMAIN1_env4="child_ad.adsubdomain.test",
+        BEAKERAD_SUBDOMAIN1_IP_env4="192.0.2.77",
+        BEAKERAD_SUBDOMAIN1_env4="child_ad.adsubdomain.test",
+        BEAKERAD_SUBDOMAIN_IP_env4="192.0.2.77",
+        BEAKERAD_SUBDOMAIN_env4="child_ad.adsubdomain.test",
+        BASEDN_env4="dc=adsubdomain,dc=test",
         DOMAIN_env5="adtreedomain.test",
         RELM_env5="ADTREEDOMAIN.TEST",
-        AD_TREEDOMAIN_env5='tree_ad.adtreedomain.test',
-        AD_TREEDOMAIN1_env5='tree_ad.adtreedomain.test',
-        BEAKERAD_TREEDOMAIN1_IP_env5='192.0.2.88',
-        BEAKERAD_TREEDOMAIN1_env5='tree_ad.adtreedomain.test',
-        BEAKERAD_TREEDOMAIN_IP_env5='192.0.2.88',
-        BEAKERAD_TREEDOMAIN_env5='tree_ad.adtreedomain.test',
-        BASEDN_env5='dc=adtreedomain,dc=test',
+        AD_TREEDOMAIN_env5="tree_ad.adtreedomain.test",
+        AD_TREEDOMAIN1_env5="tree_ad.adtreedomain.test",
+        BEAKERAD_TREEDOMAIN1_IP_env5="192.0.2.88",
+        BEAKERAD_TREEDOMAIN1_env5="tree_ad.adtreedomain.test",
+        BEAKERAD_TREEDOMAIN_IP_env5="192.0.2.88",
+        BEAKERAD_TREEDOMAIN_env5="tree_ad.adtreedomain.test",
+        BASEDN_env5="dc=adtreedomain,dc=test",
     )
 
     def check_config(self, conf):
         assert len(conf.domains) == 5
         main_dom = conf.domains[0]
-        (client1, client2, extra, extram1, extram2, _master,
-         replica1, replica2) = sorted(main_dom.hosts, key=lambda h: h.role)
-        assert main_dom.name == 'ipadomain.test'
-        assert main_dom.type == 'IPA'
+        (
+            client1,
+            client2,
+            extra,
+            extram1,
+            extram2,
+            _master,
+            replica1,
+            replica2,
+        ) = sorted(main_dom.hosts, key=lambda h: h.role)
+        assert main_dom.name == "ipadomain.test"
+        assert main_dom.type == "IPA"
 
-        assert sorted(main_dom.roles) == ['client', 'extrarole', 'extrarolem',
-                                          'master', 'replica']
-        assert main_dom.static_roles == ('master', 'replica', 'client', 'other')
-        assert sorted(main_dom.extra_roles) == ['extrarole', 'extrarolem']
+        assert sorted(main_dom.roles) == [
+            "client",
+            "extrarole",
+            "extrarolem",
+            "master",
+            "replica",
+        ]
+        assert main_dom.static_roles == ("master", "replica", "client", "other")
+        assert sorted(main_dom.extra_roles) == ["extrarole", "extrarolem"]
 
         assert main_dom.replicas == [replica1, replica2]
         assert main_dom.clients == [client1, client2]
-        assert main_dom.hosts_by_role('replica') == [replica1, replica2]
-        assert main_dom.hosts_by_role('extrarolem') == [extram1, extram2]
-        assert main_dom.host_by_role('extrarole') == extra
+        assert main_dom.hosts_by_role("replica") == [replica1, replica2]
+        assert main_dom.hosts_by_role("extrarolem") == [extram1, extram2]
+        assert main_dom.host_by_role("extrarole") == extra
 
-        assert extra.ip == '192.0.2.6'
-        assert extram2.hostname == 'extram2.ipadomain.test'
-        assert extram2.external_hostname == 'e2.ipadomain.test'
+        assert extra.ip == "192.0.2.6"
+        assert extram2.hostname == "extram2.ipadomain.test"
+        assert extram2.external_hostname == "e2.ipadomain.test"
 
         ad_dom = conf.domains[1]
-        assert ad_dom.roles == ['ad']
-        assert ad_dom.static_roles == ('ad',)
+        assert ad_dom.roles == ["ad"]
+        assert ad_dom.static_roles == ("ad",)
         assert ad_dom.extra_roles == []
 
         ad_sub_domain = conf.domains[3]
-        assert ad_sub_domain.roles == ['ad_subdomain']
-        assert ad_sub_domain.static_roles == ('ad_subdomain',)
+        assert ad_sub_domain.roles == ["ad_subdomain"]
+        assert ad_sub_domain.static_roles == ("ad_subdomain",)
         assert ad_sub_domain.extra_roles == []
 
         ad_tree_domain = conf.domains[4]
-        assert ad_tree_domain.roles == ['ad_treedomain']
-        assert ad_tree_domain.static_roles == ('ad_treedomain',)
+        assert ad_tree_domain.roles == ["ad_treedomain"]
+        assert ad_tree_domain.static_roles == ("ad_treedomain",)
         assert ad_tree_domain.extra_roles == []

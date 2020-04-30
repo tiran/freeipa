@@ -26,41 +26,42 @@ from ipalib import api, errors
 from ipapython.dn import DN
 from ipapython.ipaldap import ldap_initialize
 
-testuser = u'tuser'
-old_password = u'old_password'
-new_password = u'new_password'
+testuser = u"tuser"
+old_password = u"old_password"
+new_password = u"new_password"
 
 
 @pytest.mark.tier1
 class test_changepw(XMLRPC_test, Unauthorized_HTTP_test):
-    app_uri = '/ipa/session/change_password'
+    app_uri = "/ipa/session/change_password"
 
     @pytest.fixture(autouse=True)
     def changepw_setup(self, request):
         try:
-            api.Command['user_add'](uid=testuser, givenname=u'Test', sn=u'User')
-            api.Command['passwd'](testuser, password=u'old_password')
+            api.Command["user_add"](uid=testuser, givenname=u"Test", sn=u"User")
+            api.Command["passwd"](testuser, password=u"old_password")
         except errors.ExecutionError as e:
-            pytest.skip(
-                'Cannot set up test user: %s' % e
-            )
+            pytest.skip("Cannot set up test user: %s" % e)
 
         def fin():
             try:
-                api.Command['user_del']([testuser])
+                api.Command["user_del"]([testuser])
             except errors.NotFound:
                 pass
 
         request.addfinalizer(fin)
 
     def _changepw(self, user, old_password, new_password):
-        return self.send_request(params={'user': str(user),
-                                  'old_password' : str(old_password),
-                                  'new_password' : str(new_password)},
-                                 )
+        return self.send_request(
+            params={
+                "user": str(user),
+                "old_password": str(old_password),
+                "new_password": str(new_password),
+            },
+        )
 
     def _checkpw(self, user, password):
-        dn = str(DN(('uid', user), api.env.container_user, api.env.basedn))
+        dn = str(DN(("uid", user), api.env.container_user, api.env.basedn))
         conn = ldap_initialize(api.env.ldap_uri)
         try:
             conn.simple_bind_s(dn, password)
@@ -68,34 +69,34 @@ class test_changepw(XMLRPC_test, Unauthorized_HTTP_test):
             conn.unbind_s()
 
     def test_bad_options(self):
-        for params in (None,                    # no params
-                      {'user': 'foo'},          # missing options
-                      {'user': 'foo',
-                       'old_password' : 'old'}, # missing option
-                      {'user': 'foo',
-                       'old_password' : 'old',
-                       'new_password' : ''},    # empty option
-                      ):
+        for params in (
+            None,  # no params
+            {"user": "foo"},  # missing options
+            {"user": "foo", "old_password": "old"},  # missing option
+            {"user": "foo", "old_password": "old", "new_password": ""},  # empty option
+        ):
             response = self.send_request(params=params)
             assert_equal(response.status, 400)
-            assert_equal(response.reason, 'Bad Request')
+            assert_equal(response.reason, "Bad Request")
 
     def test_invalid_auth(self):
-        response = self._changepw(testuser, 'wrongpassword', 'new_password')
+        response = self._changepw(testuser, "wrongpassword", "new_password")
 
         assert_equal(response.status, 200)
-        assert_equal(response.getheader('X-IPA-Pwchange-Result'), 'invalid-password')
+        assert_equal(response.getheader("X-IPA-Pwchange-Result"), "invalid-password")
 
         # make sure that password is NOT changed
         self._checkpw(testuser, old_password)
 
     def test_pwpolicy_error(self):
-        response = self._changepw(testuser, old_password, '1')
+        response = self._changepw(testuser, old_password, "1")
 
         assert_equal(response.status, 200)
-        assert_equal(response.getheader('X-IPA-Pwchange-Result'), 'policy-error')
-        assert_equal(response.getheader('X-IPA-Pwchange-Policy-Error'),
-                     'Constraint violation: Password is too short')
+        assert_equal(response.getheader("X-IPA-Pwchange-Result"), "policy-error")
+        assert_equal(
+            response.getheader("X-IPA-Pwchange-Policy-Error"),
+            "Constraint violation: Password is too short",
+        )
 
         # make sure that password is NOT changed
         self._checkpw(testuser, old_password)
@@ -104,7 +105,7 @@ class test_changepw(XMLRPC_test, Unauthorized_HTTP_test):
         response = self._changepw(testuser, old_password, new_password)
 
         assert_equal(response.status, 200)
-        assert_equal(response.getheader('X-IPA-Pwchange-Result'), 'ok')
+        assert_equal(response.getheader("X-IPA-Pwchange-Result"), "ok")
 
         # make sure that password IS changed
         self._checkpw(testuser, new_password)

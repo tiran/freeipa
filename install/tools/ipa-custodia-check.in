@@ -46,46 +46,34 @@ else:
 
 
 KEYS = [
-    'dm/DMHash',
-    'ra/ipaCert',
-    'ca/auditSigningCert cert-pki-ca',
-    'ca/caSigningCert cert-pki-ca',
-    'ca/ocspSigningCert cert-pki-ca',
-    'ca/subsystemCert cert-pki-ca',
+    "dm/DMHash",
+    "ra/ipaCert",
+    "ca/auditSigningCert cert-pki-ca",
+    "ca/caSigningCert cert-pki-ca",
+    "ca/ocspSigningCert cert-pki-ca",
+    "ca/subsystemCert cert-pki-ca",
 ]
 
-IPA_CUSTODIA_KEYFILE = os.path.join(paths.IPA_CUSTODIA_CONF_DIR,
-                                    'server.keys')
+IPA_CUSTODIA_KEYFILE = os.path.join(paths.IPA_CUSTODIA_CONF_DIR, "server.keys")
 
 
-logger = logging.getLogger('ipa-custodia-tester')
+logger = logging.getLogger("ipa-custodia-tester")
 
 
-parser = argparse.ArgumentParser(
-    "IPA Custodia check",
-)
+parser = argparse.ArgumentParser("IPA Custodia check",)
 # --store is dangerous and therefore hidden! Don't use it unless you really
 # know what you are doing! Keep in mind that it might destroy your NSSDB
 # unless it uses sqlite format.
 parser.add_argument(
-    "--store", action='store_true', dest='store',
-    help=argparse.SUPPRESS
+    "--store", action="store_true", dest="store", help=argparse.SUPPRESS
+)
+parser.add_argument("--debug", action="store_true", help="Debug mode")
+parser.add_argument("--verbose", action="store_true", help="Verbose mode")
+parser.add_argument(
+    "server", help="FQDN of a IPA server (can be own FQDN for self-test)"
 )
 parser.add_argument(
-    "--debug", action='store_true',
-    help="Debug mode"
-)
-parser.add_argument(
-    "--verbose", action='store_true',
-    help='Verbose mode'
-)
-parser.add_argument(
-    "server",
-    help="FQDN of a IPA server (can be own FQDN for self-test)"
-)
-parser.add_argument(
-    'keys', nargs='*', default=KEYS,
-    help="Remote key ({})".format(', '.join(KEYS))
+    "keys", nargs="*", default=KEYS, help="Remote key ({})".format(", ".join(KEYS))
 )
 
 
@@ -94,20 +82,20 @@ class IPACustodiaTester:
         paths.IPA_DEFAULT_CONF,
         paths.KRB5_KEYTAB,
         paths.IPA_CUSTODIA_CONF,
-        IPA_CUSTODIA_KEYFILE
+        IPA_CUSTODIA_KEYFILE,
     ]
 
     def __init__(self, parser, args):
         self.parser = parser
         self.args = args
-        if not api.isdone('bootstrap'):
+        if not api.isdone("bootstrap"):
             # bootstrap to initialize api.env
             api.bootstrap(log=None)
             self.debug("IPA API bootstrapped")
         self.realm = api.env.realm
         self.host = api.env.host
-        self.host_spn = 'host/{}@{}'.format(self.host, self.realm)
-        self.server_spn = 'host/{}@{}'.format(self.args.server, self.realm)
+        self.host_spn = "host/{}@{}".format(self.host, self.realm)
+        self.server_spn = "host/{}@{}".format(self.args.server, self.realm)
         self.client = None
         self._errors = []
 
@@ -142,12 +130,8 @@ class IPACustodiaTester:
 
     def status(self):
         self.info("Platform: {}".format(platform.platform()))
-        self.info("IPA version: {}".format(
-            ipapython.version.VERSION
-        ))
-        self.info("IPA vendor version: {}".format(
-            ipapython.version.VENDOR_VERSION
-        ))
+        self.info("IPA version: {}".format(ipapython.version.VERSION))
+        self.info("IPA vendor version: {}".format(ipapython.version.VENDOR_VERSION))
         self.info("Realm: {}".format(self.realm))
         self.info("Host: {}".format(self.host))
         self.info("Remote server: {}".format(self.args.server))
@@ -157,9 +141,7 @@ class IPACustodiaTester:
     def check_fqdn(self):
         fqdn = socket.getfqdn()
         if self.host != fqdn:
-            self.warning(
-                "socket.getfqdn() reports hostname '{}'".format(fqdn)
-            )
+            self.warning("socket.getfqdn() reports hostname '{}'".format(fqdn))
 
     def check_files(self):
         for filename in self.files:
@@ -172,7 +154,7 @@ class IPACustodiaTester:
         try:
             self.client = CustodiaClient(
                 server=self.args.server,
-                client_service='host@{}'.format(self.host),
+                client_service="host@{}".format(self.host),
                 keyfile=IPA_CUSTODIA_KEYFILE,
                 keytab=paths.KRB5_KEYTAB,
                 realm=self.realm,
@@ -191,25 +173,26 @@ class IPACustodiaTester:
             pkey = JWK(**dictkeys[usage_id])
             local_pubkey = json_decode(pkey.export_public())
         except Exception:
-            raise self.error(
-                "Failed to load and parse local JWK.", fatal=True
-            )
+            raise self.error("Failed to load and parse local JWK.", fatal=True)
         else:
-            self.info("Loaded key for usage '{}' from '{}'.".format(
-                usage, IPA_CUSTODIA_KEYFILE
-            ))
+            self.info(
+                "Loaded key for usage '{}' from '{}'.".format(
+                    usage, IPA_CUSTODIA_KEYFILE
+                )
+            )
 
         if pkey.key_id != self.host_spn:
             raise self.error(
                 "KID '{}' != host service principal name '{}' "
                 "(usage: {})".format(pkey.key_id, self.host_spn, usage),
-                fatal=True
+                fatal=True,
             )
         else:
             self.info(
                 "JWK KID matches host's service principal name '{}'.".format(
                     self.host_spn
-                ))
+                )
+            )
 
         # LDAP doesn't contain KID
         local_pubkey.pop("kid", None)
@@ -219,38 +202,37 @@ class IPACustodiaTester:
         except Exception:
             raise self.error(
                 "Fetching host keys {} (usage: {}) failed.".format(
-                    self.host_spn, usage),
-                fatal=True
+                    self.host_spn, usage
+                ),
+                fatal=True,
             )
         else:
-            self.info("Checked host LDAP keys '{}' for usage {}.".format(
-                self.host_spn, usage
-            ))
+            self.info(
+                "Checked host LDAP keys '{}' for usage {}.".format(self.host_spn, usage)
+            )
 
         if host_pubkey != local_pubkey:
             self.debug("LDAP: '{}'".format(host_pubkey))
             self.debug("Local: '{}'".format(local_pubkey))
-            raise self.error(
-                "Host key in LDAP does not match local key.",
-                fatal=True
-            )
+            raise self.error("Host key in LDAP does not match local key.", fatal=True)
         else:
-            self.info(
-                "Local key for usage '{}' matches key in LDAP.".format(usage)
-            )
+            self.info("Local key for usage '{}' matches key in LDAP.".format(usage))
 
         try:
             server_pubkey = json_decode(find_key(self.server_spn, usage_id))
         except Exception:
             raise self.error(
                 "Fetching server keys {} (usage: {}) failed.".format(
-                    self.server_spn, usage),
-                fatal=True
+                    self.server_spn, usage
+                ),
+                fatal=True,
             )
         else:
-            self.info("Checked server LDAP keys '{}' for usage {}.".format(
-                self.server_spn, usage
-            ))
+            self.info(
+                "Checked server LDAP keys '{}' for usage {}.".format(
+                    self.server_spn, usage
+                )
+            )
 
         return local_pubkey, host_pubkey, server_pubkey
 
@@ -263,9 +245,7 @@ class IPACustodiaTester:
             try:
                 result = self.client.fetch_key(key, store=self.args.store)
             except Exception as e:
-                self.error("Failed to retrieve key '{}': {}.".format(
-                    key, e
-                ))
+                self.error("Failed to retrieve key '{}': {}.".format(key, e))
             else:
                 self.info("Successfully retrieved '{}'.".format(key))
                 if not self.args.store:
@@ -279,8 +259,8 @@ def main():
 
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
-        format='[%(asctime)s %(name)s] <%(levelname)s>: %(message)s',
-        datefmt='%Y-%m-%dT%H:%M:%S',
+        format="[%(asctime)s %(name)s] <%(levelname)s>: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
     )
     if not is_ipa_configured():
         parser.error("IPA is not configured on this system.\n")
@@ -292,5 +272,5 @@ def main():
     tester.exit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

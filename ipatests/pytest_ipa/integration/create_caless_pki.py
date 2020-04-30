@@ -44,56 +44,42 @@ client = None
 password = None
 cert_dir = None
 
-CertInfo = collections.namedtuple('CertInfo', 'nick key cert counter')
+CertInfo = collections.namedtuple("CertInfo", "nick key cert counter")
 
 
 class PrincipalName(univ.Sequence):
-    '''See RFC 4120 for details'''
+    """See RFC 4120 for details"""
+
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
-            'name-type',
+            "name-type",
             univ.Integer().subtype(
-                explicitTag=tag.Tag(
-                    tag.tagClassContext,
-                    tag.tagFormatSimple,
-                    0,
-                ),
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0,),
             ),
         ),
         namedtype.NamedType(
-            'name-string',
+            "name-string",
             univ.SequenceOf(char.GeneralString()).subtype(
-                explicitTag=tag.Tag(
-                    tag.tagClassContext,
-                    tag.tagFormatSimple,
-                    1,
-                ),
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1,),
             ),
         ),
     )
 
 
 class KRB5PrincipalName(univ.Sequence):
-    '''See RFC 4556 for details'''
+    """See RFC 4556 for details"""
+
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
-            'realm',
+            "realm",
             char.GeneralString().subtype(
-                explicitTag=tag.Tag(
-                    tag.tagClassContext,
-                    tag.tagFormatSimple,
-                    0,
-                ),
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0,),
             ),
         ),
         namedtype.NamedType(
-            'principalName',
+            "principalName",
             PrincipalName().subtype(
-                explicitTag=tag.Tag(
-                    tag.tagClassContext,
-                    tag.tagFormatSimple,
-                    1,
-                ),
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1,),
             ),
         ),
     )
@@ -105,7 +91,7 @@ def profile_ca(builder, ca_nick, ca):
     builder = builder.not_valid_before(now)
     builder = builder.not_valid_after(now + 10 * YEAR)
 
-    crl_uri = u'file://{}.crl'.format(os.path.join(cert_dir, ca_nick))
+    crl_uri = u"file://{}.crl".format(os.path.join(cert_dir, ca_nick))
 
     builder = builder.add_extension(
         x509.KeyUsage(
@@ -122,26 +108,26 @@ def profile_ca(builder, ca_nick, ca):
         critical=True,
     )
     builder = builder.add_extension(
-        x509.BasicConstraints(ca=True, path_length=None),
-        critical=True,
+        x509.BasicConstraints(ca=True, path_length=None), critical=True,
     )
     builder = builder.add_extension(
-        x509.CRLDistributionPoints([
+        x509.CRLDistributionPoints(
+            [
                 x509.DistributionPoint(
                     full_name=[x509.UniformResourceIdentifier(crl_uri)],
                     relative_name=None,
                     crl_issuer=None,
                     reasons=None,
                 ),
-        ]),
+            ]
+        ),
         critical=False,
     )
 
     public_key = builder._public_key
 
     builder = builder.add_extension(
-        x509.SubjectKeyIdentifier.from_public_key(public_key),
-        critical=False,
+        x509.SubjectKeyIdentifier.from_public_key(public_key), critical=False,
     )
     # here we get "ca" only for "ca1/subca" CA
     if not ca:
@@ -150,42 +136,47 @@ def profile_ca(builder, ca_nick, ca):
             critical=False,
         )
     else:
-        ski = ca.cert.extensions.get_extension_for_class(
-                    x509.SubjectKeyIdentifier)
+        ski = ca.cert.extensions.get_extension_for_class(x509.SubjectKeyIdentifier)
         builder = builder.add_extension(
-            x509.AuthorityKeyIdentifier
-            .from_issuer_subject_key_identifier(ski),
+            x509.AuthorityKeyIdentifier.from_issuer_subject_key_identifier(ski),
             critical=False,
         )
     return builder
 
 
-def profile_server(builder, ca_nick, ca,
-                   warp=datetime.timedelta(days=0), dns_name=None,
-                   badusage=False, wildcard=False):
+def profile_server(
+    builder,
+    ca_nick,
+    ca,
+    warp=datetime.timedelta(days=0),
+    dns_name=None,
+    badusage=False,
+    wildcard=False,
+):
     now = datetime.datetime.utcnow() + warp
 
     builder = builder.not_valid_before(now)
     builder = builder.not_valid_after(now + YEAR)
 
-    crl_uri = u'file://{}.crl'.format(os.path.join(cert_dir, ca_nick))
+    crl_uri = u"file://{}.crl".format(os.path.join(cert_dir, ca_nick))
 
     builder = builder.add_extension(
-        x509.CRLDistributionPoints([
+        x509.CRLDistributionPoints(
+            [
                 x509.DistributionPoint(
                     full_name=[x509.UniformResourceIdentifier(crl_uri)],
                     relative_name=None,
                     crl_issuer=None,
                     reasons=None,
                 ),
-        ]),
+            ]
+        ),
         critical=False,
     )
 
     if dns_name is not None:
         builder = builder.add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(dns_name)]),
-            critical=False,
+            x509.SubjectAlternativeName([x509.DNSName(dns_name)]), critical=False,
         )
 
     if badusage:
@@ -199,67 +190,62 @@ def profile_server(builder, ca_nick, ca,
                 key_cert_sign=False,
                 crl_sign=False,
                 encipher_only=False,
-                decipher_only=False
+                decipher_only=False,
             ),
-            critical=False
+            critical=False,
         )
 
     if wildcard:
-        names = [x509.DNSName(u'*.' + domain)]
-        server_split = server1.split('.', 1)
+        names = [x509.DNSName(u"*." + domain)]
+        server_split = server1.split(".", 1)
         if len(server_split) == 2 and domain != server_split[1]:
-            names.append(x509.DNSName(u'*.' + server_split[1]))
+            names.append(x509.DNSName(u"*." + server_split[1]))
         builder = builder.add_extension(
-            x509.SubjectAlternativeName(names),
-            critical=False,
+            x509.SubjectAlternativeName(names), critical=False,
         )
 
     return builder
 
 
-def profile_kdc(builder, ca_nick, ca,
-                warp=datetime.timedelta(days=0), dns_name=None,
-                badusage=False):
+def profile_kdc(
+    builder, ca_nick, ca, warp=datetime.timedelta(days=0), dns_name=None, badusage=False
+):
     now = datetime.datetime.utcnow() + warp
 
     builder = builder.not_valid_before(now)
     builder = builder.not_valid_after(now + YEAR)
 
-    crl_uri = u'file://{}.crl'.format(os.path.join(cert_dir, ca_nick))
+    crl_uri = u"file://{}.crl".format(os.path.join(cert_dir, ca_nick))
 
     builder = builder.add_extension(
-        x509.ExtendedKeyUsage([x509.ObjectIdentifier('1.3.6.1.5.2.3.5')]),
+        x509.ExtendedKeyUsage([x509.ObjectIdentifier("1.3.6.1.5.2.3.5")]),
         critical=False,
     )
 
     name = {
-        'realm': realm,
-        'principalName': {
-            'name-type': 2,
-            'name-string': ['krbtgt', realm],
-        },
+        "realm": realm,
+        "principalName": {"name-type": 2, "name-string": ["krbtgt", realm],},
     }
     name = native_decoder.decode(name, asn1Spec=KRB5PrincipalName())
     name = der_encoder.encode(name)
 
-    names = [x509.OtherName(x509.ObjectIdentifier('1.3.6.1.5.2.2'), name)]
+    names = [x509.OtherName(x509.ObjectIdentifier("1.3.6.1.5.2.2"), name)]
     if dns_name is not None:
         names += [x509.DNSName(dns_name)]
 
-    builder = builder.add_extension(
-        x509.SubjectAlternativeName(names),
-        critical=False,
-    )
+    builder = builder.add_extension(x509.SubjectAlternativeName(names), critical=False,)
 
     builder = builder.add_extension(
-        x509.CRLDistributionPoints([
+        x509.CRLDistributionPoints(
+            [
                 x509.DistributionPoint(
                     full_name=[x509.UniformResourceIdentifier(crl_uri)],
                     relative_name=None,
                     crl_issuer=None,
                     reasons=None,
                 ),
-        ]),
+            ]
+        ),
         critical=False,
     )
 
@@ -274,9 +260,9 @@ def profile_kdc(builder, ca_nick, ca,
                 key_cert_sign=False,
                 crl_sign=False,
                 encipher_only=False,
-                decipher_only=False
+                decipher_only=False,
             ),
-            critical=False
+            critical=False,
         )
 
     return builder
@@ -284,9 +270,7 @@ def profile_kdc(builder, ca_nick, ca,
 
 def gen_cert(profile, nick_base, subject, ca=None, **kwargs):
     key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-        backend=default_backend(),
+        public_exponent=65537, key_size=2048, backend=default_backend(),
     )
     public_key = key.public_key()
 
@@ -312,9 +296,7 @@ def gen_cert(profile, nick_base, subject, ca=None, **kwargs):
     builder = profile(builder, ca_nick, ca, **kwargs)
 
     cert = builder.sign(
-        private_key=ca_key,
-        algorithm=hashes.SHA256(),
-        backend=default_backend(),
+        private_key=ca_key, algorithm=hashes.SHA256(), backend=default_backend(),
     )
 
     key_pem = key.private_bytes(
@@ -327,9 +309,9 @@ def gen_cert(profile, nick_base, subject, ca=None, **kwargs):
         os.makedirs(os.path.dirname(os.path.join(cert_dir, nick)))
     except OSError:
         pass
-    with open(os.path.join(cert_dir, nick + '.key'), 'wb') as f:
+    with open(os.path.join(cert_dir, nick + ".key"), "wb") as f:
         f.write(key_pem)
-    with open(os.path.join(cert_dir, nick + '.crt'), 'wb') as f:
+    with open(os.path.join(cert_dir, nick + ".crt"), "wb") as f:
         f.write(cert_pem)
 
     return CertInfo(nick, key, cert, counter)
@@ -343,10 +325,10 @@ def revoke_cert(ca, serial):
     crl_builder = crl_builder.last_update(now)
     crl_builder = crl_builder.next_update(now + DAY)
 
-    crl_filename = os.path.join(cert_dir, ca.nick + '.crl')
+    crl_filename = os.path.join(cert_dir, ca.nick + ".crl")
 
     try:
-        f = open(crl_filename, 'rb')
+        f = open(crl_filename, "rb")
     except IOError:
         pass
     else:
@@ -367,201 +349,290 @@ def revoke_cert(ca, serial):
     crl_builder = crl_builder.add_revoked_certificate(revoked_cert)
 
     crl = crl_builder.sign(
-        private_key=ca.key,
-        algorithm=hashes.SHA256(),
-        backend=default_backend(),
+        private_key=ca.key, algorithm=hashes.SHA256(), backend=default_backend(),
     )
 
     crl_pem = crl.public_bytes(serialization.Encoding.PEM)
 
-    with open(crl_filename, 'wb') as f:
+    with open(crl_filename, "wb") as f:
         f.write(crl_pem)
 
 
 def gen_server_certs(nick_base, hostname, org, ca=None):
-    gen_cert(profile_server, nick_base,
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-             ]),
-             ca, dns_name=hostname
-             )
-    gen_cert(profile_server, nick_base + u'-badname',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.COMMON_NAME, u'not-' + hostname)
-             ]),
-             ca, dns_name=u'not-' + hostname
-             )
-    gen_cert(profile_server, nick_base + u'-altname',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.COMMON_NAME, u'alt-' + hostname)
-             ]),
-             ca, dns_name=hostname
-             )
-    gen_cert(profile_server, nick_base + u'-expired',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME,
-                                   u'Expired'),
-                x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-             ]),
-             ca, dns_name=hostname, warp=-2 * YEAR
-             )
     gen_cert(
-        profile_server, nick_base + u'-not-yet-valid',
-        x509.Name([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u'Future'),
-            x509.NameAttribute(NameOID.COMMON_NAME, hostname),
-        ]),
-        ca, dns_name=hostname, warp=1 * DAY,
-    )
-    gen_cert(profile_server, nick_base + u'-badusage',
-             x509.Name([
+        profile_server,
+        nick_base,
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME,
-                                   u'Bad Usage'),
-                x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-             ]),
-             ca, dns_name=hostname, badusage=True
-             )
-    revoked = gen_cert(profile_server, nick_base + u'-revoked',
-                       x509.Name([
-                           x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                           x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME,
-                                              u'Revoked'),
-                           x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-                       ]),
-                       ca, dns_name=hostname
-                       )
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+        dns_name=hostname,
+    )
+    gen_cert(
+        profile_server,
+        nick_base + u"-badname",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.COMMON_NAME, u"not-" + hostname),
+            ]
+        ),
+        ca,
+        dns_name=u"not-" + hostname,
+    )
+    gen_cert(
+        profile_server,
+        nick_base + u"-altname",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.COMMON_NAME, u"alt-" + hostname),
+            ]
+        ),
+        ca,
+        dns_name=hostname,
+    )
+    gen_cert(
+        profile_server,
+        nick_base + u"-expired",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Expired"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+        dns_name=hostname,
+        warp=-2 * YEAR,
+    )
+    gen_cert(
+        profile_server,
+        nick_base + u"-not-yet-valid",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Future"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+        dns_name=hostname,
+        warp=1 * DAY,
+    )
+    gen_cert(
+        profile_server,
+        nick_base + u"-badusage",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Bad Usage"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+        dns_name=hostname,
+        badusage=True,
+    )
+    revoked = gen_cert(
+        profile_server,
+        nick_base + u"-revoked",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Revoked"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+        dns_name=hostname,
+    )
     revoke_cert(ca, revoked.cert.serial_number)
 
 
 def gen_kdc_certs(nick_base, hostname, org, ca=None):
-    gen_cert(profile_kdc, nick_base + u'-kdc',
-             x509.Name([
+    gen_cert(
+        profile_kdc,
+        nick_base + u"-kdc",
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u'KDC'),
-                x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-             ]),
-             ca
-             )
-    gen_cert(profile_kdc, nick_base + u'-kdc-badname',
-             x509.Name([
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+    )
+    gen_cert(
+        profile_kdc,
+        nick_base + u"-kdc-badname",
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u'KDC'),
-                x509.NameAttribute(NameOID.COMMON_NAME, u'not-' + hostname)
-             ]),
-             ca
-             )
-    gen_cert(profile_kdc, nick_base + u'-kdc-altname',
-             x509.Name([
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, u"not-" + hostname),
+            ]
+        ),
+        ca,
+    )
+    gen_cert(
+        profile_kdc,
+        nick_base + u"-kdc-altname",
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u'KDC'),
-                x509.NameAttribute(NameOID.COMMON_NAME, u'alt-' + hostname)
-             ]),
-             ca, dns_name=hostname
-             )
-    gen_cert(profile_kdc, nick_base + u'-kdc-expired',
-             x509.Name([
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, u"alt-" + hostname),
+            ]
+        ),
+        ca,
+        dns_name=hostname,
+    )
+    gen_cert(
+        profile_kdc,
+        nick_base + u"-kdc-expired",
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME,
-                                   u'Expired KDC'),
-                x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-             ]),
-             ca, warp=-2 * YEAR
-             )
-    gen_cert(profile_kdc, nick_base + u'-kdc-badusage',
-             x509.Name([
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Expired KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+        warp=-2 * YEAR,
+    )
+    gen_cert(
+        profile_kdc,
+        nick_base + u"-kdc-badusage",
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME,
-                                   u'Bad Usage KDC'),
-                x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-             ]),
-             ca, badusage=True
-             )
-    revoked = gen_cert(profile_kdc, nick_base + u'-kdc-revoked',
-                       x509.Name([
-                           x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                           x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME,
-                                              u'Revoked KDC'),
-                           x509.NameAttribute(NameOID.COMMON_NAME, hostname)
-                       ]),
-                       ca
-                       )
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Bad Usage KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+        badusage=True,
+    )
+    revoked = gen_cert(
+        profile_kdc,
+        nick_base + u"-kdc-revoked",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Revoked KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, hostname),
+            ]
+        ),
+        ca,
+    )
     revoke_cert(ca, revoked.cert.serial_number)
 
 
 def gen_subtree(nick_base, org, ca=None):
-    subca = gen_cert(profile_ca, nick_base,
-                     x509.Name([
-                        x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                        x509.NameAttribute(NameOID.COMMON_NAME, u'CA')
-                     ]),
-                     ca
-                     )
-    gen_cert(profile_server, u'wildcard',
-             x509.Name([
+    subca = gen_cert(
+        profile_ca,
+        nick_base,
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.COMMON_NAME, u'*.' + domain)
-             ]),
-             subca, wildcard=True
-             )
-    gen_server_certs(u'server', server1, org, subca)
-    gen_server_certs(u'replica', server2, org, subca)
-    gen_server_certs(u'client', client, org, subca)
-    gen_cert(profile_kdc, u'kdcwildcard',
-             x509.Name([
+                x509.NameAttribute(NameOID.COMMON_NAME, u"CA"),
+            ]
+        ),
+        ca,
+    )
+    gen_cert(
+        profile_server,
+        u"wildcard",
+        x509.Name(
+            [
                 x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
-                x509.NameAttribute(NameOID.COMMON_NAME, u'*.' + domain)
-             ]),
-             subca
-             )
-    gen_kdc_certs(u'server', server1, org, subca)
-    gen_kdc_certs(u'replica', server2, org, subca)
-    gen_kdc_certs(u'client', client, org, subca)
+                x509.NameAttribute(NameOID.COMMON_NAME, u"*." + domain),
+            ]
+        ),
+        subca,
+        wildcard=True,
+    )
+    gen_server_certs(u"server", server1, org, subca)
+    gen_server_certs(u"replica", server2, org, subca)
+    gen_server_certs(u"client", client, org, subca)
+    gen_cert(
+        profile_kdc,
+        u"kdcwildcard",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+                x509.NameAttribute(NameOID.COMMON_NAME, u"*." + domain),
+            ]
+        ),
+        subca,
+    )
+    gen_kdc_certs(u"server", server1, org, subca)
+    gen_kdc_certs(u"replica", server2, org, subca)
+    gen_kdc_certs(u"client", client, org, subca)
     return subca
 
 
 def create_pki():
 
-    gen_cert(profile_server, u'server-selfsign',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'Self-signed'),
-                x509.NameAttribute(NameOID.COMMON_NAME, server1)
-             ])
-             )
-    gen_cert(profile_server, u'replica-selfsign',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'Self-signed'),
-                x509.NameAttribute(NameOID.COMMON_NAME, server2)
-             ])
-             )
-    gen_cert(profile_server, u'noca',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'No-CA'),
-                x509.NameAttribute(NameOID.COMMON_NAME, server1)
-             ])
-             )
-    gen_cert(profile_kdc, u'server-kdc-selfsign',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'Self-signed'),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u'KDC'),
-                x509.NameAttribute(NameOID.COMMON_NAME, server1)
-             ])
-             )
-    gen_cert(profile_kdc, u'replica-kdc-selfsign',
-             x509.Name([
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u'Self-signed'),
-                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u'KDC'),
-                x509.NameAttribute(NameOID.COMMON_NAME, server2)
-             ])
-             )
-    ca1 = gen_subtree(u'ca1', u'Example Organization')
-    gen_subtree(u'subca', u'Subsidiary Example Organization', ca1)
-    gen_subtree(u'ca2', u'Other Example Organization')
-    ca3 = gen_subtree(u'ca3', u'Unknown Organization')
-    os.unlink(os.path.join(cert_dir, ca3.nick + '.key'))
-    os.unlink(os.path.join(cert_dir, ca3.nick + '.crt'))
+    gen_cert(
+        profile_server,
+        u"server-selfsign",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Self-signed"),
+                x509.NameAttribute(NameOID.COMMON_NAME, server1),
+            ]
+        ),
+    )
+    gen_cert(
+        profile_server,
+        u"replica-selfsign",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Self-signed"),
+                x509.NameAttribute(NameOID.COMMON_NAME, server2),
+            ]
+        ),
+    )
+    gen_cert(
+        profile_server,
+        u"noca",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"No-CA"),
+                x509.NameAttribute(NameOID.COMMON_NAME, server1),
+            ]
+        ),
+    )
+    gen_cert(
+        profile_kdc,
+        u"server-kdc-selfsign",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Self-signed"),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, server1),
+            ]
+        ),
+    )
+    gen_cert(
+        profile_kdc,
+        u"replica-kdc-selfsign",
+        x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Self-signed"),
+                x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"KDC"),
+                x509.NameAttribute(NameOID.COMMON_NAME, server2),
+            ]
+        ),
+    )
+    ca1 = gen_subtree(u"ca1", u"Example Organization")
+    gen_subtree(u"subca", u"Subsidiary Example Organization", ca1)
+    gen_subtree(u"ca2", u"Other Example Organization")
+    ca3 = gen_subtree(u"ca3", u"Unknown Organization")
+    os.unlink(os.path.join(cert_dir, ca3.nick + ".key"))
+    os.unlink(os.path.join(cert_dir, ca3.nick + ".crt"))

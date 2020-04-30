@@ -43,24 +43,25 @@ else:
 # Matches a gidnumber like '1391016742'
 # FIXME: Does it make more sense to return gidnumber, uidnumber, etc. as `int`
 # or `long`?  If not, we still need to return them as `unicode` instead of `str`.
-fuzzy_digits = Fuzzy(r'^\d+$', type=str)
+fuzzy_digits = Fuzzy(r"^\d+$", type=str)
 
-uuid_re = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+uuid_re = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 
 # Matches an ipauniqueid like u'784d85fd-eae7-11de-9d01-54520012478b'
-fuzzy_uuid = Fuzzy('^%s$' % uuid_re)
+fuzzy_uuid = Fuzzy("^%s$" % uuid_re)
 
 # Matches an automember task DN
 fuzzy_automember_dn = Fuzzy(
-    '^cn=%s,cn=automember rebuild membership,cn=tasks,cn=config$' % uuid_re
+    "^cn=%s,cn=automember rebuild membership,cn=tasks,cn=config$" % uuid_re
 )
 
 # base64-encoded value
-fuzzy_base64 = Fuzzy('^[0-9A-Za-z/+]+={0,2}$')
+fuzzy_base64 = Fuzzy("^[0-9A-Za-z/+]+={0,2}$")
 
 
 def fuzzy_sequence_of(fuzzy):
     """Construct a Fuzzy for a Sequence of values matching the given Fuzzy."""
+
     def test(xs):
         if not isinstance(xs, Sequence):
             return False
@@ -69,9 +70,10 @@ def fuzzy_sequence_of(fuzzy):
 
     return Fuzzy(test=test)
 
+
 # Matches an automember task finish message
 fuzzy_automember_message = Fuzzy(
-    r'^Automember rebuild task finished\. Processed \(\d+\) entries\.$'
+    r"^Automember rebuild task finished\. Processed \(\d+\) entries\.$"
 )
 
 # Matches trusted domain GUID, like u'463bf2be-3456-4a57-979e-120304f2a0eb'
@@ -79,51 +81,51 @@ fuzzy_guid = fuzzy_uuid
 
 # Matches SID of a trusted domain
 # SID syntax: http://msdn.microsoft.com/en-us/library/ff632068.aspx
-_sid_identifier_authority = '(0x[0-9a-f]{1,12}|[0-9]{1,10})'
+_sid_identifier_authority = "(0x[0-9a-f]{1,12}|[0-9]{1,10})"
 fuzzy_domain_sid = Fuzzy(
-    '^S-1-5-21-%(idauth)s-%(idauth)s-%(idauth)s$' % dict(idauth=_sid_identifier_authority)
+    "^S-1-5-21-%(idauth)s-%(idauth)s-%(idauth)s$"
+    % dict(idauth=_sid_identifier_authority)
 )
 fuzzy_user_or_group_sid = Fuzzy(
-    '^S-1-5-21-%(idauth)s-%(idauth)s-%(idauth)s-%(idauth)s$' % dict(idauth=_sid_identifier_authority)
+    "^S-1-5-21-%(idauth)s-%(idauth)s-%(idauth)s-%(idauth)s$"
+    % dict(idauth=_sid_identifier_authority)
 )
 
 # Matches netgroup dn. Note (?i) at the beginning of the regexp is the ingnore case flag
 fuzzy_netgroupdn = Fuzzy(
-    '(?i)ipauniqueid=%s,cn=ng,cn=alt,%s' % (uuid_re, api.env.basedn)
+    "(?i)ipauniqueid=%s,cn=ng,cn=alt,%s" % (uuid_re, api.env.basedn)
 )
 
 # Matches sudocmd dn
 fuzzy_sudocmddn = Fuzzy(
-    '(?i)ipauniqueid=%s,cn=sudocmds,cn=sudo,%s' % (uuid_re, api.env.basedn)
+    "(?i)ipauniqueid=%s,cn=sudocmds,cn=sudo,%s" % (uuid_re, api.env.basedn)
 )
 
 # Matches caacl dn
 fuzzy_caacldn = Fuzzy(
-    '(?i)ipauniqueid=%s,cn=caacls,cn=ca,%s' % (uuid_re, api.env.basedn)
+    "(?i)ipauniqueid=%s,cn=caacls,cn=ca,%s" % (uuid_re, api.env.basedn)
 )
 
 # Matches internal CA ID
 fuzzy_caid = fuzzy_uuid
 
 # Matches fuzzy ipaUniqueID DN group (RDN)
-fuzzy_ipauniqueid = Fuzzy('(?i)ipauniqueid=%s' % uuid_re)
+fuzzy_ipauniqueid = Fuzzy("(?i)ipauniqueid=%s" % uuid_re)
 
 # Matches a hash signature, not enforcing length
-fuzzy_hash = Fuzzy(r'^([a-f0-9][a-f0-9]:)+[a-f0-9][a-f0-9]$', type=str)
+fuzzy_hash = Fuzzy(r"^([a-f0-9][a-f0-9]:)+[a-f0-9][a-f0-9]$", type=str)
 
 # Matches a date, like Tue Apr 26 17:45:35 2016 UTC
-fuzzy_date = Fuzzy(
-    r'^[a-zA-Z]{3} [a-zA-Z]{3} \d{2} \d{2}:\d{2}:\d{2} \d{4} UTC$'
-)
+fuzzy_date = Fuzzy(r"^[a-zA-Z]{3} [a-zA-Z]{3} \d{2} \d{2}:\d{2}:\d{2} \d{4} UTC$")
 
 fuzzy_issuer = Fuzzy(type=str)
 
-fuzzy_hex = Fuzzy(r'^0x[0-9a-fA-F]+$', type=str)
+fuzzy_hex = Fuzzy(r"^0x[0-9a-fA-F]+$", type=str)
 
 # Matches password - password consists of all printable characters without
 # whitespaces. The only exception is space, but space cannot be at the
 # beginning or end of the pwd.
-fuzzy_password = Fuzzy(r'^\S([\S ]*\S)*$')
+fuzzy_password = Fuzzy(r"^\S([\S ]*\S)*$")
 
 # Matches generalized time value. Time format is: %Y%m%d%H%M%SZ
 fuzzy_dergeneralizedtime = Fuzzy(type=datetime.datetime)
@@ -135,12 +137,15 @@ fuzzy_bytes = Fuzzy(type=bytes)
 
 # case insensitive match of sets
 def fuzzy_set_ci(s):
-    return Fuzzy(test=lambda other: set(x.lower() for x in other) == set(y.lower() for y in s))
+    return Fuzzy(
+        test=lambda other: set(x.lower() for x in other) == set(y.lower() for y in s)
+    )
+
 
 try:
     if not api.Backend.rpcclient.isconnected():
         api.Backend.rpcclient.connect()
-    res = api.Command['user_show'](u'notfound')
+    res = api.Command["user_show"](u"notfound")
 except errors.NetworkError:
     server_available = False
 except IOError:
@@ -148,13 +153,13 @@ except IOError:
 except errors.NotFound:
     server_available = True
 
-adtrust_is_enabled = api.Command['adtrust_is_enabled']()['result']
-sidgen_was_run = api.Command['sidgen_was_run']()['result']
+adtrust_is_enabled = api.Command["adtrust_is_enabled"]()["result"]
+sidgen_was_run = api.Command["sidgen_was_run"]()["result"]
 
 
 def add_sid(d, check_sidgen=False):
     if adtrust_is_enabled and (not check_sidgen or sidgen_was_run):
-        d['ipantsecurityidentifier'] = (fuzzy_user_or_group_sid,)
+        d["ipantsecurityidentifier"] = (fuzzy_user_or_group_sid,)
     return d
 
 
@@ -167,34 +172,32 @@ def add_oc(l, oc, check_sidgen=False):
 def assert_attr_equal(entry, key, value):
     if type(entry) is not dict:
         raise AssertionError(
-            'assert_attr_equal: entry must be a %r; got a %r: %r' % (
-                dict, type(entry), entry)
+            "assert_attr_equal: entry must be a %r; got a %r: %r"
+            % (dict, type(entry), entry)
         )
     if key not in entry:
         raise AssertionError(
-            'assert_attr_equal: entry has no key %r: %r' % (key, entry)
+            "assert_attr_equal: entry has no key %r: %r" % (key, entry)
         )
     if value not in entry[key]:
         raise AssertionError(
-            'assert_attr_equal: %r: %r not in %r' % (key, value, entry[key])
+            "assert_attr_equal: %r: %r not in %r" % (key, value, entry[key])
         )
 
 
-def assert_is_member(entry, value, key='member'):
+def assert_is_member(entry, value, key="member"):
     if type(entry) is not dict:
         raise AssertionError(
-            'assert_is_member: entry must be a %r; got a %r: %r' % (
-                dict, type(entry), entry)
+            "assert_is_member: entry must be a %r; got a %r: %r"
+            % (dict, type(entry), entry)
         )
     if key not in entry:
-        raise AssertionError(
-            'assert_is_member: entry has no key %r: %r' % (key, entry)
-        )
+        raise AssertionError("assert_is_member: entry has no key %r: %r" % (key, entry))
     for member in entry[key]:
         if member.startswith(value):
             return
     raise AssertionError(
-        'assert_is_member: %r: %r not in %r' % (key, value, entry[key])
+        "assert_is_member: %r: %r not in %r" % (key, value, entry[key])
     )
 
 
@@ -203,21 +206,25 @@ def assert_is_member(entry, value, key='member'):
 # has already been called we continue gracefully. Other errors will be
 # raised.
 
+
 class XMLRPC_test:
     """
     Base class for all XML-RPC plugin tests
     """
+
     @pytest.fixture(autouse=True, scope="class")
     def xmlrpc_setup(self, request):
         if not server_available:
-            pytest.skip('%r: Server not available: %r' %
-                        (request.cls.__module__,
-                         api.env.xmlrpc_uri))
+            pytest.skip(
+                "%r: Server not available: %r"
+                % (request.cls.__module__, api.env.xmlrpc_uri)
+            )
         if not api.Backend.rpcclient.isconnected():
             api.Backend.rpcclient.connect()
 
         def fin():
             ipa_request.destroy_context()
+
         request.addfinalizer(fin)
 
     def failsafe_add(self, obj, pk, **options):
@@ -232,7 +239,7 @@ class XMLRPC_test:
         :param options: Kwargs to be passed to obj.add()
         """
         self.failsafe_del(obj, pk)
-        return obj.methods['add'](pk, **options)
+        return obj.methods["add"](pk, **options)
 
     @classmethod
     def failsafe_del(cls, obj, pk):
@@ -242,7 +249,7 @@ class XMLRPC_test:
         :param pk: The primary key of the entry to be deleted
         """
         try:
-            obj.methods['del'](pk)
+            obj.methods["del"](pk)
         except errors.NotFound:
             pass
 
@@ -311,17 +318,16 @@ class Declarative(XMLRPC_test):
         def fin():
             for command in request.cls.cleanup_commands:
                 request.cls.cleanup(command)
+
         fin()
         request.addfinalizer(fin)
 
     @classmethod
     def cleanup(cls, command):
         (cmd, args, options) = command
-        print('Cleanup:', cmd, args, options)
+        print("Cleanup:", cmd, args, options)
         if cmd not in api.Command:
-            pytest.skip(
-                'cleanup command %r not in api.Command' % cmd
-            )
+            pytest.skip("cleanup command %r not in api.Command" % cmd)
         try:
             api.Command[cmd](*args, **options)
         except (errors.NotFound, errors.EmptyModlist) as e:
@@ -339,12 +345,12 @@ class Declarative(XMLRPC_test):
 
     def check(self, nice, desc, command, expected, extra_check=None):
         (cmd, args, options) = command
-        options.setdefault('version', self.default_version)
+        options.setdefault("version", self.default_version)
         if cmd not in api.Command:
-            pytest.skip('%r not in api.Command' % cmd)
+            pytest.skip("%r not in api.Command" % cmd)
         if isinstance(expected, errors.PublicError):
             self.check_exception(nice, cmd, args, options, expected)
-        elif hasattr(expected, '__call__'):
+        elif hasattr(expected, "__call__"):
             self.check_callable(nice, cmd, args, options, expected)
         else:
             self.check_output(nice, cmd, args, options, expected, extra_check)
@@ -357,14 +363,20 @@ class Declarative(XMLRPC_test):
         except Exception as e:
             got = e
         else:
-            raise AssertionError(
-                EXPECTED % (cmd, expected_name, args, options, output)
-            )
+            raise AssertionError(EXPECTED % (cmd, expected_name, args, options, output))
         if not isinstance(got, klass):
             raise AssertionError(
-                UNEXPECTED % (cmd, expected_name, args, options,
-                              expected_name, expected,
-                              got.__class__.__name__, got)
+                UNEXPECTED
+                % (
+                    cmd,
+                    expected_name,
+                    args,
+                    options,
+                    expected_name,
+                    expected,
+                    got.__class__.__name__,
+                    got,
+                )
             )
         # FIXME: the XML-RPC transport doesn't allow us to return structured
         # information through the exception, so we can't test the kw on the
@@ -389,16 +401,24 @@ class Declarative(XMLRPC_test):
             got = e
         if not expected(got, output):
             raise AssertionError(
-                UNEXPECTED % (cmd, expected_name, args, options,
-                              expected_name, expected_text,
-                              got.__class__.__name__, got)
+                UNEXPECTED
+                % (
+                    cmd,
+                    expected_name,
+                    args,
+                    options,
+                    expected_name,
+                    expected_text,
+                    got.__class__.__name__,
+                    got,
+                )
             )
 
     def check_output(self, nice, cmd, args, options, expected, extra_check):
         got = api.Command[cmd](*args, **options)
         assert_deepequal(expected, got, nice)
         if extra_check and not extra_check(got):
-            raise AssertionError('Extra check %s failed' % extra_check)
+            raise AssertionError("Extra check %s failed" % extra_check)
 
 
 @contextlib.contextmanager
@@ -418,4 +438,4 @@ def raises_exact(expected_exception):
         # For now just compare the strings
         assert expected_exception.strerror == got_exception.strerror
     else:
-        raise AssertionError('did not raise!')
+        raise AssertionError("did not raise!")

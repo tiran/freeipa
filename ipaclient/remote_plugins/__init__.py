@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class ServerInfo(MutableMapping):
-    _DIR = os.path.join(USER_CACHE_PATH, 'ipa', 'servers')
+    _DIR = os.path.join(USER_CACHE_PATH, "ipa", "servers")
 
     def __init__(self, api):
         hostname = DNSName(api.env.server).ToASCII()
@@ -38,27 +38,28 @@ class ServerInfo(MutableMapping):
 
         # copy-paste from ipalib/rpc.py
         try:
-            self._language = locale.setlocale(
-                locale.LC_MESSAGES, ''
-            ).split('.')[0].lower()
+            self._language = (
+                locale.setlocale(locale.LC_MESSAGES, "").split(".")[0].lower()
+            )
         except locale.Error:
-            self._language = 'en_us'
+            self._language = "en_us"
 
         self._read()
 
     def _read(self):
         try:
-            with open(self._path, 'r') as sc:
+            with open(self._path, "r") as sc:
                 self._dict = json.load(sc)
         except Exception as e:
-            if (isinstance(e, EnvironmentError) and
-                    e.errno == errno.ENOENT):  # pylint: disable=no-member
+            if (
+                isinstance(e, EnvironmentError) and e.errno == errno.ENOENT
+            ):  # pylint: disable=no-member
                 # ignore non-existent file, this happens when the cache was
                 # erased or the server is contacted for the first time
                 pass
             else:
                 # warn that the file is unreadable, probably corrupted
-                logger.warning('Failed to read server info: %s', e)
+                logger.warning("Failed to read server info: %s", e)
 
     def _write(self):
         try:
@@ -67,10 +68,10 @@ class ServerInfo(MutableMapping):
             except EnvironmentError as e:
                 if e.errno != errno.EEXIST:
                     raise
-            with open(self._path, 'w') as sc:
+            with open(self._path, "w") as sc:
                 json.dump(self._dict, sc)
         except EnvironmentError as e:
-            logger.warning('Failed to write server info: %s', e)
+            logger.warning("Failed to write server info: %s", e)
 
     def __getitem__(self, key):
         return self._dict[key]
@@ -90,8 +91,8 @@ class ServerInfo(MutableMapping):
     def update_validity(self, ttl=None):
         if ttl is None:
             ttl = 3600
-        self['expiration'] = time.time() + ttl
-        self['language'] = self._language
+        self["expiration"] = time.time() + ttl
+        self["language"] = self._language
         self._write()
 
     def is_valid(self):
@@ -99,8 +100,8 @@ class ServerInfo(MutableMapping):
             return False
 
         try:
-            expiration = self._dict['expiration']
-            language = self._dict['language']
+            expiration = self._dict["expiration"]
+            language = self._dict["language"]
         except KeyError:
             # if any of these is missing consider the entry expired
             return False
@@ -120,6 +121,7 @@ def get_package(api):
     if api.env.in_tree:
         # pylint: disable=import-error,ipa-forbidden-import
         from ipaserver import plugins
+
         # pylint: enable=import-error,ipa-forbidden-import
     else:
         try:
@@ -138,6 +140,6 @@ def get_package(api):
                 if client.isconnected():
                     client.disconnect()
 
-            object.__setattr__(api, '_remote_plugins', plugins)
+            object.__setattr__(api, "_remote_plugins", plugins)
 
     return plugins

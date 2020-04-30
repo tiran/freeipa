@@ -29,12 +29,15 @@ Example plugins
 
 # errors is a module containing all IPA specific exceptions.
 from ipalib import errors
+
 # Command is the base class for command plugin.
 from ipalib import Command
+
 # Str is a subclass of Param, it is used to define string parameters for
 # command. We'll go through all other subclasses of Param supported by IPA
 # later in this file
 from ipalib import Str
+
 # output is a module containing the most common output patterns.
 # Command plugin do output validation based on these patterns.
 # You can define your own as we're going to show you later.
@@ -43,6 +46,7 @@ from ipalib import output
 
 # To make the example ready for Python 3, we alias "unicode" to strings.
 import six
+
 if six.PY3:
     unicode = str
 
@@ -56,10 +60,9 @@ def validate_name(ugettext, name):
     Validate names for the exhelloworld command. Names starting with 'Y'
     (picked at random) are considered invalid.
     """
-    if name.startswith('Y'):
+    if name.startswith("Y"):
         raise errors.ValidationError(
-            name='name',
-            error='Names starting with \'Y\' are invalid!'
+            name="name", error="Names starting with 'Y' are invalid!"
         )
     # If the validator doesn't return anything (i.e. it returns None),
     # the parameter passes validation.
@@ -69,6 +72,7 @@ class exhelloworld(Command):
     """
     Example command: Hello world!
     """
+
     # takes_args is an attribute of Command. It's a tuple containing
     # instances of Param (or its subclasses such as Str) that define
     # what position arguments are accepted by the command.
@@ -81,10 +85,7 @@ class exhelloworld(Command):
         # present.
         # Note the ? at the end of the parameter name. It makes the parameter
         # optional.
-        Str('name?', validate_name,
-            default=u'anonymous coward',
-            autofill=True,
-        ),
+        Str("name?", validate_name, default=u"anonymous coward", autofill=True,),
     )
 
     # has_output is an attribute of Command, it is a tuple containing
@@ -103,10 +104,11 @@ class exhelloworld(Command):
     # It is always executed on the server-side, so don't rely
     # on client-side stuff in here!
     def execute(self, name, **options):
-        return dict(summary='Hello world, %s!' % name)
+        return dict(summary="Hello world, %s!" % name)
+
 
 # register the command, uncomment this line if you want to try it out
-#api.register(exhelloworld)
+# api.register(exhelloworld)
 
 # Anyway, that was a pretty bad example of a command or, to be more precise,
 # a bad example of resource use. When a client executes a command locally, its
@@ -128,24 +130,25 @@ class exhelloworld(Command):
 # or disabled (True or False), so there's no need to make then optional, ever.
 from ipalib import Flag
 
+
 class exshowuser(Command):
     """
     Example command: retrieve an user entry from LDAP
     """
-    takes_args = (
-        Str('username'),
-    )
+
+    takes_args = (Str("username"),)
 
     # takes_options is another attribute of Command. It works the same
     # way as takes_args, but instead of positional arguments, it enables
     # us to define what options the commmand takes.
     # Note that an options can be both required and optional.
     takes_options = (
-        Flag('all',
+        Flag(
+            "all",
             # the doc keyword argument is what you see when you go
             # `ipa COMMAND --help` or `ipa help COMMAND`
-            doc='retrieve and print all attributes from the server. Affects command output.',
-            flags=['no_output'],
+            doc="retrieve and print all attributes from the server. Affects command output.",
+            flags=["no_output"],
         ),
     )
 
@@ -157,8 +160,8 @@ class exshowuser(Command):
         # the 'no_display' flag is supported by the Command.output_for_cli
         # method, but you can always use your own if you plan
         # to override it - I'll show you how later.
-        output.Output('result', dict, 'user entry without DN'),
-        output.Output('dn', unicode, 'DN of the user entry', ['no_display']),
+        output.Output("result", dict, "user entry without DN"),
+        output.Output("dn", unicode, "DN of the user entry", ["no_display"]),
     )
 
     # Notice the ** argument notation for options. It is not required, but
@@ -182,41 +185,40 @@ class exshowuser(Command):
         # We want to retrieve an user entry from LDAP. We need to know its
         # DN first. There's a bunch of method in ldap2 to build DNs. For our
         # purpose, this will do:
-        dn = ldap.make_dn_from_attr(
-            'uid', username, self.api.env.container_user
-        )
+        dn = ldap.make_dn_from_attr("uid", username, self.api.env.container_user)
         # Note that api.env contains a lot of useful constant. We recommend
         # you to check them out and use them whenever possible.
 
         # Let's check if the --all option is enabled. If it is, let's
         # retrieve all of the entry attributes. If not, only retrieve some
         # basic stuff like the username, first and last names.
-        if options.get('all', False):
-            attrs_list = ['*']
+        if options.get("all", False):
+            attrs_list = ["*"]
         else:
-            attrs_list = ['uid', 'givenname', 'sn']
+            attrs_list = ["uid", "givenname", "sn"]
 
         # Give us the entry, LDAP!
         (dn, entry_attrs) = ldap.get_entry(dn, attrs_list)
 
         return dict(result=entry_attrs, dn=dn)
 
+
 # register the command, uncomment this line if you want to try it out
-#api.register(exshowuser)
+# api.register(exshowuser)
 
 
 # Now let's a take a look on how you can modify the command output if you don't
 # like the default.
 
+
 class exshowuser2(exshowuser):
     """
     Example command: exusershow with custom output
     """
+
     # Just some values we're going to use for textui.print_entry
-    attr_order = ['uid', 'givenname', 'sn']
-    attr_labels = {
-        'uid': 'User login', 'givenname': 'First name', 'sn': 'Last name'
-    }
+    attr_order = ["uid", "givenname", "sn"]
+    attr_labels = {"uid": "User login", "givenname": "First name", "sn": "Last name"}
 
     def output_for_cli(self, textui, output, *args, **options):
         # Now we've done it! We have overridden the default output_for_cli.
@@ -224,43 +226,39 @@ class exshowuser2(exshowuser):
         # please use it when you can
         # output contains the dict returned by execute
         # args, options contain the command parameters
-        textui.print_dashed('User entry:')
-        textui.print_indented('DN: %s' % output['dn'])
-        textui.print_entry(output['result'], self.attr_order, self.attr_labels)
+        textui.print_dashed("User entry:")
+        textui.print_indented("DN: %s" % output["dn"])
+        textui.print_entry(output["result"], self.attr_order, self.attr_labels)
+
 
 # register the command, uncomment this line if you want to try it out
-#api.register(exshowuser2)
+# api.register(exshowuser2)
 
 # Alright, so now you'll always want to define your own output_for_cli...
 # No, you won't! Because the default output_for_cli isn't as stupid as it looks.
 # It can take information from the command parameters and output patterns
 # to produce nice output like all real IPA commands have.
 
+
 class exshowuser3(exshowuser):
     """
     Example command: exusershow that takes full advantage of the default output
     """
+
     takes_args = (
         # We're going to rename the username argument to uid to match
         # the attribute name it represent. The cli_name kwarg is what
         # users will see in the CLI and label is what the default
         # output_for_cli is going to use when printing the attribute value.
-        Str('uid',
-            cli_name='username',
-            label='User login',
-        ),
+        Str("uid", cli_name="username", label="User login",),
     )
 
     # has_output_params works the same way as takes_args and takes_options,
     # but is only used to define output attributes. These won't show up
     # as parameters for the command.
     has_output_params = (
-        Str('givenname',
-            label='First name',
-        ),
-        Str('sn',
-            label='Last name',
-        ),
+        Str("givenname", label="First name",),
+        Str("sn", label="Last name",),
     )
 
     # standard_entry includes an entry 'result' (dict), a summary 'summary'
@@ -279,11 +277,12 @@ class exshowuser3(exshowuser):
         # Let's just call execute of the base class, extract it's output
         # and fit it into the standard_entry output pattern.
         output = super(exshowuser3, self).execute(*args, **options)
-        output['result']['dn'] = output['dn']
-        return dict(result=output['result'], value=args[0])
+        output["result"]["dn"] = output["dn"]
+        return dict(result=output["result"], value=args[0])
+
 
 # register the command, uncomment this line if you want to try it out
-#api.register(exshowuser3)
+# api.register(exshowuser3)
 
 
 # Pretty cool, right? But you will probably want to implement a set of commands
@@ -298,29 +297,26 @@ class exuser(Object):
     """
     Example plugin: user object
     """
+
     # takes_params is an attribute of Object. It is used to define output
     # parameters for associated Methods. Methods can also use them to
     # to generate their own parameters as you'll see in a while.
     takes_params = (
-        Str('uid',
-            cli_name='username',
-            label='User login',
+        Str(
+            "uid",
+            cli_name="username",
+            label="User login",
             # The primary_key kwarg is used to, well, specify the object's
             # primary key.
             primary_key=True,
         ),
-        Str('givenname?',
-            cli_name='first',
-            label='First name',
-        ),
-        Str('sn?',
-            cli_name='last',
-            label='Last name',
-        ),
+        Str("givenname?", cli_name="first", label="First name",),
+        Str("sn?", cli_name="last", label="Last name",),
     )
 
+
 # register the object, uncomment this line if you want to try it out
-#api.register(exuser)
+# api.register(exuser)
 
 # Next, we're going to create a set of methods to manage this type of object
 # i.e. to manage user entries. We're only going to do "read" commands, because
@@ -330,6 +326,7 @@ class exuser(Object):
 # Methods are automatically associated with a parent Object based on class
 # names. They can then access their parent Object using self.obj.
 # Simply said, Methods are just Commands associated with an Object.
+
 
 class exuser_show(Method):
     has_output = output.standard_entry
@@ -350,22 +347,22 @@ class exuser_show(Method):
     def execute(self, *args, **options):
         ldap = self.api.Backend.ldap2
 
-        dn = ldap.make_dn_from_attr(
-            'uid', args[0], self.api.env.container_user
-        )
+        dn = ldap.make_dn_from_attr("uid", args[0], self.api.env.container_user)
 
-        if options.get('all', False):
-            attrs_list = ['*']
+        if options.get("all", False):
+            attrs_list = ["*"]
         else:
             attrs_list = [p.name for p in self.output_params()]
 
         (dn, entry_attrs) = ldap.get_entry(dn, attrs_list)
-        entry_attrs['dn'] = dn
+        entry_attrs["dn"] = dn
 
         return dict(result=entry_attrs, value=args[0])
 
+
 # register the command, uncomment this line if you want to try it out
-#api.register(exuser_show)
+# api.register(exuser_show)
+
 
 class exuser_find(Method):
     # standard_list_of_entries is an output pattern that
@@ -379,9 +376,7 @@ class exuser_find(Method):
     # options instead of positional arguments
     def get_options(self):
         for option in self.obj.params():
-            yield option.clone(
-                attribute=True, query=True, required=False
-            )
+            yield option.clone(attribute=True, query=True, required=False)
 
     def execute(self, *args, **options):
         ldap = self.api.Backend.ldap2
@@ -396,31 +391,32 @@ class exuser_find(Method):
         # the filter and rules=ldap.MATCH_ALL means the filter is going
         # to use the & operators. More complex filters can be constructed
         # by joining simpler filters using ldap2.combine_filters.
-        attr_filter = ldap.make_filter(
-            search_kw, exact=False, rules=ldap.MATCH_ALL
-        )
+        attr_filter = ldap.make_filter(search_kw, exact=False, rules=ldap.MATCH_ALL)
 
-        if options.get('all', False):
-            attrs_list = ['*']
+        if options.get("all", False):
+            attrs_list = ["*"]
         else:
             attrs_list = [p.name for p in self.output_params()]
 
         # perform the search
         (entries, truncated) = ldap.find_entries(
-            attr_filter, attrs_list, self.api.env.container_user,
-            scope=ldap.SCOPE_ONELEVEL
+            attr_filter,
+            attrs_list,
+            self.api.env.container_user,
+            scope=ldap.SCOPE_ONELEVEL,
         )
 
         # find_entries returns DNs and attributes separately, but the output
         # patter expects them in one dict. We need to arrange that.
         for e in entries:
-            e[1]['dn'] = e[0]
+            e[1]["dn"] = e[0]
         entries = [e for (_dn, e) in entries]
 
         return dict(result=entries, count=len(entries), truncated=truncated)
 
+
 # register the command, uncomment this line if you want to try it out
-#api.register(exuser_find)
+# api.register(exuser_find)
 
 # As most commands associated with objects are used to manage entries in LDAP,
 # we defined a basic set of base classes for your plugins implementing CRUD

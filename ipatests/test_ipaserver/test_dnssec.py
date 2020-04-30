@@ -27,8 +27,8 @@ ZONELIST_XML = """<?xml version="1.0" encoding="UTF-8"?>
 
 
 def test_ods_zonelist_reader():
-    uuid = '12345'
-    name = dns.name.from_text('ipa.example.')
+    uuid = "12345"
+    name = dns.name.from_text("ipa.example.")
 
     reader = ODSZoneListReader("<ZoneList/>")
     assert reader.mapping == {}

@@ -23,9 +23,9 @@ version_strings = [
     ("4.2.0-15.el7_2.3", "4.2.0-15.el7_2.2", "newer"),
     ("4.2.0-1.fc23", "4.2.1-1.fc23", "older"),
     ("4.2.3-alpha1.fc23", "4.2.3-2.fc23", "older"),  # numeric version elements
-                                                     # have precedence over
-                                                     # non-numeric ones
-    ("4.3.90.201601080923GIT55aeea7-0.fc23", "4.3.0-1.fc23", "newer")
+    # have precedence over
+    # non-numeric ones
+    ("4.3.90.201601080923GIT55aeea7-0.fc23", "4.3.0-1.fc23", "newer"),
 ]
 
 
@@ -35,7 +35,6 @@ def versions(request):
 
 
 class TestVersionComparsion:
-
     def test_versions(self, versions):
         version_string1, version_string2, expected_comparison = versions
 

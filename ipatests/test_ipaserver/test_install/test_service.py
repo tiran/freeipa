@@ -27,12 +27,12 @@ import pytest
 
 @pytest.mark.tier0
 def test_format_seconds():
-    assert service.format_seconds(0) == '0 seconds'
-    assert service.format_seconds(1) == '1 second'
-    assert service.format_seconds(2) == '2 seconds'
-    assert service.format_seconds(11) == '11 seconds'
-    assert service.format_seconds(60) == '1 minute'
-    assert service.format_seconds(61) == '1 minute 1 second'
-    assert service.format_seconds(62) == '1 minute 2 seconds'
-    assert service.format_seconds(120) == '2 minutes'
-    assert service.format_seconds(125) == '2 minutes 5 seconds'
+    assert service.format_seconds(0) == "0 seconds"
+    assert service.format_seconds(1) == "1 second"
+    assert service.format_seconds(2) == "2 seconds"
+    assert service.format_seconds(11) == "11 seconds"
+    assert service.format_seconds(60) == "1 minute"
+    assert service.format_seconds(61) == "1 minute 1 second"
+    assert service.format_seconds(62) == "1 minute 2 seconds"
+    assert service.format_seconds(120) == "2 minutes"
+    assert service.format_seconds(125) == "2 minutes 5 seconds"

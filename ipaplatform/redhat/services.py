@@ -42,12 +42,13 @@ logger = logging.getLogger(__name__)
 # For beginning just remap names to add .service
 # As more services will migrate to systemd, unit names will deviate and
 # mapping will be kept in this dictionary
-redhat_system_units = dict((x, "%s.service" % x)
-                           for x in base_services.wellknownservices)
+redhat_system_units = dict(
+    (x, "%s.service" % x) for x in base_services.wellknownservices
+)
 
-redhat_system_units['rpcgssd'] = 'rpc-gssd.service'
-redhat_system_units['rpcidmapd'] = 'nfs-idmapd.service'
-redhat_system_units['domainname'] = 'nis-domainname.service'
+redhat_system_units["rpcgssd"] = "rpc-gssd.service"
+redhat_system_units["rpcidmapd"] = "nfs-idmapd.service"
+redhat_system_units["domainname"] = "nis-domainname.service"
 
 # Rewrite dirsrv and pki-tomcatd services as they support instances via separate
 # service generator. To make this working, one needs to have both foo@.servic
@@ -59,23 +60,24 @@ redhat_system_units['domainname'] = 'nis-domainname.service'
 # /etc/systemd/system/foo.target.wants/ (look into systemd.py's enable()
 # code).
 
-redhat_system_units['dirsrv'] = 'dirsrv@.service'
+redhat_system_units["dirsrv"] = "dirsrv@.service"
 # Our PKI instance is pki-tomcatd@pki-tomcat.service
-redhat_system_units['pki-tomcatd'] = 'pki-tomcatd@pki-tomcat.service'
-redhat_system_units['pki_tomcatd'] = redhat_system_units['pki-tomcatd']
-redhat_system_units['ipa-otpd'] = 'ipa-otpd.socket'
-redhat_system_units['ipa-dnskeysyncd'] = 'ipa-dnskeysyncd.service'
-redhat_system_units['named-regular'] = 'named.service'
-redhat_system_units['named-pkcs11'] = 'named-pkcs11.service'
-redhat_system_units['named'] = redhat_system_units['named-pkcs11']
-redhat_system_units['ods-enforcerd'] = 'ods-enforcerd.service'
-redhat_system_units['ods_enforcerd'] = redhat_system_units['ods-enforcerd']
-redhat_system_units['ods-signerd'] = 'ods-signerd.service'
-redhat_system_units['ods_signerd'] = redhat_system_units['ods-signerd']
-redhat_system_units['gssproxy'] = 'gssproxy.service'
+redhat_system_units["pki-tomcatd"] = "pki-tomcatd@pki-tomcat.service"
+redhat_system_units["pki_tomcatd"] = redhat_system_units["pki-tomcatd"]
+redhat_system_units["ipa-otpd"] = "ipa-otpd.socket"
+redhat_system_units["ipa-dnskeysyncd"] = "ipa-dnskeysyncd.service"
+redhat_system_units["named-regular"] = "named.service"
+redhat_system_units["named-pkcs11"] = "named-pkcs11.service"
+redhat_system_units["named"] = redhat_system_units["named-pkcs11"]
+redhat_system_units["ods-enforcerd"] = "ods-enforcerd.service"
+redhat_system_units["ods_enforcerd"] = redhat_system_units["ods-enforcerd"]
+redhat_system_units["ods-signerd"] = "ods-signerd.service"
+redhat_system_units["ods_signerd"] = redhat_system_units["ods-signerd"]
+redhat_system_units["gssproxy"] = "gssproxy.service"
 
 
 # Service classes that implement Red Hat OS family-specific behaviour
+
 
 class RedHatService(base_services.SystemdService):
     system_units = redhat_system_units
@@ -85,7 +87,7 @@ class RedHatService(base_services.SystemdService):
         if service_name in self.system_units:
             systemd_name = self.system_units[service_name]
         else:
-            if '.' not in service_name:
+            if "." not in service_name:
                 # if service_name does not have a dot, it is not foo.service
                 # and not a foo.target. Thus, not correct service name for
                 # systemd, default to foo.service style then
@@ -94,31 +96,28 @@ class RedHatService(base_services.SystemdService):
 
 
 class RedHatDirectoryService(RedHatService):
-
     def is_installed(self, instance_name):
         file_path = "{}/{}-{}".format(paths.ETC_DIRSRV, "slapd", instance_name)
         return os.path.exists(file_path)
 
-    def restart(self, instance_name="", capture_output=True, wait=True,
-                ldapi=False):
-    # We need to explicitly enable instances to install proper symlinks as
-    # dirsrv.target.wants/ dependencies. Standard systemd service class does it
-    # on enable() method call. Unfortunately, ipa-server-install does not do
-    # explicit dirsrv.enable() because the service startup is handled by ipactl.
-    #
-    # If we wouldn't do this, our instances will not be started as systemd would
-    # not have any clue about instances (PKI-IPA and the domain we serve)
-    # at all. Thus, hook into dirsrv.restart().
+    def restart(self, instance_name="", capture_output=True, wait=True, ldapi=False):
+        # We need to explicitly enable instances to install proper symlinks as
+        # dirsrv.target.wants/ dependencies. Standard systemd service class does it
+        # on enable() method call. Unfortunately, ipa-server-install does not do
+        # explicit dirsrv.enable() because the service startup is handled by ipactl.
+        #
+        # If we wouldn't do this, our instances will not be started as systemd would
+        # not have any clue about instances (PKI-IPA and the domain we serve)
+        # at all. Thus, hook into dirsrv.restart().
 
         if instance_name:
             elements = self.systemd_name.split("@")
 
-            srv_etc = os.path.join(paths.ETC_SYSTEMD_SYSTEM_DIR,
-                                   self.systemd_name)
-            srv_tgt = os.path.join(paths.ETC_SYSTEMD_SYSTEM_DIR,
-                                   self.SYSTEMD_SRV_TARGET % (elements[0]))
-            srv_lnk = os.path.join(srv_tgt,
-                                   self.service_instance(instance_name))
+            srv_etc = os.path.join(paths.ETC_SYSTEMD_SYSTEM_DIR, self.systemd_name)
+            srv_tgt = os.path.join(
+                paths.ETC_SYSTEMD_SYSTEM_DIR, self.SYSTEMD_SRV_TARGET % (elements[0])
+            )
+            srv_lnk = os.path.join(srv_tgt, self.service_instance(instance_name))
 
             if not os.path.exists(srv_etc):
                 self.enable(instance_name)
@@ -128,21 +127,22 @@ class RedHatDirectoryService(RedHatService):
 
         with self.__wait(instance_name, wait, ldapi) as wait:
             super(RedHatDirectoryService, self).restart(
-                instance_name, capture_output=capture_output, wait=wait)
+                instance_name, capture_output=capture_output, wait=wait
+            )
 
-    def start(self, instance_name="", capture_output=True, wait=True,
-              ldapi=False):
+    def start(self, instance_name="", capture_output=True, wait=True, ldapi=False):
         with self.__wait(instance_name, wait, ldapi) as wait:
             super(RedHatDirectoryService, self).start(
-                instance_name, capture_output=capture_output, wait=wait)
+                instance_name, capture_output=capture_output, wait=wait
+            )
 
     @contextlib.contextmanager
     def __wait(self, instance_name, wait, ldapi):
         if ldapi:
             instance_name = self.service_instance(instance_name)
-            if instance_name.endswith('.service'):
+            if instance_name.endswith(".service"):
                 instance_name = instance_name[:-8]
-            if instance_name.startswith('dirsrv'):
+            if instance_name.startswith("dirsrv"):
                 # this is intentional, return the empty string if the instance
                 # name is 'dirsrv'
                 instance_name = instance_name[7:]
@@ -151,8 +151,7 @@ class RedHatDirectoryService(RedHatService):
         if ldapi:
             yield False
             socket_name = paths.SLAPD_INSTANCE_SOCKET_TEMPLATE % instance_name
-            ipautil.wait_for_open_socket(socket_name,
-                                         self.api.env.startup_timeout)
+            ipautil.wait_for_open_socket(socket_name, self.api.env.startup_timeout)
         else:
             yield wait
 
@@ -169,7 +168,7 @@ class RedHatIPAService(RedHatService):
 
 class RedHatCAService(RedHatService):
     def wait_until_running(self):
-        logger.debug('Waiting until the CA is running')
+        logger.debug("Waiting until the CA is running")
         timeout = float(self.api.env.startup_timeout)
         op_timeout = time.time() + timeout
         while time.time() < op_timeout:
@@ -177,52 +176,53 @@ class RedHatCAService(RedHatService):
                 # check status of CA instance on this host, not remote ca_host
                 status = dogtag.ca_status(self.api.env.host)
             except Exception as e:
-                status = 'check interrupted due to error: %s' % e
-            logger.debug('The CA status is: %s', status)
-            if status == 'running':
+                status = "check interrupted due to error: %s" % e
+            logger.debug("The CA status is: %s", status)
+            if status == "running":
                 break
-            logger.debug('Waiting for CA to start...')
+            logger.debug("Waiting for CA to start...")
             time.sleep(1)
         else:
-            raise RuntimeError('CA did not start in %ss' % timeout)
+            raise RuntimeError("CA did not start in %ss" % timeout)
 
     def is_running(self, instance_name="", wait=True):
         if instance_name:
             return super(RedHatCAService, self).is_running(instance_name)
         try:
             status = dogtag.ca_status()
-            if status == 'running':
+            if status == "running":
                 return True
-            elif status == 'starting' and wait:
+            elif status == "starting" and wait:
                 # Exception is raised if status is 'starting' even after wait
                 self.wait_until_running()
                 return True
         except Exception as e:
-            logger.debug(
-                'Failed to check CA status: %s', e
-            )
+            logger.debug("Failed to check CA status: %s", e)
         return False
 
 
 # Function that constructs proper Red Hat OS family-specific server classes for
 # services of specified name
 
+
 def redhat_service_class_factory(name, api=None):
-    if name == 'dirsrv':
+    if name == "dirsrv":
         return RedHatDirectoryService(name, api)
-    if name == 'ipa':
+    if name == "ipa":
         return RedHatIPAService(name, api)
-    if name in ('pki-tomcatd', 'pki_tomcatd'):
+    if name in ("pki-tomcatd", "pki_tomcatd"):
         return RedHatCAService(name, api)
     return RedHatService(name, api)
 
 
 # Magicdict containing RedHatService instances.
 
+
 class RedHatServices(base_services.KnownServices):
     def __init__(self):
         # pylint: disable=ipa-forbidden-import
         import ipalib  # FixMe: break import cycle
+
         # pylint: enable=ipa-forbidden-import
         services = dict()
         for s in base_services.wellknownservices:
@@ -232,6 +232,7 @@ class RedHatServices(base_services.KnownServices):
 
     def service_class_factory(self, name, api=None):
         return redhat_service_class_factory(name, api)
+
 
 # Objects below are expected to be exported by platform module
 

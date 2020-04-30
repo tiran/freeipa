@@ -39,26 +39,22 @@ except ImportError:
     pass
 
 RULE_ALR_EXIST = 'SELinux User Map rule with name "{}" already exists'
-RULE_UPDATED = 'SELinux User Map {} updated'
-RULE_ADDED = 'SELinux User Map successfully added'
-INVALID_SEUSER = 'SELinux user {} not found in ordering list (in config)'
-INVALID_MCS = ("invalid 'selinuxuser': Invalid MCS value, must match {}, "
-               "where max category {}").format(
-                   platformconstants.SELINUX_MCS_REGEX,
-                   platformconstants.SELINUX_MCS_MAX)
-INVALID_MLS = ("invalid 'selinuxuser': Invalid MLS value, must match {}, "
-               "where max level {}").format(
-                   platformconstants.SELINUX_MLS_REGEX,
-                   platformconstants.SELINUX_MLS_MAX)
-HBAC_DEL_ERR = ('{} cannot be deleted because SELinux User Map {} requires '
-                'it')
-HBAC_MEMBER_ERR = 'HBAC rule and local members cannot both be set'
-BATCH_ERR = 'Some operations failed.'
+RULE_UPDATED = "SELinux User Map {} updated"
+RULE_ADDED = "SELinux User Map successfully added"
+INVALID_SEUSER = "SELinux user {} not found in ordering list (in config)"
+INVALID_MCS = (
+    "invalid 'selinuxuser': Invalid MCS value, must match {}, " "where max category {}"
+).format(platformconstants.SELINUX_MCS_REGEX, platformconstants.SELINUX_MCS_MAX)
+INVALID_MLS = (
+    "invalid 'selinuxuser': Invalid MLS value, must match {}, " "where max level {}"
+).format(platformconstants.SELINUX_MLS_REGEX, platformconstants.SELINUX_MLS_MAX)
+HBAC_DEL_ERR = "{} cannot be deleted because SELinux User Map {} requires " "it"
+HBAC_MEMBER_ERR = "HBAC rule and local members cannot both be set"
+BATCH_ERR = "Some operations failed."
 
 
 @pytest.mark.tier1
 class test_selinuxusermap(UI_driver):
-
     @screenshot
     def test_crud(self):
         """
@@ -94,15 +90,15 @@ class test_selinuxusermap(UI_driver):
         self.navigate_to_record(selinuxmap.PKEY)
 
         tables = [
-            ['memberuser_user', [user.PKEY, user.PKEY2], ],
-            ['memberuser_group', [group.PKEY, group.PKEY2], ],
-            ['memberhost_host', [host.pkey, host.pkey2], ],
-            ['memberhost_hostgroup', [hostgroup.PKEY, hostgroup.PKEY2], ],
+            ["memberuser_user", [user.PKEY, user.PKEY2],],
+            ["memberuser_group", [group.PKEY, group.PKEY2],],
+            ["memberhost_host", [host.pkey, host.pkey2],],
+            ["memberhost_hostgroup", [hostgroup.PKEY, hostgroup.PKEY2],],
         ]
 
         categories = [
-            'usercategory',
-            'hostcategory',
+            "usercategory",
+            "hostcategory",
         ]
 
         self.mod_rule_tables(tables, categories, [])
@@ -111,7 +107,7 @@ class test_selinuxusermap(UI_driver):
         for t in tables:
             table = t[0]
             keys = t[1]
-            self.add_table_associations(table, [keys[0]], confirm_btn='cancel')
+            self.add_table_associations(table, [keys[0]], confirm_btn="cancel")
 
         # cleanup
         # -------
@@ -149,16 +145,15 @@ class test_selinuxusermap(UI_driver):
         self.delete_record([selinuxmap.DATA, selinuxmap.DATA2])
 
         # test add and cancel adding record
-        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA,
-                        dialog_btn='cancel')
+        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA, dialog_btn="cancel")
 
         # test add and edit record
-        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA,
-                        dialog_btn='add_and_edit')
+        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA, dialog_btn="add_and_edit")
 
         # test add duplicate rule (should FAIL)
-        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA, negative=True,
-                        pre_delete=False)
+        self.add_record(
+            selinuxmap.ENTITY, selinuxmap.DATA, negative=True, pre_delete=False
+        )
         self.assert_last_error_dialog(RULE_ALR_EXIST.format(selinuxmap.PKEY))
         self.close_all_dialogs()
 
@@ -167,60 +162,61 @@ class test_selinuxusermap(UI_driver):
         self.navigate_to_record(hbac.RULE_PKEY)
         self.disable_action()
         self.navigate_to_record(selinuxmap.PKEY, entity=selinuxmap.ENTITY)
-        self.facet_button_click('refresh')
-        self.select_combobox('seealso', hbac.RULE_PKEY)
-        self.facet_button_click('save')
+        self.facet_button_click("refresh")
+        self.select_combobox("seealso", hbac.RULE_PKEY)
+        self.facet_button_click("save")
         self.wait_for_request()
-        self.assert_notification(assert_text=RULE_UPDATED.format(
-            selinuxmap.PKEY))
+        self.assert_notification(assert_text=RULE_UPDATED.format(selinuxmap.PKEY))
         self.close_all_dialogs()
 
         # test deleting HBAC rule used in SELinux user map (should FAIL)
         self.delete(hbac.RULE_ENTITY, [hbac.RULE_DATA])
         self.assert_last_error_dialog(
-            HBAC_DEL_ERR.format(hbac.RULE_PKEY, selinuxmap.PKEY), details=True)
+            HBAC_DEL_ERR.format(hbac.RULE_PKEY, selinuxmap.PKEY), details=True
+        )
         self.close_all_dialogs()
         self.select_record(hbac.RULE_PKEY, unselect=True)
 
         # test adding user to SELinux map together with HBAC rule (should FAIL)
         self.navigate_to_record(selinuxmap.PKEY, entity=selinuxmap.ENTITY)
-        self.add_table_associations('memberuser_user', ['admin'],
-                                    negative=True)
+        self.add_table_associations("memberuser_user", ["admin"], negative=True)
         self.assert_last_error_dialog(BATCH_ERR)
         self.close_all_dialogs()
 
         # test adding HBAC rule together with user (should FAIL)
         self.add_record(selinuxmap.ENTITY, selinuxmap.DATA2)
         self.navigate_to_record(selinuxmap.PKEY2)
-        self.add_table_associations('memberuser_user', ['admin'],
-                                    negative=True)
-        self.select_combobox('seealso', hbac.RULE_PKEY)
-        self.facet_button_click('save')
+        self.add_table_associations("memberuser_user", ["admin"], negative=True)
+        self.select_combobox("seealso", hbac.RULE_PKEY)
+        self.facet_button_click("save")
         self.assert_last_error_dialog(HBAC_MEMBER_ERR)
         self.close_all_dialogs()
 
         # test add rule without "SELinux user" (requires the field)
-        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA_FIELD_REQUIRED,
-                        negative=True)
-        self.assert_field_validation_required(field='ipaselinuxuser')
+        self.add_record(
+            selinuxmap.ENTITY, selinuxmap.DATA_FIELD_REQUIRED, negative=True
+        )
+        self.assert_field_validation_required(field="ipaselinuxuser")
         self.close_all_dialogs()
 
         # test add rule with non-existent SELinux user
-        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA_NON_EXIST_SEUSER,
-                        negative=True)
-        self.assert_last_error_dialog(expected_err=INVALID_SEUSER.format(
-            selinuxmap.DATA_NON_EXIST_SEUSER['add'][1][2]))
+        self.add_record(
+            selinuxmap.ENTITY, selinuxmap.DATA_NON_EXIST_SEUSER, negative=True
+        )
+        self.assert_last_error_dialog(
+            expected_err=INVALID_SEUSER.format(
+                selinuxmap.DATA_NON_EXIST_SEUSER["add"][1][2]
+            )
+        )
         self.close_all_dialogs()
 
         # test add invalid MCS
-        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA_INVALID_MCS,
-                        negative=True)
+        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA_INVALID_MCS, negative=True)
         self.assert_last_error_dialog(expected_err=INVALID_MCS)
         self.close_all_dialogs()
 
         # test add invalid MLS
-        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA_INVALID_MLS,
-                        negative=True)
+        self.add_record(selinuxmap.ENTITY, selinuxmap.DATA_INVALID_MLS, negative=True)
         self.assert_last_error_dialog(expected_err=INVALID_MLS)
         self.close_all_dialogs()
 
@@ -229,21 +225,21 @@ class test_selinuxusermap(UI_driver):
 
         # test disable enable multiple SELinux rules
         self.select_multiple_records([selinuxmap.DATA, selinuxmap.DATA2])
-        self.facet_button_click('disable')
-        self.dialog_button_click('ok')
-        self.assert_notification(assert_text='2 item(s) disabled')
+        self.facet_button_click("disable")
+        self.dialog_button_click("ok")
+        self.assert_notification(assert_text="2 item(s) disabled")
         self.close_notifications()
-        self.assert_record_value('Disabled',
-                                 [selinuxmap.PKEY, selinuxmap.PKEY2],
-                                 'ipaenabledflag')
+        self.assert_record_value(
+            "Disabled", [selinuxmap.PKEY, selinuxmap.PKEY2], "ipaenabledflag"
+        )
         self.select_multiple_records([selinuxmap.DATA, selinuxmap.DATA2])
-        self.facet_button_click('enable')
-        self.dialog_button_click('ok')
-        self.assert_notification(assert_text='2 item(s) enabled')
+        self.facet_button_click("enable")
+        self.dialog_button_click("ok")
+        self.assert_notification(assert_text="2 item(s) enabled")
         self.close_notifications()
-        self.assert_record_value('Enabled',
-                                 [selinuxmap.PKEY, selinuxmap.PKEY2],
-                                 'ipaenabledflag')
+        self.assert_record_value(
+            "Enabled", [selinuxmap.PKEY, selinuxmap.PKEY2], "ipaenabledflag"
+        )
         self.delete(selinuxmap.ENTITY, [selinuxmap.DATA])
 
         # test add / delete SELinux usermap confirming using ENTER key
@@ -258,7 +254,7 @@ class test_selinuxusermap(UI_driver):
         actions = ActionChains(self.driver)
         actions.send_keys(Keys.ENTER).perform()
         self.wait_for_request(d=0.5)
-        self.assert_notification(assert_text='1 item(s) deleted')
+        self.assert_notification(assert_text="1 item(s) deleted")
         self.assert_record(selinuxmap.PKEY, negative=True)
         self.close_notifications()
 
@@ -273,16 +269,17 @@ class test_selinuxusermap(UI_driver):
         """
         self.init_app()
 
-        self.navigate_to_entity('config')
-        old_selinux_order = self.get_field_value('ipaselinuxusermaporder')
-        new_selinux_order = '{}${}${}${}${}'.format(
+        self.navigate_to_entity("config")
+        old_selinux_order = self.get_field_value("ipaselinuxusermaporder")
+        new_selinux_order = "{}${}${}${}${}".format(
             old_selinux_order,
-            selinuxmap.DATA_MLS_RANGE['add'][1][2],
-            selinuxmap.DATA_MCS_RANGE['add'][1][2],
-            selinuxmap.DATA_MCS_COMMAS['add'][1][2],
-            selinuxmap.DATA_MLS_SINGLE_VAL['add'][1][2])
-        self.fill_input('ipaselinuxusermaporder', new_selinux_order)
-        self.facet_button_click('save')
+            selinuxmap.DATA_MLS_RANGE["add"][1][2],
+            selinuxmap.DATA_MCS_RANGE["add"][1][2],
+            selinuxmap.DATA_MCS_COMMAS["add"][1][2],
+            selinuxmap.DATA_MLS_SINGLE_VAL["add"][1][2],
+        )
+        self.fill_input("ipaselinuxusermaporder", new_selinux_order)
+        self.facet_button_click("save")
 
         # test add MLS range rule
         self.add_record(selinuxmap.ENTITY, selinuxmap.DATA_MLS_RANGE)
@@ -301,17 +298,20 @@ class test_selinuxusermap(UI_driver):
         self.assert_record(selinuxmap.PKEY_MLS_SINGLE_VAL)
 
         # restore original SELinux user map order
-        self.navigate_to_entity('config')
-        self.fill_input('ipaselinuxusermaporder', old_selinux_order)
-        self.facet_button_click('save')
+        self.navigate_to_entity("config")
+        self.fill_input("ipaselinuxusermaporder", old_selinux_order)
+        self.facet_button_click("save")
 
         # cleanup
-        self.delete(selinuxmap.ENTITY,
-                    [selinuxmap.DATA_MLS_RANGE,
-                     selinuxmap.DATA_MCS_RANGE,
-                     selinuxmap.DATA_MCS_COMMAS,
-                     selinuxmap.DATA_MLS_SINGLE_VAL]
-                    )
+        self.delete(
+            selinuxmap.ENTITY,
+            [
+                selinuxmap.DATA_MLS_RANGE,
+                selinuxmap.DATA_MCS_RANGE,
+                selinuxmap.DATA_MCS_COMMAS,
+                selinuxmap.DATA_MLS_SINGLE_VAL,
+            ],
+        )
 
     @screenshot
     def test_undo_refresh_reset_update_cancel(self):
@@ -320,42 +320,42 @@ class test_selinuxusermap(UI_driver):
         """
         self.init_app()
 
-        mod_description = (selinuxmap.DATA['mod'][0][2])
+        mod_description = selinuxmap.DATA["mod"][0][2]
 
         # test selinux usermap undo button
         self.add_record(selinuxmap.ENTITY, selinuxmap.DATA)
         self.navigate_to_record(selinuxmap.PKEY)
-        self.fill_fields(selinuxmap.DATA['mod'])
-        self.click_undo_button('description')
+        self.fill_fields(selinuxmap.DATA["mod"])
+        self.click_undo_button("description")
         self.verify_btn_action(mod_description)
 
         # test refresh button
-        self.fill_fields(selinuxmap.DATA['mod'], undo=True)
-        self.facet_button_click('refresh')
+        self.fill_fields(selinuxmap.DATA["mod"], undo=True)
+        self.facet_button_click("refresh")
         self.verify_btn_action(mod_description)
 
         # test reset button
-        self.mod_record(selinuxmap.ENTITY, selinuxmap.DATA, facet_btn='revert')
+        self.mod_record(selinuxmap.ENTITY, selinuxmap.DATA, facet_btn="revert")
         self.wait_for_request()
         self.verify_btn_action(mod_description)
 
         # test update button
-        self.fill_fields(selinuxmap.DATA['mod'], undo=True)
-        self.facet_button_click('refresh')
+        self.fill_fields(selinuxmap.DATA["mod"], undo=True)
+        self.facet_button_click("refresh")
         self.verify_btn_action(mod_description)
 
         # test reset button after trying to leave the details page
-        self.fill_fields(selinuxmap.DATA2['mod'], undo=True)
-        self.click_on_link('SELinux User Maps')
-        self.dialog_button_click('revert')
+        self.fill_fields(selinuxmap.DATA2["mod"], undo=True)
+        self.click_on_link("SELinux User Maps")
+        self.dialog_button_click("revert")
         self.navigate_to_record(selinuxmap.PKEY)
         self.verify_btn_action(mod_description)
         self.wait_for_request(n=2)
 
         # test update button after trying to leave the details page
-        self.fill_fields(selinuxmap.DATA['mod'], undo=True)
-        self.click_on_link('SELinux User Maps')
-        self.dialog_button_click('save')
+        self.fill_fields(selinuxmap.DATA["mod"], undo=True)
+        self.click_on_link("SELinux User Maps")
+        self.dialog_button_click("save")
         self.navigate_to_record(selinuxmap.PKEY)
         self.verify_btn_action(mod_description, negative=True)
         self.wait_for_request(n=2)
@@ -367,8 +367,7 @@ class test_selinuxusermap(UI_driver):
         """
         camparing current description with modified description
         """
-        current_description = self.get_field_value("description",
-                                                   element="textarea")
+        current_description = self.get_field_value("description", element="textarea")
         if negative:
             assert current_description == mod_description
         else:

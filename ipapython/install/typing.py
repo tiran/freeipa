@@ -12,16 +12,14 @@ _cache = weakref.WeakValueDictionary()
 class ListMeta(type):
     def __getitem__(cls, key):
         if not isinstance(key, type):
-            raise TypeError("Parameters to generic types must be types. "
-                            "Got {!r}.".format(key))
+            raise TypeError(
+                "Parameters to generic types must be types. " "Got {!r}.".format(key)
+            )
 
         t = ListMeta(
             cls.__name__,
             cls.__bases__,
-            {
-                '__parameters__': (key,),
-                '__init__': cls.__init__,
-            }
+            {"__parameters__": (key,), "__init__": cls.__init__,},
         )
 
         return _cache.get(key, t)

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-r'''
+r"""
 
 Goal
 ----
@@ -416,7 +416,7 @@ the object identity operator ("is") for comparisons.
 It is possible to "copy" an object by passing an object of the same type
 to the constructor. The result may share underlying structure.
 
-'''
+"""
 from __future__ import print_function
 
 import sys
@@ -436,10 +436,11 @@ else:
 if six.PY3:
     unicode = str
 
-__all__ = 'AVA', 'RDN', 'DN'
+__all__ = "AVA", "RDN", "DN"
+
 
 def _adjust_indices(start, end, length):
-    'helper to fixup start/end slice values'
+    "helper to fixup start/end slice values"
 
     if end > length:
         end = length
@@ -458,21 +459,21 @@ def _adjust_indices(start, end, length):
 
 def _normalize_ava_input(val):
     if six.PY3 and isinstance(val, bytes):
-        raise TypeError('expected str, got bytes: %r' % val)
+        raise TypeError("expected str, got bytes: %r" % val)
     elif not isinstance(val, str):
         val = val_encode(str(val))
     elif six.PY2 and isinstance(val, unicode):
-        val = val.encode('utf-8')
+        val = val.encode("utf-8")
     return val
 
 
 def str2rdn(value):
     try:
-        rdns = str2dn(value.encode('utf-8'))
+        rdns = str2dn(value.encode("utf-8"))
     except DECODING_ERROR:
-        raise ValueError("malformed AVA string = \"%s\"" % value)
+        raise ValueError('malformed AVA string = "%s"' % value)
     if len(rdns) != 1:
-        raise ValueError("multiple RDN's specified by \"%s\"" % (value))
+        raise ValueError('multiple RDN\'s specified by "%s"' % (value))
     return rdns[0]
 
 
@@ -504,16 +505,18 @@ def get_ava(*args):
             ava = arg.to_openldap()
         elif isinstance(arg, (tuple, list)):
             if len(arg) != 2:
-                raise ValueError("tuple or list must be 2-valued, not \"%s\"" % (arg))
+                raise ValueError('tuple or list must be 2-valued, not "%s"' % (arg))
             ava = [_normalize_ava_input(arg[0]), _normalize_ava_input(arg[1]), 0]
         elif isinstance(arg, str):
             rdn = str2rdn(arg)
             if len(rdn) > 1:
-                raise TypeError("multiple AVA's specified by \"%s\"" % (arg))
+                raise TypeError('multiple AVA\'s specified by "%s"' % (arg))
             ava = list(rdn[0])
         else:
-            raise TypeError("with 1 argument, argument must be str, unicode, tuple or list, got %s instead" %
-                            arg.__class__.__name__)
+            raise TypeError(
+                "with 1 argument, argument must be str, unicode, tuple or list, got %s instead"
+                % arg.__class__.__name__
+            )
     else:
         raise TypeError("invalid number of arguments. 1-3 allowed")
     return ava
@@ -547,15 +550,17 @@ def rdn_key(rdn):
 if six.PY2:
     # Python 2: Input/output is unicode; we store UTF-8 bytes
     def val_encode(s):
-        return s.encode('utf-8')
+        return s.encode("utf-8")
 
     def val_decode(s):
-        return s.decode('utf-8')
+        return s.decode("utf-8")
+
+
 else:
     # Python 3: Everything is unicode (str)
     def val_encode(s):
         if isinstance(s, bytes):
-            raise TypeError('expected str, got bytes: %s' % s)
+            raise TypeError("expected str, got bytes: %s" % s)
         return s
 
     def val_decode(s):
@@ -564,7 +569,7 @@ else:
 
 @functools.total_ordering
 class AVA:
-    '''
+    """
     AVA(arg0, ...)
 
     An AVA is an LDAP Attribute Value Assertion. It is convenient to think of
@@ -616,7 +621,8 @@ class AVA:
 
     The str method of an AVA returns the string representation in RFC 4514 DN
     syntax with proper escaping.
-    '''
+    """
+
     def __init__(self, *args):
         self._ava = get_ava(*args)
 
@@ -649,7 +655,11 @@ class AVA:
         return dn2str([[self.to_openldap()]])
 
     def __repr__(self):
-        return "%s.%s('%s')" % (self.__module__, self.__class__.__name__, self.__str__())
+        return "%s.%s('%s')" % (
+            self.__module__,
+            self.__class__.__name__,
+            self.__str__(),
+        )
 
     def __getitem__(self, key):
 
@@ -660,7 +670,7 @@ class AVA:
         elif key == self.attr:
             return self.value
         else:
-            raise KeyError("\"%s\" not found in %s" % (key, self.__str__()))
+            raise KeyError('"%s" not found in %s' % (key, self.__str__()))
 
     def __hash__(self):
         # Hash is computed from AVA's string representation.
@@ -672,7 +682,7 @@ class AVA:
         return hash(str(self).lower())
 
     def __eq__(self, other):
-        '''
+        """
         The attr comparison is case insensitive because attr is
         really an LDAP attribute type which means it's specified with
         an OID (dotted number) and not a string. Since OID's are
@@ -683,7 +693,7 @@ class AVA:
         attribute types used in a DN are derived from the 'name'
         atribute type (OID 2.5.4.41) whose EQUALITY MATCH RULE is
         caseIgnoreMatch.
-        '''
+        """
         # Try coercing string to AVA, if successful compare to coerced object
         if isinstance(other, str):
             try:
@@ -703,7 +713,7 @@ class AVA:
         return not self.__eq__(other)
 
     def __lt__(self, other):
-        'comparison is case insensitive, see __eq__ doc for explanation'
+        "comparison is case insensitive, see __eq__ doc for explanation"
 
         if not isinstance(other, AVA):
             raise TypeError("expected AVA but got %s" % (other.__class__.__name__))
@@ -713,7 +723,7 @@ class AVA:
 
 @functools.total_ordering
 class RDN:
-    '''
+    """
     RDN(arg0, ...)
 
     An RDN is a LDAP Relative Distinguished Name. RDN's are members of DN's
@@ -816,12 +826,12 @@ class RDN:
 
     The str method of an RDN returns the string representation in RFC 4514 DN
     syntax with proper escaping.
-    '''
+    """
 
     AVA_type = AVA
 
     def __init__(self, *args, **kwds):
-        self._avas = self._avas_from_sequence(args, kwds.get('raw', False))
+        self._avas = self._avas_from_sequence(args, kwds.get("raw", False))
 
     def _avas_from_sequence(self, args, raw=False):
         avas = []
@@ -850,7 +860,11 @@ class RDN:
         return dn2str([self.to_openldap()])
 
     def __repr__(self):
-        return "%s.%s('%s')" % (self.__module__, self.__class__.__name__, self.__str__())
+        return "%s.%s('%s')" % (
+            self.__module__,
+            self.__class__.__name__,
+            self.__str__(),
+        )
 
     def _get_ava(self, ava):
         return self.AVA_type(*ava)
@@ -874,10 +888,12 @@ class RDN:
             for ava in self._avas:
                 if key == val_decode(ava[0]):
                     return val_decode(ava[1])
-            raise KeyError("\"%s\" not found in %s" % (key, self.__str__()))
+            raise KeyError('"%s" not found in %s' % (key, self.__str__()))
         else:
-            raise TypeError("unsupported type for RDN indexing, must be int, basestring or slice; not %s" % \
-                                (key.__class__.__name__))
+            raise TypeError(
+                "unsupported type for RDN indexing, must be int, basestring or slice; not %s"
+                % (key.__class__.__name__)
+            )
 
     def _get_attr(self):
         if len(self._avas) == 0:
@@ -890,7 +906,7 @@ class RDN:
 
         self._avas[0][0] = val_encode(str(new_attr))
 
-    attr  = property(_get_attr)
+    attr = property(_get_attr)
 
     def _get_value(self):
         if len(self._avas) == 0:
@@ -950,7 +966,10 @@ class RDN:
             for ava in rdn._avas:
                 result._avas.append((ava[0], ava[1], ava[2]))
         else:
-            raise TypeError("expected RDN, AVA or basestring but got %s" % (other.__class__.__name__))
+            raise TypeError(
+                "expected RDN, AVA or basestring but got %s"
+                % (other.__class__.__name__)
+            )
 
         sort_avas(result._avas)
         return result
@@ -958,7 +977,7 @@ class RDN:
 
 @functools.total_ordering
 class DN:
-    '''
+    """
     DN(arg0, ...)
 
     A DN is a LDAP Distinguished Name. A DN is an ordered sequence of RDN's.
@@ -1104,7 +1123,7 @@ class DN:
 
     The str method of an DN returns the string representation in RFC 4514 DN
     syntax with proper escaping.
-    '''
+    """
 
     AVA_type = AVA
     RDN_type = RDN
@@ -1124,7 +1143,7 @@ class DN:
                     value = val_encode(value)
                 rdns = str2dn(value)
             except DECODING_ERROR:
-                raise ValueError("malformed RDN string = \"%s\"" % value)
+                raise ValueError('malformed RDN string = "%s"' % value)
             for rdn in rdns:
                 sort_avas(rdn)
         elif isinstance(value, DN):
@@ -1135,18 +1154,27 @@ class DN:
         elif isinstance(value, RDN):
             rdns = [value.to_openldap()]
         elif isinstance(value, cryptography.x509.name.Name):
-            rdns = list(reversed([
-                [get_ava(
-                    ATTR_NAME_BY_OID.get(ava.oid, ava.oid.dotted_string),
-                    ava.value) for ava in rdn]
-                for rdn in value.rdns
-            ]))
+            rdns = list(
+                reversed(
+                    [
+                        [
+                            get_ava(
+                                ATTR_NAME_BY_OID.get(ava.oid, ava.oid.dotted_string),
+                                ava.value,
+                            )
+                            for ava in rdn
+                        ]
+                        for rdn in value.rdns
+                    ]
+                )
+            )
             for rdn in rdns:
                 sort_avas(rdn)
         else:
             raise TypeError(
                 "must be str, unicode, tuple, Name, RDN or DN, got %s instead"
-                % type(value))
+                % type(value)
+            )
         return rdns
 
     def _rdns_from_sequence(self, seq):
@@ -1161,7 +1189,7 @@ class DN:
         return self
 
     def _get_rdn(self, rdn):
-        return self.RDN_type(*rdn, **{'raw': True})
+        return self.RDN_type(*rdn, **{"raw": True})
 
     def ldap_text(self):
         return dn2str(self.rdns)
@@ -1173,7 +1201,11 @@ class DN:
         return self.ldap_text()
 
     def __repr__(self):
-        return "%s.%s('%s')" % (self.__module__, self.__class__.__name__, self.__str__())
+        return "%s.%s('%s')" % (
+            self.__module__,
+            self.__class__.__name__,
+            self.__str__(),
+        )
 
     def _next(self):
         for rdn in self.rdns:
@@ -1198,10 +1230,12 @@ class DN:
                 for ava in rdn:
                     if key == val_decode(ava[0]):
                         return val_decode(ava[1])
-            raise KeyError("\"%s\" not found in %s" % (key, self.__str__()))
+            raise KeyError('"%s" not found in %s' % (key, self.__str__()))
         else:
-            raise TypeError("unsupported type for DN indexing, must be int, basestring or slice; not %s" % \
-                                (key.__class__.__name__))
+            raise TypeError(
+                "unsupported type for DN indexing, must be int, basestring or slice; not %s"
+                % (key.__class__.__name__)
+            )
 
     def __hash__(self):
         # Hash is computed from DN's string representation.
@@ -1210,12 +1244,14 @@ class DN:
         # hash value between two objects which compare as equal but
         # differ in case must yield the same hash value.
 
-        str_dn = ';,'.join([
-            '++'.join([
-                '=='.join((atype, avalue or ''))
-                for atype, avalue, _dummy in rdn
-            ]) for rdn in self.rdns
-        ])
+        str_dn = ";,".join(
+            [
+                "++".join(
+                    ["==".join((atype, avalue or "")) for atype, avalue, _dummy in rdn]
+                )
+                for rdn in self.rdns
+            ]
+        )
         return hash(str_dn.lower())
 
     def __eq__(self, other):
@@ -1267,12 +1303,12 @@ class DN:
     # was based on the Python's stringobject.c implementation
 
     def startswith(self, prefix, start=0, end=sys.maxsize):
-        '''
+        """
         Return True if the dn starts with the specified prefix (either a DN or
         RDN object), False otherwise.  With optional start, test dn beginning at
         that position.  With optional end, stop comparing dn at that position.
         prefix can also be a tuple of dn's or rdn's to try.
-        '''
+        """
         if isinstance(prefix, tuple):
             for pat in prefix:
                 if self._tailmatch(pat, start, end, -1):
@@ -1282,12 +1318,12 @@ class DN:
         return self._tailmatch(prefix, start, end, -1)
 
     def endswith(self, suffix, start=0, end=sys.maxsize):
-        '''
+        """
         Return True if dn ends with the specified suffix (either a DN or RDN
         object), False otherwise.  With optional start, test dn beginning at
         that position.  With optional end, stop comparing dn at that position.
         suffix can also be a tuple of dn's or rdn's to try.
-        '''
+        """
         if isinstance(suffix, tuple):
             for pat in suffix:
                 if self._tailmatch(pat, start, end, +1):
@@ -1297,34 +1333,36 @@ class DN:
         return self._tailmatch(suffix, start, end, +1)
 
     def _tailmatch(self, pattern, start, end, direction):
-        '''
+        """
         Matches the end (direction >= 0) or start (direction < 0) of self
         against pattern (either a DN or RDN), using the start and end
         arguments. Returns 0 if not found and 1 if found.
-        '''
+        """
 
         if isinstance(pattern, RDN):
             pattern = DN(pattern)
         if isinstance(pattern, DN):
             pat_len = len(pattern)
         else:
-            raise TypeError("expected DN or RDN but got %s" % (pattern.__class__.__name__))
+            raise TypeError(
+                "expected DN or RDN but got %s" % (pattern.__class__.__name__)
+            )
 
         self_len = len(self)
 
         start, end = _adjust_indices(start, end, self_len)
 
-        if direction < 0:       # starswith
-            if start+pat_len > self_len:
+        if direction < 0:  # starswith
+            if start + pat_len > self_len:
                 return 0
-        else:                   # endswith
-            if end-start < pat_len or start > self_len:
+        else:  # endswith
+            if end - start < pat_len or start > self_len:
                 return 0
 
-            if end-pat_len >= start:
+            if end - pat_len >= start:
                 start = end - pat_len
 
-        if end-start >= pat_len:
+        if end - start >= pat_len:
             return not self._cmp_sequence(pattern, start, pat_len)
         return 0
 
@@ -1346,17 +1384,15 @@ class DN:
                     return True
                 i += 1
             return False
-        raise TypeError(
-            "expected DN or RDN but got %s" % other.__class__.__name__
-        )
+        raise TypeError("expected DN or RDN but got %s" % other.__class__.__name__)
 
     def find(self, pattern, start=None, end=None):
-        '''
+        """
         Return the lowest index in the DN where pattern DN is found,
         such that pattern is contained in the range [start, end]. Optional
         arguments start and end are interpreted as in slice notation. Return
         -1 if pattern is not found.
-        '''
+        """
 
         if isinstance(pattern, DN):
             pat_len = len(pattern)
@@ -1382,11 +1418,10 @@ class DN:
             i += 1
         return -1
 
-
     def index(self, pattern, start=None, end=None):
-        '''
+        """
         Like find() but raise ValueError when the pattern is not found.
-        '''
+        """
 
         i = self.find(pattern, start, end)
         if i == -1:
@@ -1394,12 +1429,12 @@ class DN:
         return i
 
     def rfind(self, pattern, start=None, end=None):
-        '''
+        """
         Return the highest index in the DN where pattern DN is found,
         such that pattern is contained in the range [start, end]. Optional
         arguments start and end are interpreted as in slice notation. Return
         -1 if pattern is not found.
-        '''
+        """
 
         if isinstance(pattern, DN):
             pat_len = len(pattern)
@@ -1426,9 +1461,9 @@ class DN:
         return -1
 
     def rindex(self, pattern, start=None, end=None):
-        '''
+        """
         Like rfind() but raise ValueError when the pattern is not found.
-        '''
+        """
 
         i = self.rfind(pattern, start, end)
         if i == -1:
@@ -1437,29 +1472,26 @@ class DN:
 
 
 ATTR_NAME_BY_OID = {
-    cryptography.x509.oid.NameOID.COMMON_NAME: 'CN',
-    cryptography.x509.oid.NameOID.COUNTRY_NAME: 'C',
-    cryptography.x509.oid.NameOID.LOCALITY_NAME: 'L',
-    cryptography.x509.oid.NameOID.STATE_OR_PROVINCE_NAME: 'ST',
-    cryptography.x509.oid.NameOID.ORGANIZATION_NAME: 'O',
-    cryptography.x509.oid.NameOID.ORGANIZATIONAL_UNIT_NAME: 'OU',
-    cryptography.x509.oid.NameOID.SERIAL_NUMBER: 'serialNumber',
-    cryptography.x509.oid.NameOID.SURNAME: 'SN',
-    cryptography.x509.oid.NameOID.GIVEN_NAME: 'givenName',
-    cryptography.x509.oid.NameOID.TITLE: 'title',
-    cryptography.x509.oid.NameOID.GENERATION_QUALIFIER: 'generationQualifier',
-    cryptography.x509.oid.NameOID.DN_QUALIFIER: 'dnQualifier',
-    cryptography.x509.oid.NameOID.PSEUDONYM: 'pseudonym',
-    cryptography.x509.oid.NameOID.DOMAIN_COMPONENT: 'DC',
-    cryptography.x509.oid.NameOID.EMAIL_ADDRESS: 'E',
-    cryptography.x509.oid.NameOID.JURISDICTION_COUNTRY_NAME:
-        'incorporationCountry',
-    cryptography.x509.oid.NameOID.JURISDICTION_LOCALITY_NAME:
-        'incorporationLocality',
-    cryptography.x509.oid.NameOID.JURISDICTION_STATE_OR_PROVINCE_NAME:
-        'incorporationState',
-    cryptography.x509.oid.NameOID.BUSINESS_CATEGORY: 'businessCategory',
-    cryptography.x509.ObjectIdentifier('2.5.4.9'): 'STREET',
-    cryptography.x509.ObjectIdentifier('2.5.4.17'): 'postalCode',
-    cryptography.x509.ObjectIdentifier('0.9.2342.19200300.100.1.1'): 'UID',
+    cryptography.x509.oid.NameOID.COMMON_NAME: "CN",
+    cryptography.x509.oid.NameOID.COUNTRY_NAME: "C",
+    cryptography.x509.oid.NameOID.LOCALITY_NAME: "L",
+    cryptography.x509.oid.NameOID.STATE_OR_PROVINCE_NAME: "ST",
+    cryptography.x509.oid.NameOID.ORGANIZATION_NAME: "O",
+    cryptography.x509.oid.NameOID.ORGANIZATIONAL_UNIT_NAME: "OU",
+    cryptography.x509.oid.NameOID.SERIAL_NUMBER: "serialNumber",
+    cryptography.x509.oid.NameOID.SURNAME: "SN",
+    cryptography.x509.oid.NameOID.GIVEN_NAME: "givenName",
+    cryptography.x509.oid.NameOID.TITLE: "title",
+    cryptography.x509.oid.NameOID.GENERATION_QUALIFIER: "generationQualifier",
+    cryptography.x509.oid.NameOID.DN_QUALIFIER: "dnQualifier",
+    cryptography.x509.oid.NameOID.PSEUDONYM: "pseudonym",
+    cryptography.x509.oid.NameOID.DOMAIN_COMPONENT: "DC",
+    cryptography.x509.oid.NameOID.EMAIL_ADDRESS: "E",
+    cryptography.x509.oid.NameOID.JURISDICTION_COUNTRY_NAME: "incorporationCountry",
+    cryptography.x509.oid.NameOID.JURISDICTION_LOCALITY_NAME: "incorporationLocality",
+    cryptography.x509.oid.NameOID.JURISDICTION_STATE_OR_PROVINCE_NAME: "incorporationState",
+    cryptography.x509.oid.NameOID.BUSINESS_CATEGORY: "businessCategory",
+    cryptography.x509.ObjectIdentifier("2.5.4.9"): "STREET",
+    cryptography.x509.ObjectIdentifier("2.5.4.17"): "postalCode",
+    cryptography.x509.ObjectIdentifier("0.9.2342.19200300.100.1.1"): "UID",
 }

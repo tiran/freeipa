@@ -23,7 +23,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-r'''
+r"""
 
 ==============================================
 Backend plugin for RA using Dogtag (e.g. CMS)
@@ -237,7 +237,7 @@ node() function of XPath. The regular expression pattern we've passed says it's
 a match if the string begins with 'chapter' is followed by any number of
 digits and nothing else follows.
 
-'''
+"""
 
 from __future__ import absolute_import
 
@@ -270,49 +270,49 @@ logger = logging.getLogger(__name__)
 
 # These are general status return values used when
 # CMSServlet.outputError() is invoked.
-CMS_SUCCESS      = 0
-CMS_FAILURE      = 1
+CMS_SUCCESS = 0
+CMS_FAILURE = 1
 CMS_AUTH_FAILURE = 2
 
 # CMS (Certificate Management System) status return values
 # These are requestStatus return values used with templates
 CMS_STATUS_UNAUTHORIZED = 1
-CMS_STATUS_SUCCESS      = 2
-CMS_STATUS_PENDING      = 3
-CMS_STATUS_SVC_PENDING  = 4
-CMS_STATUS_REJECTED     = 5
-CMS_STATUS_ERROR        = 6
-CMS_STATUS_EXCEPTION    = 7
+CMS_STATUS_SUCCESS = 2
+CMS_STATUS_PENDING = 3
+CMS_STATUS_SVC_PENDING = 4
+CMS_STATUS_REJECTED = 5
+CMS_STATUS_ERROR = 6
+CMS_STATUS_EXCEPTION = 7
 
 
 def cms_request_status_to_string(request_status):
-    '''
+    """
     :param request_status: The integral request status value
     :return:               String name of request status
-    '''
+    """
     return {
-    1 : 'UNAUTHORIZED',
-    2 : 'SUCCESS',
-    3 : 'PENDING',
-    4 : 'SVC_PENDING',
-    5 : 'REJECTED',
-    6 : 'ERROR',
-    7 : 'EXCEPTION',
+        1: "UNAUTHORIZED",
+        2: "SUCCESS",
+        3: "PENDING",
+        4: "SVC_PENDING",
+        5: "REJECTED",
+        6: "ERROR",
+        7: "EXCEPTION",
     }.get(request_status, "unknown(%d)" % request_status)
 
+
 def cms_error_code_to_string(error_code):
-    '''
+    """
     :param error_code: The integral error code value
     :return:           String name of the error code
-    '''
-    return {
-    0 : 'SUCCESS',
-    1 : 'FAILURE',
-    2 : 'AUTH_FAILURE',
-    }.get(error_code, "unknown(%d)" % error_code)
+    """
+    return {0: "SUCCESS", 1: "FAILURE", 2: "AUTH_FAILURE",}.get(
+        error_code, "unknown(%d)" % error_code
+    )
+
 
 def parse_and_set_boolean_xml(node, response, response_name):
-    '''
+    """
     :param node:          xml node object containing value to parse for boolean result
     :param response:      response dict to set boolean result in
     :param response_name: name of the response value to set
@@ -338,19 +338,22 @@ def parse_and_set_boolean_xml(node, response, response_name):
     - false
     - no
     - off
-    '''
+    """
     value = node.text.strip().lower()
-    if value in ('true', 'yes'):
+    if value in ("true", "yes"):
         value = True
-    elif value in ('false', 'no'):
+    elif value in ("false", "no"):
         value = False
     else:
-        raise ValueError('expected true|false|yes|no|on|off for "%s", but got "%s"' % \
-                             (response_name, value))
+        raise ValueError(
+            'expected true|false|yes|no|on|off for "%s", but got "%s"'
+            % (response_name, value)
+        )
     response[response_name] = value
 
+
 def get_error_code_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   error code as an integer or None if not found
 
@@ -369,15 +372,15 @@ def get_error_code_xml(doc):
     - DEFERRED  = 2
     - REJECTED  = 3
 
-    '''
+    """
 
-    error_code = doc.xpath('//XMLResponse/Status[1]')
+    error_code = doc.xpath("//XMLResponse/Status[1]")
     if len(error_code) == 1:
-        error_code =  int(error_code[0].text)
+        error_code = int(error_code[0].text)
     else:
         # If error code wasn't present, but error string was
         # then it's an error.
-        error_string = doc.xpath('//XMLResponse/Error[1]')
+        error_string = doc.xpath("//XMLResponse/Error[1]")
         if len(error_string) == 1:
             error_code = CMS_FAILURE
         else:
@@ -386,8 +389,9 @@ def get_error_code_xml(doc):
 
     return error_code
 
+
 def get_request_status_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   request status as an integer
 
@@ -404,9 +408,9 @@ def get_request_status_xml(doc):
     CMS will often fail to return requestStatus when the status is
     SUCCESS. Therefore if we fail to find a requestStatus field we default the
     result to CMS_STATUS_SUCCESS.
-    '''
+    """
 
-    request_status = doc.xpath('//xml/fixed/requestStatus[1]')
+    request_status = doc.xpath("//xml/fixed/requestStatus[1]")
     if len(request_status) == 1:
         request_status = int(request_status[0].text)
     else:
@@ -417,7 +421,7 @@ def get_request_status_xml(doc):
     # matter what CMS returned as requestStatus.
     # Just to make life interesting CMS sometimes returns an empty error string
     # when nothing wrong occurred.
-    error_detail = doc.xpath('//xml/fixed/errorDetails[1]')
+    error_detail = doc.xpath("//xml/fixed/errorDetails[1]")
     if len(error_detail) == 1 and len(error_detail[0].text.strip()) > 0:
         # There was a non-empty error string, if the status was something
         # other than error or exception then force it to be an error.
@@ -428,7 +432,7 @@ def get_request_status_xml(doc):
 
 
 def parse_error_template_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   result dict
 
@@ -475,48 +479,51 @@ def parse_error_template_xml(doc):
            the requestStatus is EXCEPTION. This routine recognizes both
            ERROR's and EXCEPTION's and depending on which is found folds
            the error message into the error_string result value.
-    '''
+    """
 
     response = {}
-    response['request_status'] = CMS_STATUS_ERROR # assume error
+    response["request_status"] = CMS_STATUS_ERROR  # assume error
 
-
-    request_status = doc.xpath('//xml/fixed/requestStatus[1]')
+    request_status = doc.xpath("//xml/fixed/requestStatus[1]")
     if len(request_status) == 1:
         request_status = int(request_status[0].text)
-        response['request_status'] = request_status
+        response["request_status"] = request_status
 
     error_descriptions = []
-    for description in doc.xpath('//xml/records[*]/record/errorDescription'):
-        error_descriptions.append(etree.tostring(description, method='text',
-                                                 encoding=unicode).strip())
+    for description in doc.xpath("//xml/records[*]/record/errorDescription"):
+        error_descriptions.append(
+            etree.tostring(description, method="text", encoding=unicode).strip()
+        )
     if len(error_descriptions) > 0:
-        response['error_descriptions'] = error_descriptions
+        response["error_descriptions"] = error_descriptions
 
-    authority = doc.xpath('//xml/fixed/authorityName[1]')
+    authority = doc.xpath("//xml/fixed/authorityName[1]")
     if len(authority) == 1:
-        authority = etree.tostring(authority[0], method='text',
-                                   encoding=unicode).strip()
-        response['authority'] = authority
+        authority = etree.tostring(
+            authority[0], method="text", encoding=unicode
+        ).strip()
+        response["authority"] = authority
 
     # Should never get both errorDetail and unexpectedError
-    error_detail = doc.xpath('//xml/fixed/errorDetails[1]')
+    error_detail = doc.xpath("//xml/fixed/errorDetails[1]")
     if len(error_detail) == 1:
-        error_detail = etree.tostring(error_detail[0], method='text',
-                                      encoding=unicode).strip()
-        response['error_string'] = error_detail
+        error_detail = etree.tostring(
+            error_detail[0], method="text", encoding=unicode
+        ).strip()
+        response["error_string"] = error_detail
 
-    unexpected_error = doc.xpath('//xml/fixed/unexpectedError[1]')
+    unexpected_error = doc.xpath("//xml/fixed/unexpectedError[1]")
     if len(unexpected_error) == 1:
-        unexpected_error = etree.tostring(unexpected_error[0], method='text',
-                                          encoding=unicode).strip()
-        response['error_string'] = unexpected_error
+        unexpected_error = etree.tostring(
+            unexpected_error[0], method="text", encoding=unicode
+        ).strip()
+        response["error_string"] = unexpected_error
 
     return response
 
 
 def parse_error_response_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   result dict
 
@@ -548,33 +555,35 @@ def parse_error_response_xml(doc):
            - DEFERRED  = 2
            - REJECTED  = 3
 
-    '''
+    """
 
     response = {}
-    response['error_code'] = CMS_FAILURE # assume error
+    response["error_code"] = CMS_FAILURE  # assume error
 
-    error_code = doc.xpath('//XMLResponse/Status[1]')
+    error_code = doc.xpath("//XMLResponse/Status[1]")
     if len(error_code) == 1:
         error_code = int(error_code[0].text)
-        response['error_code'] = error_code
+        response["error_code"] = error_code
 
-    error_string = doc.xpath('//XMLResponse/Error[1]')
+    error_string = doc.xpath("//XMLResponse/Error[1]")
     if len(error_string) == 1:
-        error_string = etree.tostring(error_string[0], method='text',
-                                      encoding=unicode).strip()
-        response['error_string'] = error_string
+        error_string = etree.tostring(
+            error_string[0], method="text", encoding=unicode
+        ).strip()
+        response["error_string"] = error_string
 
-    request_id = doc.xpath('//XMLResponse/RequestId[1]')
+    request_id = doc.xpath("//XMLResponse/RequestId[1]")
     if len(request_id) == 1:
-        request_id = etree.tostring(request_id[0], method='text',
-                                    encoding=unicode).strip()
-        response['request_id'] = request_id
+        request_id = etree.tostring(
+            request_id[0], method="text", encoding=unicode
+        ).strip()
+        response["request_id"] = request_id
 
     return response
 
 
 def parse_check_request_result_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   result dict
     :except ValueError:
@@ -621,7 +630,7 @@ def parse_check_request_result_xml(doc):
 
     .. [2] Base64 encoded
 
-    '''
+    """
     request_status = get_request_status_xml(doc)
 
     if request_status != CMS_STATUS_SUCCESS:
@@ -629,64 +638,71 @@ def parse_check_request_result_xml(doc):
         return response
 
     response = {}
-    response['request_status'] = request_status
+    response["request_status"] = request_status
 
-    cert_request_status = doc.xpath('//xml/header/status[1]')
+    cert_request_status = doc.xpath("//xml/header/status[1]")
     if len(cert_request_status) == 1:
-        cert_request_status = etree.tostring(cert_request_status[0], method='text',
-                                             encoding=unicode).strip()
-        response['cert_request_status'] = cert_request_status
+        cert_request_status = etree.tostring(
+            cert_request_status[0], method="text", encoding=unicode
+        ).strip()
+        response["cert_request_status"] = cert_request_status
 
-    request_id = doc.xpath('//xml/header/requestId[1]')
+    request_id = doc.xpath("//xml/header/requestId[1]")
     if len(request_id) == 1:
-        request_id = etree.tostring(request_id[0], method='text',
-                                    encoding=unicode).strip()
-        response['request_id'] = request_id
+        request_id = etree.tostring(
+            request_id[0], method="text", encoding=unicode
+        ).strip()
+        response["request_id"] = request_id
 
-    authority = doc.xpath('//xml/header/authority[1]')
+    authority = doc.xpath("//xml/header/authority[1]")
     if len(authority) == 1:
-        authority = etree.tostring(authority[0], method='text',
-                                   encoding=unicode).strip()
-        response['authority'] = authority
+        authority = etree.tostring(
+            authority[0], method="text", encoding=unicode
+        ).strip()
+        response["authority"] = authority
 
-    updated_on = doc.xpath('//xml/header/updatedOn[1]')
+    updated_on = doc.xpath("//xml/header/updatedOn[1]")
     if len(updated_on) == 1:
         updated_on = datetime.datetime.utcfromtimestamp(int(updated_on[0].text))
-        response['updated_on'] = updated_on
+        response["updated_on"] = updated_on
 
-    created_on = doc.xpath('//xml/header/createdOn[1]')
+    created_on = doc.xpath("//xml/header/createdOn[1]")
     if len(created_on) == 1:
         created_on = datetime.datetime.utcfromtimestamp(int(created_on[0].text))
-        response['created_on'] = created_on
+        response["created_on"] = created_on
 
-    request_notes = doc.xpath('//xml/header/requestNotes[1]')
+    request_notes = doc.xpath("//xml/header/requestNotes[1]")
     if len(request_notes) == 1:
-        request_notes = etree.tostring(request_notes[0], method='text',
-                                       encoding=unicode).strip()
-        response['request_notes'] = request_notes
+        request_notes = etree.tostring(
+            request_notes[0], method="text", encoding=unicode
+        ).strip()
+        response["request_notes"] = request_notes
 
-    pkcs7_chain = doc.xpath('//xml/header/pkcs7ChainBase64[1]')
+    pkcs7_chain = doc.xpath("//xml/header/pkcs7ChainBase64[1]")
     if len(pkcs7_chain) == 1:
-        pkcs7_chain = etree.tostring(pkcs7_chain[0], method='text',
-                                     encoding=unicode).strip()
-        response['pkcs7_chain'] = pkcs7_chain
+        pkcs7_chain = etree.tostring(
+            pkcs7_chain[0], method="text", encoding=unicode
+        ).strip()
+        response["pkcs7_chain"] = pkcs7_chain
 
-    full_response = doc.xpath('//xml/header/cmcFullEnrollmentResponse[1]')
+    full_response = doc.xpath("//xml/header/cmcFullEnrollmentResponse[1]")
     if len(full_response) == 1:
-        full_response = etree.tostring(full_response[0], method='text',
-                                       encoding=unicode).strip()
-        response['full_response'] = full_response
+        full_response = etree.tostring(
+            full_response[0], method="text", encoding=unicode
+        ).strip()
+        response["full_response"] = full_response
 
     serial_numbers = []
-    response['serial_numbers'] = serial_numbers
-    for serial_number in doc.xpath('//xml/records[*]/record/serialNumber'):
-        serial_number = int(serial_number.text, 16) # parse as hex
+    response["serial_numbers"] = serial_numbers
+    for serial_number in doc.xpath("//xml/records[*]/record/serialNumber"):
+        serial_number = int(serial_number.text, 16)  # parse as hex
         serial_numbers.append(serial_number)
 
     return response
 
+
 def parse_display_cert_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   result dict
     :except ValueError:
@@ -736,7 +752,7 @@ def parse_display_cert_xml(doc):
 
     .. [2] Base64 encoded
 
-    '''
+    """
 
     request_status = get_request_status_xml(doc)
 
@@ -745,61 +761,67 @@ def parse_display_cert_xml(doc):
         return response
 
     response = {}
-    response['request_status'] = request_status
+    response["request_status"] = request_status
 
-    email_cert = doc.xpath('//xml/header/emailCert[1]')
+    email_cert = doc.xpath("//xml/header/emailCert[1]")
     if len(email_cert) == 1:
-        parse_and_set_boolean_xml(email_cert[0], response, 'email_cert')
+        parse_and_set_boolean_xml(email_cert[0], response, "email_cert")
 
-    no_cert_import = doc.xpath('//xml/header/noCertImport[1]')
+    no_cert_import = doc.xpath("//xml/header/noCertImport[1]")
     if len(no_cert_import) == 1:
-        parse_and_set_boolean_xml(no_cert_import[0], response, 'no_cert_import')
+        parse_and_set_boolean_xml(no_cert_import[0], response, "no_cert_import")
 
-    revocation_reason = doc.xpath('//xml/header/revocationReason[1]')
+    revocation_reason = doc.xpath("//xml/header/revocationReason[1]")
     if len(revocation_reason) == 1:
         revocation_reason = int(revocation_reason[0].text)
-        response['revocation_reason'] = revocation_reason
+        response["revocation_reason"] = revocation_reason
 
-    cert_pretty = doc.xpath('//xml/header/certPrettyPrint[1]')
+    cert_pretty = doc.xpath("//xml/header/certPrettyPrint[1]")
     if len(cert_pretty) == 1:
-        cert_pretty = etree.tostring(cert_pretty[0], method='text',
-                                     encoding=unicode).strip()
-        response['cert_pretty'] = cert_pretty
+        cert_pretty = etree.tostring(
+            cert_pretty[0], method="text", encoding=unicode
+        ).strip()
+        response["cert_pretty"] = cert_pretty
 
-    authority = doc.xpath('//xml/header/authorityid[1]')
+    authority = doc.xpath("//xml/header/authorityid[1]")
     if len(authority) == 1:
-        authority = etree.tostring(authority[0], method='text',
-                                   encoding=unicode).strip()
-        response['authority'] = authority
+        authority = etree.tostring(
+            authority[0], method="text", encoding=unicode
+        ).strip()
+        response["authority"] = authority
 
-    fingerprint = doc.xpath('//xml/header/certFingerprint[1]')
+    fingerprint = doc.xpath("//xml/header/certFingerprint[1]")
     if len(fingerprint) == 1:
-        fingerprint = etree.tostring(fingerprint[0], method='text',
-                                     encoding=unicode).strip()
-        response['fingerprint'] = fingerprint
+        fingerprint = etree.tostring(
+            fingerprint[0], method="text", encoding=unicode
+        ).strip()
+        response["fingerprint"] = fingerprint
 
-    certificate = doc.xpath('//xml/header/certChainBase64[1]')
+    certificate = doc.xpath("//xml/header/certChainBase64[1]")
     if len(certificate) == 1:
-        certificate = etree.tostring(certificate[0], method='text',
-                                     encoding=unicode).strip()
-        response['certificate'] = certificate
+        certificate = etree.tostring(
+            certificate[0], method="text", encoding=unicode
+        ).strip()
+        response["certificate"] = certificate
 
-    serial_number = doc.xpath('//xml/header/serialNumber[1]')
+    serial_number = doc.xpath("//xml/header/serialNumber[1]")
     if len(serial_number) == 1:
-        serial_number = int(serial_number[0].text, 16) # parse as hex
-        response['serial_number'] = serial_number
-        response['serial_number_hex'] = u'0x%X' % serial_number
+        serial_number = int(serial_number[0].text, 16)  # parse as hex
+        response["serial_number"] = serial_number
+        response["serial_number_hex"] = u"0x%X" % serial_number
 
-    pkcs7_chain = doc.xpath('//xml/header/pkcs7ChainBase64[1]')
+    pkcs7_chain = doc.xpath("//xml/header/pkcs7ChainBase64[1]")
     if len(pkcs7_chain) == 1:
-        pkcs7_chain = etree.tostring(pkcs7_chain[0], method='text',
-                                     encoding=unicode).strip()
-        response['pkcs7_chain'] = pkcs7_chain
+        pkcs7_chain = etree.tostring(
+            pkcs7_chain[0], method="text", encoding=unicode
+        ).strip()
+        response["pkcs7_chain"] = pkcs7_chain
 
     return response
 
+
 def parse_revoke_cert_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   result dict
     :except ValueError:
@@ -884,7 +906,7 @@ def parse_revoke_cert_xml(doc):
            name without the _issuing_point suffix. Thus crlUpdateStatus_foobar
            will appear in the response dict under the key 'crl_update_status'
 
-    '''
+    """
 
     request_status = get_request_status_xml(doc)
 
@@ -893,106 +915,122 @@ def parse_revoke_cert_xml(doc):
         return response
 
     response = {}
-    response['request_status'] = request_status
+    response["request_status"] = request_status
 
     records = []
-    response['records'] = records
+    response["records"] = records
 
-    dir_enabled = doc.xpath('//xml/header/dirEnabled[1]')
+    dir_enabled = doc.xpath("//xml/header/dirEnabled[1]")
     if len(dir_enabled) == 1:
-        parse_and_set_boolean_xml(dir_enabled[0], response, 'dir_enabled')
+        parse_and_set_boolean_xml(dir_enabled[0], response, "dir_enabled")
 
-    certs_updated = doc.xpath('//xml/header/certsUpdated[1]')
+    certs_updated = doc.xpath("//xml/header/certsUpdated[1]")
     if len(certs_updated) == 1:
         certs_updated = int(certs_updated[0].text)
-        response['certs_updated'] = certs_updated
+        response["certs_updated"] = certs_updated
 
-    certs_to_update = doc.xpath('//xml/header/certsToUpdate[1]')
+    certs_to_update = doc.xpath("//xml/header/certsToUpdate[1]")
     if len(certs_to_update) == 1:
         certs_to_update = int(certs_to_update[0].text)
-        response['certs_to_update'] = certs_to_update
+        response["certs_to_update"] = certs_to_update
 
-    error_string = doc.xpath('//xml/header/error[1]')
+    error_string = doc.xpath("//xml/header/error[1]")
     if len(error_string) == 1:
-        error_string = etree.tostring(error_string[0], method='text',
-                                      encoding=unicode).strip()
-        response['error_string'] = error_string
+        error_string = etree.tostring(
+            error_string[0], method="text", encoding=unicode
+        ).strip()
+        response["error_string"] = error_string
 
-    revoked = doc.xpath('//xml/header/revoked[1]')
+    revoked = doc.xpath("//xml/header/revoked[1]")
     if len(revoked) == 1:
-        revoked = etree.tostring(revoked[0], method='text',
-                                 encoding=unicode).strip()
-        response['revoked'] = revoked
+        revoked = etree.tostring(revoked[0], method="text", encoding=unicode).strip()
+        response["revoked"] = revoked
 
-    total_record_count = doc.xpath('//xml/header/totalRecordCount[1]')
+    total_record_count = doc.xpath("//xml/header/totalRecordCount[1]")
     if len(total_record_count) == 1:
         total_record_count = int(total_record_count[0].text)
-        response['total_record_count'] = total_record_count
+        response["total_record_count"] = total_record_count
 
-    update_crl = doc.xpath('//xml/header/updateCRL[1]')
+    update_crl = doc.xpath("//xml/header/updateCRL[1]")
     if len(update_crl) == 1:
-        parse_and_set_boolean_xml(update_crl[0], response, 'update_crl')
+        parse_and_set_boolean_xml(update_crl[0], response, "update_crl")
 
-    update_crl_success = doc.xpath('//xml/header/updateCRLSuccess[1]')
+    update_crl_success = doc.xpath("//xml/header/updateCRLSuccess[1]")
     if len(update_crl_success) == 1:
-        parse_and_set_boolean_xml(update_crl_success[0], response, 'update_crl_success')
+        parse_and_set_boolean_xml(update_crl_success[0], response, "update_crl_success")
 
-    update_crl_error = doc.xpath('//xml/header/updateCRLError[1]')
+    update_crl_error = doc.xpath("//xml/header/updateCRLError[1]")
     if len(update_crl_error) == 1:
-        update_crl_error = etree.tostring(update_crl_error[0], method='text',
-                                          encoding=unicode).strip()
-        response['update_crl_error'] = update_crl_error
+        update_crl_error = etree.tostring(
+            update_crl_error[0], method="text", encoding=unicode
+        ).strip()
+        response["update_crl_error"] = update_crl_error
 
-    publish_crl_success = doc.xpath('//xml/header/publishCRLSuccess[1]')
+    publish_crl_success = doc.xpath("//xml/header/publishCRLSuccess[1]")
     if len(publish_crl_success) == 1:
-        parse_and_set_boolean_xml(publish_crl_success[0], response, 'publish_crl_success')
+        parse_and_set_boolean_xml(
+            publish_crl_success[0], response, "publish_crl_success"
+        )
 
-    publish_crl_error = doc.xpath('//xml/header/publishCRLError[1]')
+    publish_crl_error = doc.xpath("//xml/header/publishCRLError[1]")
     if len(publish_crl_error) == 1:
-        publish_crl_error = etree.tostring(publish_crl_error[0], method='text',
-                                           encoding=unicode).strip()
-        response['publish_crl_error'] = publish_crl_error
+        publish_crl_error = etree.tostring(
+            publish_crl_error[0], method="text", encoding=unicode
+        ).strip()
+        response["publish_crl_error"] = publish_crl_error
 
-    crl_update_status = doc.xpath("//xml/header/*[starts-with(name(), 'crlUpdateStatus')][1]")
+    crl_update_status = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlUpdateStatus')][1]"
+    )
     if len(crl_update_status) == 1:
-        parse_and_set_boolean_xml(crl_update_status[0], response, 'crl_update_status')
+        parse_and_set_boolean_xml(crl_update_status[0], response, "crl_update_status")
 
-    crl_update_error = doc.xpath("//xml/header/*[starts-with(name(), 'crlUpdateError')][1]")
+    crl_update_error = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlUpdateError')][1]"
+    )
     if len(crl_update_error) == 1:
-        crl_update_error = etree.tostring(crl_update_error[0], method='text',
-                                          encoding=unicode).strip()
-        response['crl_update_error'] = crl_update_error
+        crl_update_error = etree.tostring(
+            crl_update_error[0], method="text", encoding=unicode
+        ).strip()
+        response["crl_update_error"] = crl_update_error
 
-    crl_publish_status = doc.xpath("//xml/header/*[starts-with(name(), 'crlPublishStatus')][1]")
+    crl_publish_status = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlPublishStatus')][1]"
+    )
     if len(crl_publish_status) == 1:
-        parse_and_set_boolean_xml(crl_publish_status[0], response, 'crl_publish_status')
+        parse_and_set_boolean_xml(crl_publish_status[0], response, "crl_publish_status")
 
-    crl_publish_error = doc.xpath("//xml/header/*[starts-with(name(), 'crlPublishError')][1]")
+    crl_publish_error = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlPublishError')][1]"
+    )
     if len(crl_publish_error) == 1:
-        crl_publish_error = etree.tostring(crl_publish_error[0], method='text',
-                                           encoding=unicode).strip()
-        response['crl_publish_error'] = crl_publish_error
+        crl_publish_error = etree.tostring(
+            crl_publish_error[0], method="text", encoding=unicode
+        ).strip()
+        response["crl_publish_error"] = crl_publish_error
 
-    for record in doc.xpath('//xml/records[*]/record'):
+    for record in doc.xpath("//xml/records[*]/record"):
         response_record = {}
         records.append(response_record)
 
-        serial_number = record.xpath('serialNumber[1]')
+        serial_number = record.xpath("serialNumber[1]")
         if len(serial_number) == 1:
-            serial_number = int(serial_number[0].text, 16) # parse as hex
-            response_record['serial_number'] = serial_number
-            response['serial_number_hex'] = u'0x%X' % serial_number
+            serial_number = int(serial_number[0].text, 16)  # parse as hex
+            response_record["serial_number"] = serial_number
+            response["serial_number_hex"] = u"0x%X" % serial_number
 
-        error_string = record.xpath('error[1]')
+        error_string = record.xpath("error[1]")
         if len(error_string) == 1:
-            error_string = etree.tostring(error_string[0], method='text',
-                                          encoding=unicode).strip()
-            response_record['error_string'] = error_string
+            error_string = etree.tostring(
+                error_string[0], method="text", encoding=unicode
+            ).strip()
+            response_record["error_string"] = error_string
 
     return response
 
+
 def parse_unrevoke_cert_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   result dict
     :except ValueError:
@@ -1064,7 +1102,7 @@ def parse_unrevoke_cert_xml(doc):
            name without the _issuing_point suffix. Thus crlUpdateStatus_foobar
            will appear in the response dict under the key 'crl_update_status'
 
-    '''
+    """
 
     request_status = get_request_status_xml(doc)
 
@@ -1073,83 +1111,99 @@ def parse_unrevoke_cert_xml(doc):
         return response
 
     response = {}
-    response['request_status'] = request_status
+    response["request_status"] = request_status
 
-    dir_enabled = doc.xpath('//xml/header/dirEnabled[1]')
+    dir_enabled = doc.xpath("//xml/header/dirEnabled[1]")
     if len(dir_enabled) == 1:
-        parse_and_set_boolean_xml(dir_enabled[0], response, 'dir_enabled')
+        parse_and_set_boolean_xml(dir_enabled[0], response, "dir_enabled")
 
-    dir_updated = doc.xpath('//xml/header/dirUpdated[1]')
+    dir_updated = doc.xpath("//xml/header/dirUpdated[1]")
     if len(dir_updated) == 1:
-        parse_and_set_boolean_xml(dir_updated[0], response, 'dir_updated')
+        parse_and_set_boolean_xml(dir_updated[0], response, "dir_updated")
 
-    error_string = doc.xpath('//xml/header/error[1]')
+    error_string = doc.xpath("//xml/header/error[1]")
     if len(error_string) == 1:
-        error_string = etree.tostring(error_string[0], method='text',
-                                      encoding=unicode).strip()
-        response['error_string'] = error_string
+        error_string = etree.tostring(
+            error_string[0], method="text", encoding=unicode
+        ).strip()
+        response["error_string"] = error_string
 
-    unrevoked = doc.xpath('//xml/header/unrevoked[1]')
+    unrevoked = doc.xpath("//xml/header/unrevoked[1]")
     if len(unrevoked) == 1:
-        unrevoked = etree.tostring(unrevoked[0], method='text',
-                                   encoding=unicode).strip()
-        response['unrevoked'] = unrevoked
+        unrevoked = etree.tostring(
+            unrevoked[0], method="text", encoding=unicode
+        ).strip()
+        response["unrevoked"] = unrevoked
 
-    update_crl = doc.xpath('//xml/header/updateCRL[1]')
+    update_crl = doc.xpath("//xml/header/updateCRL[1]")
     if len(update_crl) == 1:
-        parse_and_set_boolean_xml(update_crl[0], response, 'update_crl')
+        parse_and_set_boolean_xml(update_crl[0], response, "update_crl")
 
-    update_crl_success = doc.xpath('//xml/header/updateCRLSuccess[1]')
+    update_crl_success = doc.xpath("//xml/header/updateCRLSuccess[1]")
     if len(update_crl_success) == 1:
-        parse_and_set_boolean_xml(update_crl_success[0], response, 'update_crl_success')
+        parse_and_set_boolean_xml(update_crl_success[0], response, "update_crl_success")
 
-    update_crl_error = doc.xpath('//xml/header/updateCRLError[1]')
+    update_crl_error = doc.xpath("//xml/header/updateCRLError[1]")
     if len(update_crl_error) == 1:
-        update_crl_error = etree.tostring(update_crl_error[0], method='text',
-                                          encoding=unicode).strip()
-        response['update_crl_error'] = update_crl_error
+        update_crl_error = etree.tostring(
+            update_crl_error[0], method="text", encoding=unicode
+        ).strip()
+        response["update_crl_error"] = update_crl_error
 
-    publish_crl_success = doc.xpath('//xml/header/publishCRLSuccess[1]')
+    publish_crl_success = doc.xpath("//xml/header/publishCRLSuccess[1]")
     if len(publish_crl_success) == 1:
-        parse_and_set_boolean_xml(publish_crl_success[0], response, 'publish_crl_success')
+        parse_and_set_boolean_xml(
+            publish_crl_success[0], response, "publish_crl_success"
+        )
 
-    publish_crl_error = doc.xpath('//xml/header/publishCRLError[1]')
+    publish_crl_error = doc.xpath("//xml/header/publishCRLError[1]")
     if len(publish_crl_error) == 1:
-        publish_crl_error = etree.tostring(publish_crl_error[0], method='text',
-                                           encoding=unicode).strip()
-        response['publish_crl_error'] = publish_crl_error
+        publish_crl_error = etree.tostring(
+            publish_crl_error[0], method="text", encoding=unicode
+        ).strip()
+        response["publish_crl_error"] = publish_crl_error
 
-    crl_update_status = doc.xpath("//xml/header/*[starts-with(name(), 'crlUpdateStatus')][1]")
+    crl_update_status = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlUpdateStatus')][1]"
+    )
     if len(crl_update_status) == 1:
-        parse_and_set_boolean_xml(crl_update_status[0], response, 'crl_update_status')
+        parse_and_set_boolean_xml(crl_update_status[0], response, "crl_update_status")
 
-    crl_update_error = doc.xpath("//xml/header/*[starts-with(name(), 'crlUpdateError')][1]")
+    crl_update_error = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlUpdateError')][1]"
+    )
     if len(crl_update_error) == 1:
-        crl_update_error = etree.tostring(crl_update_error[0], method='text',
-                                          encoding=unicode).strip()
-        response['crl_update_error'] = crl_update_error
+        crl_update_error = etree.tostring(
+            crl_update_error[0], method="text", encoding=unicode
+        ).strip()
+        response["crl_update_error"] = crl_update_error
 
-    crl_publish_status = doc.xpath("//xml/header/*[starts-with(name(), 'crlPublishStatus')][1]")
+    crl_publish_status = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlPublishStatus')][1]"
+    )
     if len(crl_publish_status) == 1:
-        parse_and_set_boolean_xml(crl_publish_status[0], response, 'crl_publish_status')
+        parse_and_set_boolean_xml(crl_publish_status[0], response, "crl_publish_status")
 
-    crl_publish_error = doc.xpath("//xml/header/*[starts-with(name(), 'crlPublishError')][1]")
+    crl_publish_error = doc.xpath(
+        "//xml/header/*[starts-with(name(), 'crlPublishError')][1]"
+    )
     if len(crl_publish_error) == 1:
-        crl_publish_error = etree.tostring(crl_publish_error[0], method='text',
-                                           encoding=unicode).strip()
-        response['crl_publish_error'] = crl_publish_error
+        crl_publish_error = etree.tostring(
+            crl_publish_error[0], method="text", encoding=unicode
+        ).strip()
+        response["crl_publish_error"] = crl_publish_error
 
-    serial_number = doc.xpath('//xml/header/serialNumber[1]')
+    serial_number = doc.xpath("//xml/header/serialNumber[1]")
     if len(serial_number) == 1:
-        serial_number = int(serial_number[0].text, 16) # parse as hex
-        response['serial_number'] = serial_number
-        response['serial_number_hex'] = u'0x%X' % serial_number
+        serial_number = int(serial_number[0].text, 16)  # parse as hex
+        response["serial_number"] = serial_number
+        response["serial_number_hex"] = u"0x%X" % serial_number
 
     return response
 
 
 def parse_updateCRL_xml(doc):
-    '''
+    """
     :param doc: The root node of the xml document to parse
     :returns:   result dict
     :except ValueError:
@@ -1182,7 +1236,7 @@ def parse_updateCRL_xml(doc):
            - "disabled"
            - "notInitialized"
 
-    '''
+    """
 
     request_status = get_request_status_xml(doc)
 
@@ -1191,30 +1245,32 @@ def parse_updateCRL_xml(doc):
         return response
 
     response = {}
-    response['request_status'] = request_status
+    response["request_status"] = request_status
 
-    crl_issuing_point = doc.xpath('//xml/header/crlIssuingPoint[1]')
+    crl_issuing_point = doc.xpath("//xml/header/crlIssuingPoint[1]")
     if len(crl_issuing_point) == 1:
         crl_issuing_point = etree.tostring(
-            crl_issuing_point[0], method='text',
-            encoding=unicode).strip()
-        response['crl_issuing_point'] = crl_issuing_point
+            crl_issuing_point[0], method="text", encoding=unicode
+        ).strip()
+        response["crl_issuing_point"] = crl_issuing_point
 
-    crl_update = doc.xpath('//xml/header/crlUpdate[1]')
+    crl_update = doc.xpath("//xml/header/crlUpdate[1]")
     if len(crl_update) == 1:
-        crl_update = etree.tostring(crl_update[0], method='text',
-                                    encoding=unicode).strip()
-        response['crl_update'] = crl_update
+        crl_update = etree.tostring(
+            crl_update[0], method="text", encoding=unicode
+        ).strip()
+        response["crl_update"] = crl_update
 
     return response
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 from ipalib import Registry, errors, SkipPluginModule
-if api.env.ra_plugin != 'dogtag':
+
+if api.env.ra_plugin != "dogtag":
     # In this case, abort loading this plugin module...
-    raise SkipPluginModule(reason='dogtag not selected as RA plugin')
+    raise SkipPluginModule(reason="dogtag not selected as RA plugin")
 import os
 from ipaserver.plugins import rabase
 from ipalib.constants import TYPE_ERROR
@@ -1240,6 +1296,7 @@ class RestClient(Backend):
             profile_api.create_profile(...)
 
     """
+
     DEFAULT_PROFILE = dogtag.DEFAULT_PROFILE
     KDC_PROFILE = dogtag.KDC_PROFILE
     path = None
@@ -1247,19 +1304,16 @@ class RestClient(Backend):
     @staticmethod
     def _parse_dogtag_error(body):
         try:
-            return pki.PKIException.from_json(
-                json.loads(ipautil.decode_json(body)))
+            return pki.PKIException.from_json(json.loads(ipautil.decode_json(body)))
         except Exception:
             return None
 
     def __init__(self, api):
         self.ca_cert = api.env.tls_ca_cert
         if api.env.in_tree:
-            self.client_certfile = os.path.join(
-                api.env.dot_ipa, 'ra-agent.pem')
+            self.client_certfile = os.path.join(api.env.dot_ipa, "ra-agent.pem")
 
-            self.client_keyfile = os.path.join(
-                api.env.dot_ipa, 'ra-agent.key')
+            self.client_keyfile = os.path.join(api.env.dot_ipa, "ra-agent.key")
         else:
             self.client_certfile = paths.RA_AGENT_PEM
             self.client_keyfile = paths.RA_AGENT_KEY
@@ -1284,14 +1338,13 @@ class RestClient(Backend):
         if api.env.host != api.env.ca_host:
             preferred.append(api.env.host)
         ca_host = find_providing_server(
-            'CA', conn=self.api.Backend.ldap2, preferred_hosts=preferred,
-            api=self.api
+            "CA", conn=self.api.Backend.ldap2, preferred_hosts=preferred, api=self.api
         )
         if ca_host is None:
             # TODO: need during installation, CA is not yet set as enabled
             ca_host = api.env.ca_host
         # object is locked, need to use __setattr__()
-        object.__setattr__(self, '_ca_host', ca_host)
+        object.__setattr__(self, "_ca_host", ca_host)
         return ca_host
 
     def __enter__(self):
@@ -1300,33 +1353,37 @@ class RestClient(Backend):
             return None
 
         # Refresh the ca_host property
-        object.__setattr__(self, '_ca_host', None)
+        object.__setattr__(self, "_ca_host", None)
 
         status, resp_headers, _resp_body = dogtag.https_request(
-            self.ca_host, self.override_port or self.env.ca_agent_port,
-            url='/ca/rest/account/login',
+            self.ca_host,
+            self.override_port or self.env.ca_agent_port,
+            url="/ca/rest/account/login",
             cafile=self.ca_cert,
             client_certfile=self.client_certfile,
             client_keyfile=self.client_keyfile,
-            method='GET'
+            method="GET",
         )
-        cookies = ipapython.cookie.Cookie.parse(resp_headers.get('set-cookie', ''))
+        cookies = ipapython.cookie.Cookie.parse(resp_headers.get("set-cookie", ""))
         if status != 200 or len(cookies) == 0:
-            raise errors.RemoteRetrieveError(reason=_('Failed to authenticate to CA REST API'))
-        object.__setattr__(self, 'cookie', str(cookies[0]))
+            raise errors.RemoteRetrieveError(
+                reason=_("Failed to authenticate to CA REST API")
+            )
+        object.__setattr__(self, "cookie", str(cookies[0]))
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Log out of the REST API"""
         dogtag.https_request(
-            self.ca_host, self.override_port or self.env.ca_agent_port,
-            url='/ca/rest/account/logout',
+            self.ca_host,
+            self.override_port or self.env.ca_agent_port,
+            url="/ca/rest/account/logout",
             cafile=self.ca_cert,
             client_certfile=self.client_certfile,
             client_keyfile=self.client_keyfile,
-            method='GET'
+            method="GET",
         )
-        object.__setattr__(self, 'cookie', None)
+        object.__setattr__(self, "cookie", None)
 
     def _ssldo(self, method, path, headers=None, body=None, use_session=True):
         """
@@ -1351,11 +1408,10 @@ class RestClient(Backend):
 
         if use_session:
             if self.cookie is None:
-                raise errors.RemoteRetrieveError(
-                    reason=_("REST API is not logged in."))
-            headers['Cookie'] = self.cookie
+                raise errors.RemoteRetrieveError(reason=_("REST API is not logged in."))
+            headers["Cookie"] = self.cookie
 
-        resource = '/ca/rest'
+        resource = "/ca/rest"
         if self.path is not None:
             resource = os.path.join(resource, self.path)
         if path is not None:
@@ -1363,19 +1419,24 @@ class RestClient(Backend):
 
         # perform main request
         status, resp_headers, resp_body = dogtag.https_request(
-            self.ca_host, self.override_port or self.env.ca_agent_port,
+            self.ca_host,
+            self.override_port or self.env.ca_agent_port,
             url=resource,
             cafile=self.ca_cert,
             client_certfile=self.client_certfile,
             client_keyfile=self.client_keyfile,
-            method=method, headers=headers, body=body
+            method=method,
+            headers=headers,
+            body=body,
         )
         if status < 200 or status >= 300:
-            explanation = self._parse_dogtag_error(resp_body) or ''
+            explanation = self._parse_dogtag_error(resp_body) or ""
             raise errors.HTTPRequestError(
                 status=status,
-                reason=_('Non-2xx response from CA REST API: %(status)d. %(explanation)s')
-                % {'status': status, 'explanation': explanation}
+                reason=_(
+                    "Non-2xx response from CA REST API: %(status)d. %(explanation)s"
+                )
+                % {"status": status, "explanation": explanation},
             )
         return (status, resp_headers, resp_body)
 
@@ -1385,6 +1446,7 @@ class ra(rabase.rabase, RestClient):
     """
     Request Authority backend plugin.
     """
+
     DEFAULT_PROFILE = dogtag.DEFAULT_PROFILE
 
     def raise_certificate_operation_error(self, func_name, err_msg=None, detail=None):
@@ -1400,12 +1462,12 @@ class ra(rabase.rabase, RestClient):
         """
 
         if err_msg is None:
-            err_msg = _('Unable to communicate with CMS')
+            err_msg = _("Unable to communicate with CMS")
 
         if detail is not None:
-            err_msg = u'%s (%s)' % (err_msg, detail)
+            err_msg = u"%s (%s)" % (err_msg, detail)
 
-        logger.error('%s.%s(): %s', type(self).__name__, func_name, err_msg)
+        logger.error("%s.%s(): %s", type(self).__name__, func_name, err_msg)
         raise errors.CertificateOperationError(error=err_msg)
 
     def _request(self, url, port, **kw):
@@ -1429,14 +1491,17 @@ class ra(rabase.rabase, RestClient):
         Perform an HTTPS request
         """
         return dogtag.https_request(
-            self.ca_host, port, url,
+            self.ca_host,
+            port,
+            url,
             cafile=self.ca_cert,
             client_certfile=self.client_certfile,
             client_keyfile=self.client_keyfile,
-            **kw)
+            **kw
+        )
 
     def get_parse_result_xml(self, xml_text, parse_func):
-        '''
+        """
         :param xml_text:   The XML text to parse
         :param parse_func: The XML parsing function to apply to the parsed DOM tree.
         :return:           parsed result dict
@@ -1444,17 +1509,21 @@ class ra(rabase.rabase, RestClient):
         Utility routine which parses the input text into an XML DOM tree
         and then invokes the parsing function on the DOM tree in order
         to get the parsing result as a dict of key/value pairs.
-        '''
+        """
         parser = etree.XMLParser()
         try:
             doc = etree.fromstring(xml_text, parser)
         except etree.XMLSyntaxError as e:
-            self.raise_certificate_operation_error('get_parse_result_xml',
-                                                   detail=str(e))
+            self.raise_certificate_operation_error(
+                "get_parse_result_xml", detail=str(e)
+            )
         result = parse_func(doc)
         logger.debug(
             "%s() xml_text:\n%r\nparse_result:\n%r",
-            parse_func.__name__, xml_text, result)
+            parse_func.__name__,
+            xml_text,
+            result,
+        )
         return result
 
     def check_request_status(self, request_id):
@@ -1491,39 +1560,41 @@ class ra(rabase.rabase, RestClient):
 
 
         """
-        logger.debug('%s.check_request_status()', type(self).__name__)
+        logger.debug("%s.check_request_status()", type(self).__name__)
 
         # Call CMS
-        http_status, _http_headers, http_body = (
-            self._request('/ca/ee/ca/checkRequest',
-                          self.env.ca_port,
-                          requestId=request_id,
-                          xml='true')
+        http_status, _http_headers, http_body = self._request(
+            "/ca/ee/ca/checkRequest", self.env.ca_port, requestId=request_id, xml="true"
         )
 
         # Parse and handle errors
         if http_status != 200:
-            self.raise_certificate_operation_error('check_request_status',
-                                                   detail=http_status)
+            self.raise_certificate_operation_error(
+                "check_request_status", detail=http_status
+            )
 
-        parse_result = self.get_parse_result_xml(http_body, parse_check_request_result_xml)
-        request_status = parse_result['request_status']
+        parse_result = self.get_parse_result_xml(
+            http_body, parse_check_request_result_xml
+        )
+        request_status = parse_result["request_status"]
         if request_status != CMS_STATUS_SUCCESS:
-            self.raise_certificate_operation_error('check_request_status',
-                                                   cms_request_status_to_string(request_status),
-                                                   parse_result.get('error_string'))
+            self.raise_certificate_operation_error(
+                "check_request_status",
+                cms_request_status_to_string(request_status),
+                parse_result.get("error_string"),
+            )
 
         # Return command result
         cmd_result = {}
-        if 'serial_numbers' in parse_result and len(parse_result['serial_numbers']) > 0:
+        if "serial_numbers" in parse_result and len(parse_result["serial_numbers"]) > 0:
             # see module documentation concerning serial numbers and XMLRPC
-            cmd_result['serial_number'] = unicode(parse_result['serial_numbers'][0])
+            cmd_result["serial_number"] = unicode(parse_result["serial_numbers"][0])
 
-        if 'request_id' in parse_result:
-            cmd_result['request_id'] = parse_result['request_id']
+        if "request_id" in parse_result:
+            cmd_result["request_id"] = parse_result["request_id"]
 
-        if 'cert_request_status' in parse_result:
-            cmd_result['cert_request_status'] = parse_result['cert_request_status']
+        if "cert_request_status" in parse_result:
+            cmd_result["cert_request_status"] = parse_result["cert_request_status"]
 
         return cmd_result
 
@@ -1572,7 +1643,7 @@ class ra(rabase.rabase, RestClient):
 
 
         """
-        logger.debug('%s.get_certificate()', type(self).__name__)
+        logger.debug("%s.get_certificate()", type(self).__name__)
 
         # Convert serial number to integral type from string to properly handle
         # radix issues. Note: the int object constructor will properly handle large
@@ -1580,45 +1651,45 @@ class ra(rabase.rabase, RestClient):
         serial_number = int(serial_number, 0)
 
         # Call CMS
-        http_status, _http_headers, http_body = (
-            self._sslget('/ca/agent/ca/displayBySerial',
-                         self.env.ca_agent_port,
-                         serialNumber=str(serial_number),
-                         xml='true')
+        http_status, _http_headers, http_body = self._sslget(
+            "/ca/agent/ca/displayBySerial",
+            self.env.ca_agent_port,
+            serialNumber=str(serial_number),
+            xml="true",
         )
-
 
         # Parse and handle errors
         if http_status != 200:
-            self.raise_certificate_operation_error('get_certificate',
-                                                   detail=http_status)
+            self.raise_certificate_operation_error(
+                "get_certificate", detail=http_status
+            )
 
         parse_result = self.get_parse_result_xml(http_body, parse_display_cert_xml)
-        request_status = parse_result['request_status']
+        request_status = parse_result["request_status"]
         if request_status != CMS_STATUS_SUCCESS:
-            self.raise_certificate_operation_error('get_certificate',
-                                                   cms_request_status_to_string(request_status),
-                                                   parse_result.get('error_string'))
+            self.raise_certificate_operation_error(
+                "get_certificate",
+                cms_request_status_to_string(request_status),
+                parse_result.get("error_string"),
+            )
 
         # Return command result
         cmd_result = {}
 
-        if 'certificate' in parse_result:
-            cmd_result['certificate'] = parse_result['certificate']
+        if "certificate" in parse_result:
+            cmd_result["certificate"] = parse_result["certificate"]
 
-        if 'serial_number' in parse_result:
+        if "serial_number" in parse_result:
             # see module documentation concerning serial numbers and XMLRPC
-            cmd_result['serial_number'] = unicode(parse_result['serial_number'])
-            cmd_result['serial_number_hex'] = u'0x%X' % int(cmd_result['serial_number'])
+            cmd_result["serial_number"] = unicode(parse_result["serial_number"])
+            cmd_result["serial_number_hex"] = u"0x%X" % int(cmd_result["serial_number"])
 
-        if 'revocation_reason' in parse_result:
-            cmd_result['revocation_reason'] = parse_result['revocation_reason']
+        if "revocation_reason" in parse_result:
+            cmd_result["revocation_reason"] = parse_result["revocation_reason"]
 
         return cmd_result
 
-
-    def request_certificate(
-            self, csr, profile_id, ca_id, request_type='pkcs10'):
+    def request_certificate(self, csr, profile_id, ca_id, request_type="pkcs10"):
         """
         :param csr: The certificate signing request.
         :param profile_id: The profile to use for the request.
@@ -1639,10 +1710,10 @@ class ra(rabase.rabase, RestClient):
             ``unicode``, decimal representation
 
         """
-        logger.debug('%s.request_certificate()', type(self).__name__)
+        logger.debug("%s.request_certificate()", type(self).__name__)
 
         # Call CMS
-        template = u'''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        template = u"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
             <CertEnrollmentRequest>
                 <ProfileID>{profile}</ProfileID>
                 <Input id="i1">
@@ -1654,23 +1725,17 @@ class ra(rabase.rabase, RestClient):
                         <Value>{req}</Value>
                     </Attribute>
                 </Input>
-            </CertEnrollmentRequest>'''
-        data = template.format(
-            profile=profile_id,
-            req_type=request_type,
-            req=csr,
-        )
+            </CertEnrollmentRequest>"""
+        data = template.format(profile=profile_id, req_type=request_type, req=csr,)
 
-        path = 'certrequests'
+        path = "certrequests"
         if ca_id:
-            path += '?issuer-id={}'.format(ca_id)
+            path += "?issuer-id={}".format(ca_id)
 
         _http_status, _http_headers, http_body = self._ssldo(
-            'POST', path,
-            headers={
-                'Content-Type': 'application/xml',
-                'Accept': 'application/json',
-            },
+            "POST",
+            path,
+            headers={"Content-Type": "application/xml", "Accept": "application/json",},
             body=data,
             use_session=False,
         )
@@ -1678,12 +1743,14 @@ class ra(rabase.rabase, RestClient):
         try:
             resp_obj = json.loads(ipautil.decode_json(http_body))
         except ValueError:
-            raise errors.RemoteRetrieveError(reason=_("Response from CA was not valid JSON"))
+            raise errors.RemoteRetrieveError(
+                reason=_("Response from CA was not valid JSON")
+            )
 
         # Return command result
         cmd_result = {}
 
-        entries = resp_obj.get('entries', [])
+        entries = resp_obj.get("entries", [])
 
         # ipa cert-request only handles a single PKCS #10 request so
         # there's only one certinfo in the result.
@@ -1691,20 +1758,18 @@ class ra(rabase.rabase, RestClient):
             return cmd_result
         certinfo = entries[0]
 
-        if certinfo['requestStatus'] != 'complete':
-            raise errors.CertificateOperationError(
-                    error=certinfo.get('errorMessage'))
+        if certinfo["requestStatus"] != "complete":
+            raise errors.CertificateOperationError(error=certinfo.get("errorMessage"))
 
-        if 'certId' in certinfo:
-            cmd_result = self.get_certificate(certinfo['certId'])
-            cert = ''.join(cmd_result['certificate'].splitlines())
-            cmd_result['certificate'] = cert
+        if "certId" in certinfo:
+            cmd_result = self.get_certificate(certinfo["certId"])
+            cert = "".join(cmd_result["certificate"].splitlines())
+            cmd_result["certificate"] = cert
 
-        if 'requestURL' in certinfo:
-            cmd_result['request_id'] = certinfo['requestURL'].split('/')[-1]
+        if "requestURL" in certinfo:
+            cmd_result["request_id"] = certinfo["requestURL"].split("/")[-1]
 
         return cmd_result
-
 
     def revoke_certificate(self, serial_number, revocation_reason=0):
         """
@@ -1729,9 +1794,12 @@ class ra(rabase.rabase, RestClient):
         +---------------+---------------+---------------+
 
         """
-        logger.debug('%s.revoke_certificate()', type(self).__name__)
+        logger.debug("%s.revoke_certificate()", type(self).__name__)
         if type(revocation_reason) is not int:
-            raise TypeError(TYPE_ERROR % ('revocation_reason', int, revocation_reason, type(revocation_reason)))
+            raise TypeError(
+                TYPE_ERROR
+                % ("revocation_reason", int, revocation_reason, type(revocation_reason))
+            )
 
         # Convert serial number to integral type from string to properly handle
         # radix issues. Note: the int object constructor will properly handle large
@@ -1739,31 +1807,35 @@ class ra(rabase.rabase, RestClient):
         serial_number = int(serial_number, 0)
 
         # Call CMS
-        http_status, _http_headers, http_body = \
-            self._sslget('/ca/agent/ca/doRevoke',
-                         self.env.ca_agent_port,
-                         op='revoke',
-                         revocationReason=revocation_reason,
-                         revokeAll='(certRecordId=%s)' % str(serial_number),
-                         totalRecordCount=1,
-                         xml='true')
+        http_status, _http_headers, http_body = self._sslget(
+            "/ca/agent/ca/doRevoke",
+            self.env.ca_agent_port,
+            op="revoke",
+            revocationReason=revocation_reason,
+            revokeAll="(certRecordId=%s)" % str(serial_number),
+            totalRecordCount=1,
+            xml="true",
+        )
 
         # Parse and handle errors
         if http_status != 200:
-            self.raise_certificate_operation_error('revoke_certificate',
-                                                   detail=http_status)
+            self.raise_certificate_operation_error(
+                "revoke_certificate", detail=http_status
+            )
 
         parse_result = self.get_parse_result_xml(http_body, parse_revoke_cert_xml)
-        request_status = parse_result['request_status']
+        request_status = parse_result["request_status"]
         if request_status != CMS_STATUS_SUCCESS:
-            self.raise_certificate_operation_error('revoke_certificate',
-                                                   cms_request_status_to_string(request_status),
-                                                   parse_result.get('error_string'))
+            self.raise_certificate_operation_error(
+                "revoke_certificate",
+                cms_request_status_to_string(request_status),
+                parse_result.get("error_string"),
+            )
 
         # Return command result
         cmd_result = {}
 
-        cmd_result['revoked'] = parse_result.get('revoked') == 'yes'
+        cmd_result["revoked"] = parse_result.get("revoked") == "yes"
 
         return cmd_result
 
@@ -1791,7 +1863,7 @@ class ra(rabase.rabase, RestClient):
         +---------------+---------------+---------------+
         """
 
-        logger.debug('%s.take_certificate_off_hold()', type(self).__name__)
+        logger.debug("%s.take_certificate_off_hold()", type(self).__name__)
 
         # Convert serial number to integral type from string to properly handle
         # radix issues. Note: the int object constructor will properly handle large
@@ -1799,33 +1871,35 @@ class ra(rabase.rabase, RestClient):
         serial_number = int(serial_number, 0)
 
         # Call CMS
-        http_status, _http_headers, http_body = (
-            self._sslget('/ca/agent/ca/doUnrevoke',
-                         self.env.ca_agent_port,
-                         serialNumber=str(serial_number),
-                         xml='true')
+        http_status, _http_headers, http_body = self._sslget(
+            "/ca/agent/ca/doUnrevoke",
+            self.env.ca_agent_port,
+            serialNumber=str(serial_number),
+            xml="true",
         )
 
         # Parse and handle errors
         if http_status != 200:
-            self.raise_certificate_operation_error('take_certificate_off_hold',
-                                                   detail=http_status)
-
+            self.raise_certificate_operation_error(
+                "take_certificate_off_hold", detail=http_status
+            )
 
         parse_result = self.get_parse_result_xml(http_body, parse_unrevoke_cert_xml)
-        request_status = parse_result['request_status']
+        request_status = parse_result["request_status"]
         if request_status != CMS_STATUS_SUCCESS:
-            self.raise_certificate_operation_error('take_certificate_off_hold',
-                                                   cms_request_status_to_string(request_status),
-                                                   parse_result.get('error_string'))
+            self.raise_certificate_operation_error(
+                "take_certificate_off_hold",
+                cms_request_status_to_string(request_status),
+                parse_result.get("error_string"),
+            )
 
         # Return command result
         cmd_result = {}
 
-        if 'error_string' in parse_result:
-            cmd_result['error_string'] = parse_result['error_string']
+        if "error_string" in parse_result:
+            cmd_result["error_string"] = parse_result["error_string"]
 
-        cmd_result['unrevoked'] = parse_result.get('unrevoked') == 'yes'
+        cmd_result["unrevoked"] = parse_result.get("unrevoked") == "yes"
 
         return cmd_result
 
@@ -1840,55 +1914,57 @@ class ra(rabase.rabase, RestClient):
             """
             Convert time to milliseconds to pass to dogtag
             """
-            ts = time.strptime(value, '%Y-%m-%d')
+            ts = time.strptime(value, "%Y-%m-%d")
             return int(time.mktime(ts) * 1000)
 
-        logger.debug('%s.find()', type(self).__name__)
+        logger.debug("%s.find()", type(self).__name__)
 
         # Create the root element
-        page = etree.Element('CertSearchRequest')
+        page = etree.Element("CertSearchRequest")
 
         # Make a new document tree
         doc = etree.ElementTree(page)
 
         # This matches the default configuration of the pki tool.
-        booloptions = {'serialNumberRangeInUse': True,
-                       'subjectInUse': False,
-                       'matchExactly': False,
-                       'revokedByInUse': False,
-                       'revokedOnInUse': False,
-                       'revocationReasonInUse': False,
-                       'issuedByInUse': False,
-                       'issuedOnInUse': False,
-                       'validNotBeforeInUse': False,
-                       'validNotAfterInUse': False,
-                       'validityLengthInUse': False,
-                       'certTypeInUse': False}
+        booloptions = {
+            "serialNumberRangeInUse": True,
+            "subjectInUse": False,
+            "matchExactly": False,
+            "revokedByInUse": False,
+            "revokedOnInUse": False,
+            "revocationReasonInUse": False,
+            "issuedByInUse": False,
+            "issuedOnInUse": False,
+            "validNotBeforeInUse": False,
+            "validNotAfterInUse": False,
+            "validityLengthInUse": False,
+            "certTypeInUse": False,
+        }
 
-        if options.get('exactly', False):
-            booloptions['matchExactly'] = True
+        if options.get("exactly", False):
+            booloptions["matchExactly"] = True
 
-        if 'subject' in options:
-            node = etree.SubElement(page, 'commonName')
-            node.text = options['subject']
-            booloptions['subjectInUse'] = True
+        if "subject" in options:
+            node = etree.SubElement(page, "commonName")
+            node.text = options["subject"]
+            booloptions["subjectInUse"] = True
 
-        if 'issuer' in options:
-            node = etree.SubElement(page, 'issuerDN')
-            node.text = options['issuer']
+        if "issuer" in options:
+            node = etree.SubElement(page, "issuerDN")
+            node.text = options["issuer"]
 
-        if 'revocation_reason' in options:
-            node = etree.SubElement(page, 'revocationReason')
-            node.text = unicode(options['revocation_reason'])
-            booloptions['revocationReasonInUse'] = True
+        if "revocation_reason" in options:
+            node = etree.SubElement(page, "revocationReason")
+            node.text = unicode(options["revocation_reason"])
+            booloptions["revocationReasonInUse"] = True
 
-        if 'min_serial_number' in options:
-            node = etree.SubElement(page, 'serialFrom')
-            node.text = unicode(options['min_serial_number'])
+        if "min_serial_number" in options:
+            node = etree.SubElement(page, "serialFrom")
+            node.text = unicode(options["min_serial_number"])
 
-        if 'max_serial_number' in options:
-            node = etree.SubElement(page, 'serialTo')
-            node.text = unicode(options['max_serial_number'])
+        if "max_serial_number" in options:
+            node = etree.SubElement(page, "serialTo")
+            node.text = unicode(options["max_serial_number"])
 
         # date_types is a tuple that consists of:
         #   1. attribute name passed from IPA API
@@ -1896,14 +1972,14 @@ class ra(rabase.rabase, RestClient):
         #   3. boolean to set in the REST API
 
         date_types = (
-          ('validnotbefore_from', 'validNotBeforeFrom', 'validNotBeforeInUse'),
-          ('validnotbefore_to', 'validNotBeforeTo', 'validNotBeforeInUse'),
-          ('validnotafter_from', 'validNotAfterFrom', 'validNotAfterInUse'),
-          ('validnotafter_to', 'validNotAfterTo', 'validNotAfterInUse'),
-          ('issuedon_from', 'issuedOnFrom','issuedOnInUse'),
-          ('issuedon_to', 'issuedOnTo','issuedOnInUse'),
-          ('revokedon_from', 'revokedOnFrom','revokedOnInUse'),
-          ('revokedon_to', 'revokedOnTo','revokedOnInUse'),
+            ("validnotbefore_from", "validNotBeforeFrom", "validNotBeforeInUse"),
+            ("validnotbefore_to", "validNotBeforeTo", "validNotBeforeInUse"),
+            ("validnotafter_from", "validNotAfterFrom", "validNotAfterInUse"),
+            ("validnotafter_to", "validNotAfterTo", "validNotAfterInUse"),
+            ("issuedon_from", "issuedOnFrom", "issuedOnInUse"),
+            ("issuedon_to", "issuedOnTo", "issuedOnInUse"),
+            ("revokedon_from", "revokedOnFrom", "revokedOnInUse"),
+            ("revokedon_to", "revokedOnTo", "revokedOnInUse"),
         )
 
         for (attr, dattr, battr) in date_types:
@@ -1918,110 +1994,111 @@ class ra(rabase.rabase, RestClient):
             e = etree.SubElement(page, opt)
             e.text = str(booloptions[opt]).lower()
 
-        payload = etree.tostring(doc, pretty_print=False,
-                                 xml_declaration=True, encoding='UTF-8')
-        logger.debug('%s.find(): request: %s', type(self).__name__, payload)
+        payload = etree.tostring(
+            doc, pretty_print=False, xml_declaration=True, encoding="UTF-8"
+        )
+        logger.debug("%s.find(): request: %s", type(self).__name__, payload)
 
         # pylint: disable=unused-variable
         status, _, data = dogtag.https_request(
-            self.ca_host, 443,
-            url='/ca/rest/certs/search?size=%d' % (
-                 options.get('sizelimit', 0x7fffffff)),
+            self.ca_host,
+            443,
+            url="/ca/rest/certs/search?size=%d"
+            % (options.get("sizelimit", 0x7FFFFFFF)),
             client_certfile=None,
             client_keyfile=None,
             cafile=self.ca_cert,
-            method='POST',
-            headers={'Accept-Encoding': 'gzip, deflate',
-                     'User-Agent': 'IPA',
-                     'Content-Type': 'application/xml'},
-            body=payload
+            method="POST",
+            headers={
+                "Accept-Encoding": "gzip, deflate",
+                "User-Agent": "IPA",
+                "Content-Type": "application/xml",
+            },
+            body=payload,
         )
 
         if status != 200:
-            self.raise_certificate_operation_error('find',
-                                                   detail=status)
+            self.raise_certificate_operation_error("find", detail=status)
 
-        logger.debug('%s.find(): response: %s', type(self).__name__, data)
+        logger.debug("%s.find(): response: %s", type(self).__name__, data)
         parser = etree.XMLParser()
         try:
             doc = etree.fromstring(data, parser)
         except etree.XMLSyntaxError as e:
-            self.raise_certificate_operation_error('find',
-                                                   detail=e.msg)
+            self.raise_certificate_operation_error("find", detail=e.msg)
 
         # Grab all the certificates
-        certs = doc.xpath('//CertDataInfo')
+        certs = doc.xpath("//CertDataInfo")
 
         results = []
 
         for cert in certs:
             response_request = {}
-            response_request['serial_number'] = int(cert.get('id'), 16) # parse as hex
-            response_request['serial_number_hex'] = u'0x%X' % response_request['serial_number']
+            response_request["serial_number"] = int(cert.get("id"), 16)  # parse as hex
+            response_request["serial_number_hex"] = (
+                u"0x%X" % response_request["serial_number"]
+            )
 
-            dn = cert.xpath('SubjectDN')
+            dn = cert.xpath("SubjectDN")
             if len(dn) == 1:
-                response_request['subject'] = unicode(dn[0].text)
+                response_request["subject"] = unicode(dn[0].text)
 
-            issuer_dn = cert.xpath('IssuerDN')
+            issuer_dn = cert.xpath("IssuerDN")
             if len(issuer_dn) == 1:
-                response_request['issuer'] = unicode(issuer_dn[0].text)
+                response_request["issuer"] = unicode(issuer_dn[0].text)
 
-            not_valid_before = cert.xpath('NotValidBefore')
+            not_valid_before = cert.xpath("NotValidBefore")
             if len(not_valid_before) == 1:
-                response_request['valid_not_before'] = (
-                    unicode(not_valid_before[0].text))
+                response_request["valid_not_before"] = unicode(not_valid_before[0].text)
 
-            not_valid_after = cert.xpath('NotValidAfter')
+            not_valid_after = cert.xpath("NotValidAfter")
             if len(not_valid_after) == 1:
-                response_request['valid_not_after'] = (
-                    unicode(not_valid_after[0].text))
+                response_request["valid_not_after"] = unicode(not_valid_after[0].text)
 
-            status = cert.xpath('Status')
+            status = cert.xpath("Status")
             if len(status) == 1:
-                response_request['status'] = unicode(status[0].text)
+                response_request["status"] = unicode(status[0].text)
             results.append(response_request)
 
         return results
 
-    def updateCRL(self, wait='false'):
+    def updateCRL(self, wait="false"):
         """
         Force update of the CRL
 
         :param wait: if true, the call will be synchronous and return only
                      when the CRL has been generated
         """
-        logger.debug('%s.updateCRL()', type(self).__name__)
+        logger.debug("%s.updateCRL()", type(self).__name__)
         # Call CMS
-        http_status, _http_headers, http_body = (
-            self._sslget('/ca/agent/ca/updateCRL',
-                         self.override_port or self.env.ca_agent_port,
-                         crlIssuingPoint='MasterCRL',
-                         waitForUpdate=wait,
-                         xml='true')
+        http_status, _http_headers, http_body = self._sslget(
+            "/ca/agent/ca/updateCRL",
+            self.override_port or self.env.ca_agent_port,
+            crlIssuingPoint="MasterCRL",
+            waitForUpdate=wait,
+            xml="true",
         )
 
         # Parse and handle errors
         if http_status != 200:
-            self.raise_certificate_operation_error('updateCRL',
-                                                   detail=http_status)
+            self.raise_certificate_operation_error("updateCRL", detail=http_status)
 
-        parse_result = self.get_parse_result_xml(http_body,
-                                                 parse_updateCRL_xml)
-        request_status = parse_result['request_status']
+        parse_result = self.get_parse_result_xml(http_body, parse_updateCRL_xml)
+        request_status = parse_result["request_status"]
         if request_status != CMS_STATUS_SUCCESS:
             self.raise_certificate_operation_error(
-                'updateCRL',
+                "updateCRL",
                 cms_request_status_to_string(request_status),
-                parse_result.get('error_string'))
+                parse_result.get("error_string"),
+            )
 
         # Return command result
         cmd_result = {}
 
-        if 'crl_issuing_point' in parse_result:
-            cmd_result['crlIssuingPoint'] = parse_result['crl_issuing_point']
-        if 'crl_update' in parse_result:
-            cmd_result['crlUpdate'] = parse_result['crl_update']
+        if "crl_issuing_point" in parse_result:
+            cmd_result["crlIssuingPoint"] = parse_result["crl_issuing_point"]
+        if "crl_update" in parse_result:
+            cmd_result["crlUpdate"] = parse_result["crl_update"]
 
         return cmd_result
 
@@ -2050,8 +2127,7 @@ class kra(Backend):
             preferred.append(api.env.host)
 
         kra_host = find_providing_server(
-            'KRA', self.api.Backend.ldap2, preferred_hosts=preferred,
-            api=self.api
+            "KRA", self.api.Backend.ldap2, preferred_hosts=preferred, api=self.api
         )
         if kra_host is None:
             # TODO: need during installation, KRA is not yet set as enabled
@@ -2066,23 +2142,19 @@ class kra(Backend):
         Raises a generic exception if KRA is not enabled.
         """
 
-        if not self.api.Command.kra_is_enabled()['result']:
+        if not self.api.Command.kra_is_enabled()["result"]:
             # TODO: replace this with a more specific exception
-            raise RuntimeError('KRA service is not enabled')
+            raise RuntimeError("KRA service is not enabled")
 
         tempdb = certdb.NSSDatabase()
         tempdb.create_db()
         crypto = cryptoutil.NSSCryptoProvider(
-            tempdb.secdir,
-            password_file=tempdb.pwd_file)
+            tempdb.secdir, password_file=tempdb.pwd_file
+        )
 
         # TODO: obtain KRA host & port from IPA service list or point to KRA load balancer
         # https://fedorahosted.org/freeipa/ticket/4557
-        connection = PKIConnection(
-            'https',
-            self.kra_host,
-            str(self.kra_port),
-            'kra')
+        connection = PKIConnection("https", self.kra_host, str(self.kra_port), "kra")
 
         connection.session.cert = (paths.RA_AGENT_PEM, paths.RA_AGENT_KEY)
         # uncomment the following when this commit makes it to release
@@ -2101,57 +2173,55 @@ class ra_certprofile(RestClient):
     """
     Profile management backend plugin.
     """
-    path = 'profiles'
+
+    path = "profiles"
 
     def create_profile(self, profile_data):
         """
         Import the profile into Dogtag
         """
-        self._ssldo('POST', 'raw',
-            headers={
-                'Content-type': 'application/xml',
-                'Accept': 'application/json',
-            },
-            body=profile_data
+        self._ssldo(
+            "POST",
+            "raw",
+            headers={"Content-type": "application/xml", "Accept": "application/json",},
+            body=profile_data,
         )
 
     def read_profile(self, profile_id):
         """
         Read the profile configuration from Dogtag
         """
-        _status, _resp_headers, resp_body = self._ssldo(
-            'GET', profile_id + '/raw')
+        _status, _resp_headers, resp_body = self._ssldo("GET", profile_id + "/raw")
         return resp_body
 
     def update_profile(self, profile_id, profile_data):
         """
         Update the profile configuration in Dogtag
         """
-        self._ssldo('PUT', profile_id + '/raw',
-            headers={
-                'Content-type': 'application/xml',
-                'Accept': 'application/json',
-            },
-            body=profile_data
+        self._ssldo(
+            "PUT",
+            profile_id + "/raw",
+            headers={"Content-type": "application/xml", "Accept": "application/json",},
+            body=profile_data,
         )
 
     def enable_profile(self, profile_id):
         """
         Enable the profile in Dogtag
         """
-        self._ssldo('POST', profile_id + '?action=enable')
+        self._ssldo("POST", profile_id + "?action=enable")
 
     def disable_profile(self, profile_id):
         """
         Enable the profile in Dogtag
         """
-        self._ssldo('POST', profile_id + '?action=disable')
+        self._ssldo("POST", profile_id + "?action=disable")
 
     def delete_profile(self, profile_id):
         """
         Delete the profile from Dogtag
         """
-        self._ssldo('DELETE', profile_id, headers={'Accept': 'application/json'})
+        self._ssldo("DELETE", profile_id, headers={"Accept": "application/json"})
 
 
 @register()
@@ -2159,7 +2229,8 @@ class ra_lightweight_ca(RestClient):
     """
     Lightweight CA management backend plugin.
     """
-    path = 'authorities'
+
+    path = "authorities"
 
     def create_ca(self, dn):
         """Create CA with the given DN.
@@ -2173,53 +2244,54 @@ class ra_lightweight_ca(RestClient):
 
         assert isinstance(dn, DN)
         _status, _resp_headers, resp_body = self._ssldo(
-            'POST', None,
-            headers={
-                'Content-type': 'application/json',
-                'Accept': 'application/json',
-            },
+            "POST",
+            None,
+            headers={"Content-type": "application/json", "Accept": "application/json",},
             body=json.dumps({"parentID": "host-authority", "dn": unicode(dn)}),
         )
         try:
             return json.loads(ipautil.decode_json(resp_body))
         except Exception as e:
-            logger.debug('%s', e, exc_info=True)
+            logger.debug("%s", e, exc_info=True)
             raise errors.RemoteRetrieveError(
-                reason=_("Response from CA was not valid JSON"))
+                reason=_("Response from CA was not valid JSON")
+            )
 
     def read_ca(self, ca_id):
         _status, _resp_headers, resp_body = self._ssldo(
-            'GET', ca_id, headers={'Accept': 'application/json'})
+            "GET", ca_id, headers={"Accept": "application/json"}
+        )
         try:
             return json.loads(ipautil.decode_json(resp_body))
         except Exception as e:
-            logger.debug('%s', e, exc_info=True)
+            logger.debug("%s", e, exc_info=True)
             raise errors.RemoteRetrieveError(
-                reason=_("Response from CA was not valid JSON"))
+                reason=_("Response from CA was not valid JSON")
+            )
 
     def read_ca_cert(self, ca_id):
         _status, _resp_headers, resp_body = self._ssldo(
-            'GET', '{}/cert'.format(ca_id),
-            headers={'Accept': 'application/pkix-cert'})
+            "GET", "{}/cert".format(ca_id), headers={"Accept": "application/pkix-cert"}
+        )
         return resp_body
 
     def read_ca_chain(self, ca_id):
         _status, _resp_headers, resp_body = self._ssldo(
-            'GET', '{}/chain'.format(ca_id),
-            headers={'Accept': 'application/pkcs7-mime'})
+            "GET",
+            "{}/chain".format(ca_id),
+            headers={"Accept": "application/pkcs7-mime"},
+        )
         return resp_body
 
     def disable_ca(self, ca_id):
         self._ssldo(
-            'POST', ca_id + '/disable',
-            headers={'Accept': 'application/json'},
+            "POST", ca_id + "/disable", headers={"Accept": "application/json"},
         )
 
     def enable_ca(self, ca_id):
         self._ssldo(
-            'POST', ca_id + '/enable',
-            headers={'Accept': 'application/json'},
+            "POST", ca_id + "/enable", headers={"Accept": "application/json"},
         )
 
     def delete_ca(self, ca_id):
-        self._ssldo('DELETE', ca_id)
+        self._ssldo("DELETE", ca_id)

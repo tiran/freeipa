@@ -30,20 +30,22 @@ import uuid
 from ipatests.test_webui.ui_driver import UI_driver
 from ipatests.test_webui.ui_driver import screenshot
 from ipatests.test_webui.data_dns import (
-    ZONE_ENTITY, FORWARD_ZONE_ENTITY, ZONE_DATA, FORWARD_ZONE_DATA,
-    ZONE_DEFAULT_FACET
+    ZONE_ENTITY,
+    FORWARD_ZONE_ENTITY,
+    ZONE_DATA,
+    FORWARD_ZONE_DATA,
+    ZONE_DEFAULT_FACET,
 )
 import pytest
 
-ENTITY = 'realmdomains'
+ENTITY = "realmdomains"
 
 
 @pytest.mark.tier1
 class test_realmdomains(UI_driver):
-
     def del_realm_domain(self, realmdomain, button):
-        self.del_multivalued('associateddomain', realmdomain)
-        self.facet_button_click('save')
+        self.del_multivalued("associateddomain", realmdomain)
+        self.facet_button_click("save")
         self.dialog_button_click(button)
         self.wait_for_request()
         self.close_notifications()
@@ -65,51 +67,52 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ZONE_ENTITY)
         self.add_record(ZONE_ENTITY, self.copy_zone_data(realmdomain))
 
-        realm = self.config.get('ipa_realm')
+        realm = self.config.get("ipa_realm")
 
         # remove the added domain from Realm Domain
         self.navigate_to_entity(ENTITY)
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.close_notifications()
 
         # re-add _TXT kerberos.$domain "$REALM"
         self.navigate_to_entity(ZONE_ENTITY)
-        self.navigate_to_record(realmdomain + '.')
+        self.navigate_to_record(realmdomain + ".")
 
         DNS_RECORD_ADD_DATA = {
-            'pkey': '_kerberos',
-            'add': [
-                ('textbox', 'idnsname', '_kerberos'),
-                ('selectbox', 'record_type', 'txtrecord'),
-                ('textbox', 'txt_part_data', realm),
-            ]
+            "pkey": "_kerberos",
+            "add": [
+                ("textbox", "idnsname", "_kerberos"),
+                ("selectbox", "record_type", "txtrecord"),
+                ("textbox", "txt_part_data", realm),
+            ],
         }
-        self.add_record(ZONE_ENTITY, DNS_RECORD_ADD_DATA,
-                        facet=ZONE_DEFAULT_FACET, navigate=False)
+        self.add_record(
+            ZONE_ENTITY, DNS_RECORD_ADD_DATA, facet=ZONE_DEFAULT_FACET, navigate=False
+        )
 
     def _add_associateddomain(self, values, force=False):
         """
         Add values to associated domains and click OK or Force
         """
         for val in values:
-            self.add_multivalued('associateddomain', val)
-        self.facet_button_click('save')
-        self.dialog_button_click('force' if force else 'ok')
+            self.add_multivalued("associateddomain", val)
+        self.facet_button_click("save")
+        self.dialog_button_click("force" if force else "ok")
         self.wait_for_request()
         self.close_notifications()
 
     @staticmethod
     def copy_zone_data(realmdomain, zone_data=ZONE_DATA):
         data = zone_data.copy()
-        data['pkey'] = realmdomain
-        for i, field in enumerate(data['add']):
-            if field[1] == 'idnsname':
-                data['add'][i] = (field[0], field[1], realmdomain)
+        data["pkey"] = realmdomain
+        for i, field in enumerate(data["add"]):
+            if field[1] == "idnsname":
+                data["add"][i] = (field[0], field[1], realmdomain)
         return data
 
     @staticmethod
     def rand_realmdomain():
-        return 'zone-{}.itest'.format(uuid.uuid4().hex[:8])
+        return "zone-{}.itest".format(uuid.uuid4().hex[:8])
 
     @screenshot
     def test_read(self):
@@ -120,11 +123,11 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # add with force - skipping DNS check
-        self._add_associateddomain(['itest.bar'], force=True)
+        self._add_associateddomain(["itest.bar"], force=True)
         self.close_notifications()
 
         # delete
-        self.del_realm_domain('itest.bar', 'force')
+        self.del_realm_domain("itest.bar", "force")
         self.wait_for_request()
 
         realmdomain = self.rand_realmdomain()
@@ -135,9 +138,9 @@ class test_realmdomains(UI_driver):
         self._add_associateddomain([realmdomain])
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_add_single_labeled_domain(self):
@@ -147,13 +150,12 @@ class test_realmdomains(UI_driver):
         self.init_app()
         self.navigate_to_entity(ENTITY)
 
-        single_label_domain = u'single-label-domain'
+        single_label_domain = u"single-label-domain"
 
         # add with force - skipping DNS check
         self._add_associateddomain([single_label_domain], force=True)
         dialog = self.get_last_error_dialog()
-        assert ("invalid 'domain': single label domains are not supported"
-                in dialog.text)
+        assert "invalid 'domain': single label domains are not supported" in dialog.text
 
     @screenshot
     def test_add_domain_with_special_char(self):
@@ -163,14 +165,15 @@ class test_realmdomains(UI_driver):
         self.init_app()
         self.navigate_to_entity(ENTITY)
 
-        domain_with_special_char = u'﻿ipa@123#.com'
+        domain_with_special_char = u"﻿ipa@123#.com"
 
         # add with force - skipping DNS check
         self._add_associateddomain([domain_with_special_char], force=True)
         dialog = self.get_last_error_dialog()
-        assert ("invalid 'domain': only letters, numbers, '-' are allowed. "
-                "DNS label may not start or end with '-'"
-                in dialog.text)
+        assert (
+            "invalid 'domain': only letters, numbers, '-' are allowed. "
+            "DNS label may not start or end with '-'" in dialog.text
+        )
 
     @screenshot
     def test_add_domain_and_undo(self):
@@ -180,14 +183,14 @@ class test_realmdomains(UI_driver):
         self.init_app()
         self.navigate_to_entity(ENTITY)
 
-        test_domain = u'﻿itest.bar'
+        test_domain = u"﻿itest.bar"
 
         # add and undo
-        self.add_multivalued('associateddomain', test_domain)
-        self.undo_multivalued('associateddomain', test_domain)
+        self.add_multivalued("associateddomain", test_domain)
+        self.undo_multivalued("associateddomain", test_domain)
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert test_domain not in domains
 
     @screenshot
@@ -198,14 +201,14 @@ class test_realmdomains(UI_driver):
         self.init_app()
         self.navigate_to_entity(ENTITY)
 
-        test_domain = u'﻿itest.bar'
+        test_domain = u"﻿itest.bar"
 
         # add and undo all
-        self.add_multivalued('associateddomain', test_domain)
-        self.undo_all_multivalued('associateddomain')
+        self.add_multivalued("associateddomain", test_domain)
+        self.undo_all_multivalued("associateddomain")
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert test_domain not in domains
 
     @screenshot
@@ -224,13 +227,13 @@ class test_realmdomains(UI_driver):
         self._add_associateddomain([realmdomain])
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_add_domain_and_refresh(self):
@@ -240,14 +243,14 @@ class test_realmdomains(UI_driver):
         self.init_app()
         self.navigate_to_entity(ENTITY)
 
-        test_domain = u'﻿itest.bar'
+        test_domain = u"﻿itest.bar"
 
         # add and refresh
-        self.add_multivalued('associateddomain', test_domain)
-        self.facet_button_click('refresh')
+        self.add_multivalued("associateddomain", test_domain)
+        self.facet_button_click("refresh")
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert test_domain not in domains
 
     @screenshot
@@ -258,14 +261,14 @@ class test_realmdomains(UI_driver):
         self.init_app()
         self.navigate_to_entity(ENTITY)
 
-        test_domain = u'﻿itest.bar'
+        test_domain = u"﻿itest.bar"
 
         # add and revert
-        self.add_multivalued('associateddomain', test_domain)
-        self.facet_button_click('revert')
+        self.add_multivalued("associateddomain", test_domain)
+        self.facet_button_click("revert")
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert test_domain not in domains
 
     @screenshot
@@ -284,13 +287,13 @@ class test_realmdomains(UI_driver):
         self._add_associateddomain([realmdomain, realmdomain], force=True)
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'force')
+        self.del_realm_domain(realmdomain, "force")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_add_empty_domain(self):
@@ -301,11 +304,11 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # add with force - skipping DNS check
-        self._add_associateddomain([''], force=True)
+        self._add_associateddomain([""], force=True)
 
         # check
         dialog = self.get_last_error_dialog()
-        assert ("no modifications to be performed" in dialog.text)
+        assert "no modifications to be performed" in dialog.text
 
     @screenshot
     def test_add_domain_with_leading_space(self):
@@ -316,12 +319,14 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # add with force - skipping DNS check
-        self._add_associateddomain([' ipa.test'], force=True)
+        self._add_associateddomain([" ipa.test"], force=True)
 
         # check
         dialog = self.get_last_error_dialog()
-        assert ("invalid 'domain': Leading and trailing spaces are not allowed"
-                in dialog.text)
+        assert (
+            "invalid 'domain': Leading and trailing spaces are not allowed"
+            in dialog.text
+        )
 
     @screenshot
     def test_add_domain_with_trailing_space(self):
@@ -332,12 +337,14 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # add with force - skipping DNS check
-        self._add_associateddomain(['ipa.test '], force=True)
+        self._add_associateddomain(["ipa.test "], force=True)
 
         # check
         dialog = self.get_last_error_dialog()
-        assert ("invalid 'domain': Leading and trailing spaces are not allowed"
-                in dialog.text)
+        assert (
+            "invalid 'domain': Leading and trailing spaces are not allowed"
+            in dialog.text
+        )
 
     @screenshot
     def test_del_domain_undo(self):
@@ -354,22 +361,22 @@ class test_realmdomains(UI_driver):
         self._add_associateddomain([realmdomain])
 
         # check that domain is present
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # delete and undo
         self.navigate_to_entity(ENTITY)
-        self.del_multivalued('associateddomain', realmdomain)
-        self.undo_multivalued('associateddomain', realmdomain)
+        self.del_multivalued("associateddomain", realmdomain)
+        self.undo_multivalued("associateddomain", realmdomain)
 
         # check that domain is present
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_del_domain_undo_all(self):
@@ -386,22 +393,22 @@ class test_realmdomains(UI_driver):
         self._add_associateddomain([realmdomain])
 
         # check that domain is present
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # delete and undo
         self.navigate_to_entity(ENTITY)
-        self.del_multivalued('associateddomain', realmdomain)
-        self.undo_all_multivalued('associateddomain')
+        self.del_multivalued("associateddomain", realmdomain)
+        self.undo_all_multivalued("associateddomain")
 
         # check that domain is present
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_del_domain_revert(self):
@@ -419,17 +426,17 @@ class test_realmdomains(UI_driver):
 
         # del and revert
         self.navigate_to_entity(ENTITY)
-        self.del_multivalued('associateddomain', realmdomain)
-        self.facet_button_click('revert')
+        self.del_multivalued("associateddomain", realmdomain)
+        self.facet_button_click("revert")
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_del_domain_and_refresh(self):
@@ -448,17 +455,17 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # delete
-        self.del_multivalued('associateddomain', realmdomain)
-        self.facet_button_click('refresh')
+        self.del_multivalued("associateddomain", realmdomain)
+        self.facet_button_click("refresh")
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_del_domain_and_update(self):
@@ -477,19 +484,19 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # delete
-        self.del_multivalued('associateddomain', realmdomain)
-        self.facet_button_click('save')
-        self.dialog_button_click('ok')
+        self.del_multivalued("associateddomain", realmdomain)
+        self.facet_button_click("save")
+        self.dialog_button_click("ok")
         self.wait_for_request()
         self.close_notifications()
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain not in domains
 
         # cleanup
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_del_domain_with_force_update(self):
@@ -508,19 +515,19 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # force delete
-        self.del_multivalued('associateddomain', realmdomain)
-        self.facet_button_click('save')
-        self.dialog_button_click('force')
+        self.del_multivalued("associateddomain", realmdomain)
+        self.facet_button_click("save")
+        self.dialog_button_click("force")
         self.wait_for_request()
         self.close_notifications()
 
         # check
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain not in domains
 
         # cleanup
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_add_non_dns_configured_domain_negative(self):
@@ -538,10 +545,11 @@ class test_realmdomains(UI_driver):
         self._add_associateddomain([realmdomain])
 
         dialog = self.get_last_error_dialog()
-        assert ("invalid 'domain': DNS zone for each realmdomain must contain "
-                "SOA or NS records. "
-                "No records found for: " + realmdomain
-                in dialog.text)
+        assert (
+            "invalid 'domain': DNS zone for each realmdomain must contain "
+            "SOA or NS records. "
+            "No records found for: " + realmdomain in dialog.text
+        )
 
     @screenshot
     def test_add_non_dns_configured_domain_positive(self):
@@ -558,13 +566,13 @@ class test_realmdomains(UI_driver):
         self.navigate_to_entity(ENTITY)
         self._add_associateddomain([realmdomain], force=True)
 
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_del_domain_of_ipa_server_bug1035286(self):
@@ -577,7 +585,7 @@ class test_realmdomains(UI_driver):
         """
         self.init_app()
 
-        ipadomain = self.config.get('ipa_domain')
+        ipadomain = self.config.get("ipa_domain")
 
         realmdomain = self.rand_realmdomain()
         self.prepare_dns_zone(realmdomain)
@@ -587,21 +595,23 @@ class test_realmdomains(UI_driver):
 
         self.navigate_to_entity(ENTITY)
 
-        self.del_multivalued('associateddomain', ipadomain)
-        self.facet_button_click('save')
-        self.dialog_button_click('force')
+        self.del_multivalued("associateddomain", ipadomain)
+        self.facet_button_click("save")
+        self.dialog_button_click("force")
         self.wait_for_request()
 
         dialog = self.get_last_error_dialog()
-        assert ("invalid 'realmdomain list': "
-                "IPA server domain cannot be omitted" in dialog.text)
-        self.dialog_button_click('cancel')
-        self.facet_button_click('refresh')
+        assert (
+            "invalid 'realmdomain list': "
+            "IPA server domain cannot be omitted" in dialog.text
+        )
+        self.dialog_button_click("cancel")
+        self.facet_button_click("refresh")
 
         # cleanup
-        self.del_realm_domain(realmdomain, 'ok')
+        self.del_realm_domain(realmdomain, "ok")
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_dnszone_add_hooked_to_realmdomains_mod(self):
@@ -620,37 +630,37 @@ class test_realmdomains(UI_driver):
         self.init_app()
 
         realmdomain = self.rand_realmdomain()
-        realm = self.config.get('ipa_realm')
+        realm = self.config.get("ipa_realm")
 
         # add DNS domain
         self.navigate_to_entity(ZONE_ENTITY)
         self.add_record(ZONE_ENTITY, self.copy_zone_data(realmdomain))
-        self.assert_record(realmdomain + '.')
+        self.assert_record(realmdomain + ".")
 
-        self.navigate_to_record(realmdomain + '.')
-        self.assert_record('_kerberos')
-        self.assert_record_value('TXT', '_kerberos', 'type')
-        self.assert_record_value(realm, '_kerberos', 'data')
+        self.navigate_to_record(realmdomain + ".")
+        self.assert_record("_kerberos")
+        self.assert_record_value("TXT", "_kerberos", "type")
+        self.assert_record_value(realm, "_kerberos", "data")
 
         self.navigate_to_entity(ENTITY)
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
-        self.del_multivalued('associateddomain', realmdomain)
-        self.facet_button_click('save')
-        self.dialog_button_click('ok')
+        self.del_multivalued("associateddomain", realmdomain)
+        self.facet_button_click("save")
+        self.dialog_button_click("ok")
         self.wait_for_request()
 
         self.navigate_to_entity(ZONE_ENTITY)
-        self.assert_record(realmdomain + '.')
+        self.assert_record(realmdomain + ".")
 
-        self.navigate_to_record(realmdomain + '.')
-        self.facet_button_click('refresh')
-        self.assert_record('_kerberos', negative=True)
+        self.navigate_to_record(realmdomain + ".")
+        self.facet_button_click("refresh")
+        self.assert_record("_kerberos", negative=True)
 
         # cleanup
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_dns_reversezone_add_hooked_to_realmdomains_mod(self):
@@ -669,17 +679,18 @@ class test_realmdomains(UI_driver):
 
         # add DNS Reverse zone
         self.navigate_to_entity(FORWARD_ZONE_ENTITY)
-        self.add_record(FORWARD_ZONE_ENTITY,
-                        self.copy_zone_data(realmdomain, FORWARD_ZONE_DATA))
-        self.assert_record(realmdomain + '.')
+        self.add_record(
+            FORWARD_ZONE_ENTITY, self.copy_zone_data(realmdomain, FORWARD_ZONE_DATA)
+        )
+        self.assert_record(realmdomain + ".")
 
         self.navigate_to_entity(ENTITY)
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain not in domains
 
         # cleanup
         self.navigate_to_entity(FORWARD_ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
     @screenshot
     def test_dnszone_del_hooked_to_realmdomains_mod(self):
@@ -701,15 +712,15 @@ class test_realmdomains(UI_driver):
         # add DNS domain
         self.navigate_to_entity(ZONE_ENTITY)
         self.add_record(ZONE_ENTITY, self.copy_zone_data(realmdomain))
-        self.assert_record(realmdomain + '.')
+        self.assert_record(realmdomain + ".")
 
         self.navigate_to_entity(ENTITY)
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain in domains
 
         self.navigate_to_entity(ZONE_ENTITY)
-        self.delete_record(realmdomain + '.')
+        self.delete_record(realmdomain + ".")
 
         self.navigate_to_entity(ENTITY)
-        domains = self.get_multivalued_value('associateddomain')
+        domains = self.get_multivalued_value("associateddomain")
         assert realmdomain not in domains

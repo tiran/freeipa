@@ -24,12 +24,10 @@ class DBMAPHandler:
     supports_extra_args = False
 
     def __init__(self, config, dbmap, nickname):
-        dbtype = dbmap.get('type')
+        dbtype = dbmap.get("type")
         if dbtype is None or dbtype != self.dbtype:
             raise ValueError(
-                "Invalid type '{}', expected '{}'".format(
-                    dbtype, self.dbtype
-                )
+                "Invalid type '{}', expected '{}'".format(dbtype, self.dbtype)
             )
         self.config = config
         self.dbmap = dbmap
@@ -45,27 +43,21 @@ class DBMAPHandler:
 class DBMAPCommandHandler(DBMAPHandler):
     def __init__(self, config, dbmap, nickname):
         super().__init__(config, dbmap, nickname)
-        self.runas = dbmap.get('runas')
-        self.command = os.path.join(
-            paths.IPA_CUSTODIA_HANDLER,
-            dbmap['command']
-        )
+        self.runas = dbmap.get("runas")
+        self.command = os.path.join(paths.IPA_CUSTODIA_HANDLER, dbmap["command"])
 
     def run_handler(self, extra_args=(), stdin=None):
         """Run handler script to export / import key material
         """
         args = [self.command]
         args.extend(extra_args)
-        kwargs = dict(
-            runas=self.runas,
-            encoding='utf-8',
-        )
+        kwargs = dict(runas=self.runas, encoding="utf-8",)
 
         if stdin:
-            args.extend(['--import', '-'])
+            args.extend(["--import", "-"])
             kwargs.update(stdin=stdin)
         else:
-            args.extend(['--export', '-'])
+            args.extend(["--export", "-"])
             kwargs.update(capture_output=True)
 
         result = ipautil.run(args, **kwargs)
@@ -85,10 +77,11 @@ class NSSWrappedCertDB(DBMAPCommandHandler):
     Store that extracts private keys from an NSSDB, wrapped with the
     private key of the primary CA.
     """
-    dbtype = 'NSSDB'
+
+    dbtype = "NSSDB"
     supports_extra_args = True
 
-    OID_DES_EDE3_CBC = '1.2.840.113549.3.7'
+    OID_DES_EDE3_CBC = "1.2.840.113549.3.7"
 
     def __init__(self, config, dbmap, nickname, *extra_args):
         super().__init__(config, dbmap, nickname)
@@ -111,34 +104,28 @@ class NSSWrappedCertDB(DBMAPCommandHandler):
             self.alg = self.OID_DES_EDE3_CBC
 
     def export_key(self):
-        return self.run_handler([
-            '--nickname', self.nickname,
-            '--algorithm', self.alg,
-        ])
+        return self.run_handler(["--nickname", self.nickname, "--algorithm", self.alg,])
 
 
 class NSSCertDB(DBMAPCommandHandler):
-    dbtype = 'NSSDB'
+    dbtype = "NSSDB"
 
     def export_key(self):
-        return self.run_handler(['--nickname', self.nickname])
+        return self.run_handler(["--nickname", self.nickname])
 
     def import_key(self, value):
-        return self.run_handler(
-            ['--nickname', self.nickname],
-            stdin=value
-        )
+        return self.run_handler(["--nickname", self.nickname], stdin=value)
 
 
 # Exfiltrate the DM password Hash so it can be set in replica's and this
 # way let a replica be install without knowing the DM password and yet
 # still keep the DM password synchronized across replicas
 class DMLDAP(DBMAPCommandHandler):
-    dbtype = 'DMLDAP'
+    dbtype = "DMLDAP"
 
     def __init__(self, config, dbmap, nickname):
         super().__init__(config, dbmap, nickname)
-        if nickname != 'DMHash':
+        if nickname != "DMHash":
             raise UnknownKeyName("Unknown Key Named '%s'" % nickname)
 
     def export_key(self):
@@ -149,7 +136,7 @@ class DMLDAP(DBMAPCommandHandler):
 
 
 class PEMFileHandler(DBMAPCommandHandler):
-    dbtype = 'PEM'
+    dbtype = "PEM"
 
     def export_key(self):
         return self.run_handler()
@@ -159,48 +146,47 @@ class PEMFileHandler(DBMAPCommandHandler):
 
 
 NAME_DB_MAP = {
-    'ca': {
-        'type': 'NSSDB',
-        'handler': NSSCertDB,
-        'command': 'ipa-custodia-pki-tomcat',
-        'runas': constants.PKI_USER,
+    "ca": {
+        "type": "NSSDB",
+        "handler": NSSCertDB,
+        "command": "ipa-custodia-pki-tomcat",
+        "runas": constants.PKI_USER,
     },
-    'ca_wrapped': {
-        'type': 'NSSDB',
-        'handler': NSSWrappedCertDB,
-        'command': 'ipa-custodia-pki-tomcat-wrapped',
-        'runas': constants.PKI_USER,
+    "ca_wrapped": {
+        "type": "NSSDB",
+        "handler": NSSWrappedCertDB,
+        "command": "ipa-custodia-pki-tomcat-wrapped",
+        "runas": constants.PKI_USER,
     },
-    'ra': {
-        'type': 'PEM',
-        'handler': PEMFileHandler,
-        'command': 'ipa-custodia-ra-agent',
-        'runas': None,  # import needs root permission to write to directory
+    "ra": {
+        "type": "PEM",
+        "handler": PEMFileHandler,
+        "command": "ipa-custodia-ra-agent",
+        "runas": None,  # import needs root permission to write to directory
     },
-    'dm': {
-        'type': 'DMLDAP',
-        'handler': DMLDAP,
-        'command': 'ipa-custodia-dmldap',
-        'runas': None,  # root
-    }
+    "dm": {
+        "type": "DMLDAP",
+        "handler": DMLDAP,
+        "command": "ipa-custodia-dmldap",
+        "runas": None,  # root
+    },
 }
 
 
 class IPASecStore(CSStore):
-
     def __init__(self, config=None):
         self.config = config
 
     def _get_handler(self, key):
-        path = key.split('/', 3)
-        if len(path) < 3 or path[0] != 'keys':
-            raise ValueError('Invalid name')
+        path = key.split("/", 3)
+        if len(path) < 3 or path[0] != "keys":
+            raise ValueError("Invalid name")
         if path[1] not in NAME_DB_MAP:
             raise UnknownKeyName("Unknown DB named '%s'" % path[1])
         dbmap = NAME_DB_MAP[path[1]]
-        handler = dbmap['handler']
+        handler = dbmap["handler"]
         if len(path) > 3 and not handler.supports_extra_args:
-            raise InvalidKeyArguments('Handler does not support extra args')
+            raise InvalidKeyArguments("Handler does not support extra args")
         return handler(self.config, dbmap, path[2], *path[3:])
 
     def get(self, key):

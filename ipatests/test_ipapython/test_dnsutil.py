@@ -19,7 +19,7 @@ def mksrv(priority, weight, port, target):
         priority=priority,
         weight=weight,
         port=port,
-        target=dns.name.from_text(target)
+        target=dns.name.from_text(target),
     )
 
 
@@ -29,7 +29,7 @@ def mkuri(priority, weight, target):
         rdtype=dns.rdatatype.URI,
         priority=priority,
         weight=weight,
-        target=target
+        target=target,
     )
 
 
@@ -90,9 +90,7 @@ class TestSortSRV:
         self.assert_permutations([h1, h2_w15, h3_w10], permutations)
 
     def test_large(self):
-        records = tuple(
-            mksrv(1, i, 443, "host{}".format(i)) for i in range(1000)
-        )
+        records = tuple(mksrv(1, i, 443, "host{}".format(i)) for i in range(1000))
         assert len(dnsutil.sort_prio_weight(records)) == len(records)
 
 

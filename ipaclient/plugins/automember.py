@@ -28,9 +28,5 @@ register = Registry()
 @register(override=True, no_fail=True)
 class automember_add_condition(MethodOverride):
     has_output_params = (
-        Str(
-            'failed',
-            label=_('Failed to add'),
-            flags=['suppress_empty'],
-        ),
+        Str("failed", label=_("Failed to add"), flags=["suppress_empty"],),
     )

@@ -39,23 +39,15 @@ config = get_global_config()
 def create_broken_resolv_conf(master):
     # Force a broken resolv.conf to simulate a bad response to
     # reverse zone lookups
-    master.run_command([
-        '/bin/mv',
-        paths.RESOLV_CONF,
-        '%s.sav' % paths.RESOLV_CONF
-    ])
+    master.run_command(["/bin/mv", paths.RESOLV_CONF, "%s.sav" % paths.RESOLV_CONF])
 
     contents = "# Set as broken by ipatests\nnameserver 127.0.0.2\n"
     master.put_file_contents(paths.RESOLV_CONF, contents)
 
 
 def restore_resolv_conf(master):
-    if os.path.exists('%s.sav' % paths.RESOLV_CONF):
-        master.run_command([
-            '/bin/mv',
-            '%s.sav' % paths.RESOLV_CONF,
-            paths.RESOLV_CONF
-        ])
+    if os.path.exists("%s.sav" % paths.RESOLV_CONF):
+        master.run_command(["/bin/mv", "%s.sav" % paths.RESOLV_CONF, paths.RESOLV_CONF])
 
 
 def server_install_setup(func):
@@ -68,13 +60,14 @@ def server_install_setup(func):
             tasks.uninstall_master(master, clean=False)
             restore_resolv_conf(master)
             ipa_certs_cleanup(master)
+
     return wrapped
 
 
 class InstallTestBase1(IntegrationTest):
 
     num_replicas = 3
-    topology = 'star'
+    topology = "star"
 
     @classmethod
     def install(cls, mh):
@@ -102,8 +95,9 @@ class InstallTestBase1(IntegrationTest):
         tasks.install_dns(self.replicas[1])
 
     def test_replica2_with_ca_kra_install(self):
-        tasks.install_replica(self.master, self.replicas[2], setup_ca=True,
-                              setup_kra=True)
+        tasks.install_replica(
+            self.master, self.replicas[2], setup_ca=True, setup_kra=True
+        )
 
     def test_replica2_ipa_dns_install(self):
         tasks.install_dns(self.replicas[2])
@@ -112,22 +106,24 @@ class InstallTestBase1(IntegrationTest):
 class InstallTestBase2(IntegrationTest):
 
     num_replicas = 3
-    topology = 'star'
+    topology = "star"
 
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=False)
 
     def test_replica1_with_ca_dns_install(self):
-        tasks.install_replica(self.master, self.replicas[1], setup_ca=True,
-                              setup_dns=True)
+        tasks.install_replica(
+            self.master, self.replicas[1], setup_ca=True, setup_dns=True
+        )
 
     def test_replica1_ipa_kra_install(self):
         tasks.install_kra(self.replicas[1])
 
     def test_replica2_with_dns_install(self):
-        tasks.install_replica(self.master, self.replicas[2], setup_ca=False,
-                              setup_dns=True)
+        tasks.install_replica(
+            self.master, self.replicas[2], setup_ca=False, setup_dns=True
+        )
 
     def test_replica2_ipa_ca_install(self):
         tasks.install_ca(self.replicas[2])
@@ -141,16 +137,16 @@ class ADTrustInstallTestBase(IntegrationTest):
     Base test for builtin AD trust installation im combination with other
     components
     """
+
     num_replicas = 2
-    topology = 'star'
+    topology = "star"
 
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=False)
 
     def install_replica(self, replica, **kwargs):
-        tasks.install_replica(self.master, replica, setup_adtrust=True,
-                              **kwargs)
+        tasks.install_replica(self.master, replica, setup_adtrust=True, **kwargs)
 
     def test_replica0_only_adtrust(self):
         self.install_replica(self.replicas[0], setup_ca=False)
@@ -163,24 +159,30 @@ class ADTrustInstallTestBase(IntegrationTest):
 # Master X Replicas installation tests
 ##
 
-class TestInstallWithCA1(InstallTestBase1):
 
+class TestInstallWithCA1(InstallTestBase1):
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=False)
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica1_ipa_kra_install(self):
         super(TestInstallWithCA1, self).test_replica1_ipa_kra_install()
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica2_with_ca_kra_install(self):
         super(TestInstallWithCA1, self).test_replica2_with_ca_kra_install()
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica2_ipa_dns_install(self):
         super(TestInstallWithCA1, self).test_replica2_ipa_dns_install()
 
@@ -193,38 +195,50 @@ class TestInstallWithCA1(InstallTestBase1):
         base_dn = self.master.domain.basedn
         client = self.replicas[0]
         tasks.uninstall_master(client)
-        expected_msg1 = "contains deprecated and unsupported " \
-                        "entries: HOST, PORT"
-        file_backup = client.get_file_contents(ldap_conf, encoding='utf-8')
+        expected_msg1 = "contains deprecated and unsupported " "entries: HOST, PORT"
+        file_backup = client.get_file_contents(ldap_conf, encoding="utf-8")
         constants = "URI ldaps://{}\nBASE {}\nHOST {}\nPORT 636".format(
-            self.master.hostname, base_dn,
-            self.master.hostname)
+            self.master.hostname, base_dn, self.master.hostname
+        )
         modifications = "{}\n{}".format(file_backup, constants)
         client.put_file_contents(paths.OPENLDAP_LDAP_CONF, modifications)
-        result = client.run_command(['ipa-client-install', '-U',
-                                     '--domain', client.domain.name,
-                                     '--realm', client.domain.realm,
-                                     '-p', client.config.admin_name,
-                                     '-w', client.config.admin_password,
-                                     '--server', self.master.hostname],
-                                    raiseonerr=False)
+        result = client.run_command(
+            [
+                "ipa-client-install",
+                "-U",
+                "--domain",
+                client.domain.name,
+                "--realm",
+                client.domain.realm,
+                "-p",
+                client.config.admin_name,
+                "-w",
+                client.config.admin_password,
+                "--server",
+                self.master.hostname,
+            ],
+            raiseonerr=False,
+        )
         assert expected_msg1 in result.stderr_text
         client.put_file_contents(ldap_conf, file_backup)
 
 
 class TestInstallWithCA2(InstallTestBase2):
-
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=False)
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica1_ipa_kra_install(self):
         super(TestInstallWithCA2, self).test_replica1_ipa_kra_install()
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica2_ipa_kra_install(self):
         super(TestInstallWithCA2, self).test_replica2_ipa_kra_install()
 
@@ -265,82 +279,179 @@ class TestInstallCA(IntegrationTest):
 
         related : https://pagure.io/certmonger/issue/125
         """
-        test_service = 'test/%s' % self.master.hostname
-        pkcs_passwd = 'Secret123'
-        pin = '123456'
-        noisefile = '/tmp/noisefile'
+        test_service = "test/%s" % self.master.hostname
+        pkcs_passwd = "Secret123"
+        pin = "123456"
+        noisefile = "/tmp/noisefile"
         self.master.put_file_contents(noisefile, os.urandom(64))
 
         tasks.kinit_admin(self.master)
         tasks.install_dns(self.master)
-        self.master.run_command(['ipa', 'service-add', test_service])
+        self.master.run_command(["ipa", "service-add", test_service])
 
         # create a csr
-        cmd_args = ['certutil', '-d', paths.NSS_DB_DIR, '-R', '-a',
-                    '-o', '/root/ipa.csr',
-                    '-s', "CN=%s" % self.master.hostname,
-                    '-z', noisefile]
+        cmd_args = [
+            "certutil",
+            "-d",
+            paths.NSS_DB_DIR,
+            "-R",
+            "-a",
+            "-o",
+            "/root/ipa.csr",
+            "-s",
+            "CN=%s" % self.master.hostname,
+            "-z",
+            noisefile,
+        ]
         self.master.run_command(cmd_args)
 
         # request certificate
-        cmd_args = ['ipa', 'cert-request', '--principal', test_service,
-                    '--certificate-out', '/root/test.pem', '/root/ipa.csr']
+        cmd_args = [
+            "ipa",
+            "cert-request",
+            "--principal",
+            test_service,
+            "--certificate-out",
+            "/root/test.pem",
+            "/root/ipa.csr",
+        ]
         self.master.run_command(cmd_args)
 
         # adding trust flag
-        cmd_args = ['certutil', '-A', '-d', paths.NSS_DB_DIR, '-n',
-                    'test', '-a', '-i', '/root/test.pem', '-t', 'u,u,u']
+        cmd_args = [
+            "certutil",
+            "-A",
+            "-d",
+            paths.NSS_DB_DIR,
+            "-n",
+            "test",
+            "-a",
+            "-i",
+            "/root/test.pem",
+            "-t",
+            "u,u,u",
+        ]
         self.master.run_command(cmd_args)
 
         # export pkcs12 file
-        cmd_args = ['pk12util', '-o', '/root/test.p12',
-                    '-d', paths.NSS_DB_DIR, '-n', 'test', '-W', pkcs_passwd]
+        cmd_args = [
+            "pk12util",
+            "-o",
+            "/root/test.p12",
+            "-d",
+            paths.NSS_DB_DIR,
+            "-n",
+            "test",
+            "-W",
+            pkcs_passwd,
+        ]
         self.master.run_command(cmd_args)
 
         # add softhsm lib
-        cmd_args = ['modutil', '-dbdir', paths.NSS_DB_DIR, '-add',
-                    'softhsm', '-libfile', '/usr/lib64/softhsm/libsofthsm.so']
+        cmd_args = [
+            "modutil",
+            "-dbdir",
+            paths.NSS_DB_DIR,
+            "-add",
+            "softhsm",
+            "-libfile",
+            "/usr/lib64/softhsm/libsofthsm.so",
+        ]
         self.master.run_command(cmd_args, stdin_text="\n\n")
 
         # create a token
-        cmd_args = ['softhsm2-util', '--init-token', '--label', 'test',
-                    '--pin', pin, '--so-pin', pin, '--free']
+        cmd_args = [
+            "softhsm2-util",
+            "--init-token",
+            "--label",
+            "test",
+            "--pin",
+            pin,
+            "--so-pin",
+            pin,
+            "--free",
+        ]
         self.master.run_command(cmd_args)
 
-        self.master.run_command(['softhsm2-util', '--show-slots'])
+        self.master.run_command(["softhsm2-util", "--show-slots"])
 
-        cmd_args = ['certutil', '-F', '-d', paths.NSS_DB_DIR, '-n', 'test']
+        cmd_args = ["certutil", "-F", "-d", paths.NSS_DB_DIR, "-n", "test"]
         self.master.run_command(cmd_args)
 
-        cmd_args = ['pk12util', '-i', '/root/test.p12',
-                    '-d', paths.NSS_DB_DIR, '-h', 'test',
-                    '-W', pkcs_passwd, '-K', pin]
+        cmd_args = [
+            "pk12util",
+            "-i",
+            "/root/test.p12",
+            "-d",
+            paths.NSS_DB_DIR,
+            "-h",
+            "test",
+            "-W",
+            pkcs_passwd,
+            "-K",
+            pin,
+        ]
         self.master.run_command(cmd_args)
 
-        cmd_args = ['certutil', '-A', '-d', paths.NSS_DB_DIR, '-n', 'IPA CA',
-                    '-t', 'CT,,', '-a', '-i', paths.IPA_CA_CRT]
+        cmd_args = [
+            "certutil",
+            "-A",
+            "-d",
+            paths.NSS_DB_DIR,
+            "-n",
+            "IPA CA",
+            "-t",
+            "CT,,",
+            "-a",
+            "-i",
+            paths.IPA_CA_CRT,
+        ]
         self.master.run_command(cmd_args)
 
         # validate the certificate
-        self.master.put_file_contents('/root/pinfile', pin)
-        cmd_args = ['certutil', '-V', '-u', 'V', '-e', '-d', paths.NSS_DB_DIR,
-                    '-h', 'test', '-n', 'test:test', '-f', '/root/pinfile']
+        self.master.put_file_contents("/root/pinfile", pin)
+        cmd_args = [
+            "certutil",
+            "-V",
+            "-u",
+            "V",
+            "-e",
+            "-d",
+            paths.NSS_DB_DIR,
+            "-h",
+            "test",
+            "-n",
+            "test:test",
+            "-f",
+            "/root/pinfile",
+        ]
         result = self.master.run_command(cmd_args)
-        assert 'certificate is valid' in result.stdout_text
+        assert "certificate is valid" in result.stdout_text
 
         # add certificate tracking to certmonger
-        cmd_args = ['ipa-getcert', 'start-tracking', '-d', paths.NSS_DB_DIR,
-                    '-n', 'test', '-t', 'test', '-P', pin,
-                    '-K', test_service]
+        cmd_args = [
+            "ipa-getcert",
+            "start-tracking",
+            "-d",
+            paths.NSS_DB_DIR,
+            "-n",
+            "test",
+            "-t",
+            "test",
+            "-P",
+            pin,
+            "-K",
+            test_service,
+        ]
         result = self.master.run_command(cmd_args)
-        request_id = re.findall(r'\d+', result.stdout_text)
+        request_id = re.findall(r"\d+", result.stdout_text)
 
         # check if certificate is tracked by certmonger
         status = tasks.wait_for_request(self.master, request_id[0], 300)
         assert status == "MONITORING"
 
         # ensure if key and token are re-usable
-        cmd_args = ['getcert', 'resubmit', '-i', request_id[0]]
+        cmd_args = ["getcert", "resubmit", "-i", request_id[0]]
         self.master.run_command(cmd_args)
 
         status = tasks.wait_for_request(self.master, request_id[0], 300)
@@ -348,7 +459,6 @@ class TestInstallCA(IntegrationTest):
 
 
 class TestInstallWithCA_KRA1(InstallTestBase1):
-
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=False, setup_kra=True)
@@ -358,47 +468,54 @@ class TestInstallWithCA_KRA1(InstallTestBase1):
 
 
 class TestInstallWithCA_KRA2(InstallTestBase2):
-
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=False, setup_kra=True)
 
 
 class TestInstallWithCA_DNS1(InstallTestBase1):
-
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=True)
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica1_ipa_kra_install(self):
         super(TestInstallWithCA_DNS1, self).test_replica1_ipa_kra_install()
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica2_with_ca_kra_install(self):
         super(TestInstallWithCA_DNS1, self).test_replica2_with_ca_kra_install()
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica2_ipa_dns_install(self):
         super(TestInstallWithCA_DNS1, self).test_replica2_ipa_dns_install()
 
 
 class TestInstallWithCA_DNS2(InstallTestBase2):
-
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=True)
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica1_ipa_kra_install(self):
         super(TestInstallWithCA_DNS2, self).test_replica1_ipa_kra_install()
 
-    @pytest.mark.skipif(config.domain_level == DOMAIN_LEVEL_0,
-                        reason='does not work on DOMAIN_LEVEL_0 by design')
+    @pytest.mark.skipif(
+        config.domain_level == DOMAIN_LEVEL_0,
+        reason="does not work on DOMAIN_LEVEL_0 by design",
+    )
     def test_replica2_ipa_kra_install(self):
         super(TestInstallWithCA_DNS2, self).test_replica2_ipa_kra_install()
 
@@ -418,13 +535,12 @@ class TestInstallWithCA_DNS3(CALessBase):
     def test_number_of_zones(self):
         """There should be two zones: one forward, one reverse"""
 
-        self.create_pkcs12('ca1/server')
-        self.prepare_cacert('ca1')
+        self.create_pkcs12("ca1/server")
+        self.prepare_cacert("ca1")
 
-        self.install_server(extra_args=['--allow-zone-overlap'])
+        self.install_server(extra_args=["--allow-zone-overlap"])
 
-        result = self.master.run_command([
-            'ipa', 'dnszone-find'])
+        result = self.master.run_command(["ipa", "dnszone-find"])
 
         assert "in-addr.arpa." in result.stdout_text
 
@@ -446,14 +562,13 @@ class TestInstallWithCA_DNS4(CALessBase):
     def test_number_of_zones(self):
         """There should be one zone, a forward because rev timed-out"""
 
-        self.create_pkcs12('ca1/server')
-        self.prepare_cacert('ca1')
+        self.create_pkcs12("ca1/server")
+        self.prepare_cacert("ca1")
 
         # no zone overlap by default
         self.install_server()
 
-        result = self.master.run_command([
-            'ipa', 'dnszone-find'])
+        result = self.master.run_command(["ipa", "dnszone-find"])
 
         assert "in-addr.arpa." not in result.stdout_text
 
@@ -462,7 +577,6 @@ class TestInstallWithCA_DNS4(CALessBase):
 
 @pytest.mark.cs_acceptance
 class TestInstallWithCA_KRA_DNS1(InstallTestBase1):
-
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=True, setup_kra=True)
@@ -472,7 +586,6 @@ class TestInstallWithCA_KRA_DNS1(InstallTestBase1):
 
 
 class TestInstallWithCA_KRA_DNS2(InstallTestBase2):
-
     @classmethod
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=True, setup_kra=True)
@@ -496,27 +609,33 @@ class TestADTrustInstallWithDNS_KRA_ADTrust(ADTrustInstallTestBase):
 
     @classmethod
     def install(cls, mh):
-        tasks.install_master(cls.master, setup_dns=True, setup_kra=True,
-                             setup_adtrust=True)
+        tasks.install_master(
+            cls.master, setup_dns=True, setup_kra=True, setup_adtrust=True
+        )
 
     def test_replica1_all_components_adtrust(self):
         self.install_replica(self.replicas[1], setup_ca=True, setup_kra=True)
 
 
 def get_pki_tomcatd_pid(host):
-    pid = ''
-    cmd = host.run_command(['systemctl', 'status', 'pki-tomcatd@pki-tomcat'])
-    for line in cmd.stdout_text.split('\n'):
+    pid = ""
+    cmd = host.run_command(["systemctl", "status", "pki-tomcatd@pki-tomcat"])
+    for line in cmd.stdout_text.split("\n"):
         if "Main PID" in line:
             pid = line.split()[2]
             break
-    return(pid)
+    return pid
 
 
 def get_ipa_services_pids(host):
     ipa_services_name = [
-        "krb5kdc", "kadmin", "named", "httpd", "ipa-custodia",
-        "pki_tomcatd", "ipa-dnskeysyncd"
+        "krb5kdc",
+        "kadmin",
+        "named",
+        "httpd",
+        "ipa-custodia",
+        "pki_tomcatd",
+        "ipa-dnskeysyncd",
     ]
     pids_of_ipa_services = {}
     for name in ipa_services_name:
@@ -531,6 +650,7 @@ def get_ipa_services_pids(host):
 ##
 # Rest of master installation tests
 ##
+
 
 class TestInstallMaster(IntegrationTest):
 
@@ -552,22 +672,23 @@ class TestInstallMaster(IntegrationTest):
         related: https://pagure.io/freeipa/issue/8193
         """
         conn = self.master.ldap_connect()
-        entry = conn.get_entry(DN(             # pylint: disable=no-member
-            "cn=groups,cn=Schema Compatibility,cn=plugins,cn=config"))
+        entry = conn.get_entry(
+            DN(  # pylint: disable=no-member
+                "cn=groups,cn=Schema Compatibility,cn=plugins,cn=config"
+            )
+        )
 
-        entry_list = list(entry['schema-compat-entry-attribute'])
-        value = (r'ipaexternalmember=%deref_r('
-                 '"member","ipaexternalmember")')
+        entry_list = list(entry["schema-compat-entry-attribute"])
+        value = r"ipaexternalmember=%deref_r(" '"member","ipaexternalmember")'
         assert value in entry_list
-        assert 'schema-compat-lookup-nsswitch' not in entry_list
+        assert "schema-compat-lookup-nsswitch" not in entry_list
 
     def test_install_kra(self):
         tasks.install_kra(self.master, first_instance=True)
 
     def test_install_dns(self):
         tasks.install_dns(
-            self.master,
-            extra_args=['--dnssec-master', '--no-dnssec-validation']
+            self.master, extra_args=["--dnssec-master", "--no-dnssec-validation"]
         )
 
     def test_ipactl_restart_pki_tomcat(self):
@@ -583,7 +704,7 @@ class TestInstallMaster(IntegrationTest):
         pki_pid = get_pki_tomcatd_pid(self.master)
 
         # check if pki-tomcad restarted
-        cmd = self.master.run_command(['ipactl', 'restart'])
+        cmd = self.master.run_command(["ipactl", "restart"])
         assert "Restarting pki-tomcatd Service" in cmd.stdout_text
 
         # check if pid for pki-tomcad changed
@@ -591,7 +712,7 @@ class TestInstallMaster(IntegrationTest):
         assert pki_pid != pki_pid_after_restart
 
         # check if pki-tomcad restarted
-        cmd = self.master.run_command(['ipactl', 'restart'])
+        cmd = self.master.run_command(["ipactl", "restart"])
         assert "Restarting pki-tomcatd Service" in cmd.stdout_text
 
         # check if pid for pki-tomcad changed
@@ -608,12 +729,19 @@ class TestInstallMaster(IntegrationTest):
         """
         # listing all services
         ipa_services_name = [
-            "Directory", "krb5kdc", "kadmin", "named", "httpd", "ipa-custodia",
-            "pki-tomcatd", "ipa-otpd", "ipa-dnskeysyncd"
+            "Directory",
+            "krb5kdc",
+            "kadmin",
+            "named",
+            "httpd",
+            "ipa-custodia",
+            "pki-tomcatd",
+            "ipa-otpd",
+            "ipa-dnskeysyncd",
         ]
 
         # checking the service status
-        cmd = self.master.run_command(['ipactl', 'status'])
+        cmd = self.master.run_command(["ipactl", "status"])
         for service in ipa_services_name:
             assert f"{service} Service: RUNNING" in cmd.stdout_text
 
@@ -621,23 +749,21 @@ class TestInstallMaster(IntegrationTest):
         service_stop = ["krb5kdc", "kadmin", "httpd"]
         for service in service_stop:
             service_name = services.knownservices[service].systemd_name
-            self.master.run_command(['systemctl', 'stop', service_name])
+            self.master.run_command(["systemctl", "stop", service_name])
 
         # checking service status
-        service_start = [
-            svcs for svcs in ipa_services_name if svcs not in service_stop
-        ]
-        cmd = self.master.run_command(['ipactl', 'status'])
+        service_start = [svcs for svcs in ipa_services_name if svcs not in service_stop]
+        cmd = self.master.run_command(["ipactl", "status"])
         for service in service_start:
             assert f"{service} Service: RUNNING" in cmd.stdout_text
         for service in service_stop:
-            assert f'{service} Service: STOPPED' in cmd.stdout_text
+            assert f"{service} Service: STOPPED" in cmd.stdout_text
 
         # starting all services again
-        self.master.run_command(['ipactl', 'start'])
+        self.master.run_command(["ipactl", "start"])
 
         # checking service status
-        cmd = self.master.run_command(['ipactl', 'status'])
+        cmd = self.master.run_command(["ipactl", "status"])
         for service in ipa_services_name:
             assert f"{service} Service: RUNNING" in cmd.stdout_text
 
@@ -645,10 +771,10 @@ class TestInstallMaster(IntegrationTest):
         ipa_services_pids = get_ipa_services_pids(self.master)
 
         # restarting all services again
-        self.master.run_command(['ipactl', 'restart'])
+        self.master.run_command(["ipactl", "restart"])
 
         # checking service status
-        cmd = self.master.run_command(['ipactl', 'status'])
+        cmd = self.master.run_command(["ipactl", "status"])
         for service in ipa_services_name:
             assert f"{service} Service: RUNNING" in cmd.stdout_text
 
@@ -657,10 +783,10 @@ class TestInstallMaster(IntegrationTest):
         assert ipa_services_pids != svcs_pids_after_restart
 
         # starting all services again
-        self.master.run_command(['ipactl', 'start'])
+        self.master.run_command(["ipactl", "start"])
 
         # checking service status
-        cmd = self.master.run_command(['ipactl', 'status'])
+        cmd = self.master.run_command(["ipactl", "status"])
         for service in ipa_services_name:
             assert f"{service} Service: RUNNING" in cmd.stdout_text
 
@@ -674,13 +800,13 @@ class TestInstallMaster(IntegrationTest):
         related ticket : https://pagure.io/freeipa/issue/7587
         """
         # check process count in httpd conf file i.e expected string
-        exp = b'WSGIDaemonProcess ipa processes=%d' % constants.WSGI_PROCESSES
+        exp = b"WSGIDaemonProcess ipa processes=%d" % constants.WSGI_PROCESSES
         httpd_conf = self.master.get_file_contents(paths.HTTPD_IPA_CONF)
         assert exp in httpd_conf
 
         # check the process count
-        cmd = self.master.run_command('ps -eF')
-        wsgi_count = cmd.stdout_text.count('wsgi:ipa')
+        cmd = self.master.run_command("ps -eF")
+        wsgi_count = cmd.stdout_text.count("wsgi:ipa")
         assert constants.WSGI_PROCESSES == wsgi_count
 
     def test_error_for_yubikey(self):
@@ -695,31 +821,29 @@ class TestInstallMaster(IntegrationTest):
         related ticket : https://pagure.io/freeipa/issue/6979
         """
         # try to add yubikey to the user
-        args = ['ipa', 'otptoken-add-yubikey', '--owner=admin']
+        args = ["ipa", "otptoken-add-yubikey", "--owner=admin"]
         cmd = self.master.run_command(args, raiseonerr=False)
         assert cmd.returncode != 0
-        exp_str = ("ipa: ERROR: No YubiKey found")
+        exp_str = "ipa: ERROR: No YubiKey found"
         assert exp_str in cmd.stderr_text
 
     def test_pki_certs(self):
         certs, keys = tasks.certutil_certs_keys(
-            self.master,
-            paths.PKI_TOMCAT_ALIAS_DIR,
-            paths.PKI_TOMCAT_ALIAS_PWDFILE_TXT
+            self.master, paths.PKI_TOMCAT_ALIAS_DIR, paths.PKI_TOMCAT_ALIAS_PWDFILE_TXT
         )
 
         expected_certs = {
             # CA
-            'caSigningCert cert-pki-ca': 'CTu,Cu,Cu',
-            'ocspSigningCert cert-pki-ca': 'u,u,u',
-            'subsystemCert cert-pki-ca': 'u,u,u',
-            'auditSigningCert cert-pki-ca': 'u,u,Pu',  # why P?
+            "caSigningCert cert-pki-ca": "CTu,Cu,Cu",
+            "ocspSigningCert cert-pki-ca": "u,u,u",
+            "subsystemCert cert-pki-ca": "u,u,u",
+            "auditSigningCert cert-pki-ca": "u,u,Pu",  # why P?
             # KRA
-            'transportCert cert-pki-kra': 'u,u,u',
-            'storageCert cert-pki-kra': 'u,u,u',
-            'auditSigningCert cert-pki-kra': 'u,u,Pu',
+            "transportCert cert-pki-kra": "u,u,u",
+            "storageCert cert-pki-kra": "u,u,u",
+            "auditSigningCert cert-pki-kra": "u,u,Pu",
             # server
-            'Server-Cert cert-pki-ca': 'u,u,u',
+            "Server-Cert cert-pki-ca": "u,u,u",
         }
         assert certs == expected_certs
         assert len(certs) == len(keys)
@@ -729,10 +853,10 @@ class TestInstallMaster(IntegrationTest):
                 self.master,
                 paths.PKI_TOMCAT_ALIAS_DIR,
                 paths.PKI_TOMCAT_ALIAS_PWDFILE_TXT,
-                nickname
+                nickname,
             )
             key_size = cert.public_key().key_size
-            if nickname == 'caSigningCert cert-pki-ca':
+            if nickname == "caSigningCert cert-pki-ca":
                 assert key_size == 3072
             else:
                 assert key_size == 2048
@@ -746,81 +870,87 @@ class TestInstallMaster(IntegrationTest):
         """
         data = self.master.get_file_contents(paths.HTTPD_CERT_FILE)
         cert = x509.load_pem_x509_certificate(data)
-        name = f'ipa-ca.{self.master.domain.name}'
+        name = f"ipa-ca.{self.master.domain.name}"
         assert crypto_x509.DNSName(name) in cert.san_general_names
 
     def test_p11_kit_softhsm2(self):
         # check that p11-kit-proxy does not inject SoftHSM2
-        result = self.master.run_command([
-            "modutil", "-dbdir", paths.PKI_TOMCAT_ALIAS_DIR, "-list"
-        ])
+        result = self.master.run_command(
+            ["modutil", "-dbdir", paths.PKI_TOMCAT_ALIAS_DIR, "-list"]
+        )
         assert "softhsm" not in result.stdout_text.lower()
         assert "opendnssec" not in result.stdout_text.lower()
 
     @pytest.mark.skipif(
-        not platformtasks.is_selinux_enabled(),
-        reason="Test needs SELinux enabled")
+        not platformtasks.is_selinux_enabled(), reason="Test needs SELinux enabled"
+    )
     def test_selinux_avcs(self):
         # Use journalctl instead of ausearch. The ausearch command is not
         # installed by default and journalctl gives us all AVCs.
-        result = self.master.run_command([
-            "journalctl", "--full", "--grep=AVC", "--since=yesterday"
-        ])
+        result = self.master.run_command(
+            ["journalctl", "--full", "--grep=AVC", "--since=yesterday"]
+        )
         avcs = list(
-            line.strip() for line in result.stdout_text.split('\n')
+            line.strip()
+            for line in result.stdout_text.split("\n")
             if "AVC avc:" in line
         )
         if avcs:
-            print('\n'.join(avcs))
+            print("\n".join(avcs))
             # Use expected failure until all SELinux violations are fixed
             pytest.xfail("{} AVCs found".format(len(avcs)))
 
     def test_file_permissions(self):
-        args = [
-            "rpm", "-V",
-            "python3-ipaclient",
-            "python3-ipalib",
-            "python3-ipaserver"
-        ]
+        args = ["rpm", "-V", "python3-ipaclient", "python3-ipalib", "python3-ipaserver"]
 
-        if osinfo.id == 'fedora':
-            args.extend([
-                "freeipa-client",
-                "freeipa-client-common",
-                "freeipa-common",
-                "freeipa-server",
-                "freeipa-server-common",
-                "freeipa-server-dns",
-                "freeipa-server-trust-ad"
-            ])
+        if osinfo.id == "fedora":
+            args.extend(
+                [
+                    "freeipa-client",
+                    "freeipa-client-common",
+                    "freeipa-common",
+                    "freeipa-server",
+                    "freeipa-server-common",
+                    "freeipa-server-dns",
+                    "freeipa-server-trust-ad",
+                ]
+            )
         else:
-            args.extend([
-                "ipa-client",
-                "ipa-client-common",
-                "ipa-common",
-                "ipa-server",
-                "ipa-server-common",
-                "ipa-server-dns"
-            ])
+            args.extend(
+                [
+                    "ipa-client",
+                    "ipa-client-common",
+                    "ipa-common",
+                    "ipa-server",
+                    "ipa-server-common",
+                    "ipa-server-dns",
+                ]
+            )
 
         result = self.master.run_command(args, raiseonerr=False)
         if result.returncode != 0:
             # Check the mode errors
             mode_warnings = re.findall(
                 r"^.M.......  [cdglr ]+ (?P<filename>.*)$",
-                result.stdout_text, re.MULTILINE)
+                result.stdout_text,
+                re.MULTILINE,
+            )
             msg = "rpm -V found mode issues for the following files: {}"
             assert mode_warnings == [], msg.format(mode_warnings)
             # Check the owner errors
             user_warnings = re.findall(
                 r"^.....U...  [cdglr ]+ (?P<filename>.*)$",
-                result.stdout_text, re.MULTILINE)
+                result.stdout_text,
+                re.MULTILINE,
+            )
             msg = "rpm -V found ownership issues for the following files: {}"
             assert user_warnings == [], msg.format(user_warnings)
             # Check the group errors
             group_warnings = re.findall(
                 r"^......G..  [cdglr ]+ (?P<filename>.*)$",
-                result.stdout_text, re.MULTILINE)
+                result.stdout_text,
+                re.MULTILINE,
+            )
             msg = "rpm -V found group issues for the following files: {}"
             assert group_warnings == [], msg.format(group_warnings)
 
@@ -850,9 +980,7 @@ class TestInstallMasterDNS(IntegrationTest):
 
     def test_install_master(self):
         tasks.install_master(
-            self.master,
-            setup_dns=True,
-            extra_args=['--zonemgr', 'me@example.org'],
+            self.master, setup_dns=True, extra_args=["--zonemgr", "me@example.org"],
         )
 
     def test_server_install_lock_bind_recursion(self):
@@ -870,13 +998,14 @@ class TestInstallMasterDNS(IntegrationTest):
         assert self.master.transport.file_exists(paths.NAMED_CUSTOM_CONFIG)
 
         # check if /etc/named.conf does not contain 'allow-recursion { any; };'
-        string_to_check = 'allow-recursion { any; };'
-        named_contents = self.master.get_file_contents(paths.NAMED_CONF,
-                                                       encoding='utf-8')
+        string_to_check = "allow-recursion { any; };"
+        named_contents = self.master.get_file_contents(
+            paths.NAMED_CONF, encoding="utf-8"
+        )
         assert string_to_check not in named_contents
 
         # check if ipa-backup command backups the /etc/named/ipa-ext.conf
-        result = self.master.run_command(['ipa-backup', '-v'])
+        result = self.master.run_command(["ipa-backup", "-v"])
         assert paths.NAMED_CUSTOM_CONFIG in result.stderr_text
 
     def test_install_kra(self):
@@ -899,11 +1028,9 @@ class TestInstallMasterDNSRepeatedly(IntegrationTest):
         tasks.install_master(cls.master, setup_dns=True)
 
     def test_install_master_releatedly(self):
-        cmd = tasks.install_master(self.master,
-                                   setup_dns=True,
-                                   raiseonerr=False)
-        exp_str = ("already exists in DNS")
-        assert (exp_str not in cmd.stderr_text and cmd.returncode != 2)
+        cmd = tasks.install_master(self.master, setup_dns=True, raiseonerr=False)
+        exp_str = "already exists in DNS"
+        assert exp_str not in cmd.stderr_text and cmd.returncode != 2
 
 
 class TestInstallMasterReservedIPasForwarder(IntegrationTest):
@@ -918,37 +1045,48 @@ class TestInstallMasterReservedIPasForwarder(IntegrationTest):
 
     def test_reserved_ip_as_forwarder(self):
         args = [
-            'ipa-server-install',
-            '-n', self.master.domain.name,
-            '-r', self.master.domain.realm,
-            '-p', self.master.config.dirman_password,
-            '-a', self.master.config.admin_password,
-            '--setup-dns',
-            '--forwarder', '0.0.0.0',
-            '--auto-reverse']
+            "ipa-server-install",
+            "-n",
+            self.master.domain.name,
+            "-r",
+            self.master.domain.realm,
+            "-p",
+            self.master.config.dirman_password,
+            "-a",
+            self.master.config.admin_password,
+            "--setup-dns",
+            "--forwarder",
+            "0.0.0.0",
+            "--auto-reverse",
+        ]
         cmd = self.master.run_command(args, raiseonerr=False)
         assert cmd.returncode == 2
-        exp_str = ("error: option --forwarder: invalid IP address 0.0.0.0: "
-                   "cannot use IANA reserved IP address 0.0.0.0")
+        exp_str = (
+            "error: option --forwarder: invalid IP address 0.0.0.0: "
+            "cannot use IANA reserved IP address 0.0.0.0"
+        )
         assert exp_str in cmd.stderr_text
 
         server_install_options = (
-                "yes\n"
-                "{hostname}\n"
-                "{dmname}\n\n"
-                "{dm_pass}\n{dm_pass}"
-                "\n{admin_pass}\n{admin_pass}\n"
-                "yes\nyes\n0.0.0.0\n".format(
-                    dm_pass=self.master.config.dirman_password,
-                    admin_pass=self.master.config.admin_password,
-                    dmname=self.master.domain.name,
-                    hostname=self.master.hostname))
+            "yes\n"
+            "{hostname}\n"
+            "{dmname}\n\n"
+            "{dm_pass}\n{dm_pass}"
+            "\n{admin_pass}\n{admin_pass}\n"
+            "yes\nyes\n0.0.0.0\n".format(
+                dm_pass=self.master.config.dirman_password,
+                admin_pass=self.master.config.admin_password,
+                dmname=self.master.domain.name,
+                hostname=self.master.hostname,
+            )
+        )
 
-        cmd = self.master.run_command(['ipa-server-install'],
-                                      stdin_text=server_install_options,
-                                      raiseonerr=False)
-        exp_str = ("Invalid IP Address 0.0.0.0: cannot use IANA reserved "
-                   "IP address 0.0.0.0")
+        cmd = self.master.run_command(
+            ["ipa-server-install"], stdin_text=server_install_options, raiseonerr=False
+        )
+        exp_str = (
+            "Invalid IP Address 0.0.0.0: cannot use IANA reserved " "IP address 0.0.0.0"
+        )
         assert exp_str in cmd.stdout_text
 
 
@@ -968,48 +1106,54 @@ class TestKRAinstallAfterCertRenew(IntegrationTest):
         # get ca-agent cert and load as pem
         dm_pass = self.master.config.dirman_password
         admin_pass = self.master.config.admin_password
-        args = [paths.OPENSSL, "pkcs12", "-in",
-                paths.DOGTAG_ADMIN_P12, "-nodes",
-                "-passin", "pass:{}".format(dm_pass)]
+        args = [
+            paths.OPENSSL,
+            "pkcs12",
+            "-in",
+            paths.DOGTAG_ADMIN_P12,
+            "-nodes",
+            "-passin",
+            "pass:{}".format(dm_pass),
+        ]
         cmd = self.master.run_command(args)
 
-        certs = x509.load_certificate_list(cmd.stdout_text.encode('utf-8'))
+        certs = x509.load_certificate_list(cmd.stdout_text.encode("utf-8"))
 
         # get expiry date of agent cert
         cert_expiry = certs[0].not_valid_after
 
         # move date to grace period so that certs get renewed
-        self.master.run_command(['systemctl', 'stop', 'chronyd'])
+        self.master.run_command(["systemctl", "stop", "chronyd"])
         grace_date = cert_expiry - timedelta(days=10)
         grace_date = datetime.strftime(grace_date, "%Y-%m-%d %H:%M:%S")
-        self.master.run_command(['date', '-s', grace_date])
+        self.master.run_command(["date", "-s", grace_date])
 
         # get the count of certs track by certmonger
-        cmd = self.master.run_command(['getcert', 'list'])
-        cert_count = cmd.stdout_text.count('Request ID')
+        cmd = self.master.run_command(["getcert", "list"])
+        cert_count = cmd.stdout_text.count("Request ID")
         timeout = 600
         count = 0
         start = time.time()
         # wait sometime for cert renewal
         while time.time() - start < timeout:
-            cmd = self.master.run_command(['getcert', 'list'])
-            count = cmd.stdout_text.count('status: MONITORING')
+            cmd = self.master.run_command(["getcert", "list"])
+            count = cmd.stdout_text.count("status: MONITORING")
             if count == cert_count:
                 break
             time.sleep(100)
         else:
             # timeout
-            raise AssertionError('TimeOut: Failed to renew all the certs')
+            raise AssertionError("TimeOut: Failed to renew all the certs")
 
         # move date after 3 days of actual expiry
         cert_expiry = cert_expiry + timedelta(days=3)
         cert_expiry = datetime.strftime(cert_expiry, "%Y-%m-%d %H:%M:%S")
-        self.master.run_command(['date', '-s', cert_expiry])
+        self.master.run_command(["date", "-s", cert_expiry])
 
         passwd = "{passwd}\n{passwd}\n{passwd}".format(passwd=admin_pass)
-        self.master.run_command(['kinit', 'admin'], stdin_text=passwd)
-        cmd = self.master.run_command(['ipa-kra-install', '-p', dm_pass, '-U'])
-        self.master.run_command(['systemctl', 'start', 'chronyd'])
+        self.master.run_command(["kinit", "admin"], stdin_text=passwd)
+        cmd = self.master.run_command(["ipa-kra-install", "-p", dm_pass, "-U"])
+        self.master.run_command(["systemctl", "start", "chronyd"])
 
 
 class TestMaskInstall(IntegrationTest):
@@ -1026,36 +1170,43 @@ class TestMaskInstall(IntegrationTest):
     @classmethod
     def install(cls, mh):
         super(TestMaskInstall, cls).install(mh)
-        cls.bashrc_file = cls.master.get_file_contents('/root/.bashrc')
+        cls.bashrc_file = cls.master.get_file_contents("/root/.bashrc")
 
     def test_install_master(self):
         self.master.run_command('echo "umask 0027" >> /root/.bashrc')
-        result = self.master.run_command(['umask'])
-        assert '0027' in result.stdout_text
+        result = self.master.run_command(["umask"])
+        assert "0027" in result.stdout_text
 
-        cmd = tasks.install_master(
-            self.master, setup_dns=False, raiseonerr=False
-        )
-        exp_str = ("Unexpected system mask")
-        assert (exp_str in cmd.stderr_text and cmd.returncode != 0)
+        cmd = tasks.install_master(self.master, setup_dns=False, raiseonerr=False)
+        exp_str = "Unexpected system mask"
+        assert exp_str in cmd.stderr_text and cmd.returncode != 0
 
     def test_install_replica(self):
-        result = self.master.run_command(['umask'])
-        assert '0027' in result.stdout_text
+        result = self.master.run_command(["umask"])
+        assert "0027" in result.stdout_text
 
-        cmd = self.master.run_command([
-            'ipa-replica-install', '-w', self.master.config.admin_password,
-            '-n', self.master.domain.name, '-r', self.master.domain.realm,
-            '--server', 'dummy_master.%s' % self.master.domain.name,
-            '-U'], raiseonerr=False
+        cmd = self.master.run_command(
+            [
+                "ipa-replica-install",
+                "-w",
+                self.master.config.admin_password,
+                "-n",
+                self.master.domain.name,
+                "-r",
+                self.master.domain.realm,
+                "--server",
+                "dummy_master.%s" % self.master.domain.name,
+                "-U",
+            ],
+            raiseonerr=False,
         )
-        exp_str = ("Unexpected system mask")
-        assert (exp_str in cmd.stderr_text and cmd.returncode != 0)
+        exp_str = "Unexpected system mask"
+        assert exp_str in cmd.stderr_text and cmd.returncode != 0
 
     def test_files_ownership_and_permission_teardown(self):
         """ Method to restore the default bashrc contents"""
         if self.bashrc_file is not None:
-            self.master.put_file_contents('/root/.bashrc', self.bashrc_file)
+            self.master.put_file_contents("/root/.bashrc", self.bashrc_file)
 
 
 class TestInstallMasterReplica(IntegrationTest):
@@ -1075,8 +1226,9 @@ class TestInstallMasterReplica(IntegrationTest):
     could cause operations to fail on other masters,
     to the point where a broken master couldn't be removed.
     """
+
     num_replicas = 1
-    topology = 'star'
+    topology = "star"
 
     @classmethod
     def install(cls, mh):
@@ -1104,12 +1256,12 @@ class TestInstallMasterReplica(IntegrationTest):
         # https://pagure.io/freeipa/issue/7929
         # modify the replica entry on Master
         cmd_output = None
-        dn_entry = 'dn: cn=KDC,cn=%s,cn=masters,cn=ipa,' \
-                   'cn=etc,%s' % \
-                   (self.replicas[0].hostname,
-                    ipautil.realm_to_suffix(
-                        self.replicas[0].domain.realm).ldap_text())
-        entry_ldif = textwrap.dedent("""
+        dn_entry = "dn: cn=KDC,cn=%s,cn=masters,cn=ipa," "cn=etc,%s" % (
+            self.replicas[0].hostname,
+            ipautil.realm_to_suffix(self.replicas[0].domain.realm).ldap_text(),
+        )
+        entry_ldif = textwrap.dedent(
+            """
             {dn}
             changetype: modify
             delete: ipaconfigstring
@@ -1118,14 +1270,20 @@ class TestInstallMasterReplica(IntegrationTest):
             {dn}
             add: ipaconfigstring
             ipaconfigstring: configuredService
-        """).format(dn=dn_entry)
+        """
+        ).format(dn=dn_entry)
         cmd_output = tasks.ldapmodify_dm(self.master, entry_ldif)
-        assert 'modifying entry' in cmd_output.stdout_text
+        assert "modifying entry" in cmd_output.stdout_text
 
-        cmd_output = self.master.run_command([
-            'ipa-replica-manage', 'del',
-            self.replicas[0].hostname, '--cleanup', '--force'
-        ])
+        cmd_output = self.master.run_command(
+            [
+                "ipa-replica-manage",
+                "del",
+                self.replicas[0].hostname,
+                "--cleanup",
+                "--force",
+            ]
+        )
 
         assert_text = 'Deleted IPA server "%s"' % self.replicas[0].hostname
         assert assert_text in cmd_output.stdout_text
@@ -1149,12 +1307,12 @@ class TestInstallReplicaAgainstSpecificServer(IntegrationTest):
         tasks.install_master(cls.master, setup_kra=True)
 
         # install replica1 without CA
-        cmd = tasks.install_replica(cls.master, cls.replicas[0],
-                                    setup_ca=False, setup_dns=True,
-                                    promote=False)
+        cmd = tasks.install_replica(
+            cls.master, cls.replicas[0], setup_ca=False, setup_dns=True, promote=False
+        )
 
         # check for warning that CA is not installed on server
-        warn = 'WARNING: The CA service is only installed on one server'
+        warn = "WARNING: The CA service is only installed on one server"
         assert warn in cmd.stderr_text
 
     def test_replica_install_against_server_without_ca(self):
@@ -1162,25 +1320,28 @@ class TestInstallReplicaAgainstSpecificServer(IntegrationTest):
         and exit code 4"""
 
         # stop custodia service on replica1
-        self.replicas[0].run_command('systemctl stop ipa-custodia.service')
+        self.replicas[0].run_command("systemctl stop ipa-custodia.service")
 
         # check if custodia service is stopped
-        cmd = self.replicas[0].run_command('ipactl status')
-        assert 'ipa-custodia Service: STOPPED' in cmd.stdout_text
+        cmd = self.replicas[0].run_command("ipactl status")
+        assert "ipa-custodia Service: STOPPED" in cmd.stdout_text
 
         try:
             # install replica2 against replica1, as CA is not installed on
             # replica1, installation on replica2 should fail
-            cmd = tasks.install_replica(self.replicas[0], self.replicas[1],
-                                        promote=False, raiseonerr=False)
+            cmd = tasks.install_replica(
+                self.replicas[0], self.replicas[1], promote=False, raiseonerr=False
+            )
             assert cmd.returncode == 4
             error = "please provide a server with the CA role"
             assert error in cmd.stderr_text
 
         finally:
-            tasks.uninstall_master(self.replicas[1],
-                                   ignore_topology_disconnect=True,
-                                   ignore_last_of_role=True)
+            tasks.uninstall_master(
+                self.replicas[1],
+                ignore_topology_disconnect=True,
+                ignore_last_of_role=True,
+            )
 
     def test_replica_install_against_server_without_kra(self):
         """Replica install will fail complaining about KRA role
@@ -1191,33 +1352,42 @@ class TestInstallReplicaAgainstSpecificServer(IntegrationTest):
         try:
             # install replica2 against replica1, as KRA is not installed on
             # replica1(CA installed), installation should fail on replica2
-            cmd = tasks.install_replica(self.replicas[0], self.replicas[1],
-                                        promote=False, setup_kra=True,
-                                        raiseonerr=False)
+            cmd = tasks.install_replica(
+                self.replicas[0],
+                self.replicas[1],
+                promote=False,
+                setup_kra=True,
+                raiseonerr=False,
+            )
             assert cmd.returncode == 4
             error = "please provide a server with the KRA role"
             assert error in cmd.stderr_text
 
         finally:
-            tasks.uninstall_master(self.replicas[1],
-                                   ignore_topology_disconnect=True,
-                                   ignore_last_of_role=True)
+            tasks.uninstall_master(
+                self.replicas[1],
+                ignore_topology_disconnect=True,
+                ignore_last_of_role=True,
+            )
 
     def test_replica_install_against_server(self):
         """Replica install should succeed if specified server provide all
         the services"""
 
-        tasks.install_replica(self.master, self.replicas[1],
-                              setup_dns=True, promote=False)
+        tasks.install_replica(
+            self.master, self.replicas[1], setup_dns=True, promote=False
+        )
 
         # check if replication agreement stablished between master
         # and replica2 only.
-        cmd = self.replicas[1].run_command(['ipa-replica-manage', 'list',
-                                            self.replicas[0].hostname])
+        cmd = self.replicas[1].run_command(
+            ["ipa-replica-manage", "list", self.replicas[0].hostname]
+        )
         assert self.replicas[0].hostname not in cmd.stdout_text
 
         dirman_password = self.master.config.dirman_password
-        cmd = self.replicas[1].run_command(['ipa-csreplica-manage', 'list',
-                                            self.replicas[0].hostname],
-                                           stdin_text=dirman_password)
+        cmd = self.replicas[1].run_command(
+            ["ipa-csreplica-manage", "list", self.replicas[0].hostname],
+            stdin_text=dirman_password,
+        )
         assert self.replicas[0].hostname not in cmd.stdout_text

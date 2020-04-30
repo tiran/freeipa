@@ -25,35 +25,29 @@ from ipapython.dn import DN
 
 class TestSSSDWithAdTrust(IntegrationTest):
 
-    topology = 'star'
+    topology = "star"
     num_ad_domains = 1
     num_ad_subdomains = 1
     num_clients = 1
 
     users = {
-        'ipa': {
-            'name': 'user1',
-            'password': 'SecretUser1',
-            'group': 'user1',
+        "ipa": {"name": "user1", "password": "SecretUser1", "group": "user1",},
+        "ad": {
+            "name_tmpl": "testuser@{domain}",
+            "password": "Secret123",
+            "group_tmpl": "testgroup@{domain}",
         },
-        'ad': {
-            'name_tmpl': 'testuser@{domain}',
-            'password': 'Secret123',
-            'group_tmpl': 'testgroup@{domain}',
+        "child_ad": {
+            "name_tmpl": "subdomaintestuser@{domain}",
+            "password": "Secret123",
         },
-        'child_ad': {
-            'name_tmpl': 'subdomaintestuser@{domain}',
-            'password': 'Secret123',
-        },
-        'fakeuser': {
-            'name': 'some_user@some.domain'
-        },
+        "fakeuser": {"name": "some_user@some.domain"},
     }
-    ipa_user = 'user1'
-    ipa_user_password = 'SecretUser1'
-    intermed_user = 'user2'
-    ad_user_tmpl = 'testuser@{domain}'
-    ad_user_password = 'Secret123'
+    ipa_user = "user1"
+    ipa_user_password = "SecretUser1"
+    intermed_user = "user2"
+    ad_user_tmpl = "testuser@{domain}"
+    ad_user_password = "Secret123"
 
     @classmethod
     def install(cls, mh):
@@ -66,24 +60,26 @@ class TestSSSDWithAdTrust(IntegrationTest):
         tasks.configure_dns_for_trust(cls.master, cls.ad)
         tasks.establish_trust_with_ad(cls.master, cls.ad.domain.name)
 
-        cls.users['ad']['name'] = cls.users['ad']['name_tmpl'].format(
-            domain=cls.ad.domain.name)
-        cls.users['ad']['group'] = cls.users['ad']['group_tmpl'].format(
-            domain=cls.ad.domain.name)
-        cls.users['child_ad']['name'] = (
-            cls.users['child_ad']['name_tmpl'].format(
-                domain=cls.child_ad.domain.name))
+        cls.users["ad"]["name"] = cls.users["ad"]["name_tmpl"].format(
+            domain=cls.ad.domain.name
+        )
+        cls.users["ad"]["group"] = cls.users["ad"]["group_tmpl"].format(
+            domain=cls.ad.domain.name
+        )
+        cls.users["child_ad"]["name"] = cls.users["child_ad"]["name_tmpl"].format(
+            domain=cls.child_ad.domain.name
+        )
         tasks.user_add(cls.master, cls.intermed_user)
-        tasks.create_active_user(cls.master, cls.ipa_user,
-                                 cls.ipa_user_password)
+        tasks.create_active_user(cls.master, cls.ipa_user, cls.ipa_user_password)
 
     @contextmanager
     def config_sssd_cache_auth(self, cached_auth_timeout):
         sssd_conf_backup = tasks.FileBackup(self.master, paths.SSSD_CONF)
         with tasks.remote_sssd_config(self.master) as sssd_conf:
-            sssd_conf.edit_domain(self.master.domain, 'cached_auth_timeout',
-                                  cached_auth_timeout)
-            sssd_conf.edit_service('pam', 'pam_verbosity', '2')
+            sssd_conf.edit_domain(
+                self.master.domain, "cached_auth_timeout", cached_auth_timeout
+            )
+            sssd_conf.edit_service("pam", "pam_verbosity", "2")
         try:
             tasks.clear_sssd_cache(self.master)
             yield
@@ -92,12 +88,13 @@ class TestSSSDWithAdTrust(IntegrationTest):
             tasks.clear_sssd_cache(self.master)
 
     def is_auth_cached(self, user):
-        cmd = ['su', '-l', user['name'], '-c', 'true']
-        res = tasks.run_command_as_user(self.master, self.intermed_user, cmd,
-                                        stdin_text=user['password'] + '\n')
-        return 'Authenticated with cached credentials.' in res.stdout_text
+        cmd = ["su", "-l", user["name"], "-c", "true"]
+        res = tasks.run_command_as_user(
+            self.master, self.intermed_user, cmd, stdin_text=user["password"] + "\n"
+        )
+        return "Authenticated with cached credentials." in res.stdout_text
 
-    @pytest.mark.parametrize('user', ['ipa', 'ad'])
+    @pytest.mark.parametrize("user", ["ipa", "ad"])
     def test_auth_cache_disabled_by_default(self, user):
         """Check credentials not cached with default sssd config.
 
@@ -108,7 +105,7 @@ class TestSSSDWithAdTrust(IntegrationTest):
             assert not self.is_auth_cached(self.users[user])
             assert not self.is_auth_cached(self.users[user])
 
-    @pytest.mark.parametrize('user', ['ipa', 'ad'])
+    @pytest.mark.parametrize("user", ["ipa", "ad"])
     def test_auth_cache_disabled_with_value_0(self, user):
         """Check credentials not cached with cached_auth_timeout=0 in sssd.conf
 
@@ -119,7 +116,7 @@ class TestSSSDWithAdTrust(IntegrationTest):
             assert not self.is_auth_cached(self.users[user])
             assert not self.is_auth_cached(self.users[user])
 
-    @pytest.mark.parametrize('user', ['ipa', 'ad'])
+    @pytest.mark.parametrize("user", ["ipa", "ad"])
     def test_auth_cache_enabled_when_configured(self, user):
         """Check credentials are cached with cached_auth_timeout=30
 
@@ -145,8 +142,9 @@ class TestSSSDWithAdTrust(IntegrationTest):
         sssd_conf_backup = tasks.FileBackup(self.master, paths.SSSD_CONF)
         try:
             with tasks.remote_sssd_config(self.master) as sssd_conf:
-                sssd_conf.edit_domain(self.master.domain,
-                                      'filter_users', self.users[user]['name'])
+                sssd_conf.edit_domain(
+                    self.master.domain, "filter_users", self.users[user]["name"]
+                )
             tasks.clear_sssd_cache(self.master)
             yield
         finally:
@@ -154,9 +152,10 @@ class TestSSSDWithAdTrust(IntegrationTest):
             tasks.clear_sssd_cache(self.master)
 
     @pytest.mark.xfail(
-        osinfo.id == 'fedora' and osinfo.version_number <= (29,),
-        reason='https://pagure.io/SSSD/sssd/issue/3978')
-    @pytest.mark.parametrize('user', ['ad', 'fakeuser'])
+        osinfo.id == "fedora" and osinfo.version_number <= (29,),
+        reason="https://pagure.io/SSSD/sssd/issue/3978",
+    )
+    @pytest.mark.parametrize("user", ["ad", "fakeuser"])
     def test_is_user_filtered(self, user):
         """No lookup in data provider from 'filter_users' config option.
 
@@ -167,14 +166,15 @@ class TestSSSDWithAdTrust(IntegrationTest):
         up should be in data provider.
         """
         with self.filter_user_setup(user=user):
-            log_file = '{0}/sssd_nss.log'.format(paths.VAR_LOG_SSSD_DIR)
+            log_file = "{0}/sssd_nss.log".format(paths.VAR_LOG_SSSD_DIR)
             logsize = tasks.get_logsize(self.master, log_file)
             self.master.run_command(
-                ['getent', 'passwd', self.users[user]['name']],
-                ok_returncode=2)
+                ["getent", "passwd", self.users[user]["name"]], ok_returncode=2
+            )
             sssd_log = self.master.get_file_contents(log_file)[logsize:]
-            dp_req = ("Looking up [{0}] in data provider".format(
-                self.users[user]['name']))
+            dp_req = "Looking up [{0}] in data provider".format(
+                self.users[user]["name"]
+            )
             assert not dp_req.encode() in sssd_log
 
     def test_extdom_group(self):
@@ -187,16 +187,16 @@ class TestSSSDWithAdTrust(IntegrationTest):
         """
         client = self.clients[0]
         hosts = [self.master, client]
-        ad_group = 'group@group@{0}'.format(self.ad.domain.name)
-        expression = '((?P<name>.+)@(?P<domain>[^@]+$))'
+        ad_group = "group@group@{0}".format(self.ad.domain.name)
+        expression = "((?P<name>.+)@(?P<domain>[^@]+$))"
         master_conf_backup = tasks.FileBackup(self.master, paths.SSSD_CONF)
         client_conf_backup = tasks.FileBackup(client, paths.SSSD_CONF)
         for host in hosts:
             with tasks.remote_sssd_config(host) as sssd_conf:
-                sssd_conf.edit_service('sssd', 're_expression', expression)
+                sssd_conf.edit_service("sssd", "re_expression", expression)
             tasks.clear_sssd_cache(host)
         try:
-            cmd = ['getent', 'group', ad_group]
+            cmd = ["getent", "group", ad_group]
             result = self.master.run_command(cmd)
             assert ad_group in result.stdout_text
             result2 = client.run_command(cmd)
@@ -218,15 +218,17 @@ class TestSSSDWithAdTrust(IntegrationTest):
         new_limit = 50
         master = self.master
         conn = master.ldap_connect()
-        dn = DN(('cn', 'config'))
+        dn = DN(("cn", "config"))
         entry = conn.get_entry(dn)  # pylint: disable=no-member
-        orig_limit = entry.single_value.get('nsslapd-sizelimit')
-        ldap_query = textwrap.dedent("""
+        orig_limit = entry.single_value.get("nsslapd-sizelimit")
+        ldap_query = textwrap.dedent(
+            """
             dn: cn=config
             changetype: modify
             replace: nsslapd-sizelimit
             nsslapd-sizelimit: {limit}
-        """)
+        """
+        )
         tasks.ldapmodify_dm(master, ldap_query.format(limit=new_limit))
         sssd_conf_backup = tasks.FileBackup(self.master, paths.SSSD_CONF)
         ldap_page_size = new_limit - 1
@@ -235,40 +237,41 @@ class TestSSSDWithAdTrust(IntegrationTest):
         # ldap_page_size < nsslapd-sizelimit in sssd.conf
         # Related issue : https://pagure.io/389-ds-base/issue/50888
         with tasks.remote_sssd_config(self.master) as sssd_conf:
-            sssd_conf.edit_domain(
-                self.master.domain, 'ldap_page_size', ldap_page_size)
+            sssd_conf.edit_domain(self.master.domain, "ldap_page_size", ldap_page_size)
         tasks.clear_sssd_cache(master)
         tasks.kinit_admin(master)
         for i in range(group_count):
-            master.run_command(['ipa', 'group-add', '--external',
-                                'ext-ipatest{0}'.format(i)])
+            master.run_command(
+                ["ipa", "group-add", "--external", "ext-ipatest{0}".format(i)]
+            )
         try:
-            log_file = '{0}/sssd_{1}.log'.format(
-                paths.VAR_LOG_SSSD_DIR, master.domain.name)
-            group_entry = b'[%d] external groups found' % group_count
+            log_file = "{0}/sssd_{1}.log".format(
+                paths.VAR_LOG_SSSD_DIR, master.domain.name
+            )
+            group_entry = b"[%d] external groups found" % group_count
             logsize = tasks.get_logsize(master, log_file)
-            master.run_command(['id', self.users['ad']['name']])
+            master.run_command(["id", self.users["ad"]["name"]])
             sssd_logs = master.get_file_contents(log_file)[logsize:]
             assert group_entry in sssd_logs
         finally:
             for i in range(group_count):
-                master.run_command(['ipa', 'group-del',
-                                    'ext-ipatest{0}'.format(i)])
+                master.run_command(["ipa", "group-del", "ext-ipatest{0}".format(i)])
             # reset to original limit
             tasks.ldapmodify_dm(master, ldap_query.format(limit=orig_limit))
             sssd_conf_backup.restore()
 
-    @pytest.mark.parametrize('user_origin', ['ipa', 'ad'])
+    @pytest.mark.parametrize("user_origin", ["ipa", "ad"])
     def test_sssd_cache_refresh(self, user_origin):
         """Check SSSD updates expired cache items for domain and its subdomains
 
         Regression test for https://pagure.io/SSSD/sssd/issue/4012
         """
+
         def get_cache_update_time(obj_kind, obj_name):
             res = self.master.run_command(
-                ['sssctl', '{}-show'.format(obj_kind), obj_name])
-            m = re.search(r'Cache entry last update time:\s+([^\n]+)',
-                          res.stdout_text)
+                ["sssctl", "{}-show".format(obj_kind), obj_name]
+            )
+            m = re.search(r"Cache entry last update time:\s+([^\n]+)", res.stdout_text)
             update_time = m.group(1).strip()
             assert update_time
             return update_time
@@ -276,25 +279,22 @@ class TestSSSDWithAdTrust(IntegrationTest):
         # by design, sssd does first update of expired records in 30 seconds
         # since start
         refresh_time = 30
-        user = self.users[user_origin]['name']
-        group = self.users[user_origin]['group']
+        user = self.users[user_origin]["name"]
+        group = self.users[user_origin]["group"]
         sssd_conf_backup = tasks.FileBackup(self.master, paths.SSSD_CONF)
         try:
             with tasks.remote_sssd_config(self.master) as sssd_conf:
-                sssd_conf.edit_domain(
-                    self.master.domain, 'refresh_expired_interval', 1)
-                sssd_conf.edit_domain(
-                    self.master.domain, 'entry_cache_timeout', 1)
+                sssd_conf.edit_domain(self.master.domain, "refresh_expired_interval", 1)
+                sssd_conf.edit_domain(self.master.domain, "entry_cache_timeout", 1)
             tasks.clear_sssd_cache(self.master)
 
             start = time.time()
-            self.master.run_command(['id', user])
-            user_update_time = get_cache_update_time('user', user)
-            group_update_time = get_cache_update_time('group', group)
+            self.master.run_command(["id", user])
+            user_update_time = get_cache_update_time("user", user)
+            group_update_time = get_cache_update_time("group", group)
             time.sleep(start + refresh_time - time.time() + 5)
-            assert get_cache_update_time('user', user) != user_update_time
-            assert (get_cache_update_time('group', group) !=
-                    group_update_time)
+            assert get_cache_update_time("user", user) != user_update_time
+            assert get_cache_update_time("group", group) != group_update_time
         finally:
             sssd_conf_backup.restore()
             tasks.clear_sssd_cache(self.master)
@@ -308,39 +308,48 @@ class TestSSSDWithAdTrust(IntegrationTest):
         in group with same name of nonprivate ipa user and possix id, then
         lookup of aduser and group should be successful when cache is empty.
         """
-        cmd = self.master.run_command(['sssd', '--version'])
-        sssd_version = platform_tasks.parse_ipa_version(
-            cmd.stdout_text.strip())
-        if sssd_version <= platform_tasks.parse_ipa_version('2.2.2'):
-            pytest.skip("Fix for https://pagure.io/SSSD/sssd/issue/4073 "
-                        "unavailable with sssd-2.2.2")
+        cmd = self.master.run_command(["sssd", "--version"])
+        sssd_version = platform_tasks.parse_ipa_version(cmd.stdout_text.strip())
+        if sssd_version <= platform_tasks.parse_ipa_version("2.2.2"):
+            pytest.skip(
+                "Fix for https://pagure.io/SSSD/sssd/issue/4073 "
+                "unavailable with sssd-2.2.2"
+            )
         client = self.clients[0]
-        user = 'ipatest'
-        userid = '100996'
-        ext_group = 'ext-ipatest'
+        user = "ipatest"
+        userid = "100996"
+        ext_group = "ext-ipatest"
         tasks.kinit_admin(self.master)
         # add user with same uid and gidnumber
-        tasks.user_add(self.master, user, extra_args=[
-            '--noprivate', '--uid', userid, '--gidnumber', userid])
+        tasks.user_add(
+            self.master,
+            user,
+            extra_args=["--noprivate", "--uid", userid, "--gidnumber", userid],
+        )
         # add group with same as user_name and user_id.
-        tasks.group_add(self.master, user, extra_args=['--gid', userid])
-        tasks.group_add(self.master, ext_group, extra_args=['--external'])
+        tasks.group_add(self.master, user, extra_args=["--gid", userid])
+        tasks.group_add(self.master, ext_group, extra_args=["--external"])
+        self.master.run_command(["ipa", "group-add-member", "--group", ext_group, user])
         self.master.run_command(
-            ['ipa', 'group-add-member', '--group', ext_group, user])
-        self.master.run_command([
-            'ipa', '-n', 'group-add-member', '--external',
-            self.users['ad']['name'], ext_group])
+            [
+                "ipa",
+                "-n",
+                "group-add-member",
+                "--external",
+                self.users["ad"]["name"],
+                ext_group,
+            ]
+        )
         tasks.clear_sssd_cache(self.master)
         tasks.clear_sssd_cache(client)
         try:
-            result = client.run_command(['id', self.users['ad']['name']])
-            assert '{uid}({name})'.format(uid=userid,
-                                          name=user) in result.stdout_text
+            result = client.run_command(["id", self.users["ad"]["name"]])
+            assert "{uid}({name})".format(uid=userid, name=user) in result.stdout_text
         finally:
-            self.master.run_command(['ipa', 'user-del', user])
-            self.master.run_command(['ipa', 'group-del', user, ext_group])
+            self.master.run_command(["ipa", "user-del", user])
+            self.master.run_command(["ipa", "group-del", user, ext_group])
 
-    @pytest.mark.parametrize('user_origin', ['ipa', 'ad'])
+    @pytest.mark.parametrize("user_origin", ["ipa", "ad"])
     def test_external_group_member_mismatch(self, user_origin):
         """Prevent adding IPA objects as external group external members
 
@@ -350,40 +359,46 @@ class TestSSSDWithAdTrust(IntegrationTest):
         master = self.master
         tasks.clear_sssd_cache(master)
         tasks.kinit_admin(master)
-        master.run_command(['ipa', 'group-add', '--external',
-                            'ext-ipatest'])
+        master.run_command(["ipa", "group-add", "--external", "ext-ipatest"])
         try:
-            master.run_command(['ipa', '-n', 'group-add-member',
-                                'ext-ipatest',
-                                '--external',
-                                self.users[user_origin]['name']])
+            master.run_command(
+                [
+                    "ipa",
+                    "-n",
+                    "group-add-member",
+                    "ext-ipatest",
+                    "--external",
+                    self.users[user_origin]["name"],
+                ]
+            )
         except subprocess.CalledProcessError:
             # Only 'ipa' origin should throw a validation error
-            assert user_origin == 'ipa'
+            assert user_origin == "ipa"
         finally:
-            master.run_command(['ipa', 'group-del', 'ext-ipatest'])
+            master.run_command(["ipa", "group-del", "ext-ipatest"])
 
     @contextmanager
     def disabled_trustdomain(self):
         ad_domain_name = self.ad.domain.name
         ad_subdomain_name = self.child_ad.domain.name
-        self.master.run_command(['ipa', 'trustdomain-disable',
-                                 ad_domain_name, ad_subdomain_name])
+        self.master.run_command(
+            ["ipa", "trustdomain-disable", ad_domain_name, ad_subdomain_name]
+        )
         tasks.clear_sssd_cache(self.master)
         try:
             yield
         finally:
-            self.master.run_command(['ipa', 'trustdomain-enable',
-                                     ad_domain_name, ad_subdomain_name])
+            self.master.run_command(
+                ["ipa", "trustdomain-enable", ad_domain_name, ad_subdomain_name]
+            )
             tasks.clear_sssd_cache(self.master)
 
-    @pytest.mark.parametrize('user_origin', ['ipa', 'ad'])
-    def test_trustdomain_disable_does_not_disable_root_domain(self,
-                                                              user_origin):
+    @pytest.mark.parametrize("user_origin", ["ipa", "ad"])
+    def test_trustdomain_disable_does_not_disable_root_domain(self, user_origin):
         """Test that disabling trustdomain does not affect other domains."""
-        user = self.users[user_origin]['name']
+        user = self.users[user_origin]["name"]
         with self.disabled_trustdomain():
-            self.master.run_command(['id', user])
+            self.master.run_command(["id", user])
 
     def test_trustdomain_disable_disables_subdomain(self):
         """Test that users from disabled trustdomains can not use ipa resources
@@ -391,15 +406,17 @@ class TestSSSDWithAdTrust(IntegrationTest):
         This is a regression test for sssd bug:
         https://pagure.io/SSSD/sssd/issue/4078
         """
-        user = self.users['child_ad']['name']
+        user = self.users["child_ad"]["name"]
         # verify the user can be retrieved initially
-        self.master.run_command(['id', user])
+        self.master.run_command(["id", user])
         with self.disabled_trustdomain():
-            res = self.master.run_command(['id', user], raiseonerr=False)
+            res = self.master.run_command(["id", user], raiseonerr=False)
             sssd_version = tasks.get_sssd_version(self.master)
-            with xfail_context(sssd_version < tasks.parse_version('2.2.3'),
-                               'https://pagure.io/SSSD/sssd/issue/4078'):
+            with xfail_context(
+                sssd_version < tasks.parse_version("2.2.3"),
+                "https://pagure.io/SSSD/sssd/issue/4078",
+            ):
                 assert res.returncode == 1
-                assert 'no such user' in res.stderr_text
+                assert "no such user" in res.stderr_text
         # verify the user can be retrieved after re-enabling trustdomain
-        self.master.run_command(['id', user])
+        self.master.run_command(["id", user])

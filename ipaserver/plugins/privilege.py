@@ -27,14 +27,16 @@ from .baseldap import (
     LDAPAddMember,
     LDAPRemoveMember,
     LDAPAddReverseMember,
-    LDAPRemoveReverseMember)
+    LDAPRemoveReverseMember,
+)
 from ipalib import api, _, ngettext, errors
 from ipalib.plugable import Registry
 from ipalib import Str
 from ipalib import output
 from ipapython.dn import DN
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Privileges
 
 A privilege combines permissions into a logical task. A permission provides
@@ -53,43 +55,57 @@ form of a privilege named "Add User" makes it easier to manage Roles.
 A privilege may not contain other privileges.
 
 See role and permission for additional information.
-""")
+"""
+)
 
 register = Registry()
 
 
 def validate_permission_to_privilege(api, permission):
     ldap = api.Backend.ldap2
-    ldapfilter = ldap.combine_filters(rules='&', filters=[
-        '(objectClass=ipaPermissionV2)', '(!(ipaPermBindRuleType=permission))',
-        ldap.make_filter_from_attr('cn', permission, rules='|')])
+    ldapfilter = ldap.combine_filters(
+        rules="&",
+        filters=[
+            "(objectClass=ipaPermissionV2)",
+            "(!(ipaPermBindRuleType=permission))",
+            ldap.make_filter_from_attr("cn", permission, rules="|"),
+        ],
+    )
     try:
         entries, _truncated = ldap.find_entries(
             filter=ldapfilter,
-            attrs_list=['cn', 'ipapermbindruletype'],
+            attrs_list=["cn", "ipapermbindruletype"],
             base_dn=DN(api.env.container_permission, api.env.basedn),
-            size_limit=1)
+            size_limit=1,
+        )
     except errors.NotFound:
         pass
     else:
         entry = entries[0]
-        message = _('cannot add permission "%(perm)s" with bindtype '
-                    '"%(bindtype)s" to a privilege')
+        message = _(
+            'cannot add permission "%(perm)s" with bindtype '
+            '"%(bindtype)s" to a privilege'
+        )
         raise errors.ValidationError(
-            name='permission',
-            error=message % {
-                'perm': entry.single_value['cn'],
-                'bindtype': entry.single_value.get(
-                    'ipapermbindruletype', 'permission')})
+            name="permission",
+            error=message
+            % {
+                "perm": entry.single_value["cn"],
+                "bindtype": entry.single_value.get("ipapermbindruletype", "permission"),
+            },
+        )
 
 
 def principal_has_privilege(api, principal, privilege):
     privilege_dn = api.Object.privilege.get_dn(privilege)
     ldap = api.Backend.ldap2
-    filter = ldap.make_filter({
-        'krbprincipalname': principal,  # pylint: disable=no-member
-        'memberof': privilege_dn},
-        rules=ldap.MATCH_ALL)
+    filter = ldap.make_filter(
+        {
+            "krbprincipalname": principal,  # pylint: disable=no-member
+            "memberof": privilege_dn,
+        },
+        rules=ldap.MATCH_ALL,
+    )
     try:
         ldap.find_entries(base_dn=api.env.basedn, filter=filter)
     except errors.NotFound:
@@ -102,163 +118,162 @@ class privilege(LDAPObject):
     """
     Privilege object.
     """
+
     container_dn = api.env.container_privilege
-    object_name = _('privilege')
-    object_name_plural = _('privileges')
-    object_class = ['nestedgroup', 'groupofnames']
-    permission_filter_objectclasses = ['groupofnames']
-    default_attributes = ['cn', 'description', 'member', 'memberof']
+    object_name = _("privilege")
+    object_name_plural = _("privileges")
+    object_class = ["nestedgroup", "groupofnames"]
+    permission_filter_objectclasses = ["groupofnames"]
+    default_attributes = ["cn", "description", "member", "memberof"]
     attribute_members = {
-        'member': ['role'],
-        'memberof': ['permission'],
+        "member": ["role"],
+        "memberof": ["permission"],
     }
     reverse_members = {
-        'member': ['permission'],
+        "member": ["permission"],
     }
     allow_rename = True
     managed_permissions = {
-        'System: Read Privileges': {
-            'replaces_global_anonymous_aci': True,
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'businesscategory', 'cn', 'description', 'member', 'memberof',
-                'o', 'objectclass', 'ou', 'owner', 'seealso', 'memberuser',
-                'memberhost',
+        "System: Read Privileges": {
+            "replaces_global_anonymous_aci": True,
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {
+                "businesscategory",
+                "cn",
+                "description",
+                "member",
+                "memberof",
+                "o",
+                "objectclass",
+                "ou",
+                "owner",
+                "seealso",
+                "memberuser",
+                "memberhost",
             },
-            'default_privileges': {'RBAC Readers'},
+            "default_privileges": {"RBAC Readers"},
         },
-        'System: Add Privileges': {
-            'ipapermright': {'add'},
-            'default_privileges': {'Delegation Administrator'},
+        "System: Add Privileges": {
+            "ipapermright": {"add"},
+            "default_privileges": {"Delegation Administrator"},
         },
-        'System: Modify Privileges': {
-            'ipapermright': {'write'},
-            'ipapermdefaultattr': {
-                'businesscategory',  'cn', 'description', 'o', 'ou', 'owner',
-                'seealso',
+        "System: Modify Privileges": {
+            "ipapermright": {"write"},
+            "ipapermdefaultattr": {
+                "businesscategory",
+                "cn",
+                "description",
+                "o",
+                "ou",
+                "owner",
+                "seealso",
             },
-            'default_privileges': {'Delegation Administrator'},
+            "default_privileges": {"Delegation Administrator"},
         },
-        'System: Remove Privileges': {
-            'ipapermright': {'delete'},
-            'default_privileges': {'Delegation Administrator'},
+        "System: Remove Privileges": {
+            "ipapermright": {"delete"},
+            "default_privileges": {"Delegation Administrator"},
         },
     }
 
-    label = _('Privileges')
-    label_singular = _('Privilege')
+    label = _("Privileges")
+    label_singular = _("Privilege")
 
     takes_params = (
-        Str('cn',
-            cli_name='name',
-            label=_('Privilege name'),
-            primary_key=True,
-        ),
-        Str('description?',
-            cli_name='desc',
-            label=_('Description'),
-            doc=_('Privilege description'),
+        Str("cn", cli_name="name", label=_("Privilege name"), primary_key=True,),
+        Str(
+            "description?",
+            cli_name="desc",
+            label=_("Description"),
+            doc=_("Privilege description"),
         ),
     )
 
 
 @register()
 class privilege_add(LDAPCreate):
-    __doc__ = _('Add a new privilege.')
+    __doc__ = _("Add a new privilege.")
 
     msg_summary = _('Added privilege "%(value)s"')
 
 
 @register()
 class privilege_del(LDAPDelete):
-    __doc__ = _('Delete a privilege.')
+    __doc__ = _("Delete a privilege.")
 
     msg_summary = _('Deleted privilege "%(value)s"')
 
 
 @register()
 class privilege_mod(LDAPUpdate):
-    __doc__ = _('Modify a privilege.')
+    __doc__ = _("Modify a privilege.")
 
     msg_summary = _('Modified privilege "%(value)s"')
 
 
 @register()
 class privilege_find(LDAPSearch):
-    __doc__ = _('Search for privileges.')
+    __doc__ = _("Search for privileges.")
 
     msg_summary = ngettext(
-        '%(count)d privilege matched', '%(count)d privileges matched', 0
+        "%(count)d privilege matched", "%(count)d privileges matched", 0
     )
 
 
 @register()
 class privilege_show(LDAPRetrieve):
-    __doc__ = _('Display information about a privilege.')
+    __doc__ = _("Display information about a privilege.")
 
 
 @register()
 class privilege_add_member(LDAPAddMember):
-    __doc__ = _('Add members to a privilege.')
+    __doc__ = _("Add members to a privilege.")
 
-    NO_CLI=True
+    NO_CLI = True
 
 
 @register()
 class privilege_remove_member(LDAPRemoveMember):
-    __doc__ = _('Remove members from a privilege')
-    NO_CLI=True
+    __doc__ = _("Remove members from a privilege")
+    NO_CLI = True
 
 
 @register()
 class privilege_add_permission(LDAPAddReverseMember):
-    __doc__ = _('Add permissions to a privilege.')
+    __doc__ = _("Add permissions to a privilege.")
 
-    show_command = 'privilege_show'
-    member_command = 'permission_add_member'
-    reverse_attr = 'permission'
-    member_attr = 'privilege'
+    show_command = "privilege_show"
+    member_command = "permission_add_member"
+    reverse_attr = "permission"
+    member_attr = "privilege"
 
     has_output = (
-        output.Entry('result'),
-        output.Output('failed',
-            type=dict,
-            doc=_('Members that could not be added'),
-        ),
-        output.Output('completed',
-            type=int,
-            doc=_('Number of permissions added'),
-        ),
+        output.Entry("result"),
+        output.Output("failed", type=dict, doc=_("Members that could not be added"),),
+        output.Output("completed", type=int, doc=_("Number of permissions added"),),
     )
 
     def pre_callback(self, ldap, dn, *keys, **options):
-        if options.get('permission'):
+        if options.get("permission"):
             # We can only add permissions with bind rule type set to
             # "permission" (or old-style permissions)
-            validate_permission_to_privilege(self.api, options['permission'])
+            validate_permission_to_privilege(self.api, options["permission"])
         return dn
 
 
 @register()
 class privilege_remove_permission(LDAPRemoveReverseMember):
-    __doc__ = _('Remove permissions from a privilege.')
+    __doc__ = _("Remove permissions from a privilege.")
 
-    show_command = 'privilege_show'
-    member_command = 'permission_remove_member'
-    reverse_attr = 'permission'
-    member_attr = 'privilege'
+    show_command = "privilege_show"
+    member_command = "permission_remove_member"
+    reverse_attr = "permission"
+    member_attr = "privilege"
 
-    permission_count_out = ('%i permission removed.', '%i permissions removed.')
+    permission_count_out = ("%i permission removed.", "%i permissions removed.")
 
     has_output = (
-        output.Entry('result'),
-        output.Output('failed',
-            type=dict,
-            doc=_('Members that could not be added'),
-        ),
-        output.Output(
-            'completed',
-            type=int,
-            doc=_('Number of permissions removed'),
-        ),
+        output.Entry("result"),
+        output.Output("failed", type=dict, doc=_("Members that could not be added"),),
+        output.Output("completed", type=int, doc=_("Number of permissions removed"),),
     )

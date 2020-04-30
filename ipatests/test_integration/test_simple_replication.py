@@ -27,11 +27,9 @@ from ipatests.test_integration.base import IntegrationTest
 
 
 def check_replication(source_host, dest_host, login):
-    source_host.run_command([
-        "ipa", "user-add", login,
-        "--first", "test",
-        "--last", "user"
-    ])
+    source_host.run_command(
+        ["ipa", "user-add", login, "--first", "test", "--last", "user"]
+    )
 
     source_ldap = source_host.ldap_connect()
     tasks.wait_for_replication(source_ldap)
@@ -41,16 +39,13 @@ def check_replication(source_host, dest_host, login):
 
     # Check using LDAP
     basedn = dest_host.domain.basedn
-    user_dn = DN(
-        ("uid", login), ("cn", "users"),
-        ("cn", "accounts"), basedn
-    )
+    user_dn = DN(("uid", login), ("cn", "users"), ("cn", "accounts"), basedn)
     entry = ldap.get_entry(user_dn)
     assert entry.dn == user_dn
     assert entry["uid"] == [login]
 
     # Check using CLI
-    result = dest_host.run_command(['ipa', 'user-show', login])
+    result = dest_host.run_command(["ipa", "user-show", login])
     assert "User login: {}".format(login) in result.stdout_text
 
 
@@ -61,16 +56,17 @@ class TestSimpleReplication(IntegrationTest):
     Install a server and a replica, then add an user on one host and ensure
     it is also present on the other one.
     """
+
     num_replicas = 1
-    topology = 'star'
+    topology = "star"
 
     def test_user_replication_to_replica(self):
         """Test user replication master -> replica"""
-        check_replication(self.master, self.replicas[0], 'testuser1')
+        check_replication(self.master, self.replicas[0], "testuser1")
 
     def test_user_replication_to_master(self):
         """Test user replication replica -> master"""
-        check_replication(self.replicas[0], self.master, 'testuser2')
+        check_replication(self.replicas[0], self.master, "testuser2")
 
     def test_replica_manage(self):
         """Test ipa-replica-manage list
@@ -84,22 +80,25 @@ class TestSimpleReplication(IntegrationTest):
         msg1 = "last init ended: 1970-01-01 00:00:00+00:00"
         msg2 = "last init status: None"
         result = self.master.run_command(
-            ["ipa-replica-manage", "list", "-v", self.replicas[0].hostname])
+            ["ipa-replica-manage", "list", "-v", self.replicas[0].hostname]
+        )
         assert msg1 not in result.stdout_text
         assert msg2 not in result.stdout_text
 
         result = self.master.run_command(
             ["ipa-replica-manage", "list", "-v", self.replicas[0].hostname],
-            stdin_text=self.master.config.dirman_password)
+            stdin_text=self.master.config.dirman_password,
+        )
         assert msg1 not in result.stdout_text
         assert msg2 not in result.stdout_text
 
     def test_replica_removal(self):
         """Test replica removal"""
-        result = self.master.run_command(['ipa-replica-manage', 'list'])
+        result = self.master.run_command(["ipa-replica-manage", "list"])
         assert self.replicas[0].hostname in result.stdout_text
         # has to be run with --force, there is no --unattended
-        self.master.run_command(['ipa-replica-manage', 'del',
-                                 self.replicas[0].hostname, '--force'])
-        result = self.master.run_command(['ipa-replica-manage', 'list'])
+        self.master.run_command(
+            ["ipa-replica-manage", "del", self.replicas[0].hostname, "--force"]
+        )
+        result = self.master.run_command(["ipa-replica-manage", "list"])
         assert self.replicas[0].hostname not in result.stdout_text

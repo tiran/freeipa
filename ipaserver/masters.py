@@ -17,33 +17,32 @@ from ipalib import errors
 logger = logging.getLogger(__name__)
 
 # constants for ipaConfigString
-CONFIGURED_SERVICE = u'configuredService'
-ENABLED_SERVICE = u'enabledService'
-HIDDEN_SERVICE = u'hiddenService'
+CONFIGURED_SERVICE = u"configuredService"
+ENABLED_SERVICE = u"enabledService"
+HIDDEN_SERVICE = u"hiddenService"
 
 # The service name as stored in cn=masters,cn=ipa,cn=etc. The values are:
 # 0: systemd service name
 # 1: start order for system service
 # 2: LDAP server entry CN, also used as SERVICE_LIST key
 service_definition = collections.namedtuple(
-    "service_definition",
-    "systemd_name startorder service_entry"
+    "service_definition", "systemd_name startorder service_entry"
 )
 
 SERVICES = [
-    service_definition('krb5kdc', 10, 'KDC'),
-    service_definition('kadmin', 20, 'KPASSWD'),
-    service_definition('named', 30, 'DNS'),
-    service_definition('httpd', 40, 'HTTP'),
-    service_definition('ipa-custodia', 41, 'KEYS'),
-    service_definition('pki-tomcatd', 50, 'CA'),
-    service_definition('pki-tomcatd', 51, 'KRA'),
-    service_definition('smb', 60, 'ADTRUST'),
-    service_definition('winbind', 70, 'EXTID'),
-    service_definition('ipa-otpd', 80, 'OTPD'),
-    service_definition('ipa-ods-exporter', 90, 'DNSKeyExporter'),
-    service_definition('ods-enforcerd', 100, 'DNSSEC'),
-    service_definition('ipa-dnskeysyncd', 110, 'DNSKeySync'),
+    service_definition("krb5kdc", 10, "KDC"),
+    service_definition("kadmin", 20, "KPASSWD"),
+    service_definition("named", 30, "DNS"),
+    service_definition("httpd", 40, "HTTP"),
+    service_definition("ipa-custodia", 41, "KEYS"),
+    service_definition("pki-tomcatd", 50, "CA"),
+    service_definition("pki-tomcatd", 51, "KRA"),
+    service_definition("smb", 60, "ADTRUST"),
+    service_definition("winbind", 70, "EXTID"),
+    service_definition("ipa-otpd", 80, "OTPD"),
+    service_definition("ipa-ods-exporter", 90, "DNSKeyExporter"),
+    service_definition("ods-enforcerd", 100, "DNSSEC"),
+    service_definition("ipa-dnskeysyncd", 110, "DNSKeySync"),
 ]
 
 SERVICE_LIST = {s.service_entry: s for s in SERVICES}
@@ -72,27 +71,19 @@ def find_providing_servers(svcname, conn=None, preferred_hosts=(), api=api):
     query_filter = conn.combine_filters(
         [
             conn.make_filter(
-                {
-                    'objectClass': 'ipaConfigObject',
-                    'cn': svcname
-                },
-                rules=conn.MATCH_ALL,
+                {"objectClass": "ipaConfigObject", "cn": svcname}, rules=conn.MATCH_ALL,
             ),
             conn.make_filter(
-                {
-                    'ipaConfigString': [ENABLED_SERVICE, HIDDEN_SERVICE]
-                },
-                rules=conn.MATCH_ANY
+                {"ipaConfigString": [ENABLED_SERVICE, HIDDEN_SERVICE]},
+                rules=conn.MATCH_ANY,
             ),
         ],
-        rules=conn.MATCH_ALL
+        rules=conn.MATCH_ALL,
     )
 
     try:
         entries, _trunc = conn.find_entries(
-            filter=query_filter,
-            attrs_list=['ipaConfigString'],
-            base_dn=dn
+            filter=query_filter, attrs_list=["ipaConfigString"], base_dn=dn
         )
     except errors.NotFound:
         return []
@@ -102,7 +93,7 @@ def find_providing_servers(svcname, conn=None, preferred_hosts=(), api=api):
     servers = []
     for entry in entries:
         servername = entry.dn[1].value.lower()
-        cfgstrings = entry.get('ipaConfigString', [])
+        cfgstrings = entry.get("ipaConfigString", [])
         # always consider enabled services
         if ENABLED_SERVICE in cfgstrings:
             servers.append(servername)
@@ -121,7 +112,8 @@ def find_providing_servers(svcname, conn=None, preferred_hosts=(), api=api):
             # preferred server not found, log and ignore
             logger.warning(
                 "Lookup failed: Preferred host %s does not provide %s.",
-                host_name, svcname
+                host_name,
+                svcname,
             )
         else:
             servers.insert(0, host_name)
@@ -157,8 +149,8 @@ def get_masters(conn=None, api=api):
         conn = api.Backend.ldap2
 
     dn = DN(api.env.container_masters, api.env.basedn)
-    entries = conn.get_entries(dn, conn.SCOPE_ONELEVEL, None, ['cn'])
-    return list(e['cn'][0] for e in entries)
+    entries = conn.get_entries(dn, conn.SCOPE_ONELEVEL, None, ["cn"])
+    return list(e["cn"][0] for e in entries)
 
 
 def is_service_enabled(svcname, conn=None, api=api):
@@ -179,18 +171,10 @@ def is_service_enabled(svcname, conn=None, api=api):
 
     dn = DN(api.env.container_masters, api.env.basedn)
     query_filter = conn.make_filter(
-        {
-            'objectClass': 'ipaConfigObject',
-            'cn': svcname
-        },
-        rules='&'
+        {"objectClass": "ipaConfigObject", "cn": svcname}, rules="&"
     )
     try:
-        conn.find_entries(
-            filter=query_filter,
-            attrs_list=[],
-            base_dn=dn
-        )
+        conn.find_entries(filter=query_filter, attrs_list=[], base_dn=dn)
     except errors.NotFound:
         return False
     else:

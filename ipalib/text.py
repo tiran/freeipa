@@ -145,9 +145,10 @@ if six.PY3:
 def create_translation(key):
     assert key not in context.__dict__
     (domain, localedir) = key
-    translation = gettext.translation(domain,
+    translation = gettext.translation(
+        domain,
         localedir=localedir,
-        languages=getattr(context, 'languages', None),
+        languages=getattr(context, "languages", None),
         fallback=True,
     )
     context.__dict__[key] = translation
@@ -165,7 +166,7 @@ class LazyText:
     ConcatenatedLazyText objects.
     """
 
-    __slots__ = ('domain', 'localedir', 'key', 'args')
+    __slots__ = ("domain", "localedir", "key", "args")
     __hash__ = None
 
     def __init__(self, domain=None, localedir=None):
@@ -268,7 +269,7 @@ class Gettext(LazyText):
     `NGettextFactory`.
     """
 
-    __slots__ = ('msg')
+    __slots__ = "msg"
 
     def __init__(self, msg, domain=None, localedir=None):
         super(Gettext, self).__init__(domain, localedir)
@@ -276,8 +277,12 @@ class Gettext(LazyText):
         self.args = (msg, domain, localedir)
 
     def __repr__(self):
-        return '%s(%r, domain=%r, localedir=%r)' % (self.__class__.__name__,
-            self.msg, self.domain, self.localedir)
+        return "%s(%r, domain=%r, localedir=%r)" % (
+            self.__class__.__name__,
+            self.msg,
+            self.domain,
+            self.localedir,
+        )
 
     def as_unicode(self):
         """
@@ -296,10 +301,10 @@ class Gettext(LazyText):
         return unicode(self.as_unicode())
 
     def __json__(self):
-        return unicode(self)   #pylint: disable=no-member
+        return unicode(self)  # pylint: disable=no-member
 
     def __mod__(self, kw):
-        return unicode(self) % kw  #pylint: disable=no-member
+        return unicode(self) % kw  # pylint: disable=no-member
 
     def format(self, *args, **kwargs):
         return unicode(self).format(*args, **kwargs)
@@ -353,10 +358,10 @@ class FixMe(Gettext):
     __slots__ = tuple()
 
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self.msg)
+        return "%s(%r)" % (self.__class__.__name__, self.msg)
 
     def __str__(self):
-        return u'<%s>' % self.msg
+        return u"<%s>" % self.msg
 
 
 class NGettext(LazyText):
@@ -455,7 +460,7 @@ class NGettext(LazyText):
     See `NGettextFactory` for additional details.
     """
 
-    __slots__ = ('singular', 'plural')
+    __slots__ = ("singular", "plural")
 
     def __init__(self, singular, plural, domain=None, localedir=None):
         super(NGettext, self).__init__(domain, localedir)
@@ -464,15 +469,20 @@ class NGettext(LazyText):
         self.args = (singular, plural, domain, localedir)
 
     def __repr__(self):
-        return '%s(%r, %r, domain=%r, localedir=%r)' % (self.__class__.__name__,
-            self.singular, self.plural, self.domain, self.localedir)
+        return "%s(%r, %r, domain=%r, localedir=%r)" % (
+            self.__class__.__name__,
+            self.singular,
+            self.plural,
+            self.domain,
+            self.localedir,
+        )
 
     def __mod__(self, kw):
-        count = kw['count']
+        count = kw["count"]
         return self(count) % kw
 
     def format(self, *args, **kwargs):
-        count = kwargs['count']
+        count = kwargs["count"]
         return self(count).format(*args, **kwargs)
 
     def __call__(self, count):
@@ -498,14 +508,15 @@ class ConcatenatedLazyText:
 
     Additional strings may be added to the end with the + or += operators.
     """
+
     def __init__(self, *components):
         self.components = list(components)
 
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self.components)
+        return "%s(%r)" % (self.__class__.__name__, self.components)
 
     def __str__(self):
-        return u''.join(unicode(c) for c in self.components)
+        return u"".join(unicode(c) for c in self.components)
 
     def __json__(self):
         return unicode(self)
@@ -578,7 +589,7 @@ class GettextFactory:
     details.
     """
 
-    def __init__(self, domain='ipa', localedir=None):
+    def __init__(self, domain="ipa", localedir=None):
         """
         Initialize.
 
@@ -593,8 +604,11 @@ class GettextFactory:
         self.localedir = localedir
 
     def __repr__(self):
-        return '%s(domain=%r, localedir=%r)' % (self.__class__.__name__,
-            self.domain, self.localedir)
+        return "%s(domain=%r, localedir=%r)" % (
+            self.__class__.__name__,
+            self.domain,
+            self.localedir,
+        )
 
     def __call__(self, msg):
         return Gettext(msg, self.domain, self.localedir)

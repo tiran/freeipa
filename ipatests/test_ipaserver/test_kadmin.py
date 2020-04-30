@@ -17,7 +17,7 @@ from ipaserver.install import installutils
 
 @pytest.fixture
 def keytab():
-    fd, keytab_path = tempfile.mkstemp(suffix='.keytab')
+    fd, keytab_path = tempfile.mkstemp(suffix=".keytab")
     os.close(fd)
 
     try:
@@ -31,22 +31,22 @@ def keytab():
 
 @pytest.fixture()
 def service_in_kerberos_subtree(request):
-    princ = u'svc1/{0.host}@{0.realm}'.format(api.env)
+    princ = u"svc1/{0.host}@{0.realm}".format(api.env)
     installutils.kadmin_addprinc(princ)
 
     def fin():
         try:
-            installutils.kadmin(
-                'delprinc -force {}'.format(princ))
+            installutils.kadmin("delprinc -force {}".format(princ))
         except Exception:
             pass
+
     request.addfinalizer(fin)
     return princ
 
 
 @pytest.fixture()
 def service_in_service_subtree(request):
-    princ = u'svc2/{0.host}@{0.realm}'.format(api.env)
+    princ = u"svc2/{0.host}@{0.realm}".format(api.env)
     rpcclient = api.Backend.rpcclient
     was_connected = rpcclient.isconnected()
 
@@ -71,14 +71,12 @@ def service_in_service_subtree(request):
     return princ
 
 
-@pytest.fixture(params=["service_in_kerberos_subtree",
-                        "service_in_service_subtree"])
+@pytest.fixture(params=["service_in_kerberos_subtree", "service_in_service_subtree"])
 def service(request):
     return request.getfixturevalue(request.param)
 
 
-@pytest.mark.skipif(
-    os.getuid() != 0, reason="kadmin.local is accesible only to root")
+@pytest.mark.skipif(os.getuid() != 0, reason="kadmin.local is accesible only to root")
 class TestKadmin:
     def assert_success(self, command, *args):
         """
@@ -92,34 +90,22 @@ class TestKadmin:
         """
         tests that ktadd command works for both types of services
         """
-        self.assert_success(
-            installutils.create_keytab,
-            keytab,
-            service)
+        self.assert_success(installutils.create_keytab, keytab, service)
 
     def test_change_key(self, service, keytab):
         """
         tests that both types of service can have passwords changed using
         kadmin
         """
+        self.assert_success(installutils.create_keytab, keytab, service)
         self.assert_success(
-            installutils.create_keytab,
-            keytab,
-            service)
-        self.assert_success(
-            installutils.kadmin,
-            'change_password -randkey {}'.format(service))
+            installutils.kadmin, "change_password -randkey {}".format(service)
+        )
 
     def test_append_key(self, service, keytab):
         """
         Tests that we can create a new keytab for both service types and then
         append new keys to it
         """
-        self.assert_success(
-            installutils.create_keytab,
-            keytab,
-            service)
-        self.assert_success(
-            installutils.create_keytab,
-            keytab,
-            service)
+        self.assert_success(installutils.create_keytab, keytab, service)
+        self.assert_success(installutils.create_keytab, keytab, service)

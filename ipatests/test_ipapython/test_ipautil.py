@@ -45,40 +45,42 @@ def assert_equal(a, b):
     assert a == b
 
 
-@pytest.mark.parametrize("addr,words,prefixlen", [
-    ('0.0.0.0/0', None, None),
-    ('10.11.12.13', (10, 11, 12, 13), 8),
-    ('10.11.12.13/14', (10, 11, 12, 13), 14),
-    ('10.11.12.13%zoneid', None, None),
-    ('10.11.12.13%zoneid/14', None, None),
-    ('10.11.12.1337', None, None),
-    ('10.11.12.13/33', None, None),
-    ('127.0.0.1', None, None),
-    ('241.1.2.3', None, None),
-    ('169.254.1.2', None, None),
-    ('10.11.12.0/24', (10, 11, 12, 0), 24),
-    ('10.0.0.255', (10, 0, 0, 255), 8),
-    ('224.5.6.7', None, None),
-    ('10.11.12.255/24', (10, 11, 12, 255), 24),
-    ('255.255.255.255', None, None),
-    ('::/0', None, None),
-    ('2001::1', (0x2001, 0, 0, 0, 0, 0, 0, 1), 64),
-    ('2001::1/72', (0x2001, 0, 0, 0, 0, 0, 0, 1), 72),
-    ('2001::1%zoneid', (0x2001, 0, 0, 0, 0, 0, 0, 1), 64),
-    ('2001::1%zoneid/72', None, None),
-    ('2001::1beef', None, None),
-    ('2001::1/129', None, None),
-    ('::1', None, None),
-    ('6789::1', None, None),
-    ('fe89::1', None, None),
-    ('2001::/64', (0x2001, 0, 0, 0, 0, 0, 0, 0), 64),
-    ('ff01::1', None, None),
-    ('junk', None, None)
-])
+@pytest.mark.parametrize(
+    "addr,words,prefixlen",
+    [
+        ("0.0.0.0/0", None, None),
+        ("10.11.12.13", (10, 11, 12, 13), 8),
+        ("10.11.12.13/14", (10, 11, 12, 13), 14),
+        ("10.11.12.13%zoneid", None, None),
+        ("10.11.12.13%zoneid/14", None, None),
+        ("10.11.12.1337", None, None),
+        ("10.11.12.13/33", None, None),
+        ("127.0.0.1", None, None),
+        ("241.1.2.3", None, None),
+        ("169.254.1.2", None, None),
+        ("10.11.12.0/24", (10, 11, 12, 0), 24),
+        ("10.0.0.255", (10, 0, 0, 255), 8),
+        ("224.5.6.7", None, None),
+        ("10.11.12.255/24", (10, 11, 12, 255), 24),
+        ("255.255.255.255", None, None),
+        ("::/0", None, None),
+        ("2001::1", (0x2001, 0, 0, 0, 0, 0, 0, 1), 64),
+        ("2001::1/72", (0x2001, 0, 0, 0, 0, 0, 0, 1), 72),
+        ("2001::1%zoneid", (0x2001, 0, 0, 0, 0, 0, 0, 1), 64),
+        ("2001::1%zoneid/72", None, None),
+        ("2001::1beef", None, None),
+        ("2001::1/129", None, None),
+        ("::1", None, None),
+        ("6789::1", None, None),
+        ("fe89::1", None, None),
+        ("2001::/64", (0x2001, 0, 0, 0, 0, 0, 0, 0), 64),
+        ("ff01::1", None, None),
+        ("junk", None, None),
+    ],
+)
 def test_ip_address(addr, words, prefixlen):
     if words is None:
-        pytest.raises(
-            ValueError, ipautil.CheckedIPAddress, addr)
+        pytest.raises(ValueError, ipautil.CheckedIPAddress, addr)
     else:
         ip = ipautil.CheckedIPAddress(addr)
         assert ip.words == words
@@ -96,14 +98,14 @@ class TestCIDict:
     def test_init(self):
         cidict = ipautil.CIDict()
         assert dict(cidict.items()) == {}
-        cidict = ipautil.CIDict([('a', 2), ('b', 3), ('C', 4)])
-        assert dict(cidict.items()) == {'a': 2, 'b': 3, 'C': 4}
-        cidict = ipautil.CIDict([('a', 2), ('b', None)], b=3, C=4)
-        assert dict(cidict.items()) == {'a': 2, 'b': 3, 'C': 4}
-        cidict = ipautil.CIDict({'a': 2, 'b': None}, b=3, C=4)
-        assert dict(cidict.items()) == {'a': 2, 'b': 3, 'C': 4}
+        cidict = ipautil.CIDict([("a", 2), ("b", 3), ("C", 4)])
+        assert dict(cidict.items()) == {"a": 2, "b": 3, "C": 4}
+        cidict = ipautil.CIDict([("a", 2), ("b", None)], b=3, C=4)
+        assert dict(cidict.items()) == {"a": 2, "b": 3, "C": 4}
+        cidict = ipautil.CIDict({"a": 2, "b": None}, b=3, C=4)
+        assert dict(cidict.items()) == {"a": 2, "b": 3, "C": 4}
         cidict = ipautil.CIDict(a=2, b=3, C=4)
-        assert dict(cidict.items()) == {'a': 2, 'b': 3, 'C': 4}
+        assert dict(cidict.items()) == {"a": 2, "b": 3, "C": 4}
 
     def test_len(self):
         assert_equal(3, len(self.cidict))
@@ -133,11 +135,11 @@ class TestCIDict:
 
     def test_del(self):
         assert "Key1" in self.cidict
-        del(self.cidict["Key1"])
+        del self.cidict["Key1"]
         assert "Key1" not in self.cidict
 
         assert "key2" in self.cidict
-        del(self.cidict["KEY2"])
+        del self.cidict["KEY2"]
         assert "key2" not in self.cidict
 
     def test_clear(self):
@@ -186,12 +188,15 @@ class TestCIDict:
         assert ("KEY3", "VAL3") in items_set
         # pylint: disable=dict-iter-method
         # pylint: disable=dict-keys-not-iterating, dict-values-not-iterating
-        assert list(self.cidict.items()) == list(self.cidict.iteritems()) == list(zip(
-            self.cidict.keys(), self.cidict.values()))
+        assert (
+            list(self.cidict.items())
+            == list(self.cidict.iteritems())
+            == list(zip(self.cidict.keys(), self.cidict.values()))
+        )
 
     def test_iter(self):
         assert list(self.cidict) == list(self.cidict.keys())
-        assert sorted(self.cidict) == sorted(['Key1', 'key2', 'KEY3'])
+        assert sorted(self.cidict) == sorted(["Key1", "key2", "KEY3"])
 
     def test_iteritems(self):
         items = []
@@ -247,8 +252,7 @@ class TestCIDict:
         assert list(self.cidict.values()) == list(self.cidict.itervalues())
 
     def test_update(self):
-        newdict = { "KEY2": "newval2",
-                    "key4": "val4" }
+        newdict = {"KEY2": "newval2", "key4": "val4"}
         self.cidict.update(newdict)
         assert_equal(4, len(self.cidict))
 
@@ -262,33 +266,45 @@ class TestCIDict:
         assert ("key4", "val4") in items_set
 
     def test_update_dict_and_kwargs(self):
-        self.cidict.update({'a': 'va', 'b': None}, b='vb', key2='v2')
+        self.cidict.update({"a": "va", "b": None}, b="vb", key2="v2")
         assert dict(self.cidict.items()) == {
-            'a': 'va', 'b': 'vb',
-            'Key1': 'val1', 'key2': 'v2', 'KEY3': 'VAL3'}
+            "a": "va",
+            "b": "vb",
+            "Key1": "val1",
+            "key2": "v2",
+            "KEY3": "VAL3",
+        }
 
     def test_update_list_and_kwargs(self):
-        self.cidict.update([('a', 'va'), ('b', None)], b='vb', key2='val2')
+        self.cidict.update([("a", "va"), ("b", None)], b="vb", key2="val2")
         assert dict(self.cidict.items()) == {
-            'a': 'va', 'b': 'vb',
-            'Key1': 'val1', 'key2': 'val2', 'KEY3': 'VAL3'}
+            "a": "va",
+            "b": "vb",
+            "Key1": "val1",
+            "key2": "val2",
+            "KEY3": "VAL3",
+        }
 
     def test_update_duplicate_values_dict(self):
         with pytest.raises(ValueError):
-            self.cidict.update({'a': 'va', 'A': None, 'b': 3})
+            self.cidict.update({"a": "va", "A": None, "b": 3})
 
     def test_update_duplicate_values_list(self):
         with pytest.raises(ValueError):
-            self.cidict.update([('a', 'va'), ('A', None), ('b', 3)])
+            self.cidict.update([("a", "va"), ("A", None), ("b", 3)])
 
     def test_update_duplicate_values_kwargs(self):
         with pytest.raises(ValueError):
-            self.cidict.update(a='va', A=None, b=3)
+            self.cidict.update(a="va", A=None, b=3)
 
     def test_update_kwargs(self):
-        self.cidict.update(b='vb', key2='val2')
+        self.cidict.update(b="vb", key2="val2")
         assert dict(self.cidict.items()) == {
-            'b': 'vb', 'Key1': 'val1', 'key2': 'val2', 'KEY3': 'VAL3'}
+            "b": "vb",
+            "Key1": "val1",
+            "key2": "val2",
+            "KEY3": "VAL3",
+        }
 
     def test_setdefault(self):
         assert_equal("val1", self.cidict.setdefault("KEY1", "default"))
@@ -334,8 +350,8 @@ class TestCIDict:
         items.discard(item)
 
     def test_fromkeys(self):
-        dct = ipautil.CIDict.fromkeys(('A', 'b', 'C'))
-        assert sorted(dct.keys()) == sorted(['A', 'b', 'C'])
+        dct = ipautil.CIDict.fromkeys(("A", "b", "C"))
+        assert sorted(dct.keys()) == sorted(["A", "b", "C"])
         assert list(dct.values()) == [None] * 3
 
 
@@ -431,74 +447,76 @@ class TestTimeParser:
 
 
 def test_run():
-    result = ipautil.run([paths.ECHO, 'foo\x02bar'],
-                         capture_output=True,
-                         capture_error=True)
+    result = ipautil.run(
+        [paths.ECHO, "foo\x02bar"], capture_output=True, capture_error=True
+    )
     assert result.returncode == 0
-    assert result.output == 'foo\x02bar\n'
-    assert result.raw_output == b'foo\x02bar\n'
-    assert result.error_output == ''
-    assert result.raw_error_output == b''
+    assert result.output == "foo\x02bar\n"
+    assert result.raw_output == b"foo\x02bar\n"
+    assert result.error_output == ""
+    assert result.raw_error_output == b""
 
 
 def test_run_no_capture_output():
-    result = ipautil.run([paths.ECHO, 'foo\x02bar'])
+    result = ipautil.run([paths.ECHO, "foo\x02bar"])
     assert result.returncode == 0
     assert result.output is None
-    assert result.raw_output == b'foo\x02bar\n'
+    assert result.raw_output == b"foo\x02bar\n"
     assert result.error_output is None
-    assert result.raw_error_output == b''
+    assert result.raw_error_output == b""
 
 
 def test_run_bytes():
-    result = ipautil.run([paths.ECHO, b'\x01\x02'], capture_output=True)
+    result = ipautil.run([paths.ECHO, b"\x01\x02"], capture_output=True)
     assert result.returncode == 0
-    assert result.raw_output == b'\x01\x02\n'
+    assert result.raw_output == b"\x01\x02\n"
 
 
 def test_run_decode():
-    result = ipautil.run([paths.ECHO, u'á'.encode('utf-8')],
-                         encoding='utf-8', capture_output=True)
+    result = ipautil.run(
+        [paths.ECHO, u"á".encode("utf-8")], encoding="utf-8", capture_output=True
+    )
     assert result.returncode == 0
     if six.PY3:
-        assert result.output == 'á\n'
+        assert result.output == "á\n"
     else:
-        assert result.output == 'á\n'.encode('utf-8')
+        assert result.output == "á\n".encode("utf-8")
 
 
 def test_run_decode_bad():
     if six.PY3:
         with pytest.raises(UnicodeDecodeError):
-            ipautil.run([paths.ECHO, b'\xa0\xa1'],
-                        capture_output=True,
-                        encoding='utf-8')
+            ipautil.run(
+                [paths.ECHO, b"\xa0\xa1"], capture_output=True, encoding="utf-8"
+            )
     else:
-        result = ipautil.run([paths.ECHO, '\xa0\xa1'],
-                             capture_output=True,
-                             encoding='utf-8')
+        result = ipautil.run(
+            [paths.ECHO, "\xa0\xa1"], capture_output=True, encoding="utf-8"
+        )
         assert result.returncode == 0
-        assert result.output == '\xa0\xa1\n'
+        assert result.output == "\xa0\xa1\n"
 
 
 def test_backcompat():
-    result = out, err, rc = ipautil.run([paths.ECHO, 'foo\x02bar'],
-                                        capture_output=True,
-                                        capture_error=True)
+    result = out, err, rc = ipautil.run(
+        [paths.ECHO, "foo\x02bar"], capture_output=True, capture_error=True
+    )
     assert rc is result.returncode
     assert out is result.output
     assert err is result.error_output
 
 
 def test_flush_sync():
-    with tempfile.NamedTemporaryFile('wb+') as f:
-        f.write(b'data')
+    with tempfile.NamedTemporaryFile("wb+") as f:
+        f.write(b"data")
         ipautil.flush_sync(f)
 
 
 def test_run_stderr():
     args = [
-        sys.executable, '-c',
-        'import sys; sys.exit(" ".join(("error", "message")))'
+        sys.executable,
+        "-c",
+        'import sys; sys.exit(" ".join(("error", "message")))',
     ]
 
     with pytest.raises(ipautil.CalledProcessError) as cm:
@@ -520,8 +538,9 @@ def test_run_stderr():
     assert "message" not in str(cm.value.stderr)
 
 
-@pytest.mark.skipif(os.geteuid() != 0,
-                    reason="Must have root privileges to run this test")
+@pytest.mark.skipif(
+    os.geteuid() != 0, reason="Must have root privileges to run this test"
+)
 def test_run_runas():
     """
     Test run method with the runas parameter.
@@ -531,34 +550,34 @@ def test_run_runas():
     ipa-server-common package is installed.
     """
     user = pwd.getpwnam(IPAAPI_USER)
-    res = ipautil.run(['/usr/bin/id', '-u'], runas=IPAAPI_USER)
+    res = ipautil.run(["/usr/bin/id", "-u"], runas=IPAAPI_USER)
     assert res.returncode == 0
-    assert res.raw_output == b'%d\n' % user.pw_uid
+    assert res.raw_output == b"%d\n" % user.pw_uid
 
-    res = ipautil.run(['/usr/bin/id', '-g'], runas=IPAAPI_USER)
+    res = ipautil.run(["/usr/bin/id", "-g"], runas=IPAAPI_USER)
     assert res.returncode == 0
-    assert res.raw_output == b'%d\n' % user.pw_gid
+    assert res.raw_output == b"%d\n" % user.pw_gid
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def tcp_listen():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
         # port 0 means the OS selects a random, unused port for the test.
-        s.bind(('', 0))
+        s.bind(("", 0))
         s.listen(1)
         yield s.getsockname()[-1], s
     finally:
         s.close()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def udp_listen():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # port 0 means the OS selects a random, unused port for the test.
-        s.bind(('', 0))
+        s.bind(("", 0))
         yield s.getsockname()[-1], s
     finally:
         s.close()
@@ -580,29 +599,31 @@ def test_check_port_bindable_udp(udp_listen):
 
 
 def test_config_replace_variables(tempdir):
-    conffile = os.path.join(tempdir, 'test.conf')
+    conffile = os.path.join(tempdir, "test.conf")
 
-    conf = textwrap.dedent("""
+    conf = textwrap.dedent(
+        """
     replaced=foo
     removed=gone
-    """)
-    expected = textwrap.dedent("""
+    """
+    )
+    expected = textwrap.dedent(
+        """
     replaced=bar
     addreplaced=baz
-    """)
+    """
+    )
 
-    with open(conffile, 'w') as f:
+    with open(conffile, "w") as f:
         f.write(conf)
 
     result = ipautil.config_replace_variables(
         conffile,
         replacevars=dict(replaced="bar", addreplaced="baz"),
-        removevars={'removed'}
+        removevars={"removed"},
     )
-    assert result == {
-        'removed': 'gone', 'replaced': 'foo'
-    }
+    assert result == {"removed": "gone", "replaced": "foo"}
 
-    with open(conffile, 'r') as f:
+    with open(conffile, "r") as f:
         newconf = f.read()
     assert newconf == expected

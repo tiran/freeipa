@@ -25,26 +25,25 @@ from ipatests.test_webui.ui_driver import UI_driver
 from ipatests.test_webui.ui_driver import screenshot
 import pytest
 
-ENTITY = 'krbtpolicy'
+ENTITY = "krbtpolicy"
 
 DATA = {
-    'mod': [
-        ('textbox', 'krbmaxrenewableage', '599000'),
-        ('textbox', 'krbmaxticketlife', '79800'),
+    "mod": [
+        ("textbox", "krbmaxrenewableage", "599000"),
+        ("textbox", "krbmaxticketlife", "79800"),
     ],
 }
 
 DATA2 = {
-    'mod': [
-        ('textbox', 'krbmaxrenewableage', '604800'),
-        ('textbox', 'krbmaxticketlife', '86400'),
+    "mod": [
+        ("textbox", "krbmaxrenewableage", "604800"),
+        ("textbox", "krbmaxticketlife", "86400"),
     ],
 }
 
 
 @pytest.mark.tier1
 class test_krbtpolicy(UI_driver):
-
     @screenshot
     def test_mod(self):
         """
@@ -65,10 +64,10 @@ class test_krbtpolicy(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # verifying Revert, Refresh and Undo button for max renewable age
-        self.button_reset('krbmaxrenewableage', '444800')
+        self.button_reset("krbmaxrenewableage", "444800")
 
         # verifying Revert, Refresh and Undo button for max ticket age
-        self.button_reset('krbmaxticketlife', '46400')
+        self.button_reset("krbmaxticketlife", "46400")
 
     def button_reset(self, field, value):
         """
@@ -84,13 +83,13 @@ class test_krbtpolicy(UI_driver):
 
         # verifying revert button
         self.fill_textbox(field, value)
-        self.facet_button_click('revert')
+        self.facet_button_click("revert")
         self.verify_btn_action(field, value)
         self.wait_for_request(n=2)
 
         # verifying refresh button
         self.fill_textbox(field, value)
-        self.facet_button_click('refresh')
+        self.facet_button_click("refresh")
         self.verify_btn_action(field, value)
         self.wait_for_request(n=2)
 
@@ -113,32 +112,32 @@ class test_krbtpolicy(UI_driver):
         self.navigate_to_entity(ENTITY)
 
         # string used instead of integer
-        expected_error = 'Must be an integer'
-        value = 'nonInteger'
+        expected_error = "Must be an integer"
+        value = "nonInteger"
         self.modify_policy(expected_error, value)
 
         # bigger than max value
-        expected_error = 'Maximum value is 2147483647'
-        value = '2147483649'
+        expected_error = "Maximum value is 2147483647"
+        value = "2147483649"
         self.modify_policy(expected_error, value)
 
         # smaller than max value
-        expected_error = 'Minimum value is 1'
-        value = '-1'
+        expected_error = "Minimum value is 1"
+        value = "-1"
         self.modify_policy(expected_error, value)
 
     def modify_policy(self, expected_error, value):
         """
         modifying kerberos policy values and asserting expected error
         """
-        self.fill_textbox('krbmaxrenewableage', value)
+        self.fill_textbox("krbmaxrenewableage", value)
         self.wait_for_request()
         self.assert_field_validation(expected_error)
-        self.facet_button_click('revert')
-        self.fill_textbox('krbmaxticketlife', value)
+        self.facet_button_click("revert")
+        self.fill_textbox("krbmaxticketlife", value)
         self.wait_for_request()
-        self.assert_field_validation(expected_error, field='krbmaxticketlife')
-        self.facet_button_click('revert')
+        self.assert_field_validation(expected_error, field="krbmaxticketlife")
+        self.facet_button_click("revert")
 
     @screenshot
     def test_verify_measurement_unit(self):

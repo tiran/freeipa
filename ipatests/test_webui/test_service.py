@@ -33,74 +33,65 @@ try:
 except ImportError:
     pass
 
-ENTITY = 'service'
+ENTITY = "service"
 
 
 @pytest.mark.tier1
 class sevice_tasks(UI_driver):
-
     def prep_data(self):
 
-        host = self.config.get('ipa_server')
-        realm = self.config.get('ipa_realm')
-        pkey = 'itest'
+        host = self.config.get("ipa_server")
+        realm = self.config.get("ipa_realm")
+        pkey = "itest"
 
         return {
-            'pkey': '%s/%s@%s' % (pkey, host, realm),
-            'add': [
-                ('textbox', 'service', pkey),
-                ('combobox', 'host', host)
-            ],
-            'mod': [
-                ('checkbox', 'ipakrbokasdelegate', None),
-            ],
+            "pkey": "%s/%s@%s" % (pkey, host, realm),
+            "add": [("textbox", "service", pkey), ("combobox", "host", host)],
+            "mod": [("checkbox", "ipakrbokasdelegate", None),],
         }
 
     def load_file(self, path):
         # ENHANCEMENT: generate csr dynamically
-        with open(path, 'r') as file_d:
+        with open(path, "r") as file_d:
             content = file_d.read()
         return content
 
     def get_service_pkey(self, service, host=None):
         if not host:
-            host = self.config.get('ipa_server')
-        realm = self.config.get('ipa_realm')
-        pkey = '{}/{}@{}'.format(service, host, realm)
+            host = self.config.get("ipa_server")
+        realm = self.config.get("ipa_realm")
+        pkey = "{}/{}@{}".format(service, host, realm)
         return pkey
 
     def add_host(self, hostname, dns_zone, force=False):
-        self.navigate_to_entity('host')
-        self.facet_button_click('add')
-        self.fill_textbox('hostname', hostname)
-        self.fill_textbox('dnszone', dns_zone)
+        self.navigate_to_entity("host")
+        self.facet_button_click("add")
+        self.fill_textbox("hostname", hostname)
+        self.fill_textbox("dnszone", dns_zone)
         if force:
-            self.check_option('force', 'checked')
-        self.dialog_button_click('add')
+            self.check_option("force", "checked")
+        self.dialog_button_click("add")
 
-    def add_service(self, service,
-                    host=None,
-                    textbox=None,
-                    force=False,
-                    cancel=False,
-                    confirm=True):
+    def add_service(
+        self, service, host=None, textbox=None, force=False, cancel=False, confirm=True
+    ):
 
         if not host:
-            host = self.config.get('ipa_server')
+            host = self.config.get("ipa_server")
         self.navigate_to_entity(ENTITY)
-        self.facet_button_click('add')
+        self.facet_button_click("add")
 
-        self.select_combobox('service', service, combobox_input=textbox)
-        self.select_combobox('host', host)
+        self.select_combobox("service", service, combobox_input=textbox)
+        self.select_combobox("host", host)
         if force:
             self.wait(0.5)
-            self.check_option('force', 'checked')
+            self.check_option("force", "checked")
         if cancel:
-            self.dialog_button_click('cancel')
+            self.dialog_button_click("cancel")
             return
         if not confirm:
             return
-        self.dialog_button_click('add')
+        self.dialog_button_click("add")
         self.wait(0.3)
         self.assert_no_error_dialog()
 
@@ -115,16 +106,14 @@ class sevice_tasks(UI_driver):
         'rm' for /usr/sbin/ipa-rmkeytab
         """
 
-        kt_path = '/tmp/test.keytab'
+        kt_path = "/tmp/test.keytab"
 
-        if action == 'get':
-            cmd = '/usr/sbin/ipa-getkeytab -p {} -k {}'.format(principal,
-                                                               kt_path)
+        if action == "get":
+            cmd = "/usr/sbin/ipa-getkeytab -p {} -k {}".format(principal, kt_path)
             self.run_cmd_on_ui_host(cmd)
-        elif action == 'rm':
-            cmd = '/usr/sbin/ipa-rmkeytab -p {} -k {}'.format(principal,
-                                                              kt_path)
-            kt_rm_cmd = 'rm -f {}'.format(kt_path)
+        elif action == "rm":
+            cmd = "/usr/sbin/ipa-rmkeytab -p {} -k {}".format(principal, kt_path)
+            kt_rm_cmd = "rm -f {}".format(kt_path)
             self.run_cmd_on_ui_host(cmd)
             self.run_cmd_on_ui_host(kt_rm_cmd)
         else:
@@ -133,7 +122,6 @@ class sevice_tasks(UI_driver):
 
 @pytest.mark.tier1
 class test_service(sevice_tasks):
-
     @screenshot
     def test_crud(self):
         """
@@ -152,12 +140,12 @@ class test_service(sevice_tasks):
         """
 
         if not self.has_ca():
-            self.skip('CA is not configured')
+            self.skip("CA is not configured")
 
         self.init_app()
         data = self.prep_data()
-        pkey = data.get('pkey')
-        hostname = self.config.get('ipa_server')
+        pkey = data.get("pkey")
+        hostname = self.config.get("ipa_server")
         csr = generate_csr(hostname)
         cert_widget_sel = "div.certificate-widget"
 
@@ -165,123 +153,143 @@ class test_service(sevice_tasks):
         self.navigate_to_record(pkey)
 
         # cert request
-        self.action_list_action('request_cert', confirm=False)
+        self.action_list_action("request_cert", confirm=False)
         # testing if cancel button works
-        self.dialog_button_click('cancel')
-        self.action_list_action('request_cert', confirm=False)
+        self.dialog_button_click("cancel")
+        self.action_list_action("request_cert", confirm=False)
         self.assert_dialog()
         self.fill_text("textarea[name='csr'", csr)
-        self.dialog_button_click('issue')
+        self.dialog_button_click("issue")
         self.wait_for_request(n=2, d=3)
         self.assert_visible(cert_widget_sel)
 
         widget = self.find(cert_widget_sel, By.CSS_SELECTOR)
 
         # cert view
-        self.action_list_action('view', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action("view", confirm=False, parents_css_sel=cert_widget_sel)
         self.assert_dialog()
-        self.dialog_button_click('close')
+        self.dialog_button_click("close")
 
         # cert get
-        self.action_list_action('get', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action("get", confirm=False, parents_css_sel=cert_widget_sel)
         self.assert_dialog()
         # check that text area is not empty
-        self.assert_empty_value('textarea.certificate', negative=True)
-        self.dialog_button_click('close')
+        self.assert_empty_value("textarea.certificate", negative=True)
+        self.dialog_button_click("close")
 
         # cert download - we can only try to click the download action
-        self.action_list_action('download', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action(
+            "download", confirm=False, parents_css_sel=cert_widget_sel
+        )
         # check that revoke action is enabled
-        self.assert_action_list_action('revoke',
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "revoke", parents_css_sel=cert_widget_sel, facet_actions=False
+        )
 
         # check that remove_hold action is not enabled
-        self.assert_action_list_action('remove_hold', enabled=False,
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "remove_hold",
+            enabled=False,
+            parents_css_sel=cert_widget_sel,
+            facet_actions=False,
+        )
 
         # cert revoke/hold cancel
-        self.action_list_action('revoke', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action(
+            "revoke", confirm=False, parents_css_sel=cert_widget_sel
+        )
         self.wait()
-        self.select('select', '6')
-        self.dialog_button_click('cancel')
+        self.select("select", "6")
+        self.dialog_button_click("cancel")
 
         # cert revoke/hold
-        self.action_list_action('revoke', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action(
+            "revoke", confirm=False, parents_css_sel=cert_widget_sel
+        )
         self.wait()
-        self.select('select', '6')
-        self.dialog_button_click('ok')
+        self.select("select", "6")
+        self.dialog_button_click("ok")
         self.wait_while_working(widget)
 
         self.assert_visible(cert_widget_sel + " div.watermark")
 
         # check that revoke action is not enabled
-        self.assert_action_list_action('revoke', enabled=False,
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "revoke",
+            enabled=False,
+            parents_css_sel=cert_widget_sel,
+            facet_actions=False,
+        )
 
         # check that remove_hold action is enabled
-        self.assert_action_list_action('remove_hold',
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "remove_hold", parents_css_sel=cert_widget_sel, facet_actions=False
+        )
 
         # cert remove hold cancel
-        self.action_list_action('remove_hold', confirm=False,
-                                parents_css_sel=cert_widget_sel)
-        self.dialog_button_click('cancel')
+        self.action_list_action(
+            "remove_hold", confirm=False, parents_css_sel=cert_widget_sel
+        )
+        self.dialog_button_click("cancel")
 
         # cert remove hold
-        self.action_list_action('remove_hold', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action(
+            "remove_hold", confirm=False, parents_css_sel=cert_widget_sel
+        )
         self.wait()
-        self.dialog_button_click('ok')
+        self.dialog_button_click("ok")
         self.wait_while_working(widget)
 
         # check that revoke action is enabled
-        self.assert_action_list_action('revoke',
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "revoke", parents_css_sel=cert_widget_sel, facet_actions=False
+        )
 
         # check that remove_hold action is not enabled
-        self.assert_action_list_action('remove_hold', enabled=False,
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "remove_hold",
+            enabled=False,
+            parents_css_sel=cert_widget_sel,
+            facet_actions=False,
+        )
 
         # cert revoke cancel
-        self.action_list_action('revoke', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action(
+            "revoke", confirm=False, parents_css_sel=cert_widget_sel
+        )
         self.wait()
-        self.select('select', '1')
-        self.dialog_button_click('cancel')
+        self.select("select", "1")
+        self.dialog_button_click("cancel")
 
         # cert revoke
-        self.action_list_action('revoke', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action(
+            "revoke", confirm=False, parents_css_sel=cert_widget_sel
+        )
         self.wait()
-        self.select('select', '1')
-        self.dialog_button_click('ok')
+        self.select("select", "1")
+        self.dialog_button_click("ok")
         self.close_notifications()
         self.wait_while_working(widget)
 
         # check that revoke action is not enabled
-        self.assert_action_list_action('revoke', enabled=False,
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "revoke",
+            enabled=False,
+            parents_css_sel=cert_widget_sel,
+            facet_actions=False,
+        )
 
         # check that remove_hold action not is enabled
-        self.assert_action_list_action('remove_hold', enabled=False,
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "remove_hold",
+            enabled=False,
+            parents_css_sel=cert_widget_sel,
+            facet_actions=False,
+        )
 
         # cleanup
-        self.navigate_to_entity(ENTITY, 'search')
-        self.delete_record(pkey, data.get('del'))
+        self.navigate_to_entity(ENTITY, "search")
+        self.delete_record(pkey, data.get("del"))
 
     @screenshot
     def test_arbitrary_certificates(self):
@@ -290,8 +298,8 @@ class test_service(sevice_tasks):
         """
         self.init_app()
         data = self.prep_data()
-        pkey = data.get('pkey')
-        hostname = self.config.get('ipa_server')
+        pkey = data.get("pkey")
+        hostname = self.config.get("ipa_server")
         cert = generate_certificate(hostname)
         cert_widget_sel = "div.certificate-widget"
 
@@ -302,45 +310,50 @@ class test_service(sevice_tasks):
         self.assert_visible("div[name='certificate']")
 
         # add certificate
-        self.button_click('add', parents_css_sel="div[name='certificate']")
-        self.assert_dialog('cert-add-dialog')
-        self.fill_textarea('new_cert', cert)
-        self.dialog_button_click('ok')
+        self.button_click("add", parents_css_sel="div[name='certificate']")
+        self.assert_dialog("cert-add-dialog")
+        self.fill_textarea("new_cert", cert)
+        self.dialog_button_click("ok")
 
         self.assert_visible(cert_widget_sel)
 
         # cert view
-        self.action_list_action('view', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action("view", confirm=False, parents_css_sel=cert_widget_sel)
         self.assert_dialog()
-        self.dialog_button_click('close')
+        self.dialog_button_click("close")
 
         # cert get
-        self.action_list_action('get', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action("get", confirm=False, parents_css_sel=cert_widget_sel)
         self.assert_dialog()
 
         # check that the textarea is not empty
-        self.assert_empty_value('textarea.certificate', negative=True)
-        self.dialog_button_click('close')
+        self.assert_empty_value("textarea.certificate", negative=True)
+        self.dialog_button_click("close")
 
         # cert download - we can only try to click the download action
-        self.action_list_action('download', confirm=False,
-                                parents_css_sel=cert_widget_sel)
+        self.action_list_action(
+            "download", confirm=False, parents_css_sel=cert_widget_sel
+        )
 
         # check that revoke action is not enabled
-        self.assert_action_list_action('revoke', enabled=False,
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "revoke",
+            enabled=False,
+            parents_css_sel=cert_widget_sel,
+            facet_actions=False,
+        )
 
         # check that remove_hold action is not enabled
-        self.assert_action_list_action('remove_hold', enabled=False,
-                                       parents_css_sel=cert_widget_sel,
-                                       facet_actions=False)
+        self.assert_action_list_action(
+            "remove_hold",
+            enabled=False,
+            parents_css_sel=cert_widget_sel,
+            facet_actions=False,
+        )
 
         # cleanup
-        self.navigate_to_entity(ENTITY, 'search')
-        self.delete_record(pkey, data.get('del'))
+        self.navigate_to_entity(ENTITY, "search")
+        self.delete_record(pkey, data.get("del"))
 
     @screenshot
     def test_ca_less(self):
@@ -349,20 +362,20 @@ class test_service(sevice_tasks):
         http://www.freeipa.org/page/V3/CA-less_install
         """
         if self.has_ca():
-            self.skip('CA is installed')
+            self.skip("CA is installed")
 
         self.init_app()
 
         data = self.prep_data()
-        pkey = data.get('pkey')
+        pkey = data.get("pkey")
 
         self.add_record(ENTITY, data)
         self.navigate_to_record(pkey)
 
-        self.assert_action_list_action('request_cert', visible=False)
+        self.assert_action_list_action("request_cert", visible=False)
 
-        self.navigate_by_breadcrumb('Services')
-        self.delete_record(pkey, data.get('del'))
+        self.navigate_by_breadcrumb("Services")
+        self.delete_record(pkey, data.get("del"))
 
     @screenshot
     def test_kerberos_flags(self):
@@ -370,10 +383,10 @@ class test_service(sevice_tasks):
         Test Kerberos flags
         http://www.freeipa.org/page/V3/Kerberos_Flags
         """
-        pkey = self.get_service_pkey('HTTP')
-        name = 'ipakrbokasdelegate'
-        mod = {'mod': [('checkbox', name, None)]}
-        checked = ['checked']
+        pkey = self.get_service_pkey("HTTP")
+        name = "ipakrbokasdelegate"
+        mod = {"mod": [("checkbox", name, None)]}
+        checked = ["checked"]
 
         self.init_app()
         self.navigate_to_record(pkey, entity=ENTITY)
@@ -382,9 +395,9 @@ class test_service(sevice_tasks):
             self.mod_record(ENTITY, mod)  # uncheck
 
         self.mod_record(ENTITY, mod)
-        self.validate_fields([('checkbox', name, checked)])
+        self.validate_fields([("checkbox", name, checked)])
         self.mod_record(ENTITY, mod)
-        self.validate_fields([('checkbox', name, [])])
+        self.validate_fields([("checkbox", name, [])])
 
     @screenshot
     def test_add_remove_services(self):
@@ -393,7 +406,7 @@ class test_service(sevice_tasks):
         """
         self.init_app()
 
-        services = ['cifs', 'ftp', 'imap', 'libvirt', 'nfs', 'qpidd', 'smtp']
+        services = ["cifs", "ftp", "imap", "libvirt", "nfs", "qpidd", "smtp"]
         added_services = []
 
         # add services
@@ -423,12 +436,12 @@ class test_service(sevice_tasks):
         """
         self.init_app()
 
-        services = ['DNS', 'HTTP', 'ldap']
+        services = ["DNS", "HTTP", "ldap"]
         added_services = []
 
         # add temp host without DNS
-        temp_host = 'host-no-dns.ipa.test'
-        self.add_host('host-no-dns', 'ipa.test', force=True)
+        temp_host = "host-no-dns.ipa.test"
+        self.add_host("host-no-dns", "ipa.test", force=True)
 
         for service in services:
             pkey = self.get_service_pkey(service, host=temp_host)
@@ -449,7 +462,7 @@ class test_service(sevice_tasks):
             assert not self.has_record(service)
 
         # host cleanup
-        self.navigate_to_entity('host')
+        self.navigate_to_entity("host")
         self.delete_record(temp_host)
 
     @screenshot
@@ -458,8 +471,8 @@ class test_service(sevice_tasks):
         Test add custom service using textbox
         """
         self.init_app()
-        pkey = self.get_service_pkey('test_service')
-        self.add_service('test_service', textbox='service')
+        pkey = self.get_service_pkey("test_service")
+        self.add_service("test_service", textbox="service")
         assert self.has_record(pkey)
 
         # service cleanup
@@ -473,8 +486,8 @@ class test_service(sevice_tasks):
         Test cancel when adding a service
         """
         self.init_app()
-        pkey = self.get_service_pkey('cifs')
-        self.add_service('cifs', cancel=True)
+        pkey = self.get_service_pkey("cifs")
+        self.add_service("cifs", cancel=True)
         assert not self.has_record(pkey)
 
     @screenshot
@@ -483,9 +496,9 @@ class test_service(sevice_tasks):
         Test cancel deleting a service
         """
         self.init_app()
-        pkey = self.get_service_pkey('HTTP')
+        pkey = self.get_service_pkey("HTTP")
         self.navigate_to_entity(ENTITY)
-        self.delete_record(pkey, confirm_btn='cancel')
+        self.delete_record(pkey, confirm_btn="cancel")
         assert self.has_record(pkey)
 
     @screenshot
@@ -493,21 +506,19 @@ class test_service(sevice_tasks):
         """
         Test cancel/add/delete managed by host
         """
-        pkey = self.get_service_pkey('HTTP')
-        temp_host = 'host-no-dns.ipa.test'
+        pkey = self.get_service_pkey("HTTP")
+        temp_host = "host-no-dns.ipa.test"
         self.init_app()
 
         # add another host for "managedby" testing
-        self.add_host('host-no-dns', 'ipa.test', force=True)
+        self.add_host("host-no-dns", "ipa.test", force=True)
 
         self.navigate_to_record(pkey, entity=ENTITY)
-        self.add_associations([temp_host], facet='managedby_host',
-                              confirm_btn='cancel')
-        self.add_associations([temp_host], facet='managedby_host',
-                              delete=True)
+        self.add_associations([temp_host], facet="managedby_host", confirm_btn="cancel")
+        self.add_associations([temp_host], facet="managedby_host", delete=True)
 
         # host cleanup
-        self.navigate_to_entity('host')
+        self.navigate_to_entity("host")
         self.delete_record(temp_host)
 
     @screenshot
@@ -517,9 +528,9 @@ class test_service(sevice_tasks):
         """
         self.init_app()
         self.navigate_to_entity(ENTITY)
-        self.facet_button_click('add')
-        self.select_combobox('service', 'cifs', combobox_input='service')
-        self.dialog_button_click('add')
+        self.facet_button_click("add")
+        self.select_combobox("service", "cifs", combobox_input="service")
+        self.dialog_button_click("add")
         host_elem = self.find(".widget[name='host']", By.CSS_SELECTOR)
         self.assert_field_validation_required(parent=host_elem)
 
@@ -529,11 +540,11 @@ class test_service(sevice_tasks):
         Test add service "service field required
         """
         self.init_app()
-        host = self.config.get('ipa_server')
+        host = self.config.get("ipa_server")
         self.navigate_to_entity(ENTITY)
-        self.facet_button_click('add')
-        self.select_combobox('host', host)
-        self.dialog_button_click('add')
+        self.facet_button_click("add")
+        self.select_combobox("host", host)
+        self.dialog_button_click("add")
         self.wait()
         service_elem = self.find(".widget[name='service']", By.CSS_SELECTOR)
         self.assert_field_validation_required(parent=service_elem)
@@ -544,14 +555,14 @@ class test_service(sevice_tasks):
         Search different services
         """
         # keywords to search (find_record accepts data dict)
-        http_search = {'pkey': self.get_service_pkey('HTTP')}
-        ldap_search = {'pkey': self.get_service_pkey('ldap')}
-        dns_search = {'pkey': self.get_service_pkey('DNS')}
+        http_search = {"pkey": self.get_service_pkey("HTTP")}
+        ldap_search = {"pkey": self.get_service_pkey("ldap")}
+        dns_search = {"pkey": self.get_service_pkey("DNS")}
         self.init_app()
         self.navigate_to_entity(ENTITY)
-        self.find_record('service', http_search)
-        self.find_record('service', ldap_search)
-        self.find_record('service', dns_search)
+        self.find_record("service", http_search)
+        self.find_record("service", ldap_search)
+        self.find_record("service", dns_search)
 
     @screenshot
     def test_dropdown(self):
@@ -560,7 +571,7 @@ class test_service(sevice_tasks):
         """
         self.init_app()
         self.navigate_to_entity(ENTITY)
-        self.facet_button_click('add')
+        self.facet_button_click("add")
 
         actions = ActionChains(self.driver)
         actions.send_keys(Keys.ARROW_DOWN)
@@ -575,10 +586,10 @@ class test_service(sevice_tasks):
         # evaluate value fields are not empty
         service_cb = "input[name='service']"
         service = self.find(service_cb, By.CSS_SELECTOR)
-        assert service.get_attribute('value') != ""
+        assert service.get_attribute("value") != ""
         host_cb = "[name='host'].combobox-widget"
         host = self.find(host_cb, By.CSS_SELECTOR)
-        assert host.get_attribute('value') != ""
+        assert host.get_attribute("value") != ""
 
     @screenshot
     def test_add_service_using_enter(self):
@@ -586,8 +597,8 @@ class test_service(sevice_tasks):
         Add a service using enter key
         """
         self.init_app()
-        pkey = self.get_service_pkey('smtp')
-        self.add_service('smtp', confirm=False)
+        pkey = self.get_service_pkey("smtp")
+        self.add_service("smtp", confirm=False)
         actions = ActionChains(self.driver)
         actions.click()
         actions.send_keys(Keys.ENTER).perform()
@@ -604,8 +615,8 @@ class test_service(sevice_tasks):
         Delete a service using enter key
         """
         self.init_app()
-        pkey = self.get_service_pkey('smtp')
-        self.add_service('smtp')
+        pkey = self.get_service_pkey("smtp")
+        self.add_service("smtp")
         assert self.has_record(pkey)
         self.delete_record(pkey, confirm_btn=None)
         actions = ActionChains(self.driver)
@@ -621,40 +632,40 @@ class test_service(sevice_tasks):
         Requires to run a ipa-get/rmkeytab on UI host.
         """
         if not self.has_ca():
-            self.skip('CA is not configured')
+            self.skip("CA is not configured")
 
-        hostname = self.config.get('ipa_server')
+        hostname = self.config.get("ipa_server")
         csr = generate_csr(hostname)
 
         self.init_app()
-        pkey = self.get_service_pkey('cifs')
+        pkey = self.get_service_pkey("cifs")
 
         self.navigate_to_entity(ENTITY)
 
         # provision service
-        self.add_service('cifs')
+        self.add_service("cifs")
         self.navigate_to_record(pkey, entity=ENTITY)
-        self.action_list_action('request_cert', confirm=False)
+        self.action_list_action("request_cert", confirm=False)
         self.assert_dialog()
         self.fill_text("textarea[name='csr'", csr)
-        self.dialog_button_click('issue')
-        self.run_keytab_on_host(pkey, 'get')
+        self.dialog_button_click("issue")
+        self.run_keytab_on_host(pkey, "get")
         self.wait(1)
-        self.facet_button_click('refresh')
+        self.facet_button_click("refresh")
 
         # assert key present
         no_key_selector = 'div[name="kerberos-key-valid"] label'
-        provisioned_assert = 'Kerberos Key Present, Service Provisioned'
+        provisioned_assert = "Kerberos Key Present, Service Provisioned"
         self.assert_text(no_key_selector, provisioned_assert)
 
         # unprovision service
-        self.action_list_action('unprovision', confirm_btn='unprovision')
-        self.facet_button_click('refresh')
-        self.run_keytab_on_host(pkey, 'rm')
+        self.action_list_action("unprovision", confirm_btn="unprovision")
+        self.facet_button_click("refresh")
+        self.run_keytab_on_host(pkey, "rm")
 
         # assert key not present
         no_key_selector = 'div[name="kerberos-key-missing"] label'
-        provisioned_assert = 'Kerberos Key Not Present'
+        provisioned_assert = "Kerberos Key Not Present"
         self.assert_text(no_key_selector, provisioned_assert)
 
         # service cleanup

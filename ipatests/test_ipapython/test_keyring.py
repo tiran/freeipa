@@ -26,14 +26,14 @@ import pytest
 
 pytestmark = pytest.mark.tier0
 
-TEST_KEY = 'ipa_test'
-TEST_UNICODEKEY = u'ipa_unicode'
-TEST_VALUE = b'abc123'
-UPDATE_VALUE = b'123abc'
+TEST_KEY = "ipa_test"
+TEST_UNICODEKEY = u"ipa_unicode"
+TEST_VALUE = b"abc123"
+UPDATE_VALUE = b"123abc"
 
-SIZE_256 = 'abcdefgh' * 32
-SIZE_512 = 'abcdefgh' * 64
-SIZE_1024 = 'abcdefgh' * 128
+SIZE_256 = "abcdefgh" * 32
+SIZE_512 = "abcdefgh" * 64
+SIZE_1024 = "abcdefgh" * 128
 
 
 class test_keyring:
@@ -62,7 +62,7 @@ class test_keyring:
         """
         kernel_keyring.add_key(TEST_KEY, TEST_VALUE)
         result = kernel_keyring.read_key(TEST_KEY)
-        assert(result == TEST_VALUE)
+        assert result == TEST_VALUE
 
         kernel_keyring.del_key(TEST_KEY)
 
@@ -70,7 +70,7 @@ class test_keyring:
         try:
             result = kernel_keyring.read_key(TEST_KEY)
         except ValueError as e:
-            assert str(e) == 'key %s not found' % TEST_KEY
+            assert str(e) == "key %s not found" % TEST_KEY
 
     def test_02(self):
         """
@@ -78,7 +78,7 @@ class test_keyring:
         """
         try:
             kernel_keyring.del_key(TEST_KEY)
-            raise AssertionError('key should not have been deleted')
+            raise AssertionError("key should not have been deleted")
         except ValueError:
             pass
 
@@ -96,14 +96,14 @@ class test_keyring:
         """
         kernel_keyring.update_key(TEST_KEY, UPDATE_VALUE)
         result = kernel_keyring.read_key(TEST_KEY)
-        assert(result == UPDATE_VALUE)
+        assert result == UPDATE_VALUE
 
         # Now update it 10 times
         for i in range(10):
-            value = ('test %d' % i).encode('ascii')
+            value = ("test %d" % i).encode("ascii")
             kernel_keyring.update_key(TEST_KEY, value)
             result = kernel_keyring.read_key(TEST_KEY)
-            assert(result == value)
+            assert result == value
 
         kernel_keyring.del_key(TEST_KEY)
 
@@ -130,7 +130,7 @@ class test_keyring:
         """
         kernel_keyring.add_key(SIZE_256, TEST_VALUE)
         result = kernel_keyring.read_key(SIZE_256)
-        assert(result == TEST_VALUE)
+        assert result == TEST_VALUE
 
         kernel_keyring.del_key(SIZE_256)
 
@@ -138,9 +138,9 @@ class test_keyring:
         """
         Test 512-bytes of data
         """
-        kernel_keyring.add_key(TEST_KEY, SIZE_512.encode('ascii'))
+        kernel_keyring.add_key(TEST_KEY, SIZE_512.encode("ascii"))
         result = kernel_keyring.read_key(TEST_KEY)
-        assert(result == SIZE_512.encode('ascii'))
+        assert result == SIZE_512.encode("ascii")
 
         kernel_keyring.del_key(TEST_KEY)
 
@@ -148,9 +148,9 @@ class test_keyring:
         """
         Test 1k bytes of data
         """
-        kernel_keyring.add_key(TEST_KEY, SIZE_1024.encode('ascii'))
+        kernel_keyring.add_key(TEST_KEY, SIZE_1024.encode("ascii"))
         result = kernel_keyring.read_key(TEST_KEY)
-        assert(result == SIZE_1024.encode('ascii'))
+        assert result == SIZE_1024.encode("ascii")
 
         kernel_keyring.del_key(TEST_KEY)
 
@@ -160,6 +160,6 @@ class test_keyring:
         """
         kernel_keyring.add_key(TEST_UNICODEKEY, TEST_VALUE)
         result = kernel_keyring.read_key(TEST_UNICODEKEY)
-        assert(result == TEST_VALUE)
+        assert result == TEST_VALUE
 
         kernel_keyring.del_key(TEST_UNICODEKEY)

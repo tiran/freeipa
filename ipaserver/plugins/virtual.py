@@ -45,6 +45,7 @@ class VirtualCommand(Command):
     Ex.
         cn=request certificate, cn=virtual operations,cn=etc, dc=example, dc=com
     """
+
     operation = None
 
     def check_access(self, operation=None):
@@ -54,7 +55,7 @@ class VirtualCommand(Command):
         This should be executed before any actual work is done.
         """
         if self.operation is None and operation is None:
-            raise errors.ACIError(info=_('operation not defined'))
+            raise errors.ACIError(info=_("operation not defined"))
 
         if operation is None:
             operation = self.operation
@@ -62,13 +63,16 @@ class VirtualCommand(Command):
         ldap = self.api.Backend.ldap2
         logger.debug("IPA: virtual verify %s", operation)
 
-        operationdn = DN(('cn', operation), self.api.env.container_virtual, self.api.env.basedn)
+        operationdn = DN(
+            ("cn", operation), self.api.env.container_virtual, self.api.env.basedn
+        )
 
         try:
             if not ldap.can_write(operationdn, "objectclass"):
                 raise errors.ACIError(
-                    info=_('not allowed to perform operation: %s') % operation)
+                    info=_("not allowed to perform operation: %s") % operation
+                )
         except errors.NotFound:
-            raise errors.ACIError(info=_('No such virtual command'))
+            raise errors.ACIError(info=_("No such virtual command"))
 
         return True

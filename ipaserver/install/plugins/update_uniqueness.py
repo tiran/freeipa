@@ -57,15 +57,15 @@ class update_uniqueness_plugins_to_new_syntax(Updater):
     uniqueness-subtree-entries-oc: person
     """
 
-    plugins_dn = DN(('cn', 'plugins'), ('cn', 'config'))
+    plugins_dn = DN(("cn", "plugins"), ("cn", "config"))
 
     def __remove_update(self, update, key, value):
-        statement = dict(action='remove', attr=key, value=value)
-        update.setdefault('updates', []).append(statement)
+        statement = dict(action="remove", attr=key, value=value)
+        update.setdefault("updates", []).append(statement)
 
     def __add_update(self, update, key, value):
-        statement = dict(action='add', attr=key, value=value)
-        update.setdefault('updates', []).append(statement)
+        statement = dict(action="add", attr=key, value=value)
+        update.setdefault("updates", []).append(statement)
 
     def __subtree_style(self, entry):
         """
@@ -74,25 +74,25 @@ class update_uniqueness_plugins_to_new_syntax(Updater):
         nsslapd-pluginArg1..N    -> uniqueness-subtrees[1..N]
         """
         update = {
-            'dn': entry.dn,
-            'updates': [],
+            "dn": entry.dn,
+            "updates": [],
         }
 
         # nsslapd-pluginArg0    -> referint-update-delay
-        attribute = entry.single_value['nsslapd-pluginArg0']
+        attribute = entry.single_value["nsslapd-pluginArg0"]
         if not attribute:
             raise ValueError("'nsslapd-pluginArg0' not found")
-        self.__remove_update(update, 'nsslapd-pluginArg0', attribute)
-        self.__add_update(update, 'uniqueness-attribute-name', attribute)
-        entry['nsslapd-pluginArg0'] = None
+        self.__remove_update(update, "nsslapd-pluginArg0", attribute)
+        self.__add_update(update, "uniqueness-attribute-name", attribute)
+        entry["nsslapd-pluginArg0"] = None
 
         # nsslapd-pluginArg1..N    -> uniqueness-subtrees[1..N]
         for key in entry.keys():
-            if key.lower().startswith('nsslapd-pluginarg'):
+            if key.lower().startswith("nsslapd-pluginarg"):
                 subtree_dn = entry.single_value[key]
                 if subtree_dn:
                     self.__remove_update(update, key, subtree_dn)
-                    self.__add_update(update, 'uniqueness-subtrees', subtree_dn)
+                    self.__add_update(update, "uniqueness-subtrees", subtree_dn)
 
         return update
 
@@ -109,8 +109,8 @@ class update_uniqueness_plugins_to_new_syntax(Updater):
         """
 
         update = {
-            'dn': entry.dn,
-            'updates': [],
+            "dn": entry.dn,
+            "updates": [],
         }
 
         attribute = None
@@ -118,52 +118,57 @@ class update_uniqueness_plugins_to_new_syntax(Updater):
         requiredobjectclass = None
 
         for key in entry.keys():
-            if key.lower().startswith('nsslapd-pluginarg'):
+            if key.lower().startswith("nsslapd-pluginarg"):
                 try:
                     # split argument name and value
                     value = entry.single_value[key]
-                    arg_name, arg_val = value.split('=', 1)
+                    arg_name, arg_val = value.split("=", 1)
                 except ValueError:
                     # unable to split
-                    raise ValueError("unexpected argument %s: %s" %
-                                     (key, value))
+                    raise ValueError("unexpected argument %s: %s" % (key, value))
                 arg_name = arg_name.lower()
-                if arg_name == 'attribute':
+                if arg_name == "attribute":
                     if attribute:
-                        raise ValueError("single value argument 'attribute' "
-                                         "is specified mutliple times")
+                        raise ValueError(
+                            "single value argument 'attribute' "
+                            "is specified mutliple times"
+                        )
                     attribute = arg_val
                     self.__remove_update(update, key, value)
-                elif arg_name == 'markerobjectclass':
+                elif arg_name == "markerobjectclass":
                     if markerobjectclass:
-                        raise ValueError("single value argument "
-                                         "'markerobjectclass' "
-                                         "is specified mutliple times")
+                        raise ValueError(
+                            "single value argument "
+                            "'markerobjectclass' "
+                            "is specified mutliple times"
+                        )
                     markerobjectclass = arg_val
                     self.__remove_update(update, key, value)
-                elif arg_name == 'requiredobjectclass':
+                elif arg_name == "requiredobjectclass":
                     if requiredobjectclass:
-                        raise ValueError("single value argument "
-                                         "'requiredobjectclass' "
-                                         "is specified mutliple times")
+                        raise ValueError(
+                            "single value argument "
+                            "'requiredobjectclass' "
+                            "is specified mutliple times"
+                        )
                     requiredobjectclass = arg_val
                     self.__remove_update(update, key, value)
                 else:
-                    raise ValueError("unexpected argument '%s: %s'" %
-                                     (key, value))
+                    raise ValueError("unexpected argument '%s: %s'" % (key, value))
 
         if not attribute:
             raise ValueError("missing required argument 'attribute'")
         if not markerobjectclass:
             raise ValueError("missing required argument 'markerobjectclass'")
 
-        self.__add_update(update, 'uniqueness-attribute-name', attribute)
-        self.__add_update(update, 'uniqueness-top-entry-oc', markerobjectclass)
+        self.__add_update(update, "uniqueness-attribute-name", attribute)
+        self.__add_update(update, "uniqueness-top-entry-oc", markerobjectclass)
 
         if requiredobjectclass:
             # optional argument
-            self.__add_update(update, 'uniqueness-subtree-entries-oc',
-                              requiredobjectclass)
+            self.__add_update(
+                update, "uniqueness-subtree-entries-oc", requiredobjectclass
+            )
 
         return update
 
@@ -181,45 +186,48 @@ class update_uniqueness_plugins_to_new_syntax(Updater):
 
         try:
             entries, _truncated = ldap.find_entries(
-                filter=old_style_plugin_search_filter,
-                base_dn=self.plugins_dn,
+                filter=old_style_plugin_search_filter, base_dn=self.plugins_dn,
             )
         except errors.NotFound:
-            logger.debug("No uniqueness plugin entries with old style "
-                         "configuration found")
+            logger.debug(
+                "No uniqueness plugin entries with old style " "configuration found"
+            )
             return False, []
 
         update_list = []
         new_attributes = [
-            'uniqueness-subtree-entries-oc',
-            'uniqueness-top-entry-oc',
-            'uniqueness-attribute-name',
-            'uniqueness-subtrees',
-            'uniqueness-across-all-subtrees',
+            "uniqueness-subtree-entries-oc",
+            "uniqueness-top-entry-oc",
+            "uniqueness-attribute-name",
+            "uniqueness-subtrees",
+            "uniqueness-across-all-subtrees",
         ]
 
         for entry in entries:
             # test for mixed configuration
             if any(attr in entry for attr in new_attributes):
-                logger.critical("Mixed old and new style configuration "
-                                "for plugin %s. Plugin will not work. "
-                                "Skipping plugin migration, please fix it "
-                                "manually",
-                                entry.dn)
+                logger.critical(
+                    "Mixed old and new style configuration "
+                    "for plugin %s. Plugin will not work. "
+                    "Skipping plugin migration, please fix it "
+                    "manually",
+                    entry.dn,
+                )
                 continue
-            logger.debug("Configuration of plugin %s will be migrated "
-                         "to new style", entry.dn)
+            logger.debug(
+                "Configuration of plugin %s will be migrated " "to new style", entry.dn
+            )
             try:
                 # detect which configuration was used
-                arg0 = entry.get('nsslapd-pluginarg0')
-                if '=' in arg0:
+                arg0 = entry.get("nsslapd-pluginarg0")
+                if "=" in arg0:
                     update = self.__objectclass_style(entry)
                 else:
                     update = self.__subtree_style(entry)
             except ValueError as e:
-                logger.error("Unable to migrate configuration of "
-                             "plugin %s (%s)",
-                             entry.dn, e)
+                logger.error(
+                    "Unable to migrate configuration of " "plugin %s (%s)", entry.dn, e
+                )
             else:
                 update_list.append(update)
 

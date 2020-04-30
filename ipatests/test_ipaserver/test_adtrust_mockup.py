@@ -11,9 +11,9 @@ import pytest
 
 
 class ApiMockup:
-    Backend = namedtuple('Backend', 'ldap2')
-    Calls = namedtuple('Callbacks', 'retrieve_netbios_name')
-    env = namedtuple('Environment', 'domain')
+    Backend = namedtuple("Backend", "ldap2")
+    Calls = namedtuple("Callbacks", "retrieve_netbios_name")
+    env = namedtuple("Environment", "domain")
 
 
 class TestNetbiosName:
@@ -23,7 +23,7 @@ class TestNetbiosName:
     def netbiosname_setup(self, request):
         cls = request.cls
         api = ApiMockup()
-        ldap2 = namedtuple('LDAP', 'isconnected')
+        ldap2 = namedtuple("LDAP", "isconnected")
         ldap2.isconnected = mock.MagicMock(return_value=True)
         api.Backend.ldap2 = ldap2
         api.Calls.retrieve_netbios_name = adtr.retrieve_netbios_name
@@ -32,6 +32,7 @@ class TestNetbiosName:
 
         def fin():
             adtr.retrieve_netbios_name = cls.api.Calls.retrieve_netbios_name
+
         request.addfinalizer(fin)
 
     def test_NetbiosName(self):
@@ -43,17 +44,18 @@ class TestNetbiosName:
         all cases. For interactive run we override input to force what
         we expect.
         """
-        self.api.env.domain = 'example.com'
-        expected_nname = 'EXAMPLE'
+        self.api.env.domain = "example.com"
+        expected_nname = "EXAMPLE"
         # NetBIOS name, unattended, should set the name?
-        tests = ((expected_nname, True, False),
-                 (None, True, True),
-                 (None, False, True),
-                 (expected_nname, False, False))
-        with mock.patch('sys.stdin', new_callable=StringIO) as stdin:
-            stdin.write(expected_nname + '\r')
+        tests = (
+            (expected_nname, True, False),
+            (None, True, True),
+            (None, False, True),
+            (expected_nname, False, False),
+        )
+        with mock.patch("sys.stdin", new_callable=StringIO) as stdin:
+            stdin.write(expected_nname + "\r")
             for test in tests:
-                nname, setname = set_and_check_netbios_name(
-                    test[0], test[1], self.api)
+                nname, setname = set_and_check_netbios_name(test[0], test[1], self.api)
                 assert expected_nname == nname
                 assert setname == test[2]

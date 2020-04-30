@@ -79,11 +79,10 @@ class IPACertFix(AdminTool):
             return 1
 
         try:
-            ipautil.run(['pki-server', 'cert-fix', '--help'], raiseonerr=True)
+            ipautil.run(["pki-server", "cert-fix", "--help"], raiseonerr=True)
         except ipautil.CalledProcessError:
             print(
-                "The 'pki-server cert-fix' command is not available; "
-                "cannot proceed."
+                "The 'pki-server cert-fix' command is not available; " "cannot proceed."
             )
             return 1
 
@@ -109,7 +108,7 @@ class IPACertFix(AdminTool):
         print_intentions(certs, extra_certs)
 
         response = ipautil.user_input('Enter "yes" to proceed')
-        if response.lower() != 'yes':
+        if response.lower() != "yes":
             print("Not proceeding.")
             return 0
         print("Proceeding.")
@@ -129,14 +128,15 @@ class IPACertFix(AdminTool):
         replicate_dogtag_certs(subject_base, ca_subject_dn, certs)
         install_ipa_certs(subject_base, ca_subject_dn, extra_certs)
 
-        if any(x[0] != 'sslserver' for x in certs) \
-                or any(x[0] is IPACertType.IPARA for x in extra_certs):
+        if any(x[0] != "sslserver" for x in certs) or any(
+            x[0] is IPACertType.IPARA for x in extra_certs
+        ):
             # we renewed a "shared" certificate, therefore we must
             # become the renewal master
             print("Becoming renewal master.")
             cainstance.CAInstance().set_renewal_master()
 
-        ipautil.run(['ipactl', 'restart'], raiseonerr=True)
+        ipautil.run(["ipactl", "restart"], raiseonerr=True)
 
         return 0
 
@@ -156,13 +156,13 @@ def expired_dogtag_certs(now):
     db = NSSDatabase(nssdir=paths.PKI_TOMCAT_ALIAS_DIR)
 
     for certid, nickname in [
-        ('sslserver', 'Server-Cert cert-pki-ca'),
-        ('subsystem', 'subsystemCert cert-pki-ca'),
-        ('ca_ocsp_signing', 'ocspSigningCert cert-pki-ca'),
-        ('ca_audit_signing', 'auditSigningCert cert-pki-ca'),
-        ('kra_transport', 'transportCert cert-pki-kra'),
-        ('kra_storage', 'storageCert cert-pki-kra'),
-        ('kra_audit_signing', 'auditSigningCert cert-pki-kra'),
+        ("sslserver", "Server-Cert cert-pki-ca"),
+        ("subsystem", "subsystemCert cert-pki-ca"),
+        ("ca_ocsp_signing", "ocspSigningCert cert-pki-ca"),
+        ("ca_audit_signing", "auditSigningCert cert-pki-ca"),
+        ("kra_transport", "transportCert cert-pki-kra"),
+        ("kra_storage", "storageCert cert-pki-kra"),
+        ("kra_audit_signing", "auditSigningCert cert-pki-kra"),
     ]:
         try:
             cert = db.get_cert(nickname)
@@ -197,7 +197,7 @@ def expired_ipa_certs(now):
     # LDAPS
     ds_dbdir = dsinstance.config_dirname(realm_to_serverid(api.env.realm))
     db = NSSDatabase(nssdir=ds_dbdir)
-    cert = db.get_cert('Server-Cert')
+    cert = db.get_cert("Server-Cert")
     if cert.not_valid_after <= now:
         certs.append((IPACertType.LDAPS, cert))
 
@@ -229,20 +229,21 @@ def print_cert_info(context, desc, cert):
 
 
 def run_cert_fix(certs, extra_certs):
-    ldapi_path = (
-        paths.SLAPD_INSTANCE_SOCKET_TEMPLATE
-        % '-'.join(api.env.realm.split('.'))
+    ldapi_path = paths.SLAPD_INSTANCE_SOCKET_TEMPLATE % "-".join(
+        api.env.realm.split(".")
     )
     cmd = [
-        'pki-server',
-        'cert-fix',
-        '--ldapi-socket', ldapi_path,
-        '--agent-uid', 'ipara',
+        "pki-server",
+        "cert-fix",
+        "--ldapi-socket",
+        ldapi_path,
+        "--agent-uid",
+        "ipara",
     ]
     for certid, _cert in certs:
-        cmd.extend(['--cert', certid])
+        cmd.extend(["--cert", certid])
     for _certtype, cert in extra_certs:
-        cmd.extend(['--extra-cert', str(cert.serial_number)])
+        cmd.extend(["--extra-cert", str(cert.serial_number)])
     ipautil.run(cmd, raiseonerr=True)
 
 
@@ -257,8 +258,9 @@ def replicate_dogtag_certs(subject_base, ca_subject_dn, certs):
 def install_ipa_certs(subject_base, ca_subject_dn, certs):
     """Print details and install renewed IPA certificates."""
     for certtype, oldcert in certs:
-        cert_path = "/etc/pki/pki-tomcat/certs/{}-renewed.crt" \
-            .format(oldcert.serial_number)
+        cert_path = "/etc/pki/pki-tomcat/certs/{}-renewed.crt".format(
+            oldcert.serial_number
+        )
         cert = x509.load_certificate_from_file(cert_path)
         print_cert_info("Renewed IPA", certtype.value, cert)
 
@@ -269,17 +271,17 @@ def install_ipa_certs(subject_base, ca_subject_dn, certs):
         elif certtype is IPACertType.HTTPS:
             shutil.copyfile(cert_path, paths.HTTPD_CERT_FILE)
         elif certtype is IPACertType.LDAPS:
-            ds_dbdir = dsinstance.config_dirname(
-                realm_to_serverid(api.env.realm))
+            ds_dbdir = dsinstance.config_dirname(realm_to_serverid(api.env.realm))
             db = NSSDatabase(nssdir=ds_dbdir)
-            db.delete_cert('Server-Cert')
-            db.import_pem_cert('Server-Cert', EMPTY_TRUST_FLAGS, cert_path)
+            db.delete_cert("Server-Cert")
+            db.import_pem_cert("Server-Cert", EMPTY_TRUST_FLAGS, cert_path)
         elif certtype is IPACertType.KDC:
             shutil.copyfile(cert_path, paths.KDC_CERT)
 
 
 def replicate_cert(subject_base, ca_subject_dn, cert):
     nickname = cainstance.get_ca_renewal_nickname(
-        subject_base, ca_subject_dn, DN(cert.subject))
+        subject_base, ca_subject_dn, DN(cert.subject)
+    )
     if nickname:
         cainstance.update_ca_renewal_entry(api.Backend.ldap2, nickname, cert)

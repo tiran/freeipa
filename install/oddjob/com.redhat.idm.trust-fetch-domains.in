@@ -26,9 +26,7 @@ if six.PY3:
 
 def parse_options():
     usage = "%prog <trusted domain name>\n"
-    parser = config.IPAOptionParser(
-        usage=usage, formatter=config.IPAFormatter()
-    )
+    parser = config.IPAOptionParser(usage=usage, formatter=config.IPAFormatter())
 
     parser.add_option(
         "-d",
@@ -90,9 +88,7 @@ def retrieve_keytab(api, ccache_name, oneway_keytab_name, oneway_principal):
         os.unlink(oneway_keytab_name)
 
     ipautil.run(
-        getkeytab_args,
-        env={"KRB5CCNAME": ccache_name, "LANG": "C"},
-        raiseonerr=False,
+        getkeytab_args, env={"KRB5CCNAME": ccache_name, "LANG": "C"}, raiseonerr=False,
     )
     # Make sure SSSD is able to read the keytab
     try:
@@ -133,19 +129,20 @@ def generate_krb5_config(realm, server):
     cfg = paths.KRB5_CONF
     tcfg = None
     if server:
-        content = textwrap.dedent(u"""
+        content = (
+            textwrap.dedent(
+                u"""
             [realms]
                %s = {
                    kdc = %s
                }
-            """) % (
-            realm.upper(),
-            server,
+            """
+            )
+            % (realm.upper(), server,)
         )
 
-        (fd, tcfg) = tempfile.mkstemp(dir="/run/ipa",
-                prefix="krb5conf", text=True)
-        with io.open(fd, mode='w', encoding='utf-8') as o:
+        (fd, tcfg) = tempfile.mkstemp(dir="/run/ipa", prefix="krb5conf", text=True)
+        with io.open(fd, mode="w", encoding="utf-8") as o:
             o.write(content)
         cfg = ":".join([tcfg, cfg])
     return (tcfg, cfg)
@@ -154,9 +151,7 @@ def generate_krb5_config(realm, server):
 if not is_ipa_configured():
     # LSB status code 6: program is not configured
     raise ScriptError(
-        "IPA is not configured "
-        + "(see man pages of ipa-server-install for help)",
-        6,
+        "IPA is not configured " + "(see man pages of ipa-server-install for help)", 6,
     )
 
 if not os.getegid() == 0:
@@ -165,9 +160,7 @@ if not os.getegid() == 0:
 
 safe_options, options, trusted_domain = parse_options()
 
-api.bootstrap(
-    in_server=True, log=None, context="server", confdir=paths.ETC_IPA
-)
+api.bootstrap(in_server=True, log=None, context="server", confdir=paths.ETC_IPA)
 api.finalize()
 
 # Only import trust plugin after api is initialized or internal imports
@@ -221,9 +214,7 @@ api.Backend.ldap2.connect(ccache_name)
 # Retrieve own NetBIOS name and trusted forest's name.
 # We use script's input to retrieve the trusted forest's name to sanitize input
 # for file-level access as we might need to wipe out keytab in /var/lib/sss/keytabs
-own_trust_dn = DN(
-    ("cn", api.env.domain), ("cn", "ad"), ("cn", "etc"), api.env.basedn
-)
+own_trust_dn = DN(("cn", api.env.domain), ("cn", "ad"), ("cn", "etc"), api.env.basedn)
 own_trust_entry = api.Backend.ldap2.get_entry(own_trust_dn, ["ipantflatname"])
 own_trust_flatname = own_trust_entry.single_value.get("ipantflatname").upper()
 trusted_domain_dn = DN(
@@ -242,9 +233,7 @@ cfg_file, cfg = generate_krb5_config(trusted_domain, options.server)
 
 if not (options.admin and options.password):
     oneway_keytab_name = "/var/lib/sss/keytabs/" + trusted_domain + ".keytab"
-    oneway_principal = str(
-        "%s$@%s" % (own_trust_flatname, trusted_domain.upper())
-    )
+    oneway_principal = str("%s$@%s" % (own_trust_flatname, trusted_domain.upper()))
 
     # If keytab does not exist, retrieve it
     if not os.path.isfile(oneway_keytab_name):
@@ -255,10 +244,7 @@ if not (options.admin and options.password):
         try:
             # The keytab may have stale key material (from older trust-add run)
             cred = kinit_keytab(
-                oneway_principal,
-                oneway_keytab_name,
-                oneway_ccache_name,
-                config=cfg,
+                oneway_principal, oneway_keytab_name, oneway_ccache_name, config=cfg,
             )
             if cred.lifetime > 0:
                 have_ccache = True
@@ -268,10 +254,7 @@ if not (options.admin and options.password):
             if os.path.exists(oneway_ccache_name):
                 os.unlink(oneway_ccache_name)
             kinit_keytab(
-                oneway_principal,
-                oneway_keytab_name,
-                oneway_ccache_name,
-                config=cfg,
+                oneway_principal, oneway_keytab_name, oneway_ccache_name, config=cfg,
             )
     except (gssapi.exceptions.GSSError, gssapi.raw.misc.GSSError):
         # If there was failure on using keytab, assume it is stale and retrieve again
@@ -279,10 +262,7 @@ if not (options.admin and options.password):
         if os.path.exists(oneway_ccache_name):
             os.unlink(oneway_ccache_name)
         cred = kinit_keytab(
-            oneway_principal,
-            oneway_keytab_name,
-            oneway_ccache_name,
-            config=cfg,
+            oneway_principal, oneway_keytab_name, oneway_ccache_name, config=cfg,
         )
 else:
     cred = kinit_password(
@@ -307,9 +287,7 @@ os.environ["KRB5_CONFIG"] = cfg
 
 # retrieve the forest root domain name and contact it to retrieve trust
 # topology info
-forest_root = get_forest_root_domain(
-    api, trusted_domain, server=options.server
-)
+forest_root = get_forest_root_domain(api, trusted_domain, server=options.server)
 domains = dcerpc.fetch_domains(
     api, ipa_domain, forest_root, creds=True, server=options.server
 )
@@ -323,9 +301,7 @@ if old_config:
 if cfg_file:
     os.remove(cfg_file)
 
-trust_domain_object = api.Command.trust_show(trusted_domain, raw=True)[
-    "result"
-]
+trust_domain_object = api.Command.trust_show(trusted_domain, raw=True)["result"]
 trust.add_new_domains_from_trust(api, None, trust_domain_object, domains)
 
 sys.exit(0)

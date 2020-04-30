@@ -41,29 +41,47 @@ def parse_options():
     usage += "%prog [options]\n"
     parser = OptionParser(usage=usage, formatter=config.IPAFormatter())
 
-    parser.add_option("-d", "--debug", action="store_true", dest="debug",
-                      help="Display debugging information about the update(s)")
-    parser.add_option("-e", "--entry", dest="managed_entry",
-                      default=None, type="string",
-                      help="DN for the Managed Entry Definition")
-    parser.add_option("-l", "--list", dest="list_managed_entries",
-                      action="store_true",
-                      help="List available Managed Entries")
-    parser.add_option("-p", "--password", dest="dirman_password",
-                      help="Directory Manager password")
+    parser.add_option(
+        "-d",
+        "--debug",
+        action="store_true",
+        dest="debug",
+        help="Display debugging information about the update(s)",
+    )
+    parser.add_option(
+        "-e",
+        "--entry",
+        dest="managed_entry",
+        default=None,
+        type="string",
+        help="DN for the Managed Entry Definition",
+    )
+    parser.add_option(
+        "-l",
+        "--list",
+        dest="list_managed_entries",
+        action="store_true",
+        help="List available Managed Entries",
+    )
+    parser.add_option(
+        "-p", "--password", dest="dirman_password", help="Directory Manager password"
+    )
 
     options, args = parser.parse_args()
 
     return options, args
 
+
 def get_dirman_password():
     """Prompt the user for the Directory Manager password and verify its
        correctness.
     """
-    password = installutils.read_password("Directory Manager", confirm=False,
-        validate=True)
+    password = installutils.read_password(
+        "Directory Manager", confirm=False, validate=True
+    )
 
     return password
+
 
 def main():
     retval = 0
@@ -82,32 +100,30 @@ def main():
     standard_logging_setup(None, debug=options.debug)
 
     api.bootstrap(
-        context='cli',
-        in_server=True,
-        debug=options.debug,
-        confdir=paths.ETC_IPA)
+        context="cli", in_server=True, debug=options.debug, confdir=paths.ETC_IPA
+    )
     api.finalize()
     api.Backend.ldap2.connect(bind_pw=options.dirman_password)
 
     managed_entry_definitions_dn = DN(
-        ('cn', 'Definitions'),
-        ('cn', 'Managed Entries'),
-        ('cn', 'etc'),
-        api.env.basedn
+        ("cn", "Definitions"), ("cn", "Managed Entries"), ("cn", "etc"), api.env.basedn
     )
 
-    filter = '(objectClass=extensibleObject)'
+    filter = "(objectClass=extensibleObject)"
 
     if options.list_managed_entries:
         # List available Managed Entry Plugins
         managed_entries = None
         try:
             entries = api.Backend.ldap2.get_entries(
-                managed_entry_definitions_dn, api.Backend.ldap2.SCOPE_SUBTREE, filter)
+                managed_entry_definitions_dn, api.Backend.ldap2.SCOPE_SUBTREE, filter
+            )
         except Exception as e:
             logger.debug("Search for managed entries failed: %s", str(e))
-            sys.exit("Unable to find managed entries at %s" % managed_entry_definitions_dn)
-        managed_entries = [entry.single_value['cn'] for entry in entries]
+            sys.exit(
+                "Unable to find managed entries at %s" % managed_entry_definitions_dn
+            )
+        managed_entries = [entry.single_value["cn"] for entry in entries]
         if managed_entries:
             print("Available Managed Entry Definitions:")
             for managed_entry in managed_entries:
@@ -118,15 +134,15 @@ def main():
     if not options.managed_entry:
         sys.exit("\nYou must specify a managed entry definition")
     else:
-        def_dn = DN(('cn', options.managed_entry), managed_entry_definitions_dn)
+        def_dn = DN(("cn", options.managed_entry), managed_entry_definitions_dn)
 
         disabled = True
         try:
             entry = api.Backend.ldap2.get_entry(def_dn)
-            disable_attr = '(objectclass=disable)'
+            disable_attr = "(objectclass=disable)"
             try:
-                org_filter = entry.single_value.get('originfilter')
-                disabled = re.search(r'%s' % disable_attr, org_filter)
+                org_filter = entry.single_value.get("originfilter")
+                disabled = re.search(r"%s" % disable_attr, org_filter)
             except KeyError:
                 sys.exit("%s is not a valid Managed Entry" % def_dn)
         except errors.NotFound:
@@ -149,9 +165,9 @@ def main():
                     retval = 2
                 else:
                     # Remove disable_attr from filter
-                    enable_attr = org_filter.replace(disable_attr, '')
-                    #enable_attr = {'originfilter': enable_attr}
-                    entry['originfilter'] = [enable_attr]
+                    enable_attr = org_filter.replace(disable_attr, "")
+                    # enable_attr = {'originfilter': enable_attr}
+                    entry["originfilter"] = [enable_attr]
                     api.Backend.ldap2.update_entry(entry)
                     print("Enabling Plugin")
                     retval = 0
@@ -171,11 +187,11 @@ def main():
                     print("Plugin already disabled")
                     retval = 2
                 else:
-                    if org_filter[:2] == '(&' and org_filter[-1] == ')':
+                    if org_filter[:2] == "(&" and org_filter[-1] == ")":
                         disable_attr = org_filter[:2] + disable_attr + org_filter[2:]
                     else:
-                        disable_attr = '(&%s(%s))' % (disable_attr, org_filter)
-                    entry['originfilter'] = [disable_attr]
+                        disable_attr = "(&%s(%s))" % (disable_attr, org_filter)
+                    entry["originfilter"] = [disable_attr]
                     api.Backend.ldap2.update_entry(entry)
                     print("Disabling Plugin")
             except errors.NotFound:
@@ -197,7 +213,8 @@ def main():
 
     return retval
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     if not os.geteuid() == 0:
         sys.exit("\nMust be run as root\n")
-    installutils.run_script(main, operation_name='ipa-managed-entries')
+    installutils.run_script(main, operation_name="ipa-managed-entries")

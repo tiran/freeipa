@@ -112,8 +112,9 @@ DEFAULT_PKI_KRA_CERTS = [
 ]
 
 
-def run_healthcheck(host, source=None, check=None, output_type="json",
-                    failures_only=False):
+def run_healthcheck(
+    host, source=None, check=None, output_type="json", failures_only=False
+):
     """
     Run ipa-healthcheck on the remote host and return the result
 
@@ -195,17 +196,13 @@ class TestIpaHealthCheck(IntegrationTest):
         self.master.run_command(["systemctl", "stop", "sssd"])
         try:
             returncode, output = run_healthcheck(
-                self.master,
-                "ipahealthcheck.meta.services",
-                "sssd",
-                "human",
+                self.master, "ipahealthcheck.meta.services", "sssd", "human",
             )
         finally:
             self.master.run_command(["systemctl", "start", "sssd"])
 
         assert returncode == 1
-        assert output == \
-            "ERROR: ipahealthcheck.meta.services.sssd: sssd: not running"
+        assert output == "ERROR: ipahealthcheck.meta.services.sssd: sssd: not running"
 
     def test_dogtag_ca_check_exists(self):
         """
@@ -259,9 +256,7 @@ class TestIpaHealthCheck(IntegrationTest):
         """
         self.master.run_command(["systemctl", "stop", "sssd"])
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.meta.services",
-            "sssd",
+            self.master, "ipahealthcheck.meta.services", "sssd",
         )
         assert returncode == 1
         for check in data:
@@ -270,9 +265,7 @@ class TestIpaHealthCheck(IntegrationTest):
             assert check["kw"]["status"] is False
         self.master.run_command(["systemctl", "start", "sssd"])
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.meta.services",
-            "sssd",
+            self.master, "ipahealthcheck.meta.services", "sssd",
         )
         assert returncode == 0
         assert data[0]["check"] == "sssd"
@@ -285,9 +278,7 @@ class TestIpaHealthCheck(IntegrationTest):
         ipahealthcheck.dogtag.ca when tomcat config file is removed
         """
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.dogtag.ca",
-            "DogtagCertsConfigCheck",
+            self.master, "ipahealthcheck.dogtag.ca", "DogtagCertsConfigCheck",
         )
         assert returncode == 0
         for check in data:
@@ -296,9 +287,7 @@ class TestIpaHealthCheck(IntegrationTest):
             assert check["kw"]["key"] in DEFAULT_PKI_CA_CERTS
         self.master.run_command(["mv", TOMCAT_CFG, TOMCAT_CFG + ".old"])
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.dogtag.ca",
-            "DogtagCertsConfigCheck",
+            self.master, "ipahealthcheck.dogtag.ca", "DogtagCertsConfigCheck",
         )
         assert returncode == 1
         assert data[0]["result"] == "CRITICAL"
@@ -311,9 +300,7 @@ class TestIpaHealthCheck(IntegrationTest):
         ipahealthcheck.meta.core when run on IPA master
         """
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.meta.core",
-            "MetaCheck",
+            self.master, "ipahealthcheck.meta.core", "MetaCheck",
         )
         assert returncode == 0
         assert data[0]["result"] == "SUCCESS"
@@ -321,7 +308,7 @@ class TestIpaHealthCheck(IntegrationTest):
             [
                 "python3",
                 "-c",
-                'from ipapython import version; '
+                "from ipapython import version; "
                 'print("%s\t%s" % (version.VERSION, version.API_VERSION))',
             ]
         )
@@ -340,17 +327,14 @@ class TestIpaHealthCheck(IntegrationTest):
             "Minor code may provide more information, "
             "Minor (2529638972): Generic error (see e-text)"
         )
-        dirsrv_ipactl_status = 'Directory Service: STOPPED'
+        dirsrv_ipactl_status = "Directory Service: STOPPED"
         api.env.realm = self.master.domain.name
         serverid = (realm_to_serverid(api.env.realm)).upper()
         dirsrv_service = "dirsrv@%s.service" % serverid
         self.master.run_command(["systemctl", "stop", dirsrv_service])
-        result = self.master.run_command(
-            ["ipactl", "status"])
+        result = self.master.run_command(["ipactl", "status"])
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.host",
-            "IPAHostKeytab",
+            self.master, "ipahealthcheck.ipa.host", "IPAHostKeytab",
         )
         assert returncode == 1
         if dirsrv_ipactl_status in result.stdout_text:
@@ -366,17 +350,12 @@ class TestIpaHealthCheck(IntegrationTest):
         source ipahealthcheck.ipa.topology on IPA Master
         """
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.topology",
-            "IPATopologyDomainCheck",
+            self.master, "ipahealthcheck.ipa.topology", "IPATopologyDomainCheck",
         )
         assert returncode == 0
         for check in data:
             assert check["result"] == "SUCCESS"
-            assert (
-                check["kw"]["suffix"] == "domain" or
-                check["kw"]["suffix"] == "ca"
-            )
+            assert check["kw"]["suffix"] == "domain" or check["kw"]["suffix"] == "ca"
 
     @pytest.fixture
     def disable_crlgen(self):
@@ -392,9 +371,7 @@ class TestIpaHealthCheck(IntegrationTest):
         using ipa-crl-manage disable
         """
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.roles",
-            "IPACRLManagerCheck",
+            self.master, "ipahealthcheck.ipa.roles", "IPACRLManagerCheck",
         )
         assert returncode == 0
         for check in data:
@@ -409,10 +386,7 @@ class TestIpaHealthCheck(IntegrationTest):
         """
         cmd = tasks.install_kra(self.master)
         assert cmd.returncode == 0
-        returncode, _unused = run_healthcheck(
-            self.master,
-            failures_only=True
-        )
+        returncode, _unused = run_healthcheck(self.master, failures_only=True)
         assert returncode == 0
 
     def test_ipa_healthcheck_dna_plugin_returns_warning_pagure_issue_60(self):
@@ -423,9 +397,7 @@ class TestIpaHealthCheck(IntegrationTest):
         Issue: freeipa/freeipa-healthcheck#60
         """
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.dna",
-            "IPADNARangeCheck",
+            self.master, "ipahealthcheck.ipa.dna", "IPADNARangeCheck",
         )
         assert returncode == 0
         for check in data:
@@ -433,9 +405,7 @@ class TestIpaHealthCheck(IntegrationTest):
         # Install ipa-healthcheck rpm on replica
         tasks.install_packages(self.replicas[0], HEALTHCHECK_PKG)
         returncode, data = run_healthcheck(
-            self.replicas[0],
-            "ipahealthcheck.ipa.dna",
-            "IPADNARangeCheck",
+            self.replicas[0], "ipahealthcheck.ipa.dna", "IPADNARangeCheck",
         )
         assert returncode == 1
         for check in data:
@@ -449,13 +419,11 @@ class TestIpaHealthCheck(IntegrationTest):
         # DNA configuration.
         tasks.kinit_admin(self.replicas[0])
         tasks.user_add(
-            self.replicas[0], 'ipauser1', first='Test', last='User',
+            self.replicas[0], "ipauser1", first="Test", last="User",
         )
         # Now run the ipa-healthcheck command again
         returncode, data = run_healthcheck(
-            self.replicas[0],
-            "ipahealthcheck.ipa.dna",
-            "IPADNARangeCheck",
+            self.replicas[0], "ipahealthcheck.ipa.dna", "IPADNARangeCheck",
         )
         assert returncode == 0
         for check in data:
@@ -473,13 +441,11 @@ class TestIpaHealthCheck(IntegrationTest):
         """
         msg = "error: {}:".format(HEALTHCHECK_LOG_ROTATE_CONF)
         tasks.uninstall_packages(self.master, HEALTHCHECK_PKG)
-        assert not self.master.transport.file_exists(
-            HEALTHCHECK_LOG_ROTATE_CONF
-        )
+        assert not self.master.transport.file_exists(HEALTHCHECK_LOG_ROTATE_CONF)
         tasks.install_packages(self.master, HEALTHCHECK_PKG)
         assert self.master.transport.file_exists(HEALTHCHECK_LOG_ROTATE_CONF)
         cmd = self.master.run_command(
-            ['logrotate', '--debug', HEALTHCHECK_LOG_ROTATE_CONF]
+            ["logrotate", "--debug", HEALTHCHECK_LOG_ROTATE_CONF]
         )
         assert msg not in cmd.stdout_text
 
@@ -490,42 +456,78 @@ class TestIpaHealthCheck(IntegrationTest):
         with integrated DNS.
         """
         SRV_RECORDS = [
-            "_ldap._tcp." + self.replicas[0].domain.name + ".:" +
-            self.replicas[0].hostname + ".",
-            "_ldap._tcp." + self.master.domain.name + ".:" +
-            self.master.hostname + ".",
-            "_kerberos._tcp." + self.replicas[0].domain.name + ".:" +
-            self.replicas[0].hostname + ".",
-            "_kerberos._tcp." + self.master.domain.name + ".:" +
-            self.master.hostname + ".",
-            "_kerberos._udp." + self.replicas[0].domain.name + ".:" +
-            self.replicas[0].hostname + ".",
-            "_kerberos._udp." + self.master.domain.name + ".:" +
-            self.master.hostname + ".",
-            "_kerberos-master._tcp." + self.replicas[0].domain.name +
-            ".:" + self.replicas[0].hostname + ".",
-            "_kerberos-master._tcp." + self.master.domain.name + ".:" +
-            self.master.hostname + ".",
-            "_kerberos-master._udp." + self.replicas[0].domain.name +
-            ".:" + self.replicas[0].hostname + ".",
-            "_kerberos-master._udp." + self.master.domain.name + ".:" +
-            self.master.hostname + ".",
-            "_kpasswd._tcp." + self.replicas[0].domain.name + ".:" +
-            self.replicas[0].hostname + ".",
-            "_kpasswd._tcp." + self.master.domain.name + ".:" +
-            self.master.hostname + ".",
-            "_kpasswd._udp." + self.replicas[0].domain.name + ".:" +
-            self.replicas[0].hostname + ".",
-            "_kpasswd._udp." + self.master.domain.name + ".:" +
-            self.master.hostname + ".",
-            "\"" + self.master.domain.realm.upper() + "\"",
+            "_ldap._tcp."
+            + self.replicas[0].domain.name
+            + ".:"
+            + self.replicas[0].hostname
+            + ".",
+            "_ldap._tcp." + self.master.domain.name + ".:" + self.master.hostname + ".",
+            "_kerberos._tcp."
+            + self.replicas[0].domain.name
+            + ".:"
+            + self.replicas[0].hostname
+            + ".",
+            "_kerberos._tcp."
+            + self.master.domain.name
+            + ".:"
+            + self.master.hostname
+            + ".",
+            "_kerberos._udp."
+            + self.replicas[0].domain.name
+            + ".:"
+            + self.replicas[0].hostname
+            + ".",
+            "_kerberos._udp."
+            + self.master.domain.name
+            + ".:"
+            + self.master.hostname
+            + ".",
+            "_kerberos-master._tcp."
+            + self.replicas[0].domain.name
+            + ".:"
+            + self.replicas[0].hostname
+            + ".",
+            "_kerberos-master._tcp."
+            + self.master.domain.name
+            + ".:"
+            + self.master.hostname
+            + ".",
+            "_kerberos-master._udp."
+            + self.replicas[0].domain.name
+            + ".:"
+            + self.replicas[0].hostname
+            + ".",
+            "_kerberos-master._udp."
+            + self.master.domain.name
+            + ".:"
+            + self.master.hostname
+            + ".",
+            "_kpasswd._tcp."
+            + self.replicas[0].domain.name
+            + ".:"
+            + self.replicas[0].hostname
+            + ".",
+            "_kpasswd._tcp."
+            + self.master.domain.name
+            + ".:"
+            + self.master.hostname
+            + ".",
+            "_kpasswd._udp."
+            + self.replicas[0].domain.name
+            + ".:"
+            + self.replicas[0].hostname
+            + ".",
+            "_kpasswd._udp."
+            + self.master.domain.name
+            + ".:"
+            + self.master.hostname
+            + ".",
+            '"' + self.master.domain.realm.upper() + '"',
             self.master.ip,
-            self.replicas[0].ip
+            self.replicas[0].ip,
         ]
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.idns",
-            "IPADNSSystemRecordsCheck"
+            self.master, "ipahealthcheck.ipa.idns", "IPADNSSystemRecordsCheck"
         )
         assert returncode == 0
         for check in data:
@@ -572,9 +574,7 @@ class TestIpaHealthCheck(IntegrationTest):
         domain-check and result is SUCCESS
         """
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.trust",
-            "IPADomainCheck"
+            self.master, "ipahealthcheck.ipa.trust", "IPADomainCheck"
         )
         assert returncode == 0
         for check in data:
@@ -586,10 +586,10 @@ class TestIpaHealthCheck(IntegrationTest):
         This test case checks whether default (2) indentation is applied
         to output without it being implicitly stated
         """
-        cmd = self.master.run_command(["ipa-healthcheck",
-                                       "--source",
-                                       "ipahealthcheck.meta.services"],
-                                      raiseonerr=False)
+        cmd = self.master.run_command(
+            ["ipa-healthcheck", "--source", "ipahealthcheck.meta.services"],
+            raiseonerr=False,
+        )
         output_str = cmd.stdout_text
         output_json = json.loads(output_str)
         assert output_str == "{}\n".format(json.dumps(output_json, indent=2))
@@ -608,12 +608,11 @@ class TestIpaHealthCheck(IntegrationTest):
         positives.
         """
         returncode, output = run_healthcheck(
-            self.master,
-            output_type="human",
-            failures_only=True)
+            self.master, output_type="human", failures_only=True
+        )
         assert returncode == 1
         errors = re.findall("ERROR: .*: not running", output)
-        assert len(errors) == len(output.split('\n'))
+        assert len(errors) == len(output.split("\n"))
 
     def test_ipa_healthcheck_remove(self):
         """
@@ -646,9 +645,7 @@ class TestIpaHealthCheckWithoutDNS(IntegrationTest):
         msg2 = "Got {count} ipa-ca A records, expected {expected}"
         tasks.install_packages(self.master, HEALTHCHECK_PKG)
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.idns",
-            "IPADNSSystemRecordsCheck",
+            self.master, "ipahealthcheck.ipa.idns", "IPADNSSystemRecordsCheck",
         )
         assert returncode == 1
         for check in data:
@@ -664,15 +661,13 @@ class TestIpaHealthCheckWithoutDNS(IntegrationTest):
         assert cmd.returncode == 0
         tasks.install_packages(self.master, HEALTHCHECK_PKG)
         returncode, data = run_healthcheck(
-            self.master,
-            "ipahealthcheck.ipa.certs",
-            "IPACertNSSTrust",
+            self.master, "ipahealthcheck.ipa.certs", "IPACertNSSTrust",
         )
         assert returncode == 0
         for check in data:
             assert check["result"] == "SUCCESS"
             assert (
-                check["kw"]["key"] in DEFAULT_PKI_CA_CERTS or
-                check["kw"]["key"] in DEFAULT_PKI_KRA_CERTS
+                check["kw"]["key"] in DEFAULT_PKI_CA_CERTS
+                or check["kw"]["key"] in DEFAULT_PKI_KRA_CERTS
             )
         tasks.uninstall_master(self.master)

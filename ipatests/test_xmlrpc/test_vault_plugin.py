@@ -28,22 +28,22 @@ from ipalib import api
 from ipatests.test_xmlrpc.xmlrpc_test import Declarative, fuzzy_bytes
 
 
-vault_name = u'test_vault'
-service_name = u'HTTP/server.example.com'
-user_name = u'testuser'
+vault_name = u"test_vault"
+service_name = u"HTTP/server.example.com"
+user_name = u"testuser"
 
-standard_vault_name = u'standard_test_vault'
-symmetric_vault_name = u'symmetric_test_vault'
-asymmetric_vault_name = u'asymmetric_test_vault'
+standard_vault_name = u"standard_test_vault"
+symmetric_vault_name = u"symmetric_test_vault"
+asymmetric_vault_name = u"asymmetric_test_vault"
 
 # binary data from \x00 to \xff
 if six.PY2:
-    secret = b''.join(chr(c) for c in range(0, 256))
+    secret = b"".join(chr(c) for c in range(0, 256))
 else:
     secret = bytes(range(0, 256))
 
-password = u'password'
-other_password = u'other_password'
+password = u"password"
+other_password = u"other_password"
 
 public_key = b"""
 -----BEGIN PUBLIC KEY-----
@@ -137,867 +137,635 @@ class test_vault_plugin(Declarative):
         if not api.Backend.rpcclient.isconnected():
             api.Backend.rpcclient.connect()
 
-        if not api.Command.kra_is_enabled()['result']:
-            pytest.skip('KRA service is not enabled')
+        if not api.Command.kra_is_enabled()["result"]:
+            pytest.skip("KRA service is not enabled")
 
     cleanup_commands = [
-        ('vault_del', [vault_name], {'continue': True}),
-        ('vault_del', [vault_name], {
-            'service': service_name,
-            'continue': True
-        }),
-        ('vault_del', [vault_name], {'shared': True, 'continue': True}),
-        ('vault_del', [vault_name], {'username': user_name, 'continue': True}),
-        ('vault_del', [standard_vault_name], {'continue': True}),
-        ('vault_del', [symmetric_vault_name], {'continue': True}),
-        ('vault_del', [asymmetric_vault_name], {'continue': True}),
+        ("vault_del", [vault_name], {"continue": True}),
+        ("vault_del", [vault_name], {"service": service_name, "continue": True}),
+        ("vault_del", [vault_name], {"shared": True, "continue": True}),
+        ("vault_del", [vault_name], {"username": user_name, "continue": True}),
+        ("vault_del", [standard_vault_name], {"continue": True}),
+        ("vault_del", [symmetric_vault_name], {"continue": True}),
+        ("vault_del", [asymmetric_vault_name], {"continue": True}),
     ]
 
     tests = [
-
         {
-            'desc': 'Create private vault',
-            'command': (
-                'vault_add',
-                [vault_name],
-                {
-                    'ipavaulttype': u'standard',
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': 'Added vault "%s"' % vault_name,
-                'result': {
-                    'dn': u'cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s'
-                          % (vault_name, api.env.basedn),
-                    'objectclass': [u'top', u'ipaVault'],
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "desc": "Create private vault",
+            "command": ("vault_add", [vault_name], {"ipavaulttype": u"standard",},),
+            "expected": {
+                "value": vault_name,
+                "summary": 'Added vault "%s"' % vault_name,
+                "result": {
+                    "dn": u"cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s"
+                    % (vault_name, api.env.basedn),
+                    "objectclass": [u"top", u"ipaVault"],
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Find private vaults',
-            'command': (
-                'vault_find',
-                [],
-                {},
-            ),
-            'expected': {
-                'count': 1,
-                'truncated': False,
-                'summary': u'1 vault matched',
-                'result': [
+            "desc": "Find private vaults",
+            "command": ("vault_find", [], {},),
+            "expected": {
+                "count": 1,
+                "truncated": False,
+                "summary": u"1 vault matched",
+                "result": [
                     {
-                        'dn': u'cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s'
-                              % (vault_name, api.env.basedn),
-                        'cn': [vault_name],
-                        'ipavaulttype': [u'standard'],
-                        'username': u'admin',
+                        "dn": u"cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s"
+                        % (vault_name, api.env.basedn),
+                        "cn": [vault_name],
+                        "ipavaulttype": [u"standard"],
+                        "username": u"admin",
                     },
                 ],
             },
         },
-
         {
-            'desc': 'Show private vault',
-            'command': (
-                'vault_show',
-                [vault_name],
-                {},
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': None,
-                'result': {
-                    'dn': u'cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s'
-                          % (vault_name, api.env.basedn),
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "desc": "Show private vault",
+            "command": ("vault_show", [vault_name], {},),
+            "expected": {
+                "value": vault_name,
+                "summary": None,
+                "result": {
+                    "dn": u"cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s"
+                    % (vault_name, api.env.basedn),
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Modify private vault',
-            'command': (
-                'vault_mod',
-                [vault_name],
-                {
-                    'description': u'Test vault',
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': u'Modified vault "%s"' % vault_name,
-                'result': {
-                    'cn': [vault_name],
-                    'description': [u'Test vault'],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "desc": "Modify private vault",
+            "command": ("vault_mod", [vault_name], {"description": u"Test vault",},),
+            "expected": {
+                "value": vault_name,
+                "summary": u'Modified vault "%s"' % vault_name,
+                "result": {
+                    "cn": [vault_name],
+                    "description": [u"Test vault"],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Delete private vault',
-            'command': (
-                'vault_del',
+            "desc": "Delete private vault",
+            "command": ("vault_del", [vault_name], {},),
+            "expected": {
+                "value": [vault_name],
+                "summary": u'Deleted vault "%s"' % vault_name,
+                "result": {"failed": (),},
+            },
+        },
+        {
+            "desc": "Create service vault",
+            "command": (
+                "vault_add",
                 [vault_name],
-                {},
+                {"ipavaulttype": u"standard", "service": service_name,},
             ),
-            'expected': {
-                'value': [vault_name],
-                'summary': u'Deleted vault "%s"' % vault_name,
-                'result': {
-                    'failed': (),
+            "expected": {
+                "value": vault_name,
+                "summary": u'Added vault "%s"' % vault_name,
+                "result": {
+                    "dn": u"cn=%s,cn=%s@%s,cn=services,cn=vaults,cn=kra,%s"
+                    % (vault_name, service_name, api.env.realm, api.env.basedn),
+                    "objectclass": [u"top", u"ipaVault"],
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "service": "%s@%s" % (service_name, api.env.realm),
                 },
             },
         },
-
         {
-            'desc': 'Create service vault',
-            'command': (
-                'vault_add',
-                [vault_name],
-                {
-                    'ipavaulttype': u'standard',
-                    'service': service_name,
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': u'Added vault "%s"' % vault_name,
-                'result': {
-                    'dn': u'cn=%s,cn=%s@%s,cn=services,cn=vaults,cn=kra,%s'
-                          % (vault_name, service_name, api.env.realm,
-                             api.env.basedn),
-                    'objectclass': [u'top', u'ipaVault'],
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'service': "%s@%s" % (service_name, api.env.realm),
-                },
-            },
-        },
-
-        {
-            'desc': 'Find service vaults',
-            'command': (
-                'vault_find',
-                [],
-                {
-                    'service': service_name,
-                },
-            ),
-            'expected': {
-                'count': 1,
-                'truncated': False,
-                'summary': u'1 vault matched',
-                'result': [
+            "desc": "Find service vaults",
+            "command": ("vault_find", [], {"service": service_name,},),
+            "expected": {
+                "count": 1,
+                "truncated": False,
+                "summary": u"1 vault matched",
+                "result": [
                     {
-                        'dn': u'cn=%s,cn=%s@%s,cn=services,cn=vaults,cn=kra,%s'
-                              % (vault_name, service_name, api.env.realm,
-                                 api.env.basedn),
-                        'cn': [vault_name],
-                        'ipavaulttype': [u'standard'],
-                        'service': '%s@%s' % (service_name, api.env.realm),
+                        "dn": u"cn=%s,cn=%s@%s,cn=services,cn=vaults,cn=kra,%s"
+                        % (vault_name, service_name, api.env.realm, api.env.basedn),
+                        "cn": [vault_name],
+                        "ipavaulttype": [u"standard"],
+                        "service": "%s@%s" % (service_name, api.env.realm),
                     },
                 ],
             },
         },
-
         {
-            'desc': 'Show service vault',
-            'command': (
-                'vault_show',
-                [vault_name],
-                {
-                    'service': service_name,
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': None,
-                'result': {
-                    'dn': u'cn=%s,cn=%s@%s,cn=services,cn=vaults,cn=kra,%s'
-                          % (vault_name, service_name, api.env.realm,
-                             api.env.basedn),
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'service': "%s@%s" % (service_name, api.env.realm),
+            "desc": "Show service vault",
+            "command": ("vault_show", [vault_name], {"service": service_name,},),
+            "expected": {
+                "value": vault_name,
+                "summary": None,
+                "result": {
+                    "dn": u"cn=%s,cn=%s@%s,cn=services,cn=vaults,cn=kra,%s"
+                    % (vault_name, service_name, api.env.realm, api.env.basedn),
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "service": "%s@%s" % (service_name, api.env.realm),
                 },
             },
         },
-
         {
-            'desc': 'Modify service vault',
-            'command': (
-                'vault_mod',
+            "desc": "Modify service vault",
+            "command": (
+                "vault_mod",
                 [vault_name],
-                {
-                    'service': service_name,
-                    'description': u'Test vault',
-                },
+                {"service": service_name, "description": u"Test vault",},
             ),
-            'expected': {
-                'value': vault_name,
-                'summary': u'Modified vault "%s"' % vault_name,
-                'result': {
-                    'cn': [vault_name],
-                    'description': [u'Test vault'],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'service': "%s@%s" % (service_name, api.env.realm),
+            "expected": {
+                "value": vault_name,
+                "summary": u'Modified vault "%s"' % vault_name,
+                "result": {
+                    "cn": [vault_name],
+                    "description": [u"Test vault"],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "service": "%s@%s" % (service_name, api.env.realm),
                 },
             },
         },
-
         {
-            'desc': 'Delete service vault',
-            'command': (
-                'vault_del',
+            "desc": "Delete service vault",
+            "command": ("vault_del", [vault_name], {"service": service_name,},),
+            "expected": {
+                "value": [vault_name],
+                "summary": u'Deleted vault "%s"' % vault_name,
+                "result": {"failed": (),},
+            },
+        },
+        {
+            "desc": "Create shared vault",
+            "command": (
+                "vault_add",
                 [vault_name],
-                {
-                    'service': service_name,
-                },
+                {"ipavaulttype": u"standard", "shared": True},
             ),
-            'expected': {
-                'value': [vault_name],
-                'summary': u'Deleted vault "%s"' % vault_name,
-                'result': {
-                    'failed': (),
+            "expected": {
+                "value": vault_name,
+                "summary": u'Added vault "%s"' % vault_name,
+                "result": {
+                    "dn": u"cn=%s,cn=shared,cn=vaults,cn=kra,%s"
+                    % (vault_name, api.env.basedn),
+                    "objectclass": [u"top", u"ipaVault"],
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "shared": True,
                 },
             },
         },
-
         {
-            'desc': 'Create shared vault',
-            'command': (
-                'vault_add',
-                [vault_name],
-                {
-                    'ipavaulttype': u'standard',
-                    'shared': True
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': u'Added vault "%s"' % vault_name,
-                'result': {
-                    'dn': u'cn=%s,cn=shared,cn=vaults,cn=kra,%s'
-                          % (vault_name, api.env.basedn),
-                    'objectclass': [u'top', u'ipaVault'],
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'shared': True,
-                },
-            },
-        },
-
-        {
-            'desc': 'Find shared vaults',
-            'command': (
-                'vault_find',
-                [],
-                {
-                    'shared': True
-                },
-            ),
-            'expected': {
-                'count': 1,
-                'truncated': False,
-                'summary': u'1 vault matched',
-                'result': [
+            "desc": "Find shared vaults",
+            "command": ("vault_find", [], {"shared": True},),
+            "expected": {
+                "count": 1,
+                "truncated": False,
+                "summary": u"1 vault matched",
+                "result": [
                     {
-                        'dn': u'cn=%s,cn=shared,cn=vaults,cn=kra,%s'
-                              % (vault_name, api.env.basedn),
-                        'cn': [vault_name],
-                        'ipavaulttype': [u'standard'],
-                        'shared': True,
+                        "dn": u"cn=%s,cn=shared,cn=vaults,cn=kra,%s"
+                        % (vault_name, api.env.basedn),
+                        "cn": [vault_name],
+                        "ipavaulttype": [u"standard"],
+                        "shared": True,
                     },
                 ],
             },
         },
-
         {
-            'desc': 'Show shared vault',
-            'command': (
-                'vault_show',
-                [vault_name],
-                {
-                    'shared': True
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': None,
-                'result': {
-                    'dn': u'cn=%s,cn=shared,cn=vaults,cn=kra,%s'
-                          % (vault_name, api.env.basedn),
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'shared': True,
+            "desc": "Show shared vault",
+            "command": ("vault_show", [vault_name], {"shared": True},),
+            "expected": {
+                "value": vault_name,
+                "summary": None,
+                "result": {
+                    "dn": u"cn=%s,cn=shared,cn=vaults,cn=kra,%s"
+                    % (vault_name, api.env.basedn),
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "shared": True,
                 },
             },
         },
-
         {
-            'desc': 'Modify shared vault',
-            'command': (
-                'vault_mod',
+            "desc": "Modify shared vault",
+            "command": (
+                "vault_mod",
                 [vault_name],
-                {
-                    'shared': True,
-                    'description': u'Test vault',
-                },
+                {"shared": True, "description": u"Test vault",},
             ),
-            'expected': {
-                'value': vault_name,
-                'summary': u'Modified vault "%s"' % vault_name,
-                'result': {
-                    'cn': [vault_name],
-                    'description': [u'Test vault'],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'shared': True,
+            "expected": {
+                "value": vault_name,
+                "summary": u'Modified vault "%s"' % vault_name,
+                "result": {
+                    "cn": [vault_name],
+                    "description": [u"Test vault"],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "shared": True,
                 },
             },
         },
-
         {
-            'desc': 'Delete shared vault',
-            'command': (
-                'vault_del',
+            "desc": "Delete shared vault",
+            "command": ("vault_del", [vault_name], {"shared": True},),
+            "expected": {
+                "value": [vault_name],
+                "summary": u'Deleted vault "%s"' % vault_name,
+                "result": {"failed": (),},
+            },
+        },
+        {
+            "desc": "Create user vault",
+            "command": (
+                "vault_add",
                 [vault_name],
-                {
-                    'shared': True
-                },
+                {"ipavaulttype": u"standard", "username": user_name,},
             ),
-            'expected': {
-                'value': [vault_name],
-                'summary': u'Deleted vault "%s"' % vault_name,
-                'result': {
-                    'failed': (),
+            "expected": {
+                "value": vault_name,
+                "summary": u'Added vault "%s"' % vault_name,
+                "result": {
+                    "dn": u"cn=%s,cn=%s,cn=users,cn=vaults,cn=kra,%s"
+                    % (vault_name, user_name, api.env.basedn),
+                    "objectclass": [u"top", u"ipaVault"],
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": user_name,
                 },
             },
         },
-
         {
-            'desc': 'Create user vault',
-            'command': (
-                'vault_add',
-                [vault_name],
-                {
-                    'ipavaulttype': u'standard',
-                    'username': user_name,
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': u'Added vault "%s"' % vault_name,
-                'result': {
-                    'dn': u'cn=%s,cn=%s,cn=users,cn=vaults,cn=kra,%s'
-                          % (vault_name, user_name, api.env.basedn),
-                    'objectclass': [u'top', u'ipaVault'],
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': user_name,
-                },
-            },
-        },
-
-        {
-            'desc': 'Find user vaults',
-            'command': (
-                'vault_find',
-                [],
-                {
-                    'username': user_name,
-                },
-            ),
-            'expected': {
-                'count': 1,
-                'truncated': False,
-                'summary': u'1 vault matched',
-                'result': [
+            "desc": "Find user vaults",
+            "command": ("vault_find", [], {"username": user_name,},),
+            "expected": {
+                "count": 1,
+                "truncated": False,
+                "summary": u"1 vault matched",
+                "result": [
                     {
-                        'dn': u'cn=%s,cn=%s,cn=users,cn=vaults,cn=kra,%s'
-                              % (vault_name, user_name, api.env.basedn),
-                        'cn': [vault_name],
-                        'ipavaulttype': [u'standard'],
-                        'username': user_name,
+                        "dn": u"cn=%s,cn=%s,cn=users,cn=vaults,cn=kra,%s"
+                        % (vault_name, user_name, api.env.basedn),
+                        "cn": [vault_name],
+                        "ipavaulttype": [u"standard"],
+                        "username": user_name,
                     },
                 ],
             },
         },
-
         {
-            'desc': 'Show user vault',
-            'command': (
-                'vault_show',
+            "desc": "Show user vault",
+            "command": ("vault_show", [vault_name], {"username": user_name,},),
+            "expected": {
+                "value": vault_name,
+                "summary": None,
+                "result": {
+                    "dn": u"cn=%s,cn=%s,cn=users,cn=vaults,cn=kra,%s"
+                    % (vault_name, user_name, api.env.basedn),
+                    "cn": [vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": user_name,
+                },
+            },
+        },
+        {
+            "desc": "Modify user vault",
+            "command": (
+                "vault_mod",
                 [vault_name],
-                {
-                    'username': user_name,
-                },
+                {"username": user_name, "description": u"Test vault",},
             ),
-            'expected': {
-                'value': vault_name,
-                'summary': None,
-                'result': {
-                    'dn': u'cn=%s,cn=%s,cn=users,cn=vaults,cn=kra,%s'
-                          % (vault_name, user_name, api.env.basedn),
-                    'cn': [vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': user_name,
+            "expected": {
+                "value": vault_name,
+                "summary": u'Modified vault "%s"' % vault_name,
+                "result": {
+                    "cn": [vault_name],
+                    "description": [u"Test vault"],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": user_name,
                 },
             },
         },
-
         {
-            'desc': 'Modify user vault',
-            'command': (
-                'vault_mod',
-                [vault_name],
-                {
-                    'username': user_name,
-                    'description': u'Test vault',
-                },
-            ),
-            'expected': {
-                'value': vault_name,
-                'summary': u'Modified vault "%s"' % vault_name,
-                'result': {
-                    'cn': [vault_name],
-                    'description': [u'Test vault'],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': user_name,
-                },
+            "desc": "Delete user vault",
+            "command": ("vault_del", [vault_name], {"username": user_name,},),
+            "expected": {
+                "value": [vault_name],
+                "summary": u'Deleted vault "%s"' % vault_name,
+                "result": {"failed": (),},
             },
         },
-
         {
-            'desc': 'Delete user vault',
-            'command': (
-                'vault_del',
-                [vault_name],
-                {
-                    'username': user_name,
-                },
-            ),
-            'expected': {
-                'value': [vault_name],
-                'summary': u'Deleted vault "%s"' % vault_name,
-                'result': {
-                    'failed': (),
-                },
-            },
-        },
-
-        {
-            'desc': 'Create standard vault',
-            'command': (
-                'vault_add',
+            "desc": "Create standard vault",
+            "command": (
+                "vault_add",
                 [standard_vault_name],
-                {
-                    'ipavaulttype': u'standard',
-                },
+                {"ipavaulttype": u"standard",},
             ),
-            'expected': {
-                'value': standard_vault_name,
-                'summary': 'Added vault "%s"' % standard_vault_name,
-                'result': {
-                    'dn': u'cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s'
-                          % (standard_vault_name, api.env.basedn),
-                    'objectclass': [u'top', u'ipaVault'],
-                    'cn': [standard_vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "expected": {
+                "value": standard_vault_name,
+                "summary": 'Added vault "%s"' % standard_vault_name,
+                "result": {
+                    "dn": u"cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s"
+                    % (standard_vault_name, api.env.basedn),
+                    "objectclass": [u"top", u"ipaVault"],
+                    "cn": [standard_vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Archive secret into standard vault',
-            'command': (
-                'vault_archive',
+            "desc": "Archive secret into standard vault",
+            "command": ("vault_archive", [standard_vault_name], {"data": secret,},),
+            "expected": {
+                "value": standard_vault_name,
+                "summary": 'Archived data into vault "%s"' % standard_vault_name,
+                "result": {},
+            },
+        },
+        {
+            "desc": "Retrieve secret from standard vault",
+            "command": ("vault_retrieve", [standard_vault_name], {},),
+            "expected": {
+                "value": standard_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % standard_vault_name,
+                "result": {"data": secret,},
+            },
+        },
+        {
+            "desc": "Change standard vault to symmetric vault",
+            "command": (
+                "vault_mod",
                 [standard_vault_name],
-                {
-                    'data': secret,
-                },
+                {"ipavaulttype": u"symmetric", "new_password": password,},
             ),
-            'expected': {
-                'value': standard_vault_name,
-                'summary': 'Archived data into vault "%s"'
-                           % standard_vault_name,
-                'result': {},
+            "expected": {
+                "value": standard_vault_name,
+                "summary": u'Modified vault "%s"' % standard_vault_name,
+                "result": {
+                    "cn": [standard_vault_name],
+                    "ipavaulttype": [u"symmetric"],
+                    "ipavaultsalt": [fuzzy_bytes],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
+                },
             },
         },
-
         {
-            'desc': 'Retrieve secret from standard vault',
-            'command': (
-                'vault_retrieve',
+            "desc": "Retrieve secret from standard vault converted to "
+            "symmetric vault",
+            "command": (
+                "vault_retrieve",
                 [standard_vault_name],
-                {},
+                {"password": password,},
             ),
-            'expected': {
-                'value': standard_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % standard_vault_name,
-                'result': {
-                    'data': secret,
+            "expected": {
+                "value": standard_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % standard_vault_name,
+                "result": {"data": secret,},
+            },
+        },
+        {
+            "desc": "Create symmetric vault",
+            "command": (
+                "vault_add",
+                [symmetric_vault_name],
+                {"ipavaulttype": u"symmetric", "password": password,},
+            ),
+            "expected": {
+                "value": symmetric_vault_name,
+                "summary": 'Added vault "%s"' % symmetric_vault_name,
+                "result": {
+                    "dn": u"cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s"
+                    % (symmetric_vault_name, api.env.basedn),
+                    "objectclass": [u"top", u"ipaVault"],
+                    "cn": [symmetric_vault_name],
+                    "ipavaulttype": [u"symmetric"],
+                    "ipavaultsalt": [fuzzy_bytes],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Change standard vault to symmetric vault',
-            'command': (
-                'vault_mod',
-                [standard_vault_name],
-                {
-                    'ipavaulttype': u'symmetric',
-                    'new_password': password,
-                },
+            "desc": "Archive secret into symmetric vault",
+            "command": (
+                "vault_archive",
+                [symmetric_vault_name],
+                {"password": password, "data": secret,},
             ),
-            'expected': {
-                'value': standard_vault_name,
-                'summary': u'Modified vault "%s"' % standard_vault_name,
-                'result': {
-                    'cn': [standard_vault_name],
-                    'ipavaulttype': [u'symmetric'],
-                    'ipavaultsalt': [fuzzy_bytes],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "expected": {
+                "value": symmetric_vault_name,
+                "summary": 'Archived data into vault "%s"' % symmetric_vault_name,
+                "result": {},
+            },
+        },
+        {
+            "desc": "Retrieve secret from symmetric vault",
+            "command": (
+                "vault_retrieve",
+                [symmetric_vault_name],
+                {"password": password,},
+            ),
+            "expected": {
+                "value": symmetric_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % symmetric_vault_name,
+                "result": {"data": secret,},
+            },
+        },
+        {
+            "desc": "Change symmetric vault password",
+            "command": (
+                "vault_mod",
+                [symmetric_vault_name],
+                {"old_password": password, "new_password": other_password,},
+            ),
+            "expected": {
+                "value": symmetric_vault_name,
+                "summary": u'Modified vault "%s"' % symmetric_vault_name,
+                "result": {
+                    "cn": [symmetric_vault_name],
+                    "ipavaulttype": [u"symmetric"],
+                    "ipavaultsalt": [fuzzy_bytes],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Retrieve secret from standard vault converted to '
-                    'symmetric vault',
-            'command': (
-                'vault_retrieve',
-                [standard_vault_name],
-                {
-                    'password': password,
-                },
+            "desc": "Retrieve secret from symmetric vault with new password",
+            "command": (
+                "vault_retrieve",
+                [symmetric_vault_name],
+                {"password": other_password,},
             ),
-            'expected': {
-                'value': standard_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % standard_vault_name,
-                'result': {
-                    'data': secret,
-                },
+            "expected": {
+                "value": symmetric_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % symmetric_vault_name,
+                "result": {"data": secret,},
             },
         },
-
         {
-            'desc': 'Create symmetric vault',
-            'command': (
-                'vault_add',
+            "desc": "Change symmetric vault to asymmetric vault",
+            "command": (
+                "vault_mod",
                 [symmetric_vault_name],
                 {
-                    'ipavaulttype': u'symmetric',
-                    'password': password,
+                    "ipavaulttype": u"asymmetric",
+                    "old_password": other_password,
+                    "ipavaultpublickey": public_key,
                 },
             ),
-            'expected': {
-                'value': symmetric_vault_name,
-                'summary': 'Added vault "%s"' % symmetric_vault_name,
-                'result': {
-                    'dn': u'cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s'
-                          % (symmetric_vault_name, api.env.basedn),
-                    'objectclass': [u'top', u'ipaVault'],
-                    'cn': [symmetric_vault_name],
-                    'ipavaulttype': [u'symmetric'],
-                    'ipavaultsalt': [fuzzy_bytes],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "expected": {
+                "value": symmetric_vault_name,
+                "summary": u'Modified vault "%s"' % symmetric_vault_name,
+                "result": {
+                    "cn": [symmetric_vault_name],
+                    "ipavaulttype": [u"asymmetric"],
+                    "ipavaultpublickey": [public_key],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Archive secret into symmetric vault',
-            'command': (
-                'vault_archive',
+            "desc": "Retrieve secret from symmetric vault converted to "
+            "asymmetric vault",
+            "command": (
+                "vault_retrieve",
                 [symmetric_vault_name],
-                {
-                    'password': password,
-                    'data': secret,
-                },
+                {"private_key": private_key,},
             ),
-            'expected': {
-                'value': symmetric_vault_name,
-                'summary': 'Archived data into vault "%s"'
-                           % symmetric_vault_name,
-                'result': {},
+            "expected": {
+                "value": symmetric_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % symmetric_vault_name,
+                "result": {"data": secret,},
             },
         },
-
         {
-            'desc': 'Retrieve secret from symmetric vault',
-            'command': (
-                'vault_retrieve',
-                [symmetric_vault_name],
-                {
-                    'password': password,
-                },
-            ),
-            'expected': {
-                'value': symmetric_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % symmetric_vault_name,
-                'result': {
-                    'data': secret,
-                },
-            },
-        },
-
-        {
-            'desc': 'Change symmetric vault password',
-            'command': (
-                'vault_mod',
-                [symmetric_vault_name],
-                {
-                    'old_password': password,
-                    'new_password': other_password,
-                },
-            ),
-            'expected': {
-                'value': symmetric_vault_name,
-                'summary': u'Modified vault "%s"' % symmetric_vault_name,
-                'result': {
-                    'cn': [symmetric_vault_name],
-                    'ipavaulttype': [u'symmetric'],
-                    'ipavaultsalt': [fuzzy_bytes],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
-                },
-            },
-        },
-
-        {
-            'desc': 'Retrieve secret from symmetric vault with new password',
-            'command': (
-                'vault_retrieve',
-                [symmetric_vault_name],
-                {
-                    'password': other_password,
-                },
-            ),
-            'expected': {
-                'value': symmetric_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % symmetric_vault_name,
-                'result': {
-                    'data': secret,
-                },
-            },
-        },
-
-        {
-            'desc': 'Change symmetric vault to asymmetric vault',
-            'command': (
-                'vault_mod',
-                [symmetric_vault_name],
-                {
-                    'ipavaulttype': u'asymmetric',
-                    'old_password': other_password,
-                    'ipavaultpublickey': public_key,
-                },
-            ),
-            'expected': {
-                'value': symmetric_vault_name,
-                'summary': u'Modified vault "%s"' % symmetric_vault_name,
-                'result': {
-                    'cn': [symmetric_vault_name],
-                    'ipavaulttype': [u'asymmetric'],
-                    'ipavaultpublickey': [public_key],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
-                },
-            },
-        },
-
-        {
-            'desc': 'Retrieve secret from symmetric vault converted to '
-                    'asymmetric vault',
-            'command': (
-                'vault_retrieve',
-                [symmetric_vault_name],
-                {
-                    'private_key': private_key,
-                },
-            ),
-            'expected': {
-                'value': symmetric_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % symmetric_vault_name,
-                'result': {
-                    'data': secret,
-                },
-            },
-        },
-
-        {
-            'desc': 'Create asymmetric vault',
-            'command': (
-                'vault_add',
+            "desc": "Create asymmetric vault",
+            "command": (
+                "vault_add",
                 [asymmetric_vault_name],
-                {
-                    'ipavaulttype': u'asymmetric',
-                    'ipavaultpublickey': public_key,
-                },
+                {"ipavaulttype": u"asymmetric", "ipavaultpublickey": public_key,},
             ),
-            'expected': {
-                'value': asymmetric_vault_name,
-                'summary': 'Added vault "%s"' % asymmetric_vault_name,
-                'result': {
-                    'dn': u'cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s'
-                          % (asymmetric_vault_name, api.env.basedn),
-                    'objectclass': [u'top', u'ipaVault'],
-                    'cn': [asymmetric_vault_name],
-                    'ipavaulttype': [u'asymmetric'],
-                    'ipavaultpublickey': [public_key],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "expected": {
+                "value": asymmetric_vault_name,
+                "summary": 'Added vault "%s"' % asymmetric_vault_name,
+                "result": {
+                    "dn": u"cn=%s,cn=admin,cn=users,cn=vaults,cn=kra,%s"
+                    % (asymmetric_vault_name, api.env.basedn),
+                    "objectclass": [u"top", u"ipaVault"],
+                    "cn": [asymmetric_vault_name],
+                    "ipavaulttype": [u"asymmetric"],
+                    "ipavaultpublickey": [public_key],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Archive secret into asymmetric vault',
-            'command': (
-                'vault_archive',
-                [asymmetric_vault_name],
-                {
-                    'data': secret,
-                },
-            ),
-            'expected': {
-                'value': asymmetric_vault_name,
-                'summary': 'Archived data into vault "%s"'
-                           % asymmetric_vault_name,
-                'result': {},
+            "desc": "Archive secret into asymmetric vault",
+            "command": ("vault_archive", [asymmetric_vault_name], {"data": secret,},),
+            "expected": {
+                "value": asymmetric_vault_name,
+                "summary": 'Archived data into vault "%s"' % asymmetric_vault_name,
+                "result": {},
             },
         },
-
         {
-            'desc': 'Retrieve secret from asymmetric vault',
-            'command': (
-                'vault_retrieve',
+            "desc": "Retrieve secret from asymmetric vault",
+            "command": (
+                "vault_retrieve",
                 [asymmetric_vault_name],
-                {
-                    'private_key': private_key,
-                },
+                {"private_key": private_key,},
             ),
-            'expected': {
-                'value': asymmetric_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % asymmetric_vault_name,
-                'result': {
-                    'data': secret,
-                },
+            "expected": {
+                "value": asymmetric_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % asymmetric_vault_name,
+                "result": {"data": secret,},
             },
         },
-
         {
-            'desc': 'Change asymmetric vault keys',
-            'command': (
-                'vault_mod',
+            "desc": "Change asymmetric vault keys",
+            "command": (
+                "vault_mod",
                 [asymmetric_vault_name],
-                {
-                    'private_key': private_key,
-                    'ipavaultpublickey': other_public_key,
-                },
+                {"private_key": private_key, "ipavaultpublickey": other_public_key,},
             ),
-            'expected': {
-                'value': asymmetric_vault_name,
-                'summary': u'Modified vault "%s"' % asymmetric_vault_name,
-                'result': {
-                    'cn': [asymmetric_vault_name],
-                    'ipavaulttype': [u'asymmetric'],
-                    'ipavaultpublickey': [other_public_key],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "expected": {
+                "value": asymmetric_vault_name,
+                "summary": u'Modified vault "%s"' % asymmetric_vault_name,
+                "result": {
+                    "cn": [asymmetric_vault_name],
+                    "ipavaulttype": [u"asymmetric"],
+                    "ipavaultpublickey": [other_public_key],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Retrieve secret from asymmetric vault with new keys',
-            'command': (
-                'vault_retrieve',
+            "desc": "Retrieve secret from asymmetric vault with new keys",
+            "command": (
+                "vault_retrieve",
                 [asymmetric_vault_name],
-                {
-                    'private_key': other_private_key,
-                },
+                {"private_key": other_private_key,},
             ),
-            'expected': {
-                'value': asymmetric_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % asymmetric_vault_name,
-                'result': {
-                    'data': secret,
-                },
+            "expected": {
+                "value": asymmetric_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % asymmetric_vault_name,
+                "result": {"data": secret,},
             },
         },
-
         {
-            'desc': 'Change asymmetric vault to standard vault',
-            'command': (
-                'vault_mod',
+            "desc": "Change asymmetric vault to standard vault",
+            "command": (
+                "vault_mod",
                 [asymmetric_vault_name],
-                {
-                    'ipavaulttype': u'standard',
-                    'private_key': other_private_key,
-                },
+                {"ipavaulttype": u"standard", "private_key": other_private_key,},
             ),
-            'expected': {
-                'value': asymmetric_vault_name,
-                'summary': u'Modified vault "%s"' % asymmetric_vault_name,
-                'result': {
-                    'cn': [asymmetric_vault_name],
-                    'ipavaulttype': [u'standard'],
-                    'owner_user': [u'admin'],
-                    'username': u'admin',
+            "expected": {
+                "value": asymmetric_vault_name,
+                "summary": u'Modified vault "%s"' % asymmetric_vault_name,
+                "result": {
+                    "cn": [asymmetric_vault_name],
+                    "ipavaulttype": [u"standard"],
+                    "owner_user": [u"admin"],
+                    "username": u"admin",
                 },
             },
         },
-
         {
-            'desc': 'Retrieve secret from asymmetric vault converted to '
-                    'standard vault',
-            'command': (
-                'vault_retrieve',
-                [asymmetric_vault_name],
-                {},
-            ),
-            'expected': {
-                'value': asymmetric_vault_name,
-                'summary': 'Retrieved data from vault "%s"'
-                           % asymmetric_vault_name,
-                'result': {
-                    'data': secret,
-                },
+            "desc": "Retrieve secret from asymmetric vault converted to "
+            "standard vault",
+            "command": ("vault_retrieve", [asymmetric_vault_name], {},),
+            "expected": {
+                "value": asymmetric_vault_name,
+                "summary": 'Retrieved data from vault "%s"' % asymmetric_vault_name,
+                "result": {"data": secret,},
             },
         },
-
     ]

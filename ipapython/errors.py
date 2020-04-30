@@ -27,9 +27,11 @@ class SetseboolError(Exception):
 
     The initializer arguments are copied to attributes of the same name.
     """
+
     def __init__(self, failed, command):
-        message = "Could not set SELinux booleans: %s" % ' '.join(
-            '%s=%s' % (name, value) for name, value in failed.items())
+        message = "Could not set SELinux booleans: %s" % " ".join(
+            "%s=%s" % (name, value) for name, value in failed.items()
+        )
         super(SetseboolError, self).__init__(message)
         self.failed = failed
         self.command = command
@@ -37,11 +39,13 @@ class SetseboolError(Exception):
     def format_service_warning(self, service_name):
         """Format warning for display when this is raised from service install
         """
-        return '\n'.join([
-            'WARNING: %(err)s',
-            '',
-            'The %(service)s may not function correctly until ',
-            'the booleans are successfully changed with the command:',
-            '    %(cmd)s',
-            'Try updating the policycoreutils and selinux-policy packages.'
-        ]) % {'err': self, 'service': service_name, 'cmd': self.command}
+        return "\n".join(
+            [
+                "WARNING: %(err)s",
+                "",
+                "The %(service)s may not function correctly until ",
+                "the booleans are successfully changed with the command:",
+                "    %(cmd)s",
+                "Try updating the policycoreutils and selinux-policy packages.",
+            ]
+        ) % {"err": self, "service": service_name, "cmd": self.command}

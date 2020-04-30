@@ -32,7 +32,7 @@ class PKINITManage(AdminTool):
             option_parser.error("too many arguments")
 
         action = self.args[0]
-        if action not in {'enable', 'disable', 'status'}:
+        if action not in {"enable", "disable", "status"}:
             option_parser.error("unrecognized action '{}'".format(action))
 
     def run(self):
@@ -42,11 +42,11 @@ class PKINITManage(AdminTool):
         api.Backend.ldap2.connect()
         try:
             action = self.args[0]
-            if action == 'enable':
+            if action == "enable":
                 self.enable()
-            elif action == 'disable':
+            elif action == "disable":
                 self.disable()
-            elif action == 'status':
+            elif action == "status":
                 self.status()
         finally:
             api.Backend.ldap2.disconnect()
@@ -54,15 +54,15 @@ class PKINITManage(AdminTool):
         return 0
 
     def _setup(self, setup_pkinit):
-        config = api.Command.config_show()['result']
-        ca_enabled = api.Command.ca_is_enabled()['result']
+        config = api.Command.config_show()["result"]
+        ca_enabled = api.Command.ca_is_enabled()["result"]
 
         krb = KrbInstance()
         krb.init_info(
             realm_name=api.env.realm,
             host_name=api.env.host,
             setup_pkinit=setup_pkinit,
-            subject_base=config['ipacertificatesubjectbase'][0],
+            subject_base=config["ipacertificatesubjectbase"][0],
         )
 
         if bool(is_pkinit_enabled()) is not bool(setup_pkinit):
@@ -70,8 +70,7 @@ class PKINITManage(AdminTool):
                 krb.stop_tracking_certs()
             except RuntimeError as e:
                 if ca_enabled:
-                    logger.warning(
-                        "Failed to stop tracking certificates: %s", e)
+                    logger.warning("Failed to stop tracking certificates: %s", e)
             # remove the cert and key
             krb.delete_pkinit_cert()
 
@@ -83,10 +82,11 @@ class PKINITManage(AdminTool):
             krb.pkinit_disable()
 
     def enable(self):
-        if not api.Command.ca_is_enabled()['result']:
+        if not api.Command.ca_is_enabled()["result"]:
             logger.error("Cannot enable PKINIT in CA-less deployment")
-            logger.error("Use ipa-server-certinstall to install KDC "
-                         "certificate manually")
+            logger.error(
+                "Use ipa-server-certinstall to install KDC " "certificate manually"
+            )
             raise RuntimeError("Cannot enable PKINIT in CA-less deployment")
 
         self._setup(True)

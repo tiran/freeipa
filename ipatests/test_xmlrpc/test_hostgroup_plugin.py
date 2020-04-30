@@ -29,41 +29,40 @@ from ipatests.test_xmlrpc.tracker.host_plugin import HostTracker
 from ipalib import errors
 import pytest
 
-renamedhostgroup1 = u'renamedhostgroup1'
+renamedhostgroup1 = u"renamedhostgroup1"
 
-@pytest.fixture(scope='class')
+
+@pytest.fixture(scope="class")
 def hostgroup(request, xmlrpc_setup):
-    tracker = HostGroupTracker(name=u'hostgroup')
+    tracker = HostGroupTracker(name=u"hostgroup")
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def hostgroup_invalid(request, xmlrpc_setup):
-    tracker = HostGroupTracker(name=u'@invalid')
+    tracker = HostGroupTracker(name=u"@invalid")
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def hostgroup_single(request, xmlrpc_setup):
-    tracker = HostGroupTracker(name=u'a')
+    tracker = HostGroupTracker(name=u"a")
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def host(request, xmlrpc_setup):
-    tracker = HostTracker(name=u'host')
+    tracker = HostTracker(name=u"host")
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def ipaservers(request, xmlrpc_setup):
     # Track the ipaservers hostgroup
     # Since the hostgroup is protected, we cannot use 'make_fixture()' because
     # it will try to delete the object when scope is destroyed and that will
     # fail. Thus, we only create it here.
-    tracker = HostGroupTracker(
-        name=u'ipaservers', description=u'IPA server hosts'
-    )
+    tracker = HostGroupTracker(name=u"ipaservers", description=u"IPA server hosts")
     tracker.exists = True
     tracker.track_create()
     return tracker
@@ -74,26 +73,29 @@ class TestNonexistentHostGroup(XMLRPC_test):
         """ Try to retrieve non-existent hostgroup """
         hostgroup.ensure_missing()
         command = hostgroup.make_retrieve_command()
-        with raises_exact(errors.NotFound(
-                reason=u'%s: host group not found' % hostgroup.cn)):
+        with raises_exact(
+            errors.NotFound(reason=u"%s: host group not found" % hostgroup.cn)
+        ):
             command()
 
     def test_update_nonexistent(self, hostgroup):
         """ Try to update non-existent hostgroup """
         hostgroup.ensure_missing()
         command = hostgroup.make_update_command(
-            dict(description=u'Updated hostgroup 1')
+            dict(description=u"Updated hostgroup 1")
         )
-        with raises_exact(errors.NotFound(
-                reason=u'%s: host group not found' % hostgroup.cn)):
+        with raises_exact(
+            errors.NotFound(reason=u"%s: host group not found" % hostgroup.cn)
+        ):
             command()
 
     def test_delete_nonexistent(self, hostgroup):
         """ Try to delete non-existent hostgroup """
         hostgroup.ensure_missing()
         command = hostgroup.make_delete_command()
-        with raises_exact(errors.NotFound(
-                reason=u'%s: host group not found' % hostgroup.cn)):
+        with raises_exact(
+            errors.NotFound(reason=u"%s: host group not found" % hostgroup.cn)
+        ):
             command()
 
 
@@ -102,9 +104,12 @@ class TestHostGroup(XMLRPC_test):
         """ Test an invalid hostgroup name """
         hostgroup_invalid.ensure_missing()
         command = hostgroup_invalid.make_create_command()
-        with raises_exact(errors.ValidationError(
-                name='hostgroup_name',
-                error=u'may only include letters, numbers, _, -, and .')):
+        with raises_exact(
+            errors.ValidationError(
+                name="hostgroup_name",
+                error=u"may only include letters, numbers, _, -, and .",
+            )
+        ):
             command()
 
     def test_create_hostgroup(self, hostgroup):
@@ -115,9 +120,11 @@ class TestHostGroup(XMLRPC_test):
         """ Try to create duplicate hostgroup """
         hostgroup.ensure_exists()
         command = hostgroup.make_create_command()
-        with raises_exact(errors.DuplicateEntry(
-                message=u'host group with name "%s" already exists' %
-                hostgroup.cn)):
+        with raises_exact(
+            errors.DuplicateEntry(
+                message=u'host group with name "%s" already exists' % hostgroup.cn
+            )
+        ):
             command()
 
     def test_rename_hostgroup(self, hostgroup):
@@ -125,16 +132,18 @@ class TestHostGroup(XMLRPC_test):
         origname = hostgroup.cn
 
         command = hostgroup.make_command(
-            'hostgroup_mod', *[hostgroup.cn],
-            **dict(setattr=u'cn=%s' % renamedhostgroup1))
+            "hostgroup_mod",
+            *[hostgroup.cn],
+            **dict(setattr=u"cn=%s" % renamedhostgroup1)
+        )
         result = command()
         hostgroup.attrs.update(cn=[renamedhostgroup1])
         hostgroup.check_update(result)
         hostgroup.cn = renamedhostgroup1
 
         command = hostgroup.make_command(
-            'hostgroup_mod', *[hostgroup.cn],
-            **dict(setattr=u'cn=%s' % origname))
+            "hostgroup_mod", *[hostgroup.cn], **dict(setattr=u"cn=%s" % origname)
+        )
         result = command()
         hostgroup.attrs.update(cn=[origname])
         hostgroup.check_update(result)
@@ -142,11 +151,15 @@ class TestHostGroup(XMLRPC_test):
 
     def test_rename_ipaservers(self, ipaservers):
         """ Try to rename the protected ipaservers group """
-        command = ipaservers.make_command('hostgroup_mod', *[ipaservers.cn],
-                                          **dict(rename=renamedhostgroup1))
-        reason = u'privileged hostgroup'
-        with raises_exact(errors.ProtectedEntryError(label=u'hostgroup',
-                          key=ipaservers.cn, reason=reason)):
+        command = ipaservers.make_command(
+            "hostgroup_mod", *[ipaservers.cn], **dict(rename=renamedhostgroup1)
+        )
+        reason = u"privileged hostgroup"
+        with raises_exact(
+            errors.ProtectedEntryError(
+                label=u"hostgroup", key=ipaservers.cn, reason=reason
+            )
+        ):
             command()
 
     def test_create_host_add_to_hostgroup(self, hostgroup, host):
@@ -168,7 +181,7 @@ class TestHostGroup(XMLRPC_test):
     def test_update_hostgroup(self, hostgroup):
         """ Update description of hostgroup and verify """
         hostgroup.ensure_exists()
-        hostgroup.update(dict(description=u'Updated hostgroup 1'))
+        hostgroup.update(dict(description=u"Updated hostgroup 1"))
         hostgroup.retrieve()
 
     def test_remove_host_from_hostgroup(self, hostgroup, host):

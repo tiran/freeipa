@@ -32,7 +32,8 @@ from ipalib.request import context
 from ipalib.plugable import Registry
 from ipapython.version import API_VERSION
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Plugin to make multiple ipa calls via one remote procedure call
 
 To run this code in the lite-server
@@ -57,7 +58,8 @@ The format of the response is nested the same way.  At the top you will see
 
 And then a nested response for each IPA command method sent in the request
 
-""")
+"""
+)
 
 if six.PY3:
     unicode = str
@@ -66,31 +68,29 @@ logger = logging.getLogger(__name__)
 
 register = Registry()
 
+
 @register()
 class batch(Command):
-    __doc__ = _('Make multiple ipa calls via one remote procedure call')
+    __doc__ = _("Make multiple ipa calls via one remote procedure call")
     NO_CLI = True
 
-    takes_args = (
-        Dict('methods*',
-            doc=_('Nested Methods to execute'),
-        ),
-    )
+    takes_args = (Dict("methods*", doc=_("Nested Methods to execute"),),)
 
     take_options = (
-        Str('version',
-            cli_name='version',
-            doc=_('Client version. Used to determine if server will accept request.'),
-            exclude='webui',
-            flags=['no_option', 'no_output'],
+        Str(
+            "version",
+            cli_name="version",
+            doc=_("Client version. Used to determine if server will accept request."),
+            exclude="webui",
+            flags=["no_option", "no_output"],
             default=API_VERSION,
             autofill=True,
         ),
     )
 
     has_output = (
-        Output('count', int, doc=''),
-        Output('results', (list, tuple), doc='')
+        Output("count", int, doc=""),
+        Output("results", (list, tuple), doc=""),
     )
 
     def _validate_request(self, request):
@@ -98,13 +98,12 @@ class batch(Command):
         Check that an individual request in a batch is parseable and the
         commands exists.
         """
-        if 'method' not in request:
-            raise errors.RequirementError(name='method')
-        if 'params' not in request:
-            raise errors.RequirementError(name='params')
-        name = request['method']
-        if (name not in self.api.Command or
-                isinstance(self.api.Command[name], Local)):
+        if "method" not in request:
+            raise errors.RequirementError(name="method")
+        if "params" not in request:
+            raise errors.RequirementError(name="params")
+        name = request["method"]
+        if name not in self.api.Command or isinstance(self.api.Command[name], Local):
             raise errors.CommandError(name=name)
 
         # If params are not formated as a tuple(list, dict)
@@ -113,17 +112,15 @@ class batch(Command):
         # Raise a ConversionError instead to report the issue
         # to the client
         try:
-            a, kw = request['params']
+            a, kw = request["params"]
             newkw = dict((str(k), v) for k, v in kw.items())
             api.Command[name].args_options_2_params(*a, **newkw)
         except (AttributeError, ValueError, TypeError):
             raise errors.ConversionError(
-                name='params',
-                error=_(u'must contain a tuple (list, dict)'))
+                name="params", error=_(u"must contain a tuple (list, dict)")
+            )
         except Exception as e:
-            raise errors.ConversionError(
-                name='params',
-                error=str(e))
+            raise errors.ConversionError(name="params", error=str(e))
 
     def _repr_iter(self, **params):
         """
@@ -133,67 +130,68 @@ class batch(Command):
         In case of a malformatted request redact the entire thing.
         """
         exceptions = False
-        for arg in (params.get('methods', [])):
+        for arg in params.get("methods", []):
             try:
                 self._validate_request(arg)
             except Exception:
                 # redact the whole request since we don't know what's in it
                 exceptions = True
-                yield u'********'
+                yield u"********"
                 continue
 
-            name = arg['method']
-            a, kw = arg['params']
+            name = arg["method"]
+            a, kw = arg["params"]
             newkw = dict((str(k), v) for k, v in kw.items())
-            param = api.Command[name].args_options_2_params(
-                *a, **newkw)
+            param = api.Command[name].args_options_2_params(*a, **newkw)
 
-            yield '{}({})'.format(
-                api.Command[name].name,
-                ', '.join(api.Command[name]._repr_iter(**param))
+            yield "{}({})".format(
+                api.Command[name].name, ", ".join(api.Command[name]._repr_iter(**param))
             )
 
         if exceptions:
-            logger.debug('batch: %s',
-                         ', '.join(super(batch, self)._repr_iter(**params)))
+            logger.debug(
+                "batch: %s", ", ".join(super(batch, self)._repr_iter(**params))
+            )
 
     def execute(self, methods=None, **options):
         results = []
-        for arg in (methods or []):
+        for arg in methods or []:
             params = dict()
             name = None
             try:
                 self._validate_request(arg)
-                name = arg['method']
-                a, kw = arg['params']
+                name = arg["method"]
+                a, kw = arg["params"]
                 newkw = dict((str(k), v) for k, v in kw.items())
-                params = api.Command[name].args_options_2_params(
-                    *a, **newkw)
-                newkw.setdefault('version', options['version'])
+                params = api.Command[name].args_options_2_params(*a, **newkw)
+                newkw.setdefault("version", options["version"])
 
                 result = api.Command[name](*a, **newkw)
                 logger.info(
-                    '%s: batch: %s(%s): SUCCESS',
-                    getattr(context, 'principal', 'UNKNOWN'),
+                    "%s: batch: %s(%s): SUCCESS",
+                    getattr(context, "principal", "UNKNOWN"),
                     name,
-                    ', '.join(api.Command[name]._repr_iter(**params))
+                    ", ".join(api.Command[name]._repr_iter(**params)),
                 )
-                result['error']=None
+                result["error"] = None
             except Exception as e:
-                if (isinstance(e, errors.RequirementError) or
-                        isinstance(e, errors.CommandError) or
-                        isinstance(e, errors.ConversionError)):
+                if (
+                    isinstance(e, errors.RequirementError)
+                    or isinstance(e, errors.CommandError)
+                    or isinstance(e, errors.ConversionError)
+                ):
                     logger.info(
-                        '%s: batch: %s',
+                        "%s: batch: %s",
                         context.principal,  # pylint: disable=no-member
-                        e.__class__.__name__
+                        e.__class__.__name__,
                     )
                 else:
                     logger.info(
-                        '%s: batch: %s(%s): %s',
-                        context.principal, name,  # pylint: disable=no-member
-                        ', '.join(api.Command[name]._repr_iter(**params)),
-                        e.__class__.__name__
+                        "%s: batch: %s(%s): %s",
+                        context.principal,
+                        name,  # pylint: disable=no-member
+                        ", ".join(api.Command[name]._repr_iter(**params)),
+                        e.__class__.__name__,
                     )
                 if isinstance(e, errors.PublicError):
                     reported_error = e
@@ -206,4 +204,4 @@ class batch(Command):
                     error_kw=reported_error.kw,
                 )
             results.append(result)
-        return dict(count=len(results) , results=results)
+        return dict(count=len(results), results=results)

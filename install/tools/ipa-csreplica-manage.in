@@ -27,8 +27,7 @@ import sys
 import os
 
 from ipaplatform.paths import paths
-from ipaserver.install import (replication, installutils, bindinstance,
-    cainstance)
+from ipaserver.install import replication, installutils, bindinstance, cainstance
 from ipalib import api, errors
 from ipalib.util import has_managed_topology
 from ipapython import ipautil, ipaldap, version
@@ -40,15 +39,22 @@ logger = logging.getLogger(os.path.basename(__file__))
 # dict of command name and tuples of min/max num of args needed
 commands = {
     "list": (0, 1, "[master fqdn]", ""),
-    "connect": (1, 2, "<master fqdn> [other master fqdn]",
-                "must provide the name of the servers to connect"),
-    "disconnect": (1, 2, "<master fqdn> [other master fqdn]",
-                   "must provide the name of the server to disconnect"),
-    "del": (1, 1, "<master fqdn>",
-            "must provide hostname of master to delete"),
+    "connect": (
+        1,
+        2,
+        "<master fqdn> [other master fqdn]",
+        "must provide the name of the servers to connect",
+    ),
+    "disconnect": (
+        1,
+        2,
+        "<master fqdn> [other master fqdn]",
+        "must provide the name of the server to disconnect",
+    ),
+    "del": (1, 1, "<master fqdn>", "must provide hostname of master to delete"),
     "re-initialize": (0, 0, "", ""),
     "force-sync": (0, 0, "", ""),
-    "set-renewal-master": (0, 1, "[master fqdn]", "")
+    "set-renewal-master": (0, 1, "[master fqdn]", ""),
 }
 
 
@@ -57,11 +63,25 @@ def parse_options():
 
     parser = OptionParser(version=version.VERSION)
     parser.add_option("-H", "--host", dest="host", help="starting host")
-    parser.add_option("-p", "--password", dest="dirman_passwd", help="Directory Manager password")
-    parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
-                      help="provide additional information")
-    parser.add_option("-f", "--force", dest="force", action="store_true", default=False,
-                      help="ignore some types of errors")
+    parser.add_option(
+        "-p", "--password", dest="dirman_passwd", help="Directory Manager password"
+    )
+    parser.add_option(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="provide additional information",
+    )
+    parser.add_option(
+        "-f",
+        "--force",
+        dest="force",
+        action="store_true",
+        default=False,
+        help="ignore some types of errors",
+    )
     parser.add_option("--from", dest="fromhost", help="Host to get data from")
 
     options, args = parser.parse_args()
@@ -81,13 +101,16 @@ def parse_options():
                 else:
                     valid_syntax = True
                 if err:
-                    parser.error("Invalid syntax: %s\nUsage: %s [options] %s" % (err, cmd, v[2]))
+                    parser.error(
+                        "Invalid syntax: %s\nUsage: %s [options] %s" % (err, cmd, v[2])
+                    )
 
     if not valid_syntax:
         cmdstr = " | ".join(commands.keys())
         parser.error("must provide a command [%s]" % cmdstr)
 
     return options, args
+
 
 def list_replicas(realm, host, replica, dirman_passwd, verbose):
 
@@ -97,30 +120,34 @@ def list_replicas(realm, host, replica, dirman_passwd, verbose):
         # connect to main IPA LDAP server
         ldap_uri = ipaldap.get_ldap_uri(host, 636, cacert=paths.IPA_CA_CRT)
         conn = ipaldap.LDAPClient(ldap_uri, cacert=paths.IPA_CA_CRT)
-        conn.simple_bind(bind_dn=ipaldap.DIRMAN_DN,
-                         bind_password=dirman_passwd)
+        conn.simple_bind(bind_dn=ipaldap.DIRMAN_DN, bind_password=dirman_passwd)
 
-        dn = DN(('cn', 'masters'), ('cn', 'ipa'), ('cn', 'etc'), ipautil.realm_to_suffix(realm))
+        dn = DN(
+            ("cn", "masters"),
+            ("cn", "ipa"),
+            ("cn", "etc"),
+            ipautil.realm_to_suffix(realm),
+        )
         entries = conn.get_entries(dn, conn.SCOPE_ONELEVEL)
 
         for ent in entries:
             try:
-                cadn = DN(('cn', 'CA'), DN(ent.dn))
+                cadn = DN(("cn", "CA"), DN(ent.dn))
                 entry = conn.get_entry(cadn)
-                peers[ent.single_value['cn']] = ['master', '']
+                peers[ent.single_value["cn"]] = ["master", ""]
             except errors.NotFound:
-                peers[ent.single_value['cn']] = ['CA not configured', '']
+                peers[ent.single_value["cn"]] = ["CA not configured", ""]
 
     except Exception as e:
         sys.exit(
-            "Failed to get data from '%s' while trying to list replicas: %s" %
-            (host, e))
+            "Failed to get data from '%s' while trying to list replicas: %s" % (host, e)
+        )
     finally:
         conn.unbind()
 
     if not replica:
         for k, p in peers.items():
-            print('%s: %s' % (k, p[0]))
+            print("%s: %s" % (k, p[0]))
         return
 
     try:
@@ -131,20 +158,32 @@ def list_replicas(realm, host, replica, dirman_passwd, verbose):
     entries = repl.find_replication_agreements()
 
     for entry in entries:
-        print('%s' % entry.single_value.get('nsds5replicahost'))
+        print("%s" % entry.single_value.get("nsds5replicahost"))
 
         if verbose:
-            initstatus = entry.single_value.get('nsds5replicalastinitstatus')
+            initstatus = entry.single_value.get("nsds5replicalastinitstatus")
             if initstatus is not None:
                 print("  last init status: %s" % initstatus)
-                print("  last init ended: %s" % str(
+                print(
+                    "  last init ended: %s"
+                    % str(
+                        ipautil.parse_generalized_time(
+                            entry.single_value["nsds5replicalastinitend"]
+                        )
+                    )
+                )
+            print(
+                "  last update status: %s"
+                % entry.single_value.get("nsds5replicalastupdatestatus")
+            )
+            print(
+                "  last update ended: %s"
+                % str(
                     ipautil.parse_generalized_time(
-                        entry.single_value['nsds5replicalastinitend'])))
-            print("  last update status: %s" % entry.single_value.get(
-                'nsds5replicalastupdatestatus'))
-            print("  last update ended: %s" % str(
-                ipautil.parse_generalized_time(
-                    entry.single_value['nsds5replicalastupdateend'])))
+                        entry.single_value["nsds5replicalastupdateend"]
+                    )
+                )
+            )
 
 
 def del_link(realm, replica1, replica2, dirman_passwd, force=False):
@@ -161,12 +200,14 @@ def del_link(realm, replica1, replica2, dirman_passwd, force=False):
         # Find the DN of the replication agreement to remove
         replica1_dn = None
         for e in repl_list1:
-            if e.single_value.get('nsDS5ReplicaHost') == replica2:
+            if e.single_value.get("nsDS5ReplicaHost") == replica2:
                 replica1_dn = e.dn
                 break
 
         if replica1_dn is None:
-            sys.exit("'%s' has no replication agreement for '%s'" % (replica1, replica2))
+            sys.exit(
+                "'%s' has no replication agreement for '%s'" % (replica1, replica2)
+            )
 
         repl1.hostnames = [replica1, replica2]
 
@@ -197,13 +238,15 @@ def del_link(realm, replica1, replica2, dirman_passwd, force=False):
         # Find the DN of the replication agreement to remove
         replica2_dn = None
         for entry in repl_list:
-            if entry.single_value.get('nsDS5ReplicaHost') == replica1:
+            if entry.single_value.get("nsDS5ReplicaHost") == replica1:
                 replica2_dn = entry.dn
                 break
 
         # This should never happen
         if replica2_dn is None:
-            sys.exit("'%s' has no replication agreement for '%s'" % (replica1, replica2))
+            sys.exit(
+                "'%s' has no replication agreement for '%s'" % (replica1, replica2)
+            )
 
     except errors.NotFound:
         print("'%s' has no replication agreement for '%s'" % (replica2, replica1))
@@ -237,24 +280,29 @@ def del_link(realm, replica1, replica2, dirman_passwd, force=False):
 
     print("Deleted replication agreement from '%s' to '%s'" % (replica1, replica2))
 
+
 def del_master(realm, hostname, options):
     delrepl = None
 
     # 1. Connect to the local dogtag DS server
     try:
-        thisrepl = replication.get_cs_replication_manager(realm, options.host,
-                                                          options.dirman_passwd)
+        thisrepl = replication.get_cs_replication_manager(
+            realm, options.host, options.dirman_passwd
+        )
     except Exception as e:
         sys.exit("Failed to connect to server %s: %s" % (options.host, e))
 
     # 2. Ensure we have an agreement with the master
     if thisrepl.get_replication_agreement(hostname) is None:
-        sys.exit("'%s' has no replication agreement for '%s'" % (options.host, hostname))
+        sys.exit(
+            "'%s' has no replication agreement for '%s'" % (options.host, hostname)
+        )
 
     # 3. Connect to the dogtag DS to be removed.
     try:
-        delrepl = replication.get_cs_replication_manager(realm, hostname,
-                                                         options.dirman_passwd)
+        delrepl = replication.get_cs_replication_manager(
+            realm, hostname, options.dirman_passwd
+        )
     except Exception as e:
         if not options.force:
             print("Unable to delete replica %s: %s" % (hostname, e))
@@ -268,8 +316,9 @@ def del_master(realm, hostname, options):
         replica_names = [options.host]
     else:
         replica_entries = delrepl.find_ipa_replication_agreements()
-        replica_names = [rep.single_value.get('nsds5replicahost')
-                         for rep in replica_entries]
+        replica_names = [
+            rep.single_value.get("nsds5replicahost") for rep in replica_entries
+        ]
 
     # 5. Remove each agreement
     for r in replica_names:
@@ -292,36 +341,45 @@ def del_master(realm, hostname, options):
         print("Failed to cleanup %s DNS entries: %s" % (hostname, e))
         print("You may need to manually remove them from the tree")
 
+
 def add_link(realm, replica1, replica2, dirman_passwd, options):
     try:
-        repl2 = replication.get_cs_replication_manager(realm, replica2,
-                                                       dirman_passwd)
+        repl2 = replication.get_cs_replication_manager(realm, replica2, dirman_passwd)
     except Exception as e:
         sys.exit(str(e))
     try:
         ldap_uri = ipaldap.get_ldap_uri(replica2, 636, cacert=paths.IPA_CA_CRT)
         conn = ipaldap.LDAPClient(ldap_uri, cacert=paths.IPA_CA_CRT)
-        conn.simple_bind(bind_dn=ipaldap.DIRMAN_DN,
-                         bind_password=dirman_passwd)
+        conn.simple_bind(bind_dn=ipaldap.DIRMAN_DN, bind_password=dirman_passwd)
 
-        dn = DN(('cn', 'CA'), ('cn', replica2), ('cn', 'masters'), ('cn', 'ipa'), ('cn', 'etc'),
-                ipautil.realm_to_suffix(realm))
+        dn = DN(
+            ("cn", "CA"),
+            ("cn", replica2),
+            ("cn", "masters"),
+            ("cn", "ipa"),
+            ("cn", "etc"),
+            ipautil.realm_to_suffix(realm),
+        )
         conn.get_entries(dn, conn.SCOPE_BASE)
         conn.unbind()
     except errors.NotFound:
-        sys.exit('%s does not have a CA configured.' % replica2)
+        sys.exit("%s does not have a CA configured." % replica2)
     except errors.NetworkError as e:
-        sys.exit("Unable to connect to %s: %s" % (ipautil.format_netloc(replica2, 636), str(e)))
+        sys.exit(
+            "Unable to connect to %s: %s"
+            % (ipautil.format_netloc(replica2, 636), str(e))
+        )
     except Exception as e:
-        sys.exit("Failed to get data while trying to bind to '%s': %s" % (replica1, str(e)))
+        sys.exit(
+            "Failed to get data while trying to bind to '%s': %s" % (replica1, str(e))
+        )
 
     try:
-        repl1 = replication.get_cs_replication_manager(realm, replica1,
-                                                       dirman_passwd)
+        repl1 = replication.get_cs_replication_manager(realm, replica1, dirman_passwd)
         entries = repl1.find_replication_agreements()
         for e in entries:
-            if e.single_value.get('nsDS5ReplicaHost') == replica2:
-                sys.exit('This replication agreement already exists.')
+            if e.single_value.get("nsDS5ReplicaHost") == replica2:
+                sys.exit("This replication agreement already exists.")
         repl1.hostnames = [replica1, replica2]
 
     except errors.NotFound:
@@ -331,12 +389,20 @@ def add_link(realm, replica1, replica2, dirman_passwd, options):
     except Exception as e:
         sys.exit(
             "Failed to get data from '%s' while trying to get current "
-            "agreements: %s" % (replica1, e))
+            "agreements: %s" % (replica1, e)
+        )
 
     repl1.setup_replication(
-        replica2, repl2.port, 0, DN(('cn', 'Directory Manager')),
-        dirman_passwd, is_cs_replica=True, local_port=repl1.port)
+        replica2,
+        repl2.port,
+        0,
+        DN(("cn", "Directory Manager")),
+        dirman_passwd,
+        is_cs_replica=True,
+        local_port=repl1.port,
+    )
     print("Connected '%s' to '%s'" % (replica1, replica2))
+
 
 def re_initialize(realm, options):
 
@@ -346,24 +412,32 @@ def re_initialize(realm, options):
     thishost = installutils.get_fqdn()
 
     try:
-        repl = replication.get_cs_replication_manager(realm, options.fromhost,
-                                                      options.dirman_passwd)
-        thisrepl = replication.get_cs_replication_manager(realm, thishost,
-                                                          options.dirman_passwd)
+        repl = replication.get_cs_replication_manager(
+            realm, options.fromhost, options.dirman_passwd
+        )
+        thisrepl = replication.get_cs_replication_manager(
+            realm, thishost, options.dirman_passwd
+        )
     except Exception as e:
         sys.exit(str(e))
 
     filter = repl.get_agreement_filter(host=thishost)
     try:
         entry = repl.conn.get_entries(
-            DN(('cn', 'config')), repl.conn.SCOPE_SUBTREE, filter)
+            DN(("cn", "config")), repl.conn.SCOPE_SUBTREE, filter
+        )
     except errors.NotFound:
-        logger.error("Unable to find %s -> %s replication agreement",
-                     options.fromhost, thishost)
+        logger.error(
+            "Unable to find %s -> %s replication agreement", options.fromhost, thishost
+        )
         sys.exit(1)
     if len(entry) > 1:
-        logger.error("Found multiple agreements for %s. Only initializing the "
-                     "first one returned: %s", thishost, entry[0].dn)
+        logger.error(
+            "Found multiple agreements for %s. Only initializing the "
+            "first one returned: %s",
+            thishost,
+            entry[0].dn,
+        )
 
     repl.hostnames = thisrepl.hostnames = [thishost, options.fromhost]
     thisrepl.enable_agreement(options.fromhost)
@@ -372,14 +446,15 @@ def re_initialize(realm, options):
     repl.initialize_replication(entry[0].dn, repl.conn)
     repl.wait_for_repl_init(repl.conn, entry[0].dn)
 
+
 def force_sync(realm, thishost, fromhost, dirman_passwd):
 
     try:
-        repl = replication.get_cs_replication_manager(realm, fromhost,
-                                                      dirman_passwd)
+        repl = replication.get_cs_replication_manager(realm, fromhost, dirman_passwd)
         repl.force_sync(repl.conn, thishost)
     except Exception as e:
         sys.exit(str(e))
+
 
 def set_renewal_master(realm, replica):
     if not replica:
@@ -399,14 +474,18 @@ def set_renewal_master(realm, replica):
 
 def exit_on_managed_topology(what, hint="topologysegment"):
     if hint == "topologysegment":
-        hinttext = ("Please use `ipa topologysegment-*` commands to manage "
-                   "the topology.")
+        hinttext = (
+            "Please use `ipa topologysegment-*` commands to manage " "the topology."
+        )
     elif hint == "ipa-replica-manage-del":
-        hinttext = ("Please use the `ipa-replica-manage del` command.")
+        hinttext = "Please use the `ipa-replica-manage del` command."
     else:
         assert False, "Unexpected value"
-    sys.exit("{0} is deprecated with managed IPA replication topology. {1}"
-             .format(what, hinttext))
+    sys.exit(
+        "{0} is deprecated with managed IPA replication topology. {1}".format(
+            what, hinttext
+        )
+    )
 
 
 def main():
@@ -417,10 +496,10 @@ def main():
     # access to the plugin environment
     api_env = {}
     if os.getegid() != 0:
-        api_env['log'] = None # turn off logging for non-root
+        api_env["log"] = None  # turn off logging for non-root
 
     api.bootstrap(
-        context='cli',
+        context="cli",
         in_server=True,
         verbose=options.verbose,
         confdir=paths.ETC_IPA,
@@ -441,8 +520,9 @@ def main():
     if options.dirman_passwd:
         dirman_passwd = options.dirman_passwd
     else:
-        dirman_passwd = installutils.read_password("Directory Manager", confirm=False,
-            validate=False, retry=False)
+        dirman_passwd = installutils.read_password(
+            "Directory Manager", confirm=False, validate=False, retry=False
+        )
         if dirman_passwd is None:
             sys.exit("Directory Manager password required")
 
@@ -459,7 +539,8 @@ def main():
         if has_managed_topology(api):
             exit_on_managed_topology(
                 "Removal of IPA CS replication agreement and replication data",
-                hint="ipa-replica-manage-del")
+                hint="ipa-replica-manage-del",
+            )
         del_master(realm, args[1], options)
     elif args[0] == "re-initialize":
         re_initialize(realm, options)
@@ -487,13 +568,14 @@ def main():
             replica1 = host
             replica2 = args[1]
         del_link(realm, replica1, replica2, dirman_passwd, options.force)
-    elif args[0] == 'set-renewal-master':
+    elif args[0] == "set-renewal-master":
         replica = None
         if len(args) > 1:
             replica = args[1]
         set_renewal_master(realm, replica)
 
     api.Backend.ldap2.disconnect()
+
 
 try:
     main()

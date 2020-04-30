@@ -46,9 +46,7 @@ from ipalib.util import classproperty
 from ipalib.base import ReadOnly, lock, islocked
 from ipalib.constants import DEFAULT_CONFIG
 from ipapython import ipa_log_manager, ipautil
-from ipapython.ipa_log_manager import (
-    LOGGING_FORMAT_FILE,
-    LOGGING_FORMAT_STDERR)
+from ipapython.ipa_log_manager import LOGGING_FORMAT_FILE, LOGGING_FORMAT_STDERR
 from ipapython.version import VERSION, API_VERSION, DEFAULT_PLUGINS
 
 # pylint: disable=no-name-in-module, import-error
@@ -64,7 +62,7 @@ if six.PY3:
 logger = logging.getLogger(__name__)
 
 # FIXME: Updated constants.TYPE_ERROR to use this clearer format from wehjit:
-TYPE_ERROR = '%s: need a %r; got a %r: %r'
+TYPE_ERROR = "%s: need a %r; got a %r: %r"
 
 
 # FIXME: This function has no unit test
@@ -76,15 +74,15 @@ def find_modules_in_dir(src_dir):
         return
     if os.path.islink(src_dir):
         return
-    suffix = '.py'
+    suffix = ".py"
     for name in sorted(os.listdir(src_dir)):
         if not name.endswith(suffix):
             continue
         pyfile = os.path.join(src_dir, name)
         if not os.path.isfile(pyfile):
             continue
-        module = name[:-len(suffix)]
-        if module == '__init__':
+        module = name[: -len(suffix)]
+        if module == "__init__":
             continue
         yield module
 
@@ -103,6 +101,7 @@ class Registry:
     For forward compatibility, make sure that the module-level instance of
     this object is named "register".
     """
+
     def __init__(self):
         self.__registry = collections.OrderedDict()
 
@@ -114,7 +113,7 @@ class Registry:
             :param plugin: A subclass of `Plugin` to attempt to register.
             """
             if not callable(plugin):
-                raise TypeError('plugin must be callable; got %r' % plugin)
+                raise TypeError("plugin must be callable; got %r" % plugin)
 
             # Raise DuplicateError if this exact class was already registered:
             if plugin in self.__registry:
@@ -136,7 +135,7 @@ class Plugin(ReadOnly):
     Base class for all plugins.
     """
 
-    version = '1'
+    version = "1"
 
     def __init__(self, api):
         assert api is not None
@@ -154,7 +153,7 @@ class Plugin(ReadOnly):
 
     @classmethod
     def __full_name_getter(cls):
-        return '{}/{}'.format(cls.name, cls.version)
+        return "{}/{}".format(cls.name, cls.version)
 
     full_name = classproperty(__full_name_getter)
 
@@ -174,9 +173,9 @@ class Plugin(ReadOnly):
     def __summary_getter(cls):
         doc = cls.doc
         if not _(doc).msg:
-            return '<%s.%s>' % (cls.__module__, cls.__name__)
+            return "<%s.%s>" % (cls.__module__, cls.__name__)
         else:
-            return unicode(doc).split('\n\n', 1)[0].strip()
+            return unicode(doc).split("\n\n", 1)[0].strip()
 
     summary = classproperty(__summary_getter)
 
@@ -252,7 +251,8 @@ class Plugin(ReadOnly):
         This is used to implement on-demand finalization of plugin
         initialization.
         """
-        __slots__ = ('name', 'value')
+
+        __slots__ = ("name", "value")
 
         def __init__(self, name, value=None):
             self.name = name
@@ -271,7 +271,8 @@ class Plugin(ReadOnly):
                 # badly, so advise the developer about that instead of giving
                 # them a generic "maximum recursion depth exceeded" error.
                 raise AttributeError(
-                    "attribute '%s' of plugin '%s' was not set in finalize()" % (self.name, obj.name)
+                    "attribute '%s' of plugin '%s' was not set in finalize()"
+                    % (self.name, obj.name)
                 )
 
     def __repr__(self):
@@ -281,10 +282,7 @@ class Plugin(ReadOnly):
         This representation could be used to instantiate this Plugin
         instance given the appropriate environment.
         """
-        return '%s.%s()' % (
-            self.__class__.__module__,
-            self.__class__.__name__
-        )
+        return "%s.%s()" % (self.__class__.__module__, self.__class__.__name__)
 
 
 class APINameSpace(Mapping):
@@ -309,10 +307,10 @@ class APINameSpace(Mapping):
             key_dict[plugin] = plugin
             key_dict[plugin.name, plugin.version] = plugin
             key_dict[plugin.full_name] = plugin
-            if plugin.version == default_map.get(plugin.name, '1'):
+            if plugin.version == default_map.get(plugin.name, "1"):
                 key_dict[plugin.name] = plugin
 
-        self.__plugins = sorted(plugins, key=operator.attrgetter('full_name'))
+        self.__plugins = sorted(plugins, key=operator.attrgetter("full_name"))
 
     def __len__(self):
         self.__enumerate()
@@ -416,13 +414,11 @@ class API(ReadOnly):
         If the object has self.env.mode defined and that mode is
         production return True, otherwise return False.
         """
-        return getattr(self.env, 'mode', None) == 'production'
+        return getattr(self.env, "mode", None) == "production"
 
     def __doing(self, name):
         if name in self.__done:
-            raise Exception(
-                '%s.%s() already called' % (self.__class__.__name__, name)
-            )
+            raise Exception("%s.%s() already called" % (self.__class__.__name__, name))
         self.__done.add(name)
 
     def __do_if_not_done(self, name):
@@ -436,7 +432,7 @@ class API(ReadOnly):
         """
         Initialize environment variables and logging.
         """
-        self.__doing('bootstrap')
+        self.__doing("bootstrap")
         self.env._bootstrap(**overrides)
         self.env._finalize_core(**dict(DEFAULT_CONFIG))
 
@@ -459,16 +455,17 @@ class API(ReadOnly):
         root_logger.setLevel(level)
 
         for attr in self.env:
-            match = re.match(r'^log_logger_level_'
-                             r'(debug|info|warn|warning|error|critical|\d+)$',
-                             attr)
+            match = re.match(
+                r"^log_logger_level_" r"(debug|info|warn|warning|error|critical|\d+)$",
+                attr,
+            )
             if not match:
                 continue
 
             level = ipa_log_manager.convert_log_level(match.group(1))
 
             value = getattr(self.env, attr)
-            regexps = re.split(r'\s*,\s*', value)
+            regexps = re.split(r"\s*,\s*", value)
 
             # Add the regexp, it maps to the configured level
             for regexp in regexps:
@@ -479,7 +476,7 @@ class API(ReadOnly):
         if self.env.debug:  # pylint: disable=using-constant-test
             level = logging.DEBUG
         else:
-            if self.env.context == 'cli':
+            if self.env.context == "cli":
                 if self.env.verbose > 0:
                     level = logging.INFO
                 else:
@@ -491,11 +488,11 @@ class API(ReadOnly):
 
         # check after logging is set up but before we create files.
         fse = sys.getfilesystemencoding()
-        if fse.lower() not in {'utf-8', 'utf8'}:
+        if fse.lower() not in {"utf-8", "utf8"}:
             raise errors.SystemEncodingError(encoding=fse)
 
         # Add file handler:
-        if self.env.mode in ('dummy', 'unit_test'):
+        if self.env.mode in ("dummy", "unit_test"):
             return  # But not if in unit-test mode
         if self.env.log is None:
             return
@@ -504,7 +501,7 @@ class API(ReadOnly):
             try:
                 os.makedirs(log_dir)
             except OSError:
-                logger.error('Could not create log_dir %r', log_dir)
+                logger.error("Could not create log_dir %r", log_dir)
                 return
 
         level = logging.INFO
@@ -514,22 +511,20 @@ class API(ReadOnly):
             try:
                 handler = logging.FileHandler(self.env.log)
             except IOError as e:
-                logger.error('Cannot open log file %r: %s', self.env.log, e)
+                logger.error("Cannot open log file %r: %s", self.env.log, e)
             else:
                 handler.setLevel(level)
-                handler.setFormatter(
-                    ipa_log_manager.Formatter(LOGGING_FORMAT_FILE)
-                )
+                handler.setFormatter(ipa_log_manager.Formatter(LOGGING_FORMAT_FILE))
                 root_logger.addHandler(handler)
 
     def build_global_parser(self, parser=None, context=None):
         """
         Add global options to an optparse.OptionParser instance.
         """
+
         def config_file_callback(option, opt, value, parser):
             if not os.path.isfile(value):
-                parser.error(
-                    _("%(filename)s: file not found") % dict(filename=value))
+                parser.error(_("%(filename)s: file not found") % dict(filename=value))
 
             parser.values.conf = value
 
@@ -537,49 +532,75 @@ class API(ReadOnly):
             parser = optparse.OptionParser(
                 add_help_option=False,
                 formatter=IPAHelpFormatter(),
-                usage='%prog [global-options] COMMAND [command-options]',
-                description='Manage an IPA domain',
-                version=('VERSION: %s, API_VERSION: %s' %
-                            (VERSION, API_VERSION)),
-                epilog='\n'.join([
-                    'See "ipa help topics" for available help topics.',
-                    'See "ipa help <TOPIC>" for more information on '
-                    + 'a specific topic.',
-                    'See "ipa help commands" for the full list of commands.',
-                    'See "ipa <COMMAND> --help" for more information on '
-                    + 'a specific command.',
-                ]))
+                usage="%prog [global-options] COMMAND [command-options]",
+                description="Manage an IPA domain",
+                version=("VERSION: %s, API_VERSION: %s" % (VERSION, API_VERSION)),
+                epilog="\n".join(
+                    [
+                        'See "ipa help topics" for available help topics.',
+                        'See "ipa help <TOPIC>" for more information on '
+                        + "a specific topic.",
+                        'See "ipa help commands" for the full list of commands.',
+                        'See "ipa <COMMAND> --help" for more information on '
+                        + "a specific command.",
+                    ]
+                ),
+            )
             parser.disable_interspersed_args()
-            parser.add_option("-h", "--help", action="help",
-                help='Show this help message and exit')
+            parser.add_option(
+                "-h", "--help", action="help", help="Show this help message and exit"
+            )
 
-        parser.add_option('-e', dest='env', metavar='KEY=VAL', action='append',
-            help='Set environment variable KEY to VAL',
+        parser.add_option(
+            "-e",
+            dest="env",
+            metavar="KEY=VAL",
+            action="append",
+            help="Set environment variable KEY to VAL",
         )
-        parser.add_option('-c', dest='conf', metavar='FILE', action='callback',
-            callback=config_file_callback, type='string',
-            help='Load configuration from FILE.',
+        parser.add_option(
+            "-c",
+            dest="conf",
+            metavar="FILE",
+            action="callback",
+            callback=config_file_callback,
+            type="string",
+            help="Load configuration from FILE.",
         )
-        parser.add_option('-d', '--debug', action='store_true',
-            help='Produce full debuging output',
+        parser.add_option(
+            "-d", "--debug", action="store_true", help="Produce full debuging output",
         )
-        parser.add_option('--delegate', action='store_true',
-            help='Delegate the TGT to the IPA server',
+        parser.add_option(
+            "--delegate",
+            action="store_true",
+            help="Delegate the TGT to the IPA server",
         )
-        parser.add_option('-v', '--verbose', action='count',
-            help='Produce more verbose output. A second -v displays the XML-RPC request',
+        parser.add_option(
+            "-v",
+            "--verbose",
+            action="count",
+            help="Produce more verbose output. A second -v displays the XML-RPC request",
         )
-        if context == 'cli':
-            parser.add_option('-a', '--prompt-all', action='store_true',
-                help='Prompt for ALL values (even if optional)'
+        if context == "cli":
+            parser.add_option(
+                "-a",
+                "--prompt-all",
+                action="store_true",
+                help="Prompt for ALL values (even if optional)",
             )
-            parser.add_option('-n', '--no-prompt', action='store_false',
-                dest='interactive',
-                help='Prompt for NO values (even if required)'
+            parser.add_option(
+                "-n",
+                "--no-prompt",
+                action="store_false",
+                dest="interactive",
+                help="Prompt for NO values (even if required)",
             )
-            parser.add_option('-f', '--no-fallback', action='store_false',
-                dest='fallback',
-                help='Only use the server configured in /etc/ipa/default.conf'
+            parser.add_option(
+                "-f",
+                "--no-fallback",
+                action="store_false",
+                dest="fallback",
+                help="Only use the server configured in /etc/ipa/default.conf",
             )
 
         return parser
@@ -592,22 +613,29 @@ class API(ReadOnly):
             assert type(options.env) is list
             for item in options.env:
                 try:
-                    (key, value) = item.split('=', 1)
+                    (key, value) = item.split("=", 1)
                 except ValueError:
                     # FIXME: this should raise an IPA exception with an
                     # error code.
                     # --Jason, 2008-10-31
                     pass
                 overrides[str(key.strip())] = value.strip()
-        for key in ('conf', 'debug', 'verbose', 'prompt_all', 'interactive',
-            'fallback', 'delegate'):
+        for key in (
+            "conf",
+            "debug",
+            "verbose",
+            "prompt_all",
+            "interactive",
+            "fallback",
+            "delegate",
+        ):
             value = getattr(options, key, None)
             if value is not None:
                 overrides[key] = value
-        if hasattr(options, 'prod'):
-            overrides['webui_prod'] = options.prod
+        if hasattr(options, "prod"):
+            overrides["webui_prod"] = options.prod
         if context is not None:
-            overrides['context'] = context
+            overrides["context"] = context
         self.bootstrap(parser, **overrides)
         return (options, args)
 
@@ -618,9 +646,9 @@ class API(ReadOnly):
         `API.bootstrap` will automatically be called if it hasn't been
         already.
         """
-        self.__doing('load_plugins')
-        self.__do_if_not_done('bootstrap')
-        if self.env.mode in ('dummy', 'unit_test'):
+        self.__doing("load_plugins")
+        self.__do_if_not_done("bootstrap")
+        if self.env.mode in ("dummy", "unit_test"):
             return
         for package in self.packages:
             self.add_package(package)
@@ -636,16 +664,14 @@ class API(ReadOnly):
         package_file = package.__file__
         package_dir = path.dirname(path.abspath(package_file))
 
-        parent = sys.modules[package_name.rpartition('.')[0]]
+        parent = sys.modules[package_name.rpartition(".")[0]]
         parent_dir = path.dirname(path.abspath(parent.__file__))
         if parent_dir == package_dir:
-            raise errors.PluginsPackageError(
-                name=package_name, file=package_file
-            )
+            raise errors.PluginsPackageError(name=package_name, file=package_file)
 
         logger.debug("importing all plugin modules in %s...", package_name)
-        modules = getattr(package, 'modules', find_modules_in_dir(package_dir))
-        modules = ['.'.join((package_name, mname)) for mname in modules]
+        modules = getattr(package, "modules", find_modules_in_dir(package_dir))
+        modules = [".".join((package_name, mname)) for mname in modules]
 
         for name in modules:
             logger.debug("importing plugin module %s", name)
@@ -691,7 +717,7 @@ class API(ReadOnly):
         :param override: If true, override an already added plugin.
         """
         if not callable(plugin):
-            raise TypeError('plugin must be callable; got %r' % plugin)
+            raise TypeError("plugin must be callable; got %r" % plugin)
 
         # Find the base class or raise SubclassError:
         for base in plugin.bases:
@@ -699,8 +725,7 @@ class API(ReadOnly):
                 break
         else:
             raise errors.PluginSubclassError(
-                plugin=plugin,
-                bases=self.bases,
+                plugin=plugin, bases=self.bases,
             )
 
         # Check override:
@@ -712,9 +737,7 @@ class API(ReadOnly):
                 else:
                     # Must use override=True to override:
                     raise errors.PluginOverrideError(
-                        base=base.__name__,
-                        name=plugin.name,
-                        plugin=plugin,
+                        base=base.__name__, name=plugin.name, plugin=plugin,
                     )
 
             self.__plugins.remove(prev)
@@ -726,9 +749,7 @@ class API(ReadOnly):
                 else:
                     # There was nothing already registered to override:
                     raise errors.PluginMissingOverrideError(
-                        base=base.__name__,
-                        name=plugin.name,
-                        plugin=plugin,
+                        base=base.__name__, name=plugin.name, plugin=plugin,
                     )
 
         # The plugin is okay, add to sub_d:
@@ -742,13 +763,12 @@ class API(ReadOnly):
         `API.bootstrap` will automatically be called if it hasn't been
         already.
         """
-        self.__doing('finalize')
-        self.__do_if_not_done('load_plugins')
+        self.__doing("finalize")
+        self.__do_if_not_done("load_plugins")
 
         if self.env.env_confdir is not None:
             if self.env.env_confdir == self.env.confdir:
-                logger.info(
-                    "IPA_CONFDIR env sets confdir to '%s'.", self.env.confdir)
+                logger.info("IPA_CONFDIR env sets confdir to '%s'.", self.env.confdir)
 
         for plugin in self.__plugins:
             if not self.env.validate_api:
@@ -798,7 +818,7 @@ class API(ReadOnly):
 
     def _get(self, plugin):
         if not callable(plugin):
-            raise TypeError('plugin must be callable; got %r' % plugin)
+            raise TypeError("plugin must be callable; got %r" % plugin)
         if plugin not in self.__plugins:
             raise KeyError(plugin)
 
@@ -811,7 +831,7 @@ class API(ReadOnly):
 
     def get_plugin_next(self, plugin):
         if not callable(plugin):
-            raise TypeError('plugin must be callable; got %r' % plugin)
+            raise TypeError("plugin must be callable; got %r" % plugin)
 
         return self.__next[plugin]
 
@@ -821,8 +841,10 @@ class IPAHelpFormatter(optparse.IndentedHelpFormatter):
         text_width = self.width - self.current_indent
         indent = " " * self.current_indent
         lines = text.splitlines()
-        result = '\n'.join(
-            textwrap.fill(line, text_width, initial_indent=indent,
-                subsequent_indent=indent)
-            for line in lines)
-        return '\n%s\n' % result
+        result = "\n".join(
+            textwrap.fill(
+                line, text_width, initial_indent=indent, subsequent_indent=indent
+            )
+            for line in lines
+        )
+        return "\n%s\n" % result

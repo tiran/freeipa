@@ -27,26 +27,28 @@ from ipatests.test_webui.ui_driver import screenshot
 from datetime import date, timedelta
 import pytest
 
-ENTITY = 'cert'
+ENTITY = "cert"
 
 ERR_SPACE = "invalid '{}': Leading and trailing spaces are not allowed"
 ERR_MUST_INTEGER = "invalid '{}': must be an integer"
 LEAST_SERIAL = "invalid '{}': must be at least 0"
-INV_DATE = ("invalid '{}': does not match any of accepted formats: "
-            "%Y%m%d%H%M%SZ, %Y-%m-%dT%H:%M:%SZ, %Y-%m-%dT%H:%MZ, "
-            "%Y-%m-%dZ, %Y-%m-%d %H:%M:%SZ, %Y-%m-%d %H:%MZ")
+INV_DATE = (
+    "invalid '{}': does not match any of accepted formats: "
+    "%Y%m%d%H%M%SZ, %Y-%m-%dT%H:%M:%SZ, %Y-%m-%dT%H:%MZ, "
+    "%Y-%m-%dZ, %Y-%m-%d %H:%M:%SZ, %Y-%m-%d %H:%MZ"
+)
 
 
 def search_pkey(self, pkey):
-    search_field_s = '.search-filter input[name=filter]'
+    search_field_s = ".search-filter input[name=filter]"
     self.fill_text(search_field_s, pkey)
-    self.action_button_click('find', parent=None)
+    self.action_button_click("find", parent=None)
     self.wait_for_request(n=2)
 
 
 def check_option_negative(self, date, option):
     self.navigate_to_entity(ENTITY)
-    self.select('select[name=search_option]', option)
+    self.select("select[name=search_option]", option)
     search_pkey(self, date)
     self.assert_last_error_dialog(INV_DATE.format(option))
     self.close_all_dialogs()
@@ -54,7 +56,7 @@ def check_option_negative(self, date, option):
 
 def check_space_error(self, string, option):
     self.navigate_to_entity(ENTITY)
-    self.select('select[name=search_option]', option)
+    self.select("select[name=search_option]", option)
     search_pkey(self, string)
     self.assert_last_error_dialog(ERR_SPACE.format(option))
     self.close_all_dialogs()
@@ -66,7 +68,7 @@ def check_integer(self, string, option):
     If not check for error dialog
     """
     self.navigate_to_entity(ENTITY)
-    self.select('select[name=search_option]', option)
+    self.select("select[name=search_option]", option)
     search_pkey(self, string)
     self.assert_last_error_dialog(ERR_MUST_INTEGER.format(option))
     self.close_all_dialogs()
@@ -74,7 +76,7 @@ def check_integer(self, string, option):
 
 def check_minimum_serial(self, serial, option):
     self.navigate_to_entity(ENTITY)
-    self.select('select[name=search_option]', option)
+    self.select("select[name=search_option]", option)
     search_pkey(self, serial)
     self.assert_last_error_dialog(LEAST_SERIAL.format(option))
     self.close_all_dialogs()
@@ -82,31 +84,30 @@ def check_minimum_serial(self, serial, option):
 
 @pytest.mark.tier1
 class test_cert(UI_driver):
-
     @pytest.fixture(autouse=True)
     def cert_setup(self, ui_driver_fsetup):
         if not self.has_ca():
-            self.skip('CA not configured')
+            self.skip("CA not configured")
 
-    def _add_and_revoke_cert(self, reason='1'):
-        hostname = self.config.get('ipa_server')
+    def _add_and_revoke_cert(self, reason="1"):
+        hostname = self.config.get("ipa_server")
         csr = generate_csr(hostname)
 
         self.navigate_to_entity(ENTITY)
-        self.facet_button_click('request_cert')
-        self.fill_textbox('principal', 'HTTP/{}'.format(hostname))
-        self.check_option('add', 'checked')
-        self.fill_textarea('csr', csr)
-        self.dialog_button_click('issue')
-        self.assert_notification(assert_text='Certificate requested')
+        self.facet_button_click("request_cert")
+        self.fill_textbox("principal", "HTTP/{}".format(hostname))
+        self.check_option("add", "checked")
+        self.fill_textarea("csr", csr)
+        self.dialog_button_click("issue")
+        self.assert_notification(assert_text="Certificate requested")
         self.navigate_to_entity(ENTITY)
         rows = self.get_rows()
         cert = rows[-1]
 
         self.navigate_to_row_record(cert)
-        self.action_list_action('revoke_cert', False)
-        self.select('select[name=revocation_reason]', reason)
-        self.dialog_button_click('ok')
+        self.action_list_action("revoke_cert", False)
+        self.select("select[name=revocation_reason]", reason)
+        self.dialog_button_click("ok")
         self.navigate_to_entity(ENTITY)
 
         return cert
@@ -131,30 +132,30 @@ class test_cert(UI_driver):
         """
         self.init_app()
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'subject')
-        search_pkey(self, 'Certificate Authority')
+        self.select("select[name=search_option]", "subject")
+        search_pkey(self, "Certificate Authority")
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search non-existent subject
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'subject')
-        search_pkey(self, 'nonexistent')
+        self.select("select[name=search_option]", "subject")
+        search_pkey(self, "nonexistent")
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search subject with speacial char
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'subject')
-        search_pkey(self, '<,>.?/')
+        self.select("select[name=search_option]", "subject")
+        search_pkey(self, "<,>.?/")
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search subject with leading space
-        check_space_error(self, ' Certificate Authority', 'subject')
+        check_space_error(self, " Certificate Authority", "subject")
 
         # try to search subject with trailing space
-        check_space_error(self, 'Certificate Authority ', 'subject')
+        check_space_error(self, "Certificate Authority ", "subject")
 
     @screenshot
     def test_search_revocation_reason(self):
@@ -167,29 +168,29 @@ class test_cert(UI_driver):
         self._add_and_revoke_cert()
 
         # search cert by revocation reason
-        self.select('select[name=search_option]', 'revocation_reason')
-        search_pkey(self, '1')
+        self.select("select[name=search_option]", "revocation_reason")
+        search_pkey(self, "1")
         rows = self.get_rows()
         assert len(rows) != 0
 
         # search cert by string.
-        check_integer(self, 'nonexistent', 'revocation_reason')
+        check_integer(self, "nonexistent", "revocation_reason")
 
         # search cert by special char
-        check_integer(self, '<,>.?/', 'revocation_reason')
+        check_integer(self, "<,>.?/", "revocation_reason")
 
         # search revocation reason negative Number.
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'revocation_reason')
-        search_pkey(self, '-1')
+        self.select("select[name=search_option]", "revocation_reason")
+        search_pkey(self, "-1")
         rows = self.get_rows()
         assert len(rows) == 0
 
         # valid revocation reason can be value from 0 to 10
         # try revocation reason as other than valid value
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'revocation_reason')
-        search_pkey(self, '11')
+        self.select("select[name=search_option]", "revocation_reason")
+        search_pkey(self, "11")
         rows = self.get_rows()
         assert len(rows) == 0
 
@@ -200,21 +201,21 @@ class test_cert(UI_driver):
         """
         self.init_app()
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'min_serial_number')
-        search_pkey(self, '1')
+        self.select("select[name=search_option]", "min_serial_number")
+        search_pkey(self, "1")
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try search using string
-        check_integer(self, 'nonexistent', 'min_serial_number')
+        check_integer(self, "nonexistent", "min_serial_number")
 
         # try searching using -1
-        check_minimum_serial(self, '-1', 'min_serial_number')
+        check_minimum_serial(self, "-1", "min_serial_number")
 
         # try using higher value than no. of certs present
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'min_serial_number')
-        search_pkey(self, '99')
+        self.select("select[name=search_option]", "min_serial_number")
+        search_pkey(self, "99")
         rows = self.get_rows()
         assert len(rows) == 0
 
@@ -225,16 +226,16 @@ class test_cert(UI_driver):
         """
         self.init_app()
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'max_serial_number')
-        search_pkey(self, '2')
+        self.select("select[name=search_option]", "max_serial_number")
+        search_pkey(self, "2")
         rows = self.get_rows()
         assert len(rows) == 2
 
         # try to search using string
-        check_integer(self, 'nonexisting', 'max_serial_number')
+        check_integer(self, "nonexisting", "max_serial_number")
 
         # try to search using -1
-        check_minimum_serial(self, '-1', 'max_serial_number')
+        check_minimum_serial(self, "-1", "max_serial_number")
 
     @screenshot
     def test_search_valid_not_after_from(self):
@@ -247,33 +248,29 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'validnotafter_from')
+        self.select("select[name=search_option]", "validnotafter_from")
         search_pkey(self, str(today))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'validnotafter_from')
+        check_option_negative(self, "nonexistent", "validnotafter_from")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'validnotafter_from')
+        check_option_negative(self, "2018-02-30", "validnotafter_from")
 
         # try to search using date beyond
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'validnotafter_from')
+        self.select("select[name=search_option]", "validnotafter_from")
         search_pkey(self, str(today + timedelta(weeks=52 * 30)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search using leading space
-        check_option_negative(self,
-                              ' {}'.format(str(today)),
-                              'validnotafter_from')
+        check_option_negative(self, " {}".format(str(today)), "validnotafter_from")
 
         # try to search trailing space
-        check_option_negative(self,
-                              '{} '.format(str(today)),
-                              'validnotafter_from')
+        check_option_negative(self, "{} ".format(str(today)), "validnotafter_from")
 
     @screenshot
     def test_search_valid_not_after_to(self):
@@ -286,33 +283,29 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'validnotafter_to')
+        self.select("select[name=search_option]", "validnotafter_to")
         search_pkey(self, str(today + timedelta(weeks=52 * 30)))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'validnotafter_to')
+        check_option_negative(self, "nonexistent", "validnotafter_to")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'validnotafter_to')
+        check_option_negative(self, "2018-02-30", "validnotafter_to")
 
         # try to search using date ago
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'validnotafter_to')
+        self.select("select[name=search_option]", "validnotafter_to")
         search_pkey(self, str(today - timedelta(weeks=52 * 10)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search with leading space
-        check_option_negative(self,
-                              ' {}'.format(str(today)),
-                              'validnotafter_to')
+        check_option_negative(self, " {}".format(str(today)), "validnotafter_to")
 
         # try to search with trailing space
-        check_option_negative(self,
-                              '{} '.format(str(today)),
-                              'validnotafter_to')
+        check_option_negative(self, "{} ".format(str(today)), "validnotafter_to")
 
     @screenshot
     def test_search_valid_not_before_from(self):
@@ -325,33 +318,29 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'validnotbefore_from')
+        self.select("select[name=search_option]", "validnotbefore_from")
         search_pkey(self, str(today))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'validnotafter_from')
+        check_option_negative(self, "nonexistent", "validnotafter_from")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'validnotafter_from')
+        check_option_negative(self, "2018-02-30", "validnotafter_from")
 
         # try to search using current beyond
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'validnotbefore_from')
+        self.select("select[name=search_option]", "validnotbefore_from")
         search_pkey(self, str(today + timedelta(weeks=52 * 30)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search with leading space
-        check_option_negative(self,
-                              ' {}'.format(str(today)),
-                              'validnotafter_from')
+        check_option_negative(self, " {}".format(str(today)), "validnotafter_from")
 
         # try to search with trailing space
-        check_option_negative(self,
-                              '{} '.format(str(today)),
-                              'validnotafter_from')
+        check_option_negative(self, "{} ".format(str(today)), "validnotafter_from")
 
     @screenshot
     def test_search_valid_not_before_to(self):
@@ -364,33 +353,29 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'validnotbefore_to')
+        self.select("select[name=search_option]", "validnotbefore_to")
         search_pkey(self, str(today + timedelta(weeks=52 * 30)))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'validnotafter_from')
+        check_option_negative(self, "nonexistent", "validnotafter_from")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'validnotafter_from')
+        check_option_negative(self, "2018-02-30", "validnotafter_from")
 
         # try to search using date ago
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'validnotbefore_to')
+        self.select("select[name=search_option]", "validnotbefore_to")
         search_pkey(self, str(today - timedelta(weeks=52 * 10)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search with leading space
-        check_option_negative(self,
-                              ' {}'.format(str(today)),
-                              'validnotafter_from')
+        check_option_negative(self, " {}".format(str(today)), "validnotafter_from")
 
         # try to search with trailing space
-        check_option_negative(self,
-                              '{} '.format(str(today)),
-                              'validnotafter_from')
+        check_option_negative(self, "{} ".format(str(today)), "validnotafter_from")
 
     @screenshot
     def test_search_issued_on_from(self):
@@ -403,29 +388,29 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'issuedon_from')
+        self.select("select[name=search_option]", "issuedon_from")
         search_pkey(self, str(today))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'issuedon_from')
+        check_option_negative(self, "nonexistent", "issuedon_from")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'issuedon_from')
+        check_option_negative(self, "2018-02-30", "issuedon_from")
 
         # try to search using date beyond
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'issuedon_from')
+        self.select("select[name=search_option]", "issuedon_from")
         search_pkey(self, str(today + timedelta(weeks=52 * 30)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search with leading space
-        check_option_negative(self, ' {}'.format(str(today)), 'issuedon_from')
+        check_option_negative(self, " {}".format(str(today)), "issuedon_from")
 
         # try to search with trailing space
-        check_option_negative(self, '{} '.format(str(today)), 'issuedon_from')
+        check_option_negative(self, "{} ".format(str(today)), "issuedon_from")
 
     @screenshot
     def test_search_issued_on_to(self):
@@ -438,29 +423,29 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'issuedon_to')
+        self.select("select[name=search_option]", "issuedon_to")
         search_pkey(self, str(today))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'issuedon_to')
+        check_option_negative(self, "nonexistent", "issuedon_to")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'issuedon_to')
+        check_option_negative(self, "2018-02-30", "issuedon_to")
 
         # try to search using date ago
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'issuedon_to')
+        self.select("select[name=search_option]", "issuedon_to")
         search_pkey(self, str(today - timedelta(weeks=52 * 10)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search with leading space
-        check_option_negative(self, ' {}'.format(str(today)), 'issuedon_to')
+        check_option_negative(self, " {}".format(str(today)), "issuedon_to")
 
         # try to search with trailing space
-        check_option_negative(self, '{} '.format(str(today)), 'issuedon_to')
+        check_option_negative(self, "{} ".format(str(today)), "issuedon_to")
 
     @screenshot
     def test_search_revoked_on_from(self):
@@ -473,29 +458,29 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'revokedon_from')
+        self.select("select[name=search_option]", "revokedon_from")
         search_pkey(self, str(today))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'revokedon_from')
+        check_option_negative(self, "nonexistent", "revokedon_from")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'revokedon_from')
+        check_option_negative(self, "2018-02-30", "revokedon_from")
 
         # try to search using date beyond
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'revokedon_from')
+        self.select("select[name=search_option]", "revokedon_from")
         search_pkey(self, str(today + timedelta(weeks=52 * 30)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search with leading space
-        check_option_negative(self, ' {}'.format(str(today)), 'revokedon_from')
+        check_option_negative(self, " {}".format(str(today)), "revokedon_from")
 
         # try to search with trailing space
-        check_option_negative(self, '{} '.format(str(today)), 'revokedon_from')
+        check_option_negative(self, "{} ".format(str(today)), "revokedon_from")
 
     @screenshot
     def test_search_revoked_on_to(self):
@@ -508,26 +493,26 @@ class test_cert(UI_driver):
         # revoke new certificate
         self._add_and_revoke_cert()
 
-        self.select('select[name=search_option]', 'revokedon_to')
+        self.select("select[name=search_option]", "revokedon_to")
         search_pkey(self, str(today))
         rows = self.get_rows()
         assert len(rows) != 0
 
         # try to search with string
-        check_option_negative(self, 'nonexistent', 'revokedon_to')
+        check_option_negative(self, "nonexistent", "revokedon_to")
 
         # try to search using invalid date
-        check_option_negative(self, '2018-02-30', 'revokedon_to')
+        check_option_negative(self, "2018-02-30", "revokedon_to")
 
         # try to search using date ago
         self.navigate_to_entity(ENTITY)
-        self.select('select[name=search_option]', 'revokedon_to')
+        self.select("select[name=search_option]", "revokedon_to")
         search_pkey(self, str(today - timedelta(weeks=52 * 10)))
         rows = self.get_rows()
         assert len(rows) == 0
 
         # try to search with leading space
-        check_option_negative(self, ' {}'.format(str(today)), 'revokedon_to')
+        check_option_negative(self, " {}".format(str(today)), "revokedon_to")
 
         # try to search with trailing space
-        check_option_negative(self, '{} '.format(str(today)), 'revokedon_to')
+        check_option_negative(self, "{} ".format(str(today)), "revokedon_to")

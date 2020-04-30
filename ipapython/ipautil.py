@@ -63,16 +63,12 @@ logger = logging.getLogger(__name__)
 TMP_PWD_ENTROPY_BITS = 128
 
 
-PROTOCOL_NAMES = {
-    socket.SOCK_STREAM: 'tcp',
-    socket.SOCK_DGRAM: 'udp'
-}
+PROTOCOL_NAMES = {socket.SOCK_STREAM: "tcp", socket.SOCK_DGRAM: "udp"}
 
 InterfaceDetails = collections.namedtuple(
-    'InterfaceDetails', [
-        'name',  # interface name
-        'ifnet'  # network details of interface
-    ])
+    "InterfaceDetails",
+    ["name", "ifnet"],  # interface name  # network details of interface
+)
 
 
 class UnsafeIPAddress(netaddr.IPAddress):
@@ -86,20 +82,19 @@ class UnsafeIPAddress(netaddr.IPAddress):
     def __init__(self, addr):
         if isinstance(addr, UnsafeIPAddress):
             self._net = addr._net
-            super(UnsafeIPAddress, self).__init__(addr,
-                                                  flags=self.netaddr_ip_flags)
+            super(UnsafeIPAddress, self).__init__(addr, flags=self.netaddr_ip_flags)
             return
 
         elif isinstance(addr, netaddr.IPAddress):
             self._net = None  # no information about netmask
-            super(UnsafeIPAddress, self).__init__(addr,
-                                                  flags=self.netaddr_ip_flags)
+            super(UnsafeIPAddress, self).__init__(addr, flags=self.netaddr_ip_flags)
             return
 
         elif isinstance(addr, netaddr.IPNetwork):
             self._net = addr
-            super(UnsafeIPAddress, self).__init__(self._net.ip,
-                                                  flags=self.netaddr_ip_flags)
+            super(UnsafeIPAddress, self).__init__(
+                self._net.ip, flags=self.netaddr_ip_flags
+            )
             return
 
         # option of last resort: parse it as string
@@ -112,8 +107,8 @@ class UnsafeIPAddress(netaddr.IPAddress):
                 # netaddr.IPAddress doesn't handle zone indices in textual
                 # IPv6 addresses. Try removing zone index and parse the
                 # address again.
-                addr, sep, _foo = addr.partition('%')
-                if sep != '%':
+                addr, sep, _foo = addr.partition("%")
+                if sep != "%":
                     raise
                 addr = netaddr.IPAddress(addr, flags=self.netaddr_ip_flags)
                 if addr.version != 6:
@@ -121,19 +116,18 @@ class UnsafeIPAddress(netaddr.IPAddress):
         except ValueError:
             self._net = netaddr.IPNetwork(addr, flags=self.netaddr_ip_flags)
             addr = self._net.ip
-        super(UnsafeIPAddress, self).__init__(addr,
-                                              flags=self.netaddr_ip_flags)
+        super(UnsafeIPAddress, self).__init__(addr, flags=self.netaddr_ip_flags)
 
     def __getstate__(self):
         state = {
-            '_net': self._net,
-            'super_state': super(UnsafeIPAddress, self).__getstate__(),
+            "_net": self._net,
+            "super_state": super(UnsafeIPAddress, self).__getstate__(),
         }
         return state
 
     def __setstate__(self, state):
-        super(UnsafeIPAddress, self).__setstate__(state['super_state'])
-        self._net = state['_net']
+        super(UnsafeIPAddress, self).__setstate__(state["super_state"])
+        self._net = state["_net"]
 
 
 class CheckedIPAddress(UnsafeIPAddress):
@@ -141,8 +135,10 @@ class CheckedIPAddress(UnsafeIPAddress):
 
     Reserved or link-local addresses are never accepted.
     """
-    def __init__(self, addr, parse_netmask=True,
-                 allow_loopback=False, allow_multicast=False):
+
+    def __init__(
+        self, addr, parse_netmask=True, allow_loopback=False, allow_multicast=False
+    ):
         try:
             super(CheckedIPAddress, self).__init__(addr)
         except netaddr.core.AddrFormatError as e:
@@ -154,43 +150,42 @@ class CheckedIPAddress(UnsafeIPAddress):
 
         if not parse_netmask and self._net:
             raise ValueError(
-                "netmask and prefix length not allowed here: {}".format(addr))
+                "netmask and prefix length not allowed here: {}".format(addr)
+            )
 
         if self.version not in (4, 6):
             raise ValueError("unsupported IP version {}".format(self.version))
 
         if not allow_loopback and self.is_loopback():
             raise ValueError("cannot use loopback IP address {}".format(addr))
-        if (not self.is_loopback() and self.is_reserved()) \
-                or self in netaddr.ip.IPV4_6TO4:
-            raise ValueError(
-                "cannot use IANA reserved IP address {}".format(addr))
+        if (
+            not self.is_loopback() and self.is_reserved()
+        ) or self in netaddr.ip.IPV4_6TO4:
+            raise ValueError("cannot use IANA reserved IP address {}".format(addr))
 
         if self.is_link_local():
-            raise ValueError(
-                "cannot use link-local IP address {}".format(addr))
+            raise ValueError("cannot use link-local IP address {}".format(addr))
         if not allow_multicast and self.is_multicast():
             raise ValueError("cannot use multicast IP address {}".format(addr))
 
         if self._net is None:
             if self.version == 4:
-                self._net = netaddr.IPNetwork(
-                    netaddr.cidr_abbrev_to_verbose(str(self)))
+                self._net = netaddr.IPNetwork(netaddr.cidr_abbrev_to_verbose(str(self)))
             elif self.version == 6:
-                self._net = netaddr.IPNetwork(str(self) + '/64')
+                self._net = netaddr.IPNetwork(str(self) + "/64")
 
         self.prefixlen = self._net.prefixlen
 
     def __getstate__(self):
         state = {
-            'prefixlen': self.prefixlen,
-            'super_state': super(CheckedIPAddress, self).__getstate__(),
+            "prefixlen": self.prefixlen,
+            "super_state": super(CheckedIPAddress, self).__getstate__(),
         }
         return state
 
     def __setstate__(self, state):
-        super(CheckedIPAddress, self).__setstate__(state['super_state'])
-        self.prefixlen = state['prefixlen']
+        super(CheckedIPAddress, self).__setstate__(state["super_state"])
+        self.prefixlen = state["prefixlen"]
 
     def is_network_addr(self):
         return self == self._net.network
@@ -211,29 +206,26 @@ class CheckedIPAddress(UnsafeIPAddress):
         elif self.version == 6:
             family = netifaces.AF_INET6
         else:
-            raise ValueError(
-                "Unsupported address family ({})".format(self.version)
-            )
+            raise ValueError("Unsupported address family ({})".format(self.version))
 
         for interface in netifaces.interfaces():
             for ifdata in netifaces.ifaddresses(interface).get(family, []):
 
                 # link-local addresses contain '%suffix' that causes parse
                 # errors in IPNetwork
-                ifaddr = ifdata['addr'].split(u'%', 1)[0]
+                ifaddr = ifdata["addr"].split(u"%", 1)[0]
 
                 # newer versions of netifaces provide IPv6 netmask in format
                 # 'ffff:ffff:ffff:ffff::/64'. We have to split and use prefix
                 # or the netmask with older versions
-                ifmask = ifdata['netmask'].split(u'/')[-1]
+                ifmask = ifdata["netmask"].split(u"/")[-1]
 
-                ifaddrmask = '{addr}/{netmask}'.format(
-                    addr=ifaddr,
-                    netmask=ifmask
-                )
+                ifaddrmask = "{addr}/{netmask}".format(addr=ifaddr, netmask=ifmask)
                 logger.debug(
                     "Testing local IP address: %s (interface: %s)",
-                    ifaddrmask, interface)
+                    ifaddrmask,
+                    interface,
+                )
 
                 ifnet = netaddr.IPNetwork(ifaddrmask)
 
@@ -257,22 +249,27 @@ class CheckedIPAddressLoopback(CheckedIPAddress):
     possibility to use a loopback IP.
     Reserved or link-local addresses are never accepted.
     """
+
     def __init__(self, addr, parse_netmask=True, allow_multicast=False):
 
         super(CheckedIPAddressLoopback, self).__init__(
-                addr, parse_netmask=parse_netmask,
-                allow_multicast=allow_multicast,
-                allow_loopback=True)
+            addr,
+            parse_netmask=parse_netmask,
+            allow_multicast=allow_multicast,
+            allow_loopback=True,
+        )
 
         if self.is_loopback():
             # print is being used instead of a logger, because at this
             # moment, in execution process, there is no logger configured
-            print("WARNING: You are using a loopback IP: {}".format(addr),
-                  file=sys.stderr)
+            print(
+                "WARNING: You are using a loopback IP: {}".format(addr), file=sys.stderr
+            )
 
 
 def valid_ip(addr):
     return netaddr.valid_ipv4(addr) or netaddr.valid_ipv6(addr)
+
 
 def format_netloc(host, port=None):
     """
@@ -284,25 +281,28 @@ def format_netloc(host, port=None):
     host = str(host)
     try:
         socket.inet_pton(socket.AF_INET6, host)
-        host = '[%s]' % host
+        host = "[%s]" % host
     except socket.error:
         pass
     if port is None:
         return host
     else:
-        return '%s:%s' % (host, str(port))
+        return "%s:%s" % (host, str(port))
+
 
 def realm_to_suffix(realm_name):
-    'Convert a kerberos realm to a IPA suffix.'
+    "Convert a kerberos realm to a IPA suffix."
     s = realm_name.split(".")
-    suffix_dn = DN(*[('dc', x.lower()) for x in s])
+    suffix_dn = DN(*[("dc", x.lower()) for x in s])
     return suffix_dn
 
+
 def suffix_to_realm(suffix_dn):
-    'Convert a IPA suffix to a kerberos realm.'
+    "Convert a IPA suffix to a kerberos realm."
     assert isinstance(suffix_dn, DN)
-    realm = '.'.join([x.value for x in suffix_dn])
+    realm = ".".join([x.value for x in suffix_dn])
     return realm
+
 
 def template_str(txt, vars):
     val = string.Template(txt).substitute(vars)
@@ -310,25 +310,27 @@ def template_str(txt, vars):
     # eval() is a special string one can insert into a template to have the
     # Python interpreter evaluate the string. This is intended to allow
     # math to be performed in templates.
-    pattern = re.compile(r'(eval\s*\(([^()]*)\))')
+    pattern = re.compile(r"(eval\s*\(([^()]*)\))")
     val = pattern.sub(lambda x: str(eval(x.group(2))), val)
 
     return val
+
 
 def template_file(infilename, vars):
     """Read a file and perform template substitutions"""
     with open(infilename) as f:
         return template_str(f.read(), vars)
 
+
 def copy_template_file(infilename, outfilename, vars):
     """Copy a file, performing template substitutions"""
     txt = template_file(infilename, vars)
-    with open(outfilename, 'w') as file:
+    with open(outfilename, "w") as file:
         file.write(txt)
 
 
 def write_tmp_file(txt):
-    fd = tempfile.NamedTemporaryFile('w+')
+    fd = tempfile.NamedTemporaryFile("w+")
     fd.write(txt)
     fd.flush()
 
@@ -360,8 +362,9 @@ def shell_quote(string):
         return b"'" + string.replace(b"'", b"'\\''") + b"'"
 
 
-class _RunResult(collections.namedtuple('_RunResult',
-                                        'output error_output returncode')):
+class _RunResult(
+    collections.namedtuple("_RunResult", "output error_output returncode")
+):
     """Result of ipautil.run"""
 
 
@@ -370,29 +373,43 @@ class CalledProcessError(subprocess.CalledProcessError):
 
     Hold stderr of failed call and print it in repr() to simplify debugging.
     """
+
     def __init__(self, returncode, cmd, output=None, stderr=None):
         super(CalledProcessError, self).__init__(returncode, cmd, output)
         self.stderr = stderr
 
     def __str__(self):
         args = [
-            self.__class__.__name__, '('
-            'Command {!s} '.format(self.cmd),
-            'returned non-zero exit status {!r}'.format(self.returncode)
+            self.__class__.__name__,
+            "(" "Command {!s} ".format(self.cmd),
+            "returned non-zero exit status {!r}".format(self.returncode),
         ]
         if self.stderr is not None:
-            args.append(': {!r}'.format(self.stderr))
-        args.append(')')
-        return ''.join(args)
+            args.append(": {!r}".format(self.stderr))
+        args.append(")")
+        return "".join(args)
 
     __repr__ = __str__
 
 
-def run(args, stdin=None, raiseonerr=True, nolog=(), env=None,
-        capture_output=False, skip_output=False, cwd=None,
-        runas=None, suplementary_groups=[],
-        capture_error=False, encoding=None, redirect_output=False,
-        umask=None, nolog_output=False, nolog_error=False):
+def run(
+    args,
+    stdin=None,
+    raiseonerr=True,
+    nolog=(),
+    env=None,
+    capture_output=False,
+    skip_output=False,
+    cwd=None,
+    runas=None,
+    suplementary_groups=[],
+    capture_error=False,
+    encoding=None,
+    redirect_output=False,
+    umask=None,
+    nolog_output=False,
+    nolog_error=False,
+):
     """
     Execute an external command.
 
@@ -464,27 +481,31 @@ def run(args, stdin=None, raiseonerr=True, nolog=(), env=None,
         # would result in every individual character of that string being
         # replaced by XXXXXXXX.
         # This is a sanity check to prevent that.
-        raise ValueError('nolog must be a tuple of strings.')
+        raise ValueError("nolog must be a tuple of strings.")
 
     if skip_output and (capture_output or capture_error):
-        raise ValueError('skip_output is incompatible with '
-                         'capture_output or capture_error')
+        raise ValueError(
+            "skip_output is incompatible with " "capture_output or capture_error"
+        )
 
     if redirect_output and (capture_output or capture_error):
-        raise ValueError('redirect_output is incompatible with '
-                         'capture_output or capture_error')
+        raise ValueError(
+            "redirect_output is incompatible with " "capture_output or capture_error"
+        )
 
     if skip_output and redirect_output:
-        raise ValueError('skip_output is incompatible with redirect_output')
+        raise ValueError("skip_output is incompatible with redirect_output")
 
     if env is None:
         # copy default env
         env = copy.deepcopy(os.environ)
-        env["PATH"] = "/bin:/sbin:/usr/kerberos/bin:/usr/kerberos/sbin:/usr/bin:/usr/sbin"
+        env[
+            "PATH"
+        ] = "/bin:/sbin:/usr/kerberos/bin:/usr/kerberos/sbin:/usr/bin:/usr/sbin"
     if stdin:
         p_in = subprocess.PIPE
     if skip_output:
-        p_out = p_err = open(os.devnull, 'w')
+        p_out = p_err = open(os.devnull, "w")
     elif redirect_output:
         p_out = sys.stdout
         p_err = sys.stderr
@@ -499,8 +520,8 @@ def run(args, stdin=None, raiseonerr=True, nolog=(), env=None,
         stdin = stdin.encode(encoding)
 
     arg_string = nolog_replace(repr(args), nolog)
-    logger.debug('Starting external process')
-    logger.debug('args=%s', arg_string)
+    logger.debug("Starting external process")
+    logger.debug("args=%s", arg_string)
 
     if runas is not None:
         pent = pwd.getpwnam(runas)
@@ -509,11 +530,10 @@ def run(args, stdin=None, raiseonerr=True, nolog=(), env=None,
             grp.getgrnam(sgroup).gr_gid for sgroup in suplementary_groups
         ]
 
-        logger.debug('runas=%s (UID %d, GID %s)', runas,
-                     pent.pw_uid, pent.pw_gid)
+        logger.debug("runas=%s (UID %d, GID %s)", runas, pent.pw_uid, pent.pw_gid)
         if suplementary_groups:
             for group, gid in zip(suplementary_groups, suplementary_gids):
-                logger.debug('suplementary_group=%s (GID %d)', group, gid)
+                logger.debug("suplementary_group=%s (GID %d)", group, gid)
 
     if runas is not None or umask is not None:
         # preexec function is not supported in WSGI environment
@@ -525,27 +545,35 @@ def run(args, stdin=None, raiseonerr=True, nolog=(), env=None,
 
             if umask is not None:
                 os.umask(umask)
+
     else:
         preexec_fn = None
 
     try:
         # pylint: disable=subprocess-popen-preexec-fn
-        p = subprocess.Popen(args, stdin=p_in, stdout=p_out, stderr=p_err,
-                             close_fds=True, env=env, cwd=cwd,
-                             preexec_fn=preexec_fn)
+        p = subprocess.Popen(
+            args,
+            stdin=p_in,
+            stdout=p_out,
+            stderr=p_err,
+            close_fds=True,
+            env=env,
+            cwd=cwd,
+            preexec_fn=preexec_fn,
+        )
         stdout, stderr = p.communicate(stdin)
     except KeyboardInterrupt:
-        logger.debug('Process interrupted')
+        logger.debug("Process interrupted")
         p.wait()
         raise
     except BaseException:
-        logger.debug('Process execution failed')
+        logger.debug("Process execution failed")
         raise
     finally:
         if skip_output:
-            p_out.close()   # pylint: disable=E1103
+            p_out.close()  # pylint: disable=E1103
 
-    logger.debug('Process finished, return code=%s', p.returncode)
+    logger.debug("Process finished, return code=%s", p.returncode)
 
     # The command and its output may include passwords that we don't want
     # to log. Replace those.
@@ -554,28 +582,26 @@ def run(args, stdin=None, raiseonerr=True, nolog=(), env=None,
         error_log = None
     else:
         if six.PY3:
-            output_log = stdout.decode(locale.getpreferredencoding(),
-                                       errors='replace')
+            output_log = stdout.decode(locale.getpreferredencoding(), errors="replace")
         else:
             output_log = stdout
 
         if six.PY3:
-            error_log = stderr.decode(locale.getpreferredencoding(),
-                                      errors='replace')
+            error_log = stderr.decode(locale.getpreferredencoding(), errors="replace")
         else:
             error_log = stderr
 
         output_log = nolog_replace(output_log, nolog)
         if nolog_output:
-            logger.debug('stdout=<REDACTED>')
+            logger.debug("stdout=<REDACTED>")
         else:
-            logger.debug('stdout=%s', output_log)
+            logger.debug("stdout=%s", output_log)
 
         error_log = nolog_replace(error_log, nolog)
         if nolog_error:
-            logger.debug('stderr=<REDACTED>')
+            logger.debug("stderr=<REDACTED>")
         else:
-            logger.debug('stderr=%s', error_log)
+            logger.debug("stderr=%s", error_log)
 
     if capture_output:
         if six.PY2:
@@ -594,9 +620,7 @@ def run(args, stdin=None, raiseonerr=True, nolog=(), env=None,
         error_output = None
 
     if p.returncode != 0 and raiseonerr:
-        raise CalledProcessError(
-            p.returncode, arg_string, output_log, error_log
-        )
+        raise CalledProcessError(p.returncode, arg_string, output_log, error_log)
 
     result = _RunResult(output, error_output, p.returncode)
     result.raw_output = stdout
@@ -615,7 +639,7 @@ def nolog_replace(string, nolog):
         quoted = urllib.parse.quote(value)
         shquoted = shell_quote(value)
         for nolog_value in (shquoted, value, quoted):
-            string = string.replace(nolog_value, 'XXXXXXXX')
+            string = string.replace(nolog_value, "XXXXXXXX")
     return string
 
 
@@ -664,7 +688,7 @@ class CIDict(dict):
         lower_key = key.lower()
         if seen_keys is not None:
             if lower_key in seen_keys:
-                raise ValueError('Duplicate key in update: %s' % key)
+                raise ValueError("Duplicate key in update: %s" % key)
             seen_keys.add(lower_key)
         self._keys[lower_key] = key
         return super(CIDict, self).__setitem__(lower_key, value)
@@ -699,6 +723,7 @@ class CIDict(dict):
         return super(CIDict, self).__contains__(key.lower())
 
     if six.PY2:
+
         def has_key(self, key):
             # pylint: disable=no-member
             return super(CIDict, self).has_key(key.lower())
@@ -773,19 +798,20 @@ class CIDict(dict):
         return super(CIDict, self).clear()
 
     def viewitems(self):
-        raise NotImplementedError('CIDict.viewitems is not implemented')
+        raise NotImplementedError("CIDict.viewitems is not implemented")
 
     def viewkeys(self):
-        raise NotImplementedError('CIDict.viewkeys is not implemented')
+        raise NotImplementedError("CIDict.viewkeys is not implemented")
 
     def viewvvalues(self):
-        raise NotImplementedError('CIDict.viewvvalues is not implemented')
+        raise NotImplementedError("CIDict.viewvvalues is not implemented")
 
 
 class GeneralizedTimeZone(datetime.tzinfo):
     """This class is a basic timezone wrapper for the offset specified
        in a Generalized Time.  It is dst-ignorant."""
-    def __init__(self,offsetstr="Z"):
+
+    def __init__(self, offsetstr="Z"):
         super(GeneralizedTimeZone, self).__init__()
 
         self.name = offsetstr
@@ -796,10 +822,10 @@ class GeneralizedTimeZone(datetime.tzinfo):
             self.houroffset = 0
             self.minoffset = 0
         else:
-            if (len(offsetstr) >= 3) and re.match(r'[-+]\d\d', offsetstr):
+            if (len(offsetstr) >= 3) and re.match(r"[-+]\d\d", offsetstr):
                 self.houroffset = int(offsetstr[0:3])
                 offsetstr = offsetstr[3:]
-            if (len(offsetstr) >= 2) and re.match(r'\d\d', offsetstr):
+            if (len(offsetstr) >= 2) and re.match(r"\d\d", offsetstr):
                 self.minoffset = int(offsetstr[0:2])
                 offsetstr = offsetstr[2:]
             if len(offsetstr) > 0:
@@ -838,41 +864,41 @@ def parse_generalized_time(timestr):
         hour = min = sec = msec = 0
         tzone = None
 
-        if (len(time) >= 2) and re.match(r'\d', time[0]):
+        if (len(time) >= 2) and re.match(r"\d", time[0]):
             hour = int(time[:2])
             time = time[2:]
             if len(time) >= 2 and (time[0] == "," or time[0] == "."):
                 hour_fraction = "."
                 time = time[1:]
-                while (len(time) > 0) and re.match(r'\d', time[0]):
+                while (len(time) > 0) and re.match(r"\d", time[0]):
                     hour_fraction += time[0]
                     time = time[1:]
                 total_secs = int(float(hour_fraction) * 3600)
                 min, sec = divmod(total_secs, 60)
 
-        if (len(time) >= 2) and re.match(r'\d', time[0]):
+        if (len(time) >= 2) and re.match(r"\d", time[0]):
             min = int(time[:2])
             time = time[2:]
             if len(time) >= 2 and (time[0] == "," or time[0] == "."):
                 min_fraction = "."
                 time = time[1:]
-                while (len(time) > 0) and re.match(r'\d', time[0]):
+                while (len(time) > 0) and re.match(r"\d", time[0]):
                     min_fraction += time[0]
                     time = time[1:]
                 sec = int(float(min_fraction) * 60)
 
-        if (len(time) >= 2) and re.match(r'\d', time[0]):
+        if (len(time) >= 2) and re.match(r"\d", time[0]):
             sec = int(time[:2])
             time = time[2:]
             if len(time) >= 2 and (time[0] == "," or time[0] == "."):
                 sec_fraction = "."
                 time = time[1:]
-                while (len(time) > 0) and re.match(r'\d', time[0]):
+                while (len(time) > 0) and re.match(r"\d", time[0]):
                     sec_fraction += time[0]
                     time = time[1:]
                 msec = int(float(sec_fraction) * 1000000)
 
-        if (len(time) > 0):
+        if len(time) > 0:
             tzone = GeneralizedTimeZone(time)
 
         return datetime.datetime(year, month, day, hour, min, sec, msec, tzone)
@@ -881,8 +907,9 @@ def parse_generalized_time(timestr):
         return None
 
 
-def ipa_generate_password(entropy_bits=256, uppercase=1, lowercase=1, digits=1,
-                          special=1, min_len=0):
+def ipa_generate_password(
+    entropy_bits=256, uppercase=1, lowercase=1, digits=1, special=1, min_len=0
+):
     """
     Generate token containing at least `entropy_bits` bits and with the given
     character restraints.
@@ -903,70 +930,62 @@ def ipa_generate_password(entropy_bits=256, uppercase=1, lowercase=1, digits=1,
     At least 3 upper and 3 lower case ASCII chars, may contain digits,
     no special chars.
     """
-    special_chars = '!$%&()*+,-./:;<>?@[]^_{|}~'
+    special_chars = "!$%&()*+,-./:;<>?@[]^_{|}~"
     pwd_charsets = {
-        'uppercase': {
-            'chars': string.ascii_uppercase,
-            'entropy': math.log(len(string.ascii_uppercase), 2)
+        "uppercase": {
+            "chars": string.ascii_uppercase,
+            "entropy": math.log(len(string.ascii_uppercase), 2),
         },
-        'lowercase': {
-            'chars': string.ascii_lowercase,
-            'entropy': math.log(len(string.ascii_lowercase), 2)
+        "lowercase": {
+            "chars": string.ascii_lowercase,
+            "entropy": math.log(len(string.ascii_lowercase), 2),
         },
-        'digits': {
-            'chars': string.digits,
-            'entropy': math.log(len(string.digits), 2)
-        },
-        'special': {
-            'chars': special_chars,
-            'entropy': math.log(len(special_chars), 2)
-        },
+        "digits": {"chars": string.digits, "entropy": math.log(len(string.digits), 2)},
+        "special": {"chars": special_chars, "entropy": math.log(len(special_chars), 2)},
     }
     req_classes = dict(
-        uppercase=uppercase,
-        lowercase=lowercase,
-        digits=digits,
-        special=special
+        uppercase=uppercase, lowercase=lowercase, digits=digits, special=special
     )
     # 'all' class is used when adding entropy to too-short tokens
     # it contains characters from all allowed classes
-    pwd_charsets['all'] = {
-        'chars': ''.join([
-            charclass['chars'] for charclass_name, charclass
-            in pwd_charsets.items()
-            if req_classes[charclass_name] is not None
-        ])
+    pwd_charsets["all"] = {
+        "chars": "".join(
+            [
+                charclass["chars"]
+                for charclass_name, charclass in pwd_charsets.items()
+                if req_classes[charclass_name] is not None
+            ]
+        )
     }
-    pwd_charsets['all']['entropy'] = math.log(
-            len(pwd_charsets['all']['chars']), 2)
+    pwd_charsets["all"]["entropy"] = math.log(len(pwd_charsets["all"]["chars"]), 2)
     rnd = random.SystemRandom()
 
     todo_entropy = entropy_bits
-    password = u''
+    password = u""
     # Generate required character classes:
     # The order of generated characters is fixed to comply with check in
     # NSS function sftk_newPinCheck() in nss/lib/softoken/fipstokn.c.
-    for charclass_name in ['digits', 'uppercase', 'lowercase', 'special']:
+    for charclass_name in ["digits", "uppercase", "lowercase", "special"]:
         charclass = pwd_charsets[charclass_name]
         todo_characters = req_classes[charclass_name]
         if todo_characters is None:
             continue
         while todo_characters > 0:
-            password += rnd.choice(charclass['chars'])
-            todo_entropy -= charclass['entropy']
+            password += rnd.choice(charclass["chars"])
+            todo_entropy -= charclass["entropy"]
             todo_characters -= 1
 
     # required character classes do not provide sufficient entropy
     # or does not fulfill minimal length constraint
-    allchars = pwd_charsets['all']
+    allchars = pwd_charsets["all"]
     while todo_entropy > 0 or len(password) < min_len:
-        password += rnd.choice(allchars['chars'])
-        todo_entropy -= allchars['entropy']
+        password += rnd.choice(allchars["chars"])
+        todo_entropy -= allchars["entropy"]
 
     return password
 
 
-def user_input(prompt, default = None, allow_empty = True):
+def user_input(prompt, default=None, allow_empty=True):
     if default is None:
         while True:
             try:
@@ -975,7 +994,7 @@ def user_input(prompt, default = None, allow_empty = True):
                     return ret.strip()
             except EOFError:
                 if allow_empty:
-                    return ''
+                    return ""
                 raise RuntimeError("Failed to get user input")
 
     if isinstance(default, str):
@@ -1022,9 +1041,14 @@ def user_input(prompt, default = None, allow_empty = True):
     return None
 
 
-def host_port_open(host, port, socket_type=socket.SOCK_STREAM,
-                   socket_timeout=None, log_errors=False,
-                   log_level=logging.DEBUG):
+def host_port_open(
+    host,
+    port,
+    socket_type=socket.SOCK_STREAM,
+    socket_timeout=None,
+    log_errors=False,
+    log_level=logging.DEBUG,
+):
     """
     host: either hostname or IP address;
           if hostname is provided, port MUST be open on ALL resolved IPs
@@ -1046,15 +1070,16 @@ def host_port_open(host, port, socket_type=socket.SOCK_STREAM,
             s.connect(sa)
 
             if socket_type == socket.SOCK_DGRAM:
-                s.send(b'')
+                s.send(b"")
                 s.recv(512)
         except socket.error:
             port_open = False
             if log_errors:
-                msg = ('Failed to connect to port %(port)s %(proto)s on '
-                       '%(addr)s' % dict(port=port,
-                                         proto=PROTOCOL_NAMES[socket_type],
-                                         addr=sa[0]))
+                msg = (
+                    "Failed to connect to port %(port)s %(proto)s on "
+                    "%(addr)s"
+                    % dict(port=port, proto=PROTOCOL_NAMES[socket_type], addr=sa[0])
+                )
                 logger.log(log_level, msg)
         finally:
             if s is not None:
@@ -1072,23 +1097,20 @@ def check_port_bindable(port, socket_type=socket.SOCK_STREAM):
     Returns True if the port is free, False otherwise
     """
     if socket_type == socket.SOCK_STREAM:
-        proto = 'TCP'
+        proto = "TCP"
     elif socket_type == socket.SOCK_DGRAM:
-        proto = 'UDP'
+        proto = "UDP"
     else:
         raise ValueError(socket_type)
 
     # Detect dual stack or IPv4 single stack
     try:
         s = socket.socket(socket.AF_INET6, socket_type)
-        anyaddr = '::'
-        logger.debug(
-            "check_port_bindable: Checking IPv4/IPv6 dual stack and %s",
-            proto
-        )
+        anyaddr = "::"
+        logger.debug("check_port_bindable: Checking IPv4/IPv6 dual stack and %s", proto)
     except socket.error:
         s = socket.socket(socket.AF_INET, socket_type)
-        anyaddr = ''
+        anyaddr = ""
         logger.debug("check_port_bindable: Checking IPv4 only and %s", proto)
 
     # Attempt to bind
@@ -1099,14 +1121,11 @@ def check_port_bindable(port, socket_type=socket.SOCK_STREAM):
         s.bind((anyaddr, port))
     except socket.error as e:
         logger.debug(
-            "check_port_bindable: failed to bind to port %i/%s: %s",
-            port, proto, e
+            "check_port_bindable: failed to bind to port %i/%s: %s", port, proto, e
         )
         return False
     else:
-        logger.debug(
-            "check_port_bindable: bind success: %i/%s", port, proto
-        )
+        logger.debug("check_port_bindable: bind success: %i/%s", port, proto)
         return True
     finally:
         s.close()
@@ -1128,8 +1147,9 @@ def reverse_record_exists(ip_address):
     return True
 
 
-def config_replace_variables(filepath, replacevars=dict(), appendvars=dict(),
-                             removevars=None):
+def config_replace_variables(
+    filepath, replacevars=dict(), appendvars=dict(), removevars=None
+):
     """
     Take a key=value based configuration file, and write new version
     with certain values replaced, appended, or removed.
@@ -1149,25 +1169,28 @@ def config_replace_variables(filepath, replacevars=dict(), appendvars=dict(),
     One have to run restore_context(filepath) afterwards or
     security context of the file will not be correct after modification
     """
-    pattern = re.compile(r'''
+    pattern = re.compile(
+        r"""
 (^
                         \s*
         (?P<option>     [^\#;]+?)
                         (\s*=\s*)
         (?P<value>      .+?)?
                         (\s*((\#|;).*)?)?
-$)''', re.VERBOSE)
+$)""",
+        re.VERBOSE,
+    )
     orig_stat = os.stat(filepath)
     old_values = dict()
     temp_filename = None
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as new_config:
         temp_filename = new_config.name
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             for line in f:
                 new_line = line
                 m = pattern.match(line)
                 if m:
-                    option, value = m.group('option', 'value')
+                    option, value = m.group("option", "value")
                     if option is not None:
                         if replacevars and option in replacevars:
                             # replace value completely
@@ -1178,7 +1201,11 @@ $)''', re.VERBOSE)
                             if not value:
                                 new_line = u"%s=%s\n" % (option, appendvars[option])
                             elif value.find(appendvars[option]) == -1:
-                                new_line = u"%s=%s %s\n" % (option, value, appendvars[option])
+                                new_line = u"%s=%s %s\n" % (
+                                    option,
+                                    value,
+                                    appendvars[option],
+                                )
                             old_values[option] = value
                         if removevars and option in removevars:
                             old_values[option] = value
@@ -1189,11 +1216,11 @@ $)''', re.VERBOSE)
         new_vars = replacevars.copy()
         new_vars.update(appendvars)
         newvars_view = set(new_vars.keys()) - set(old_values.keys())
-        append_view = (set(appendvars.keys()) - newvars_view)
+        append_view = set(appendvars.keys()) - newvars_view
         for item in newvars_view:
-            new_config.write("%s=%s\n" % (item,new_vars[item]))
+            new_config.write("%s=%s\n" % (item, new_vars[item]))
         for item in append_view:
-            new_config.write("%s=%s\n" % (item,appendvars[item]))
+            new_config.write("%s=%s\n" % (item, appendvars[item]))
         new_config.flush()
         # Make sure the resulting file is readable by others before installing it
         os.fchmod(new_config.fileno(), orig_stat.st_mode)
@@ -1205,6 +1232,7 @@ $)''', re.VERBOSE)
     install_file(temp_filename, filepath)
 
     return old_values
+
 
 def inifile_replace_variables(filepath, section, replacevars=dict(), appendvars=dict()):
     """
@@ -1224,7 +1252,8 @@ def inifile_replace_variables(filepath, section, replacevars=dict(), appendvars=
     One have to run restore_context(filepath) afterwards or
     security context of the file will not be correct after modification
     """
-    pattern = re.compile(r'''
+    pattern = re.compile(
+        r"""
 (^
                         \[
         (?P<section>    .+) \]
@@ -1235,24 +1264,27 @@ $)|(^
                         (\s*=\s*)
         (?P<value>      .+?)?
                         (\s*((\#|;).*)?)?
-$)''', re.VERBOSE)
+$)""",
+        re.VERBOSE,
+    )
+
     def add_options(config, replacevars, appendvars, oldvars):
         # add all options from replacevars and appendvars that were not found in the file
         new_vars = replacevars.copy()
         new_vars.update(appendvars)
         newvars_view = set(new_vars.keys()) - set(oldvars.keys())
-        append_view = (set(appendvars.keys()) - newvars_view)
+        append_view = set(appendvars.keys()) - newvars_view
         for item in newvars_view:
-            config.write("%s=%s\n" % (item,new_vars[item]))
+            config.write("%s=%s\n" % (item, new_vars[item]))
         for item in append_view:
-            config.write("%s=%s\n" % (item,appendvars[item]))
+            config.write("%s=%s\n" % (item, appendvars[item]))
 
     orig_stat = os.stat(filepath)
     old_values = dict()
     temp_filename = None
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as new_config:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as new_config:
         temp_filename = new_config.name
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             in_section = False
             finished = False
             line_idx = 1
@@ -1261,14 +1293,14 @@ $)''', re.VERBOSE)
                 new_line = line
                 m = pattern.match(line)
                 if m:
-                    sect, option, value = m.group('section', 'option', 'value')
+                    sect, option, value = m.group("section", "option", "value")
                     if in_section and sect is not None:
                         # End of the searched section, add remaining options
                         add_options(new_config, replacevars, appendvars, old_values)
                         finished = True
                     if sect is not None:
                         # New section is found, check whether it is the one we are looking for
-                        in_section = (str(sect).lower() == str(section).lower())
+                        in_section = str(sect).lower() == str(section).lower()
                     if option is not None and in_section:
                         # Great, this is an option from the section we are loking for
                         if replacevars and option in replacevars:
@@ -1280,7 +1312,11 @@ $)''', re.VERBOSE)
                             if not value:
                                 new_line = u"%s=%s\n" % (option, appendvars[option])
                             elif value.find(appendvars[option]) == -1:
-                                new_line = u"%s=%s %s\n" % (option, value, appendvars[option])
+                                new_line = u"%s=%s %s\n" % (
+                                    option,
+                                    value,
+                                    appendvars[option],
+                                )
                             old_values[option] = value
                     new_config.write(new_line)
             # We have finished parsing the original file.
@@ -1304,8 +1340,10 @@ $)''', re.VERBOSE)
 
     return old_values
 
+
 def backup_config_and_replace_variables(
-        fstore, filepath, replacevars=dict(), appendvars=dict()):
+    fstore, filepath, replacevars=dict(), appendvars=dict()
+):
     """
     Take a key=value based configuration file, back up it, and
     write new version with certain values replaced or appended
@@ -1339,20 +1377,20 @@ def wait_for_open_ports(host, ports, timeout=0):
     if not isinstance(ports, (tuple, list)):
         ports = [ports]
 
-    logger.debug('wait_for_open_ports: %s %s timeout %d', host, ports, timeout)
+    logger.debug("wait_for_open_ports: %s %s timeout %d", host, ports, timeout)
     op_timeout = time.time() + timeout
 
     for port in ports:
-        logger.debug('waiting for port: %s', port)
+        logger.debug("waiting for port: %s", port)
         log_error = True
         while True:
             port_open = host_port_open(host, port, log_errors=log_error)
             log_error = False  # Log only first err so that the log is readable
 
             if port_open:
-                logger.debug('SUCCESS: port: %s', port)
+                logger.debug("SUCCESS: port: %s", port)
                 break
-            if timeout and time.time() > op_timeout: # timeout exceeded
+            if timeout and time.time() > op_timeout:  # timeout exceeded
                 raise socket.timeout("Timeout exceeded")
             time.sleep(1)
 
@@ -1372,8 +1410,8 @@ def wait_for_open_socket(socket_name, timeout=0):
             s.close()
             break
         except socket.error as e:
-            if e.errno in (2,111):  # 111: Connection refused, 2: File not found
-                if timeout and time.time() > op_timeout: # timeout exceeded
+            if e.errno in (2, 111):  # 111: Connection refused, 2: File not found
+                if timeout and time.time() > op_timeout:  # timeout exceeded
                     raise e
                 time.sleep(1)
             else:
@@ -1381,7 +1419,7 @@ def wait_for_open_socket(socket_name, timeout=0):
 
 
 def dn_attribute_property(private_name):
-    '''
+    """
     Create a property for a dn attribute which assures the attribute
     is a DN or None. If the value is not None the setter converts it to
     a DN. The getter assures it's either None or a DN instance.
@@ -1395,7 +1433,7 @@ def dn_attribute_property(private_name):
 
     Thus the class with have an attriubte called base_dn which can only
     ever be None or a DN instance. The actual value is stored in _base_dn.
-    '''
+    """
 
     def setter(self, value):
         if value is not None:
@@ -1409,6 +1447,7 @@ def dn_attribute_property(private_name):
         return value
 
     return property(getter, setter)
+
 
 def posixify(string):
     """
@@ -1425,35 +1464,36 @@ def posixify(string):
     """
 
     def valid_char(char):
-        return char.isalnum() or char in ('_', '.', '-')
+        return char.isalnum() or char in ("_", ".", "-")
 
     # First replace space characters
-    replaced = string.replace(' ','_')
-    omitted = ''.join(filter(valid_char, replaced))
+    replaced = string.replace(" ", "_")
+    omitted = "".join(filter(valid_char, replaced))
 
     # Leading dash is not allowed
-    return omitted.lstrip('-')
+    return omitted.lstrip("-")
+
 
 @contextmanager
 def private_ccache(path=None):
 
     if path is None:
-        dir_path = tempfile.mkdtemp(prefix='krbcc')
-        path = os.path.join(dir_path, 'ccache')
+        dir_path = tempfile.mkdtemp(prefix="krbcc")
+        path = os.path.join(dir_path, "ccache")
     else:
         dir_path = None
 
-    original_value = os.environ.get('KRB5CCNAME', None)
+    original_value = os.environ.get("KRB5CCNAME", None)
 
-    os.environ['KRB5CCNAME'] = path
+    os.environ["KRB5CCNAME"] = path
 
     try:
         yield path
     finally:
         if original_value is not None:
-            os.environ['KRB5CCNAME'] = original_value
+            os.environ["KRB5CCNAME"] = original_value
         else:
-            os.environ.pop('KRB5CCNAME', None)
+            os.environ.pop("KRB5CCNAME", None)
 
         if os.path.exists(path):
             os.remove(path)
@@ -1465,6 +1505,7 @@ def private_ccache(path=None):
 
 
 if six.PY2:
+
     def fsdecode(value):
         """
         Decode argument using the file system encoding, as returned by
@@ -1475,12 +1516,15 @@ if six.PY2:
         elif isinstance(value, str):
             return value
         else:
-            raise TypeError("expect {0} or {1}, not {2}".format(
-                bytes.__name__,
-                str.__name__,
-                type(value).__name__))
+            raise TypeError(
+                "expect {0} or {1}, not {2}".format(
+                    bytes.__name__, str.__name__, type(value).__name__
+                )
+            )
+
+
 else:
-    fsdecode = os.fsdecode  #pylint: disable=no-member
+    fsdecode = os.fsdecode  # pylint: disable=no-member
 
 
 def unescape_seq(seq, *args):
@@ -1492,7 +1536,7 @@ def unescape_seq(seq, *args):
 
     :returns: tuple of strings with unescaped sequences
     """
-    unescape_re = re.compile(r'\\{}'.format(seq))
+    unescape_re = re.compile(r"\\{}".format(seq))
 
     return tuple(re.sub(unescape_re, seq, a) for a in args)
 
@@ -1507,7 +1551,7 @@ def escape_seq(seq, *args):
     :returns: tuple of strings with escaped sequences
     """
 
-    return tuple(a.replace(seq, u'\\{}'.format(seq)) for a in args)
+    return tuple(a.replace(seq, u"\\{}".format(seq)) for a in args)
 
 
 def decode_json(data):
@@ -1528,35 +1572,35 @@ def decode_json(data):
     def detect_encoding(b):
         bstartswith = b.startswith
         if bstartswith((codecs.BOM_UTF32_BE, codecs.BOM_UTF32_LE)):
-            return 'utf-32'
+            return "utf-32"
         if bstartswith((codecs.BOM_UTF16_BE, codecs.BOM_UTF16_LE)):
-            return 'utf-16'
+            return "utf-16"
         if bstartswith(codecs.BOM_UTF8):
-            return 'utf-8-sig'
+            return "utf-8-sig"
 
         if len(b) >= 4:
             if not b[0]:
                 # 00 00 -- -- - utf-32-be
                 # 00 XX -- -- - utf-16-be
-                return 'utf-16-be' if b[1] else 'utf-32-be'
+                return "utf-16-be" if b[1] else "utf-32-be"
             if not b[1]:
                 # XX 00 00 00 - utf-32-le
                 # XX 00 XX XX - utf-16-le
-                return 'utf-16-le' if b[2] or b[3] else 'utf-32-le'
+                return "utf-16-le" if b[2] or b[3] else "utf-32-le"
         elif len(b) == 2:
             if not b[0]:
                 # 00 XX - utf-16-be
-                return 'utf-16-be'
+                return "utf-16-be"
             if not b[1]:
                 # XX 00 - utf-16-le
-                return 'utf-16-le'
+                return "utf-16-le"
         # default
-        return 'utf-8'
+        return "utf-8"
 
     if isinstance(data, str):
         return data
 
-    return data.decode(detect_encoding(data), 'surrogatepass')
+    return data.decode(detect_encoding(data), "surrogatepass")
 
 
 class APIVersion(tuple):
@@ -1565,16 +1609,17 @@ class APIVersion(tuple):
     The class is used to parse ipapython.version.API_VERSION and plugin
     versions.
     """
+
     __slots__ = ()
 
     def __new__(cls, version):
-        major, dot, minor = version.partition(u'.')
+        major, dot, minor = version.partition(u".")
         major = int(major)
         minor = int(minor) if dot else 0
         return tuple.__new__(cls, (major, minor))
 
     def __str__(self):
-        return '{}.{}'.format(*self)
+        return "{}.{}".format(*self)
 
     def __repr__(self):
         return "<APIVersion('{}.{}')>".format(*self)
@@ -1602,8 +1647,7 @@ def remove_keytab(keytab_path):
         os.remove(keytab_path)
     except OSError as e:
         if e.errno != errno.ENOENT:
-            logger.warning("Failed to remove Kerberos keytab '%s': %s",
-                           keytab_path, e)
+            logger.warning("Failed to remove Kerberos keytab '%s': %s", keytab_path, e)
             logger.warning("You may have to remove it manually")
 
 
@@ -1618,13 +1662,12 @@ def remove_ccache(ccache_path=None, run_as=None):
     kdestroy_cmd = [paths.KDESTROY]
     if ccache_path is not None:
         logger.debug("Ccache path: '%s'", ccache_path)
-        kdestroy_cmd.extend(['-c', ccache_path])
+        kdestroy_cmd.extend(["-c", ccache_path])
 
     try:
         run(kdestroy_cmd, runas=run_as, env={})
     except CalledProcessError as e:
-        logger.warning(
-            "Failed to clear Kerberos credentials cache: %s", e)
+        logger.warning("Failed to clear Kerberos credentials cache: %s", e)
 
 
 def remove_file(filename):
@@ -1634,8 +1677,8 @@ def remove_file(filename):
         os.unlink(filename)
     except Exception as e:
         # ignore missing file
-        if getattr(e, 'errno', None) != errno.ENOENT:
-            logger.error('Error removing %s: %s', filename, str(e))
+        if getattr(e, "errno", None) != errno.ENOENT:
+            logger.error("Error removing %s: %s", filename, str(e))
 
 
 def rmtree(path):
@@ -1646,4 +1689,4 @@ def rmtree(path):
         if os.path.exists(path):
             shutil.rmtree(path)
     except Exception as e:
-        logger.error('Error removing %s: %s', path, str(e))
+        logger.error("Error removing %s: %s", path, str(e))

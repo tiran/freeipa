@@ -69,22 +69,39 @@ def get_cert_nickname(cert):
 
 def install_pem_from_p12(p12_fname, p12_passwd, pem_fname):
     pwd = ipautil.write_tmp_file(p12_passwd)
-    ipautil.run([paths.OPENSSL, "pkcs12", "-nokeys", "-clcerts",
-                 "-in", p12_fname, "-out", pem_fname,
-                 "-passin", "file:" + pwd.name])
+    ipautil.run(
+        [
+            paths.OPENSSL,
+            "pkcs12",
+            "-nokeys",
+            "-clcerts",
+            "-in",
+            p12_fname,
+            "-out",
+            pem_fname,
+            "-passin",
+            "file:" + pwd.name,
+        ]
+    )
 
 
-def install_key_from_p12(
-        p12_fname, p12_passwd, pem_fname, out_passwd_fname=None):
+def install_key_from_p12(p12_fname, p12_passwd, pem_fname, out_passwd_fname=None):
     pwd = ipautil.write_tmp_file(p12_passwd)
     args = [
-        paths.OPENSSL, "pkcs12", "-nocerts",
-        "-in", p12_fname, "-out", pem_fname,
-        "-passin", "file:" + pwd.name]
+        paths.OPENSSL,
+        "pkcs12",
+        "-nocerts",
+        "-in",
+        p12_fname,
+        "-out",
+        pem_fname,
+        "-passin",
+        "file:" + pwd.name,
+    ]
     if out_passwd_fname is not None:
-        args.extend(['-passout', 'file:{}'.format(out_passwd_fname)])
+        args.extend(["-passout", "file:{}".format(out_passwd_fname)])
     else:
-        args.append('-nodes')
+        args.append("-nodes")
 
     ipautil.run(args, umask=0o077)
 
@@ -122,9 +139,8 @@ def is_ipa_issued_cert(api, cert):
     :param cert: The IPACertificate certificiate to test
     """
     cacert_subject = certstore.get_ca_subject(
-        api.Backend.ldap2,
-        api.env.container_ca,
-        api.env.basedn)
+        api.Backend.ldap2, api.env.container_ca, api.env.basedn
+    )
 
     return DN(cert.issuer) == cacert_subject
 
@@ -143,11 +159,22 @@ class CertDB:
       CA certificates into the certificate database.
 
     """
+
     # TODO: Remove all selfsign code
-    def __init__(self, realm, nssdir, fstore=None,
-                 host_name=None, subject_base=None, ca_subject=None,
-                 user=None, group=None, mode=None, create=False,
-                 dbtype='auto'):
+    def __init__(
+        self,
+        realm,
+        nssdir,
+        fstore=None,
+        host_name=None,
+        subject_base=None,
+        ca_subject=None,
+        user=None,
+        group=None,
+        mode=None,
+        create=False,
+        dbtype="auto",
+    ):
         self.nssdb = NSSDatabase(nssdir, dbtype=dbtype)
 
         self.realm = realm
@@ -195,8 +222,8 @@ class CertDB:
         else:
             self.fstore = sysrestore.FileStore(paths.SYSRESTORE)
 
-    ca_subject = ipautil.dn_attribute_property('_ca_subject')
-    subject_base = ipautil.dn_attribute_property('_subject_base')
+    ca_subject = ipautil.dn_attribute_property("_ca_subject")
+    subject_base = ipautil.dn_attribute_property("_subject_base")
 
     # migration changes paths, just forward attribute lookup to nssdb
     @property
@@ -246,7 +273,7 @@ class CertDB:
         if self.reqdir is not None:
             return
 
-        self.reqdir = tempfile.mkdtemp('', 'ipa-', paths.VAR_LIB_IPA)
+        self.reqdir = tempfile.mkdtemp("", "ipa-", paths.VAR_LIB_IPA)
         self.certreq_fname = self.reqdir + "/tmpcertreq"
         self.certder_fname = self.reqdir + "/tmpcert.der"
 
@@ -254,7 +281,7 @@ class CertDB:
         perms = stat.S_IRUSR
         if write:
             perms |= stat.S_IWUSR
-        if hasattr(fname, 'fileno'):
+        if hasattr(fname, "fileno"):
             os.fchown(fname.fileno(), self.uid, self.gid)
             os.fchmod(fname.fileno(), perms)
         else:
@@ -282,8 +309,7 @@ class CertDB:
 
     def create_certdbs(self):
         self.nssdb.create_db(
-            user=self.user, group=self.group, mode=self.mode,
-            backup=True
+            user=self.user, group=self.group, mode=self.mode, backup=True
         )
         self.set_perms(self.passwd_fname, write=True)
 
@@ -324,18 +350,25 @@ class CertDB:
         with open(cacert_fname, "w") as f:
             os.fchmod(f.fileno(), stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
             for root in root_nicknames:
-                result = self.run_certutil(["-L", "-n", root, "-a"],
-                                           capture_output=True)
+                result = self.run_certutil(
+                    ["-L", "-n", root, "-a"], capture_output=True
+                )
                 f.write(result.output)
 
         if create_pkcs12:
             ipautil.backup_file(self.pk12_fname)
-            self.nssdb.run_pk12util([
-                "-o", self.pk12_fname,
-                "-n", self.cacert_name,
-                "-k", self.passwd_fname,
-                "-w", self.passwd_fname,
-            ])
+            self.nssdb.run_pk12util(
+                [
+                    "-o",
+                    self.pk12_fname,
+                    "-n",
+                    self.cacert_name,
+                    "-k",
+                    self.passwd_fname,
+                    "-w",
+                    self.passwd_fname,
+                ]
+            )
             self.set_perms(self.pk12_fname)
 
     def load_cacert(self, cacert_fname, trust_flags):
@@ -371,18 +404,21 @@ class CertDB:
             return None
 
     def track_server_cert(
-            self, nickname, principal,
-            password_file=None, command=None, profile=None):
+        self, nickname, principal, password_file=None, command=None, profile=None
+    ):
         """
         Tell certmonger to track the given certificate nickname.
         """
         try:
             request_id = certmonger.start_tracking(
-                self.secdir, nickname=nickname, pinfile=password_file,
-                post_command=command, profile=profile)
+                self.secdir,
+                nickname=nickname,
+                pinfile=password_file,
+                post_command=command,
+                profile=profile,
+            )
         except RuntimeError as e:
-            logger.error("certmonger failed starting to track certificate: %s",
-                         str(e))
+            logger.error("certmonger failed starting to track certificate: %s", str(e))
             return
 
         cert = self.get_cert_from_db(nickname)
@@ -397,8 +433,7 @@ class CertDB:
         try:
             certmonger.stop_tracking(self.secdir, nickname=nickname)
         except RuntimeError as e:
-            logger.error("certmonger failed to stop tracking certificate: %s",
-                         str(e))
+            logger.error("certmonger failed to stop tracking certificate: %s", str(e))
 
     def create_server_cert(self, nickname, hostname, subject=None):
         """
@@ -410,7 +445,7 @@ class CertDB:
         Returns a certificate in DER format.
         """
         if subject is None:
-            subject=DN(('CN', hostname), self.subject_base)
+            subject = DN(("CN", hostname), self.subject_base)
         self.request_cert(subject, san_dnsnames=[hostname])
         try:
             self.issue_server_cert(self.certreq_fname, self.certder_fname)
@@ -426,23 +461,29 @@ class CertDB:
                 except OSError:
                     pass
 
-    def request_cert(
-            self, subject, certtype="rsa", keysize="2048",
-            san_dnsnames=None):
+    def request_cert(self, subject, certtype="rsa", keysize="2048", san_dnsnames=None):
         assert isinstance(subject, DN)
         self.create_noise_file()
         self.setup_cert_request()
-        args = ["-R", "-s", str(subject),
-                "-o", self.certreq_fname,
-                "-k", certtype,
-                "-g", keysize,
-                "-z", self.noise_fname,
-                "-f", self.passwd_fname,
-                "-a"]
+        args = [
+            "-R",
+            "-s",
+            str(subject),
+            "-o",
+            self.certreq_fname,
+            "-k",
+            certtype,
+            "-g",
+            keysize,
+            "-z",
+            self.noise_fname,
+            "-f",
+            self.passwd_fname,
+            "-a",
+        ]
         if san_dnsnames is not None and len(san_dnsnames) > 0:
-            args += ['-8', ','.join(san_dnsnames)]
-        result = self.run_certutil(args,
-                                   capture_output=True, capture_error=True)
+            args += ["-8", ",".join(san_dnsnames)]
+        result = self.run_certutil(args, capture_output=True, capture_error=True)
         os.remove(self.noise_fname)
         return (result.output, result.error_output)
 
@@ -456,28 +497,33 @@ class CertDB:
             csr = f.read()
 
         # We just want the CSR bits, make sure there is no thing else
-        csr = strip_csr_header(csr).decode('utf8')
+        csr = strip_csr_header(csr).decode("utf8")
 
-        params = {'profileId': dogtag.DEFAULT_PROFILE,
-                'cert_request_type': 'pkcs10',
-                'requestor_name': 'IPA Installer',
-                'cert_request': csr,
-                'xmlOutput': 'true'}
+        params = {
+            "profileId": dogtag.DEFAULT_PROFILE,
+            "cert_request_type": "pkcs10",
+            "requestor_name": "IPA Installer",
+            "cert_request": csr,
+            "xmlOutput": "true",
+        }
 
         # Send the request to the CA
         result = dogtag.https_request(
-            self.host_name, 8443,
+            self.host_name,
+            8443,
             url="/ca/ee/ca/profileSubmitSSLClient",
             cafile=api.env.tls_ca_cert,
             client_certfile=paths.RA_AGENT_PEM,
             client_keyfile=paths.RA_AGENT_KEY,
-            **params)
+            **params
+        )
         http_status, _http_headers, http_body = result
         logger.debug("CA answer: %r", http_body)
 
         if http_status != 200:
             raise CertificateOperationError(
-                error=_('Unable to communicate with CMS (status %d)') % http_status)
+                error=_("Unable to communicate with CMS (status %d)") % http_status
+            )
 
         # The result is an XML blob. Pull the certificate out of that
         doc = xml.dom.minidom.parseString(http_body)
@@ -505,10 +551,17 @@ class CertDB:
         """
         Load a certificate from a PEM file and add minimal trust.
         """
-        args = ["-A", "-n", nickname,
-                "-t", "u,u,u",
-                "-i", cert_fname,
-                "-f", self.passwd_fname]
+        args = [
+            "-A",
+            "-n",
+            nickname,
+            "-t",
+            "u,u,u",
+            "-i",
+            cert_fname,
+            "-f",
+            self.passwd_fname,
+        ]
         self.run_certutil(args)
 
     def delete_cert(self, nickname):
@@ -536,8 +589,10 @@ class CertDB:
 
     def trust_root_cert(self, root_nickname, trust_flags):
         if root_nickname is None:
-            logger.debug("Unable to identify root certificate to trust. "
-                         "Continuing but things are likely to fail.")
+            logger.debug(
+                "Unable to identify root certificate to trust. "
+                "Continuing but things are likely to fail."
+            )
             return
 
         try:
@@ -549,19 +604,24 @@ class CertDB:
         return self.nssdb.find_server_certs()
 
     def import_pkcs12(self, pkcs12_fname, pkcs12_passwd=None):
-        return self.nssdb.import_pkcs12(pkcs12_fname,
-                                        pkcs12_passwd=pkcs12_passwd)
+        return self.nssdb.import_pkcs12(pkcs12_fname, pkcs12_passwd=pkcs12_passwd)
 
     def export_pkcs12(self, pkcs12_fname, pkcs12_pwd_fname, nickname=None):
         if nickname is None:
             nickname = get_ca_nickname(api.env.realm)
 
-        self.nssdb.run_pk12util([
-            "-o", pkcs12_fname,
-            "-n", nickname,
-            "-k", self.passwd_fname,
-            "-w", pkcs12_pwd_fname
-        ])
+        self.nssdb.run_pk12util(
+            [
+                "-o",
+                pkcs12_fname,
+                "-n",
+                nickname,
+                "-k",
+                self.passwd_fname,
+                "-w",
+                pkcs12_pwd_fname,
+            ]
+        )
 
     def create_from_cacert(self):
         """
@@ -592,8 +652,7 @@ class CertDB:
         self.create_certdbs()
         self.load_cacert(cacert_fname, IPA_CA_TRUST_FLAGS)
 
-    def create_from_pkcs12(self, pkcs12_fname, pkcs12_passwd,
-                           ca_file, trust_flags):
+    def create_from_pkcs12(self, pkcs12_fname, pkcs12_passwd, ca_file, trust_flags):
         """Create a new NSS database using the certificates in a PKCS#12 file.
 
            pkcs12_fname: the filename of the PKCS#12 file
@@ -609,25 +668,23 @@ class CertDB:
         self.create_passwd_file()
         self.create_certdbs()
         self.init_from_pkcs12(
-            pkcs12_fname,
-            pkcs12_passwd,
-            ca_file=ca_file,
-            trust_flags=trust_flags)
+            pkcs12_fname, pkcs12_passwd, ca_file=ca_file, trust_flags=trust_flags
+        )
 
-    def init_from_pkcs12(self, pkcs12_fname, pkcs12_passwd,
-                         ca_file, trust_flags):
+    def init_from_pkcs12(self, pkcs12_fname, pkcs12_passwd, ca_file, trust_flags):
         self.import_pkcs12(pkcs12_fname, pkcs12_passwd)
         server_certs = self.find_server_certs()
         if len(server_certs) == 0:
-            raise RuntimeError("Could not find a suitable server cert in import in %s" % pkcs12_fname)
+            raise RuntimeError(
+                "Could not find a suitable server cert in import in %s" % pkcs12_fname
+            )
 
         if ca_file:
             try:
                 with open(ca_file) as fd:
                     certs = fd.read()
             except IOError as e:
-                raise RuntimeError(
-                    "Failed to open %s: %s" % (ca_file, e.strerror))
+                raise RuntimeError("Failed to open %s: %s" % (ca_file, e.strerror))
             st = 0
             num = 1
             while True:
@@ -635,7 +692,7 @@ class CertDB:
                     cert, st = find_cert_from_txt(certs, st)
                 except RuntimeError:
                     break
-                self.add_cert(cert, 'CA %s' % num, EMPTY_TRUST_FLAGS)
+                self.add_cert(cert, "CA %s" % num, EMPTY_TRUST_FLAGS)
                 num += 1
 
         # We only handle one server cert
@@ -653,18 +710,17 @@ class CertDB:
     def export_pem_cert(self, nickname, location):
         return self.nssdb.export_pem_cert(nickname, location)
 
-    def request_service_cert(self, nickname, principal, host,
-                             resubmit_timeout=None):
+    def request_service_cert(self, nickname, principal, host, resubmit_timeout=None):
         if resubmit_timeout is None:
             resubmit_timeout = api.env.certmonger_wait_timeout
         return certmonger.request_and_wait_for_cert(
             certpath=self.secdir,
-            storage='NSSDB',
+            storage="NSSDB",
             nickname=nickname,
             principal=principal,
             subject=host,
             passwd_fname=self.passwd_fname,
-            resubmit_timeout=resubmit_timeout
+            resubmit_timeout=resubmit_timeout,
         )
 
     def is_ipa_issued_cert(self, api, nickname):
@@ -684,8 +740,9 @@ class CertDB:
         """
         cert = self.get_cert_from_db(nickname)
         if cert is None:
-            raise RuntimeError("Could not find the cert %s in %s"
-                               % (nickname, self.secdir))
+            raise RuntimeError(
+                "Could not find the cert %s in %s" % (nickname, self.secdir)
+            )
 
         return is_ipa_issued_cert(api, cert)
 
@@ -695,10 +752,7 @@ class CertDB:
         Only upgrade if it's an existing dbm database and default
         database type is no 'dbm'.
         """
-        return (
-            self.nssdb.dbtype == 'dbm' and
-            self.exists()
-        )
+        return self.nssdb.dbtype == "dbm" and self.exists()
 
     def upgrade_format(self):
         """Upgrade NSSDB to new file format
@@ -707,7 +761,7 @@ class CertDB:
 
 
 class _CrossProcessLock:
-    _DATETIME_FORMAT = '%Y%m%d%H%M%S%f'
+    _DATETIME_FORMAT = "%Y%m%d%H%M%S%f"
 
     def __init__(self, filename):
         self._filename = filename
@@ -751,10 +805,10 @@ class _CrossProcessLock:
 
     def _do(self, func, owner):
         if owner is None:
-            owner = '%s[%s]' % (os.path.basename(sys.argv[0]), os.getpid())
+            owner = "%s[%s]" % (os.path.basename(sys.argv[0]), os.getpid())
 
         while True:
-            with open(self._filename, 'a+') as f:
+            with open(self._filename, "a+") as f:
                 fcntl.flock(f, fcntl.LOCK_EX)
 
                 f.seek(0)
@@ -776,15 +830,16 @@ class _CrossProcessLock:
             p.read_file(fileobj)  # pylint: disable=no-member
 
         try:
-            self._locked = p.getboolean('lock', 'locked')
+            self._locked = p.getboolean("lock", "locked")
 
             if self._locked:
-                self._owner = p.get('lock', 'owner')
+                self._owner = p.get("lock", "owner")
 
-                expire = p.get('lock', 'expire')
+                expire = p.get("lock", "expire")
                 try:
                     self._expire = datetime.datetime.strptime(
-                        expire, self._DATETIME_FORMAT)
+                        expire, self._DATETIME_FORMAT
+                    )
                 except ValueError:
                     raise configparser.Error
         except configparser.Error:
@@ -794,16 +849,17 @@ class _CrossProcessLock:
 
     def _write(self, fileobj):
         p = configparser.RawConfigParser()
-        p.add_section('lock')
+        p.add_section("lock")
 
-        locked = '1' if self._locked else '0'
-        p.set('lock', 'locked', locked)
+        locked = "1" if self._locked else "0"
+        p.set("lock", "locked", locked)
 
         if self._locked:
             expire = self._expire.strftime(self._DATETIME_FORMAT)
-            p.set('lock', 'owner', self._owner)
-            p.set('lock', 'expire', expire)
+            p.set("lock", "owner", self._owner)
+            p.set("lock", "expire", expire)
 
         p.write(fileobj)
+
 
 renewal_lock = _CrossProcessLock(paths.IPA_RENEWAL_LOCK)

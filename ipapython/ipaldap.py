@@ -44,6 +44,7 @@ import six
 # pylint: disable=ipa-forbidden-import
 from ipalib import errors, x509, _
 from ipalib.constants import LDAP_GENERALIZED_TIME_FORMAT
+
 # pylint: enable=ipa-forbidden-import
 from ipaplatform.paths import paths
 from ipapython.ipautil import format_netloc, CIDict
@@ -64,8 +65,8 @@ if six.PY3:
 logger = logging.getLogger(__name__)
 
 # Global variable to define SASL auth
-SASL_GSSAPI = ldap.sasl.sasl({}, 'GSSAPI')
-SASL_GSS_SPNEGO = ldap.sasl.sasl({}, 'GSS-SPNEGO')
+SASL_GSSAPI = ldap.sasl.sasl({}, "GSSAPI")
+SASL_GSS_SPNEGO = ldap.sasl.sasl({}, "GSS-SPNEGO")
 
 _debug_log_ldap = False
 
@@ -80,14 +81,13 @@ TRUNCATED_SIZE_LIMIT = object()
 TRUNCATED_TIME_LIMIT = object()
 TRUNCATED_ADMIN_LIMIT = object()
 
-DIRMAN_DN = DN(('cn', 'directory manager'))
+DIRMAN_DN = DN(("cn", "directory manager"))
 
 
-if six.PY2 and hasattr(ldap, 'LDAPBytesWarning'):
+if six.PY2 and hasattr(ldap, "LDAPBytesWarning"):
     # XXX silence python-ldap's BytesWarnings
     warnings.filterwarnings(
-        action="ignore",
-        category=ldap.LDAPBytesWarning,  # pylint: disable=no-member
+        action="ignore", category=ldap.LDAPBytesWarning,  # pylint: disable=no-member
     )
 
 
@@ -100,7 +100,7 @@ def realm_to_ldapi_uri(realm_name):
     """Get ldapi:// URI to 389-DS's Unix socket"""
     serverid = realm_to_serverid(realm_name)
     socketname = paths.SLAPD_INSTANCE_SOCKET_TEMPLATE % (serverid,)
-    return 'ldapi://' + ldapurl.ldapUrlEscape(socketname)
+    return "ldapi://" + ldapurl.ldapUrlEscape(socketname)
 
 
 def ldap_initialize(uri, cacertfile=None):
@@ -120,7 +120,7 @@ def ldap_initialize(uri, cacertfile=None):
     # Do not perform reverse DNS lookups to canonicalize SASL host names
     conn.set_option(ldap.OPT_X_SASL_NOCANON, ldap.OPT_ON)
 
-    if not uri.startswith('ldapi://'):
+    if not uri.startswith("ldapi://"):
         if cacertfile:
             if not os.path.isfile(cacertfile):
                 raise IOError(errno.ENOENT, cacertfile)
@@ -138,9 +138,9 @@ def ldap_initialize(uri, cacertfile=None):
 
 
 class _ServerSchema:
-    '''
+    """
     Properties of a schema retrieved from an LDAP server.
-    '''
+    """
 
     def __init__(self, server, schema):
         self.server = server
@@ -149,22 +149,22 @@ class _ServerSchema:
 
 
 class SchemaCache:
-    '''
+    """
     Cache the schema's from individual LDAP servers.
-    '''
+    """
 
     def __init__(self):
         self.servers = {}
 
     def get_schema(self, url, conn, force_update=False):
-        '''
+        """
         Return schema belonging to a specific LDAP server.
 
         For performance reasons the schema is retrieved once and
         cached unless force_update is True. force_update flushes the
         existing schema for the server from the cache and reacquires
         it.
-        '''
+        """
 
         if force_update:
             self.flush(url)
@@ -177,7 +177,7 @@ class SchemaCache:
         return server_schema.schema
 
     def flush(self, url):
-        logger.debug('flushing %s from SchemaCache', url)
+        logger.debug("flushing %s from SchemaCache", url)
         try:
             del self.servers[url]
         except KeyError:
@@ -198,27 +198,35 @@ class SchemaCache:
         """
         assert conn is not None
 
-        logger.debug(
-            'retrieving schema for SchemaCache url=%s conn=%s', url, conn)
+        logger.debug("retrieving schema for SchemaCache url=%s conn=%s", url, conn)
 
         try:
             try:
-                schema_entry = conn.search_s('cn=schema', ldap.SCOPE_BASE,
-                    attrlist=['attributetypes', 'objectclasses'])[0]
+                schema_entry = conn.search_s(
+                    "cn=schema",
+                    ldap.SCOPE_BASE,
+                    attrlist=["attributetypes", "objectclasses"],
+                )[0]
             except ldap.NO_SUCH_OBJECT:
                 # try different location for schema
                 # openldap has schema located in cn=subschema
-                logger.debug('cn=schema not found, fallback to cn=subschema')
-                schema_entry = conn.search_s('cn=subschema', ldap.SCOPE_BASE,
-                    attrlist=['attributetypes', 'objectclasses'])[0]
+                logger.debug("cn=schema not found, fallback to cn=subschema")
+                schema_entry = conn.search_s(
+                    "cn=subschema",
+                    ldap.SCOPE_BASE,
+                    attrlist=["attributetypes", "objectclasses"],
+                )[0]
         except ldap.SERVER_DOWN:
-            raise errors.NetworkError(uri=url,
-                               error=u'LDAP Server Down, unable to retrieve LDAP schema')
+            raise errors.NetworkError(
+                uri=url, error=u"LDAP Server Down, unable to retrieve LDAP schema"
+            )
         except ldap.LDAPError as e:
-            desc = e.args[0]['desc'].strip()
-            info = e.args[0].get('info', '').strip()
-            raise errors.DatabaseError(desc = u'uri=%s' % url,
-                                info = u'Unable to retrieve LDAP schema: %s: %s' % (desc, info))
+            desc = e.args[0]["desc"].strip()
+            info = e.args[0].get("info", "").strip()
+            raise errors.DatabaseError(
+                desc=u"uri=%s" % url,
+                info=u"Unable to retrieve LDAP schema: %s: %s" % (desc, info),
+            )
 
         # no 'cn=schema' entry in LDAP? some servers use 'cn=subschema'
         # TODO: DS uses 'cn=schema', support for other server?
@@ -226,13 +234,23 @@ class SchemaCache:
 
         return ldap.schema.SubSchema(schema_entry[1])
 
+
 schema_cache = SchemaCache()
 
 
 class LDAPEntry(MutableMapping):
-    __slots__ = ('_conn', '_dn', '_names', '_nice', '_raw', '_sync',
-                 '_not_list', '_orig_raw', '_raw_view',
-                 '_single_value_view')
+    __slots__ = (
+        "_conn",
+        "_dn",
+        "_names",
+        "_nice",
+        "_raw",
+        "_sync",
+        "_not_list",
+        "_orig_raw",
+        "_raw_view",
+        "_single_value_view",
+    )
 
     __hash__ = None
 
@@ -281,7 +299,7 @@ class LDAPEntry(MutableMapping):
         self._single_value_view = None
 
         if isinstance(_obj, LDAPEntry):
-            #pylint: disable=E1103
+            # pylint: disable=E1103
             self._not_list = set(_obj._not_list)
             self._orig_raw = dict(_obj._orig_raw)
             if _obj.conn is _conn:
@@ -324,7 +342,7 @@ class LDAPEntry(MutableMapping):
     def __repr__(self):
         data = dict(self._raw)
         data.update((k, v) for k, v in self._nice.items() if v is not None)
-        return '%s(%r, %r)' % (type(self).__name__, self._dn, data)
+        return "%s(%r, %r)" % (type(self).__name__, self._dn, data)
 
     def copy(self):
         return LDAPEntry(self)
@@ -355,8 +373,9 @@ class LDAPEntry(MutableMapping):
             try:
                 value = self._conn.decode(value, name)
             except ValueError as e:
-                raise ValueError("{error} in LDAP entry '{dn}'".format(
-                    error=e, dn=self._dn))
+                raise ValueError(
+                    "{error} in LDAP entry '{dn}'".format(error=e, dn=self._dn)
+                )
             if value in nice_adds:
                 continue
             nice.remove(value)
@@ -371,8 +390,9 @@ class LDAPEntry(MutableMapping):
             try:
                 value = self._conn.decode(value, name)
             except ValueError as e:
-                raise ValueError("{error} in LDAP entry '{dn}'".format(
-                    error=e, dn=self._dn))
+                raise ValueError(
+                    "{error} in LDAP entry '{dn}'".format(error=e, dn=self._dn)
+                )
             if value in nice_dels:
                 continue
             nice.append(value)
@@ -385,11 +405,12 @@ class LDAPEntry(MutableMapping):
     def _attr_name(self, name):
         if not isinstance(name, str):
             raise TypeError(
-                "attribute name must be unicode or str, got %s object %r" % (
-                    name.__class__.__name__, name))
+                "attribute name must be unicode or str, got %s object %r"
+                % (name.__class__.__name__, name)
+            )
 
         if isinstance(name, bytes):
-            name = name.decode('utf-8')
+            name = name.decode("utf-8")
 
         return name
 
@@ -399,15 +420,16 @@ class LDAPEntry(MutableMapping):
 
         if self._conn.schema is not None:
             if six.PY2:
-                encoded_name = name.encode('utf-8')
+                encoded_name = name.encode("utf-8")
             else:
                 encoded_name = name
             attrtype = self._conn.schema.get_obj(
-                ldap.schema.AttributeType, encoded_name)
+                ldap.schema.AttributeType, encoded_name
+            )
             if attrtype is not None:
                 for altname in attrtype.names:
                     if six.PY2:
-                        altname = altname.decode('utf-8')
+                        altname = altname.decode("utf-8")
                     self._names[altname] = name
 
         self._names[name] = name
@@ -444,13 +466,15 @@ class LDAPEntry(MutableMapping):
         name = self._attr_name(name)
 
         if not isinstance(value, list):
-            raise TypeError("%s value must be list, got %s object %r" % (
-                name, value.__class__.__name__, value))
+            raise TypeError(
+                "%s value must be list, got %s object %r"
+                % (name, value.__class__.__name__, value)
+            )
         for (i, item) in enumerate(value):
             if not isinstance(item, bytes):
                 raise TypeError(
-                    "%s[%d] value must be bytes, got %s object %r" % (
-                        name, i, item.__class__.__name__, item)
+                    "%s[%d] value must be bytes, got %s object %r"
+                    % (name, i, item.__class__.__name__, item)
                 )
 
         name = self._add_attr_name(name)
@@ -588,7 +612,7 @@ class LDAPEntry(MutableMapping):
         # However, for schema updates, we want 'attributetypes' before
         # 'objectclasses'.
         # A simple sort will ensure this.
-        modlist.sort(key=lambda m: m[1].lower() != 'attributetypes')
+        modlist.sort(key=lambda m: m[1].lower() != "attributetypes")
 
         return modlist
 
@@ -597,7 +621,7 @@ class LDAPEntry(MutableMapping):
 
 
 class LDAPEntryView(MutableMapping):
-    __slots__ = ('_entry',)
+    __slots__ = ("_entry",)
 
     def __init__(self, entry):
         assert isinstance(entry, LDAPEntry)
@@ -621,12 +645,14 @@ class LDAPEntryView(MutableMapping):
     def has_key(self, name):
         return name in self
 
+
 class RawLDAPEntryView(LDAPEntryView):
     def __getitem__(self, name):
         return self._entry._get_raw(name)
 
     def __setitem__(self, name, value):
         self._entry._set_raw(name, value)
+
 
 class SingleValueLDAPEntryView(LDAPEntryView):
     def __getitem__(self, name):
@@ -639,8 +665,7 @@ class SingleValueLDAPEntryView(LDAPEntryView):
         elif len(value) == 1:
             return value[0]
         else:
-            raise ValueError(
-                '%s has %s values, one expected' % (name, len(value)))
+            raise ValueError("%s has %s values, one expected" % (name, len(value)))
 
     def __setitem__(self, name, value):
         if value is None:
@@ -668,9 +693,9 @@ class LDAPClient:
     """
 
     # rules for generating filters from entries
-    MATCH_ANY = '|'   # (|(filter1)(filter2))
-    MATCH_ALL = '&'   # (&(filter1)(filter2))
-    MATCH_NONE = '!'  # (!(filter1)(filter2))
+    MATCH_ANY = "|"  # (|(filter1)(filter2))
+    MATCH_ALL = "&"  # (&(filter1)(filter2))
+    MATCH_NONE = "!"  # (!(filter1)(filter2))
 
     # search scope for find_entries()
     SCOPE_BASE = ldap.SCOPE_BASE
@@ -678,41 +703,39 @@ class LDAPClient:
     SCOPE_SUBTREE = ldap.SCOPE_SUBTREE
 
     _SYNTAX_MAPPING = {
-        '1.3.6.1.4.1.1466.115.121.1.1'   : bytes, # ACI item
-        '1.3.6.1.4.1.1466.115.121.1.4'   : bytes, # Audio
-        '1.3.6.1.4.1.1466.115.121.1.5'   : bytes, # Binary
-        '1.3.6.1.4.1.1466.115.121.1.8'   : bytes, # Certificate
-        '1.3.6.1.4.1.1466.115.121.1.9'   : bytes, # Certificate List
-        '1.3.6.1.4.1.1466.115.121.1.10'  : bytes, # Certificate Pair
-        '1.3.6.1.4.1.1466.115.121.1.12'  : DN,  # Distinguished Name
-        '1.3.6.1.4.1.1466.115.121.1.23'  : bytes, # Fax
-        '1.3.6.1.4.1.1466.115.121.1.24'  : datetime.datetime,
-        '1.3.6.1.4.1.1466.115.121.1.28'  : bytes, # JPEG
-        '1.3.6.1.4.1.1466.115.121.1.40'  : bytes, # OctetString (same as Binary)
-        '1.3.6.1.4.1.1466.115.121.1.49'  : bytes, # Supported Algorithm
-        '1.3.6.1.4.1.1466.115.121.1.51'  : bytes, # Teletext Terminal Identifier
-
-        '2.16.840.1.113730.3.8.3.3'      : DN,  # enrolledBy
-        '2.16.840.1.113730.3.8.3.18'     : DN,  # managedBy
-        '2.16.840.1.113730.3.8.3.5'      : DN,  # memberUser
-        '2.16.840.1.113730.3.8.3.7'      : DN,  # memberHost
-        '2.16.840.1.113730.3.8.3.20'     : DN,  # memberService
-        '2.16.840.1.113730.3.8.11.4'     : DN,  # ipaNTFallbackPrimaryGroup
-        '2.16.840.1.113730.3.8.11.21'    : DN,  # ipaAllowToImpersonate
-        '2.16.840.1.113730.3.8.11.22'    : DN,  # ipaAllowedTarget
-        '2.16.840.1.113730.3.8.7.1'      : DN,  # memberAllowCmd
-        '2.16.840.1.113730.3.8.7.2'      : DN,  # memberDenyCmd
-
-        '2.16.840.1.113719.1.301.4.14.1' : DN,  # krbRealmReferences
-        '2.16.840.1.113719.1.301.4.17.1' : DN,  # krbKdcServers
-        '2.16.840.1.113719.1.301.4.18.1' : DN,  # krbPwdServers
-        '2.16.840.1.113719.1.301.4.26.1' : DN,  # krbPrincipalReferences
-        '2.16.840.1.113719.1.301.4.29.1' : DN,  # krbAdmServers
-        '2.16.840.1.113719.1.301.4.36.1' : DN,  # krbPwdPolicyReference
-        '2.16.840.1.113719.1.301.4.40.1' : DN,  # krbTicketPolicyReference
-        '2.16.840.1.113719.1.301.4.41.1' : DN,  # krbSubTrees
-        '2.16.840.1.113719.1.301.4.52.1' : DN,  # krbObjectReferences
-        '2.16.840.1.113719.1.301.4.53.1' : DN,  # krbPrincContainerRef
+        "1.3.6.1.4.1.1466.115.121.1.1": bytes,  # ACI item
+        "1.3.6.1.4.1.1466.115.121.1.4": bytes,  # Audio
+        "1.3.6.1.4.1.1466.115.121.1.5": bytes,  # Binary
+        "1.3.6.1.4.1.1466.115.121.1.8": bytes,  # Certificate
+        "1.3.6.1.4.1.1466.115.121.1.9": bytes,  # Certificate List
+        "1.3.6.1.4.1.1466.115.121.1.10": bytes,  # Certificate Pair
+        "1.3.6.1.4.1.1466.115.121.1.12": DN,  # Distinguished Name
+        "1.3.6.1.4.1.1466.115.121.1.23": bytes,  # Fax
+        "1.3.6.1.4.1.1466.115.121.1.24": datetime.datetime,
+        "1.3.6.1.4.1.1466.115.121.1.28": bytes,  # JPEG
+        "1.3.6.1.4.1.1466.115.121.1.40": bytes,  # OctetString (same as Binary)
+        "1.3.6.1.4.1.1466.115.121.1.49": bytes,  # Supported Algorithm
+        "1.3.6.1.4.1.1466.115.121.1.51": bytes,  # Teletext Terminal Identifier
+        "2.16.840.1.113730.3.8.3.3": DN,  # enrolledBy
+        "2.16.840.1.113730.3.8.3.18": DN,  # managedBy
+        "2.16.840.1.113730.3.8.3.5": DN,  # memberUser
+        "2.16.840.1.113730.3.8.3.7": DN,  # memberHost
+        "2.16.840.1.113730.3.8.3.20": DN,  # memberService
+        "2.16.840.1.113730.3.8.11.4": DN,  # ipaNTFallbackPrimaryGroup
+        "2.16.840.1.113730.3.8.11.21": DN,  # ipaAllowToImpersonate
+        "2.16.840.1.113730.3.8.11.22": DN,  # ipaAllowedTarget
+        "2.16.840.1.113730.3.8.7.1": DN,  # memberAllowCmd
+        "2.16.840.1.113730.3.8.7.2": DN,  # memberDenyCmd
+        "2.16.840.1.113719.1.301.4.14.1": DN,  # krbRealmReferences
+        "2.16.840.1.113719.1.301.4.17.1": DN,  # krbKdcServers
+        "2.16.840.1.113719.1.301.4.18.1": DN,  # krbPwdServers
+        "2.16.840.1.113719.1.301.4.26.1": DN,  # krbPrincipalReferences
+        "2.16.840.1.113719.1.301.4.29.1": DN,  # krbAdmServers
+        "2.16.840.1.113719.1.301.4.36.1": DN,  # krbPwdPolicyReference
+        "2.16.840.1.113719.1.301.4.40.1": DN,  # krbTicketPolicyReference
+        "2.16.840.1.113719.1.301.4.41.1": DN,  # krbSubTrees
+        "2.16.840.1.113719.1.301.4.52.1": DN,  # krbObjectReferences
+        "2.16.840.1.113719.1.301.4.53.1": DN,  # krbPrincContainerRef
     }
 
     # In most cases we lookup the syntax from the schema returned by
@@ -725,41 +748,52 @@ class LDAPClient:
     #
     # FWIW, many entries under cn=config are undefined :-(
 
-    _SYNTAX_OVERRIDE = CIDict({
-        'managedtemplate': DN,
-        'managedbase':     DN,
-        'memberindirect':  DN,
-        'memberofindirect':DN,
-        'originscope':     DN,
-        'idnsname':        DNSName,
-        'idnssoamname':    DNSName,
-        'idnssoarname':    DNSName,
-        'dnszoneidnsname': DNSName,
-        'krbcanonicalname': Principal,
-        'krbprincipalname': Principal,
-        'usercertificate': crypto_x509.Certificate,
-        'usercertificate;binary': crypto_x509.Certificate,
-        'cACertificate': crypto_x509.Certificate,
-        'cACertificate;binary': crypto_x509.Certificate,
-        'nsds5replicalastupdatestart': unicode,
-        'nsds5replicalastupdateend': unicode,
-        'nsds5replicalastinitstart': unicode,
-        'nsds5replicalastinitend': unicode,
-    })
-    _SINGLE_VALUE_OVERRIDE = CIDict({
-        'nsslapd-ssl-check-hostname': True,
-        'nsslapd-lookthroughlimit': True,
-        'nsslapd-idlistscanlimit': True,
-        'nsslapd-anonlimitsdn': True,
-        'nsslapd-minssf-exclude-rootdse': True,
-    })
+    _SYNTAX_OVERRIDE = CIDict(
+        {
+            "managedtemplate": DN,
+            "managedbase": DN,
+            "memberindirect": DN,
+            "memberofindirect": DN,
+            "originscope": DN,
+            "idnsname": DNSName,
+            "idnssoamname": DNSName,
+            "idnssoarname": DNSName,
+            "dnszoneidnsname": DNSName,
+            "krbcanonicalname": Principal,
+            "krbprincipalname": Principal,
+            "usercertificate": crypto_x509.Certificate,
+            "usercertificate;binary": crypto_x509.Certificate,
+            "cACertificate": crypto_x509.Certificate,
+            "cACertificate;binary": crypto_x509.Certificate,
+            "nsds5replicalastupdatestart": unicode,
+            "nsds5replicalastupdateend": unicode,
+            "nsds5replicalastinitstart": unicode,
+            "nsds5replicalastinitend": unicode,
+        }
+    )
+    _SINGLE_VALUE_OVERRIDE = CIDict(
+        {
+            "nsslapd-ssl-check-hostname": True,
+            "nsslapd-lookthroughlimit": True,
+            "nsslapd-idlistscanlimit": True,
+            "nsslapd-anonlimitsdn": True,
+            "nsslapd-minssf-exclude-rootdse": True,
+        }
+    )
 
-    time_limit = -1.0   # unlimited
-    size_limit = 0      # unlimited
+    time_limit = -1.0  # unlimited
+    size_limit = 0  # unlimited
 
-    def __init__(self, ldap_uri, start_tls=False, force_schema_updates=False,
-                 no_schema=False, decode_attrs=True, cacert=None,
-                 sasl_nocanon=True):
+    def __init__(
+        self,
+        ldap_uri,
+        start_tls=False,
+        force_schema_updates=False,
+        no_schema=False,
+        decode_attrs=True,
+        cacert=None,
+        sasl_nocanon=True,
+    ):
         """Create LDAPClient object.
 
         :param ldap_uri: The LDAP URI to connect to
@@ -779,7 +813,7 @@ class LDAPClient:
         if ldap_uri is not None:
             # special case for ldap2 server plugin
             self.ldap_uri = ldap_uri
-            assert self.protocol in {'ldaps', 'ldapi', 'ldap'}
+            assert self.protocol in {"ldaps", "ldapi", "ldap"}
         self._start_tls = start_tls
         self._force_schema_updates = force_schema_updates
         self._no_schema = no_schema
@@ -801,8 +835,9 @@ class LDAPClient:
         return cls(uri, start_tls=False, cacert=None, **kwargs)
 
     @classmethod
-    def from_hostname_secure(cls, hostname, cacert=paths.IPA_CA_CRT,
-                             start_tls=True, **kwargs):
+    def from_hostname_secure(
+        cls, hostname, cacert=paths.IPA_CA_CRT, start_tls=True, **kwargs
+    ):
         """Create LDAP or LDAPS connection to a remote 389-DS instance
 
         This constructor is opinionated and doesn't let you shoot yourself in
@@ -818,9 +853,9 @@ class LDAPClient:
         https://msdn.microsoft.com/en-us/library/cc223500.aspx
         """
         if start_tls:
-            uri = 'ldap://%s' % format_netloc(hostname, 389)
+            uri = "ldap://%s" % format_netloc(hostname, 389)
         else:
-            uri = 'ldaps://%s' % format_netloc(hostname, 636)
+            uri = "ldaps://%s" % format_netloc(hostname, 636)
         return cls(uri, start_tls=start_tls, cacert=cacert, **kwargs)
 
     @classmethod
@@ -830,9 +865,9 @@ class LDAPClient:
         Note: A plain TLS connection should only be used in combination with
         GSSAPI bind.
         """
-        assert 'start_tls' not in kwargs
-        assert 'cacert' not in kwargs
-        uri = 'ldap://%s' % format_netloc(hostname, 389)
+        assert "start_tls" not in kwargs
+        assert "cacert" not in kwargs
+        uri = "ldap://%s" % format_netloc(hostname, 389)
         return cls(uri, **kwargs)
 
     def __str__(self):
@@ -852,7 +887,7 @@ class LDAPClient:
     @property
     def protocol(self):
         if self.ldap_uri:
-            return self.ldap_uri.split('://', 1)[0]
+            return self.ldap_uri.split("://", 1)[0]
         else:
             return None
 
@@ -863,22 +898,22 @@ class LDAPClient:
         if not self._has_schema:
             try:
                 schema = schema_cache.get_schema(
-                    self.ldap_uri, self.conn,
-                    force_update=self._force_schema_updates)
+                    self.ldap_uri, self.conn, force_update=self._force_schema_updates
+                )
             except (errors.ExecutionError, IndexError):
                 schema = None
 
             # bypass ldap2's locking
-            object.__setattr__(self, '_schema', schema)
-            object.__setattr__(self, '_has_schema', True)
+            object.__setattr__(self, "_schema", schema)
+            object.__setattr__(self, "_has_schema", True)
 
         return self._schema
 
     def _flush_schema(self):
-        '''
+        """
         Force this instance to forget it's cached schema and reacquire
         it from the schema cache.
-        '''
+        """
 
         # Currently this is called during bind operations to assure
         # we're working with valid schema for a specific
@@ -900,8 +935,8 @@ class LDAPClient:
         # change.
 
         # bypass ldap2's locking
-        object.__setattr__(self, '_has_schema', False)
-        object.__setattr__(self, '_schema', None)
+        object.__setattr__(self, "_has_schema", False)
+        object.__setattr__(self, "_schema", None)
 
     def get_attribute_type(self, name_or_oid):
         if not self._decode_attrs:
@@ -909,7 +944,7 @@ class LDAPClient:
 
         if six.PY2:
             if isinstance(name_or_oid, unicode):
-                name_or_oid = name_or_oid.encode('utf-8')
+                name_or_oid = name_or_oid.encode("utf-8")
 
         # Is this a special case attribute?
         if name_or_oid in self._SYNTAX_OVERRIDE:
@@ -942,7 +977,7 @@ class LDAPClient:
         not in the schema return None
         """
         if six.PY2 and isinstance(name_or_oid, unicode):
-            name_or_oid = name_or_oid.encode('utf-8')
+            name_or_oid = name_or_oid.encode("utf-8")
 
         if name_or_oid in self._SINGLE_VALUE_OVERRIDE:
             return self._SINGLE_VALUE_OVERRIDE[name_or_oid]
@@ -964,13 +999,13 @@ class LDAPClient:
         # entered for a boolean value instead of the boolean clause.
         if isinstance(val, bool):
             if val:
-                return b'TRUE'
+                return b"TRUE"
             else:
-                return b'FALSE'
+                return b"FALSE"
         elif isinstance(val, (unicode, int, Decimal, DN, Principal)):
-            return str(val).encode('utf-8')
+            return str(val).encode("utf-8")
         elif isinstance(val, DNSName):
-            return val.to_text().encode('ascii')
+            return val.to_text().encode("ascii")
         elif isinstance(val, bytes):
             return val
         elif isinstance(val, list):
@@ -982,13 +1017,16 @@ class LDAPClient:
             dct = dict((k, self.encode(v)) for k, v in val.items())
             return dct
         elif isinstance(val, datetime.datetime):
-            return val.strftime(LDAP_GENERALIZED_TIME_FORMAT).encode('utf-8')
+            return val.strftime(LDAP_GENERALIZED_TIME_FORMAT).encode("utf-8")
         elif isinstance(val, crypto_x509.Certificate):
             return val.public_bytes(x509.Encoding.DER)
         elif val is None:
             return None
         else:
-            raise TypeError("attempt to pass unsupported type to ldap, value=%s type=%s" %(val, type(val)))
+            raise TypeError(
+                "attempt to pass unsupported type to ldap, value=%s type=%s"
+                % (val, type(val))
+            )
 
     def decode(self, val, attr):
         """
@@ -1000,38 +1038,44 @@ class LDAPClient:
                 if target_type is bytes:
                     return val
                 elif target_type is unicode:
-                    return val.decode('utf-8')
+                    return val.decode("utf-8")
                 elif target_type is datetime.datetime:
                     return datetime.datetime.strptime(
-                        val.decode('utf-8'), LDAP_GENERALIZED_TIME_FORMAT)
+                        val.decode("utf-8"), LDAP_GENERALIZED_TIME_FORMAT
+                    )
                 elif target_type is DNSName:
-                    return DNSName.from_text(val.decode('utf-8'))
+                    return DNSName.from_text(val.decode("utf-8"))
                 elif target_type in (DN, Principal):
-                    return target_type(val.decode('utf-8'))
+                    return target_type(val.decode("utf-8"))
                 elif target_type is crypto_x509.Certificate:
                     return x509.load_der_x509_certificate(val)
                 else:
                     return target_type(val)
             except Exception:
-                msg = 'unable to convert the attribute %r value %r to type %s' % (attr, val, target_type)
-                logger.error('%s', msg)
+                msg = "unable to convert the attribute %r value %r to type %s" % (
+                    attr,
+                    val,
+                    target_type,
+                )
+                logger.error("%s", msg)
                 raise ValueError(msg)
         elif isinstance(val, list):
             return [self.decode(m, attr) for m in val]
         elif isinstance(val, tuple):
             return tuple(self.decode(m, attr) for m in val)
         elif isinstance(val, dict):
-            dct = {
-                k.decode('utf-8'): self.decode(v, k) for k, v in val.items()
-            }
+            dct = {k.decode("utf-8"): self.decode(v, k) for k, v in val.items()}
             return dct
         elif val is None:
             return None
         else:
-            raise TypeError("attempt to pass unsupported type from ldap, value=%s type=%s" %(val, type(val)))
+            raise TypeError(
+                "attempt to pass unsupported type from ldap, value=%s type=%s"
+                % (val, type(val))
+            )
 
     def _convert_result(self, result):
-        '''
+        """
         result is a python-ldap result tuple of the form (dn, attrs),
         where dn is a string containing the dn (distinguished name) of
         the entry, and attrs is a dictionary containing the attributes
@@ -1039,7 +1083,7 @@ class LDAPClient:
         the associated values are lists of strings.
 
         We convert the tuple to an LDAPEntry object.
-        '''
+        """
 
         ipa_result = []
         for dn_tuple in result:
@@ -1049,9 +1093,10 @@ class LDAPClient:
             # original_dn is None if referral instead of an entry was
             # returned from the LDAP server, we need to skip this item
             if original_dn is None:
-                log_msg = 'Referral entry ignored: {ref}'\
-                          .format(ref=str(original_attrs))
-                logger.debug('%s', log_msg)
+                log_msg = "Referral entry ignored: {ref}".format(
+                    ref=str(original_attrs)
+                )
+                logger.debug("%s", log_msg)
 
                 continue
 
@@ -1064,7 +1109,7 @@ class LDAPClient:
             ipa_result.append(ipa_entry)
 
         if _debug_log_ldap:
-            logger.debug('ldap.result: %s', ipa_result)
+            logger.debug("ldap.result: %s", ipa_result)
         return ipa_result
 
     @contextlib.contextmanager
@@ -1077,13 +1122,13 @@ class LDAPClient:
             except ldap.TIMEOUT:
                 raise errors.DatabaseTimeout()
             except ldap.LDAPError as e:
-                desc = e.args[0]['desc'].strip()
-                info = e.args[0].get('info', '').strip()
+                desc = e.args[0]["desc"].strip()
+                info = e.args[0].get("info", "").strip()
                 if arg_desc is not None:
                     info = "%s arguments: %s" % (info, arg_desc)
                 raise
         except ldap.NO_SUCH_OBJECT:
-            raise errors.NotFound(reason=arg_desc or 'no such entry')
+            raise errors.NotFound(reason=arg_desc or "no such entry")
         except ldap.ALREADY_EXISTS:
             # entry already exists
             raise errors.DuplicateEntry()
@@ -1093,7 +1138,7 @@ class LDAPClient:
             raise errors.DuplicateEntry(message=desc)
         except ldap.CONSTRAINT_VIOLATION:
             # This error gets thrown by the uniqueness plugin
-            _msg = 'Another entry with the same attribute value already exists'
+            _msg = "Another entry with the same attribute value already exists"
             if info.startswith(_msg):
                 raise errors.DuplicateEntry()
             else:
@@ -1126,8 +1171,7 @@ class LDAPClient:
         except ldap.NOT_ALLOWED_ON_NONLEAF:
             raise errors.NotAllowedOnNonLeaf()
         except ldap.SERVER_DOWN:
-            raise errors.NetworkError(uri=self.ldap_uri,
-                                      error=info)
+            raise errors.NetworkError(uri=self.ldap_uri, error=info)
         except ldap.LOCAL_ERROR:
             raise errors.ACIError(info=info)
         except ldap.SUCCESS:
@@ -1137,13 +1181,11 @@ class LDAPClient:
         except ldap.UNWILLING_TO_PERFORM:
             raise errors.DatabaseError(desc=desc, info=info)
         except ldap.AUTH_UNKNOWN:
-            raise errors.ACIError(info='%s (%s)' % (info,desc))
+            raise errors.ACIError(info="%s (%s)" % (info, desc))
         except ldap.LDAPError as e:
-            if 'NOT_ALLOWED_TO_DELEGATE' in info:
-                raise errors.ACIError(
-                    info="KDC returned NOT_ALLOWED_TO_DELEGATE")
-            logger.debug(
-                'Unhandled LDAPError: %s: %s', type(e).__name__, str(e))
+            if "NOT_ALLOWED_TO_DELEGATE" in info:
+                raise errors.ACIError(info="KDC returned NOT_ALLOWED_TO_DELEGATE")
+            logger.debug("Unhandled LDAPError: %s: %s", type(e).__name__, str(e))
             raise errors.DatabaseError(desc=desc, info=info)
 
     @staticmethod
@@ -1174,13 +1216,11 @@ class LDAPClient:
             if obj is not None:
                 allowed_attributes += obj.must + obj.may
             elif raise_on_unknown:
-                raise errors.NotFound(
-                    reason=_('objectclass %s not found') % oc)
+                raise errors.NotFound(reason=_("objectclass %s not found") % oc)
         return [unicode(a).lower() for a in list(set(allowed_attributes))]
 
     def __enter__(self):
         return self
-
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
@@ -1199,29 +1239,40 @@ class LDAPClient:
             if not self._sasl_nocanon:
                 conn.set_option(ldap.OPT_X_SASL_NOCANON, ldap.OPT_OFF)
 
-            if self._start_tls and self.protocol == 'ldap':
+            if self._start_tls and self.protocol == "ldap":
                 # STARTTLS applies only to ldap:// connections
                 conn.start_tls_s()
 
         return conn
 
-    def simple_bind(self, bind_dn, bind_password, server_controls=None,
-                    client_controls=None, insecure_bind=False):
+    def simple_bind(
+        self,
+        bind_dn,
+        bind_password,
+        server_controls=None,
+        client_controls=None,
+        insecure_bind=False,
+    ):
         """
         Perform simple bind operation.
         """
-        if (self.protocol == 'ldap' and not self._start_tls and
-                bind_password and not insecure_bind):
+        if (
+            self.protocol == "ldap"
+            and not self._start_tls
+            and bind_password
+            and not insecure_bind
+        ):
             # non-empty bind must use a secure connection unless
             # insecure bind is explicitly enabled
-            raise ValueError('simple_bind over insecure LDAP connection')
+            raise ValueError("simple_bind over insecure LDAP connection")
         with self.error_handler():
             self._flush_schema()
             assert isinstance(bind_dn, DN)
             bind_dn = str(bind_dn)
             bind_password = self.encode(bind_password)
             self.conn.simple_bind_s(
-                bind_dn, bind_password, server_controls, client_controls)
+                bind_dn, bind_password, server_controls, client_controls
+            )
 
     def external_bind(self, server_controls=None, client_controls=None):
         """
@@ -1232,20 +1283,22 @@ class LDAPClient:
             auth_tokens = ldap.sasl.external(user_name)
             self._flush_schema()
             self.conn.sasl_interactive_bind_s(
-                '', auth_tokens, server_controls, client_controls)
+                "", auth_tokens, server_controls, client_controls
+            )
 
     def gssapi_bind(self, server_controls=None, client_controls=None):
         """
         Perform SASL bind operation using the SASL GSSAPI mechanism.
         """
         with self.error_handler():
-            if self.protocol == 'ldapi':
+            if self.protocol == "ldapi":
                 auth_tokens = SASL_GSS_SPNEGO
             else:
                 auth_tokens = SASL_GSSAPI
             self._flush_schema()
             self.conn.sasl_interactive_bind_s(
-                '', auth_tokens, server_controls, client_controls)
+                "", auth_tokens, server_controls, client_controls
+            )
 
     def unbind(self):
         """
@@ -1270,7 +1323,7 @@ class LDAPClient:
 
         return DN((attr, value), parent_dn)
 
-    def make_dn(self, entry_attrs, primary_key='cn', parent_dn=None):
+    def make_dn(self, entry_attrs, primary_key="cn", parent_dn=None):
         """
         Make distinguished name from entry attributes.
 
@@ -1298,7 +1351,7 @@ class LDAPClient:
     # f = ldap2.make_filter(entry_attrs, rules=ldap2.MATCH_ALL)
 
     @classmethod
-    def combine_filters(cls, filters, rules='|'):
+    def combine_filters(cls, filters, rules="|"):
         """
         Combine filters into one for ldap2.find_entries.
 
@@ -1310,25 +1363,33 @@ class LDAPClient:
 
         filters = [fx for fx in filters if fx]
         if filters and rules == cls.MATCH_NONE:  # unary operator
-            return '(%s%s)' % (cls.MATCH_NONE,
-                               cls.combine_filters(filters, cls.MATCH_ANY))
+            return "(%s%s)" % (
+                cls.MATCH_NONE,
+                cls.combine_filters(filters, cls.MATCH_ANY),
+            )
 
         if len(filters) > 1:
-            flt = '(%s' % rules
+            flt = "(%s" % rules
         else:
-            flt = ''
+            flt = ""
         for f in filters:
-            if not f.startswith('('):
-                f = '(%s)' % f
-            flt = '%s%s' % (flt, f)
+            if not f.startswith("("):
+                f = "(%s)" % f
+            flt = "%s%s" % (flt, f)
         if len(filters) > 1:
-            flt = '%s)' % flt
+            flt = "%s)" % flt
         return flt
 
     @classmethod
     def make_filter_from_attr(
-            cls, attr, value, rules='|', exact=True,
-            leading_wildcard=True, trailing_wildcard=True):
+        cls,
+        attr,
+        value,
+        rules="|",
+        exact=True,
+        leading_wildcard=True,
+        trailing_wildcard=True,
+    ):
         """
         Make filter for ldap2.find_entries from attribute.
 
@@ -1346,9 +1407,12 @@ class LDAPClient:
         if isinstance(value, (list, tuple)):
             flts = [
                 cls.make_filter_from_attr(
-                    attr, v, exact=exact,
+                    attr,
+                    v,
+                    exact=exact,
                     leading_wildcard=leading_wildcard,
-                    trailing_wildcard=trailing_wildcard)
+                    trailing_wildcard=trailing_wildcard,
+                )
                 for v in value
             ]
             return cls.combine_filters(flts, rules)
@@ -1356,30 +1420,37 @@ class LDAPClient:
             if isinstance(value, crypto_x509.Certificate):
                 value = value.public_bytes(serialization.Encoding.DER)
             if isinstance(value, bytes):
-                value = binascii.hexlify(value).decode('ascii')
+                value = binascii.hexlify(value).decode("ascii")
                 # value[-2:0] is empty string for the initial '\\'
-                value = u'\\'.join(
-                    value[i:i+2] for i in six.moves.range(-2, len(value), 2))
+                value = u"\\".join(
+                    value[i : i + 2] for i in six.moves.range(-2, len(value), 2)
+                )
             else:
                 value = str(value)
                 value = ldap.filter.escape_filter_chars(value)
 
             if not exact:
-                template = '%s'
+                template = "%s"
                 if leading_wildcard:
-                    template = '*' + template
+                    template = "*" + template
                 if trailing_wildcard:
-                    template = template + '*'
+                    template = template + "*"
                 value = template % value
             if rules == cls.MATCH_NONE:
-                return '(!(%s=%s))' % (attr, value)
-            return '(%s=%s)' % (attr, value)
-        return ''
+                return "(!(%s=%s))" % (attr, value)
+            return "(%s=%s)" % (attr, value)
+        return ""
 
     @classmethod
     def make_filter(
-            cls, entry_attrs, attrs_list=None, rules='|', exact=True,
-            leading_wildcard=True, trailing_wildcard=True):
+        cls,
+        entry_attrs,
+        attrs_list=None,
+        rules="|",
+        exact=True,
+        leading_wildcard=True,
+        trailing_wildcard=True,
+    ):
         """
         Make filter for ldap2.find_entries from entry attributes.
 
@@ -1409,8 +1480,13 @@ class LDAPClient:
             for (k, v) in entry_attrs.items():
                 flts.append(
                     cls.make_filter_from_attr(
-                        k, v, make_filter_rules, exact,
-                        leading_wildcard, trailing_wildcard)
+                        k,
+                        v,
+                        make_filter_rules,
+                        exact,
+                        leading_wildcard,
+                        trailing_wildcard,
+                    )
                 )
         else:
             for a in attrs_list:
@@ -1418,13 +1494,25 @@ class LDAPClient:
                 if value is not None:
                     flts.append(
                         cls.make_filter_from_attr(
-                            a, value, make_filter_rules, exact,
-                            leading_wildcard, trailing_wildcard)
+                            a,
+                            value,
+                            make_filter_rules,
+                            exact,
+                            leading_wildcard,
+                            trailing_wildcard,
+                        )
                     )
         return cls.combine_filters(flts, rules)
 
-    def get_entries(self, base_dn, scope=ldap.SCOPE_SUBTREE, filter=None,
-                    attrs_list=None, get_effective_rights=False, **kwargs):
+    def get_entries(
+        self,
+        base_dn,
+        scope=ldap.SCOPE_SUBTREE,
+        filter=None,
+        attrs_list=None,
+        get_effective_rights=False,
+        **kwargs
+    ):
         """Return a list of matching entries.
 
         :raises: errors.LimitsExceeded if the list is truncated by the server
@@ -1440,24 +1528,34 @@ class LDAPClient:
         for their description.
         """
         entries, truncated = self.find_entries(
-            base_dn=base_dn, scope=scope, filter=filter, attrs_list=attrs_list,
+            base_dn=base_dn,
+            scope=scope,
+            filter=filter,
+            attrs_list=attrs_list,
             get_effective_rights=get_effective_rights,
-            **kwargs)
+            **kwargs
+        )
         try:
             self.handle_truncated_result(truncated)
         except errors.LimitsExceeded as e:
             logger.error(
-                "%s while getting entries (base DN: %s, filter: %s)",
-                e, base_dn, filter
+                "%s while getting entries (base DN: %s, filter: %s)", e, base_dn, filter
             )
             raise
 
         return entries
 
     def find_entries(
-            self, filter=None, attrs_list=None, base_dn=None,
-            scope=ldap.SCOPE_SUBTREE, time_limit=None, size_limit=None,
-            paged_search=False, get_effective_rights=False):
+        self,
+        filter=None,
+        attrs_list=None,
+        base_dn=None,
+        scope=ldap.SCOPE_SUBTREE,
+        time_limit=None,
+        size_limit=None,
+        paged_search=False,
+        get_effective_rights=False,
+    ):
         """
         Return a list of entries and indication of whether the results were
         truncated ([(dn, entry_attrs)], truncated) matching specified search
@@ -1483,7 +1581,7 @@ class LDAPClient:
             base_dn = DN()
         assert isinstance(base_dn, DN)
         if not filter:
-            filter = '(objectClass=*)'
+            filter = "(objectClass=*)"
         res = []
         truncated = False
 
@@ -1507,7 +1605,7 @@ class LDAPClient:
         if get_effective_rights:
             base_sctrls.append(self.__get_effective_rights_control())
 
-        cookie = ''
+        cookie = ""
         page_size = (size_limit if size_limit > 0 else 2000) - 1
         if page_size == 0:
             paged_search = False
@@ -1528,9 +1626,13 @@ class LDAPClient:
 
                 try:
                     id = self.conn.search_ext(
-                        str(base_dn), scope, filter, attrs_list,
-                        serverctrls=sctrls, timeout=time_limit,
-                        sizelimit=size_limit
+                        str(base_dn),
+                        scope,
+                        filter,
+                        attrs_list,
+                        serverctrls=sctrls,
+                        timeout=time_limit,
+                        sizelimit=size_limit,
                     )
                     while True:
                         result = self.conn.result3(id, 0)
@@ -1548,7 +1650,7 @@ class LDAPClient:
                                 cookie = ctrl.cookie
                                 break
                         else:
-                            cookie = ''
+                            cookie = ""
                 except ldap.ADMINLIMIT_EXCEEDED:
                     truncated = TRUNCATED_ADMIN_LIMIT
                     break
@@ -1564,18 +1666,25 @@ class LDAPClient:
                         sctrls = [SimplePagedResultsControl(0, 0, cookie)]
                         try:
                             self.conn.search_ext_s(
-                                str(base_dn), scope, filter, attrs_list,
-                                serverctrls=sctrls, timeout=time_limit,
-                                sizelimit=size_limit)
+                                str(base_dn),
+                                scope,
+                                filter,
+                                attrs_list,
+                                serverctrls=sctrls,
+                                timeout=time_limit,
+                                sizelimit=size_limit,
+                            )
                         except ldap.LDAPError as e2:
-                            logger.warning(
-                                "Error cancelling paged search: %s", e2)
-                        cookie = ''
+                            logger.warning("Error cancelling paged search: %s", e2)
+                        cookie = ""
 
                     try:
                         raise e
-                    except (ldap.ADMINLIMIT_EXCEEDED, ldap.TIMELIMIT_EXCEEDED,
-                            ldap.SIZELIMIT_EXCEEDED):
+                    except (
+                        ldap.ADMINLIMIT_EXCEEDED,
+                        ldap.TIMELIMIT_EXCEEDED,
+                        ldap.SIZELIMIT_EXCEEDED,
+                    ):
                         truncated = True
                         break
 
@@ -1583,7 +1692,7 @@ class LDAPClient:
                     break
 
         if not res and not truncated:
-            raise errors.EmptyResult(reason='no matching entry found')
+            raise errors.EmptyResult(reason="no matching entry found")
 
         return (res, truncated)
 
@@ -1591,10 +1700,12 @@ class LDAPClient:
         """Construct a GetEffectiveRights control for current user."""
         bind_dn = self.conn.whoami_s()[4:]
         return GetEffectiveRightsControl(
-                True, "dn: {0}".format(bind_dn).encode('utf-8'))
+            True, "dn: {0}".format(bind_dn).encode("utf-8")
+        )
 
-    def find_entry_by_attr(self, attr, value, object_class, attrs_list=None,
-                           base_dn=None):
+    def find_entry_by_attr(
+        self, attr, value, object_class, attrs_list=None, base_dn=None
+    ):
         """
         Find entry (dn, entry_attrs) by attribute and object class.
 
@@ -1607,18 +1718,23 @@ class LDAPClient:
             base_dn = DN()
         assert isinstance(base_dn, DN)
 
-        search_kw = {attr: value, 'objectClass': object_class}
+        search_kw = {attr: value, "objectClass": object_class}
         filter = self.make_filter(search_kw, rules=self.MATCH_ALL)
-        entries = self.get_entries(
-            base_dn, filter=filter, attrs_list=attrs_list)
+        entries = self.get_entries(base_dn, filter=filter, attrs_list=attrs_list)
 
         if len(entries) > 1:
             raise errors.SingleMatchExpected(found=len(entries))
 
         return entries[0]
 
-    def get_entry(self, dn, attrs_list=None, time_limit=None,
-                  size_limit=None, get_effective_rights=False):
+    def get_entry(
+        self,
+        dn,
+        attrs_list=None,
+        time_limit=None,
+        size_limit=None,
+        get_effective_rights=False,
+    ):
         """
         Get entry (dn, entry_attrs) by dn.
 
@@ -1629,8 +1745,13 @@ class LDAPClient:
         assert isinstance(dn, DN)
 
         entries = self.get_entries(
-            dn, self.SCOPE_BASE, None, attrs_list, time_limit=time_limit,
-            size_limit=size_limit, get_effective_rights=get_effective_rights,
+            dn,
+            self.SCOPE_BASE,
+            None,
+            attrs_list,
+            time_limit=time_limit,
+            size_limit=size_limit,
+            get_effective_rights=get_effective_rights,
         )
 
         return entries[0]
@@ -1676,9 +1797,10 @@ class LDAPClient:
             new_superior = str(DN(*new_dn[1:]))
 
         with self.error_handler():
-            self.conn.rename_s(str(dn), str(new_rdn), newsuperior=new_superior,
-                               delold=int(del_old))
-            time.sleep(.3)  # Give memberOf plugin a chance to work
+            self.conn.rename_s(
+                str(dn), str(new_rdn), newsuperior=new_superior, delold=int(del_old)
+            )
+            time.sleep(0.3)  # Give memberOf plugin a chance to work
 
     def update_entry(self, entry):
         """Update entry's attributes.
@@ -1692,8 +1814,7 @@ class LDAPClient:
 
         # pass arguments to python-ldap
         with self.error_handler():
-            modlist = [(a, str(b), self.encode(c))
-                       for a, b, c in modlist]
+            modlist = [(a, str(b), self.encode(c)) for a, b, c in modlist]
             self.conn.modify_s(str(entry.dn), modlist)
 
         entry.reset_modlist()
@@ -1721,22 +1842,24 @@ class LDAPClient:
             return True
 
 
-def get_ldap_uri(host='', port=389, cacert=None, ldapi=False, realm=None,
-                 protocol=None):
-        if protocol is None:
-            if ldapi:
-                protocol = 'ldapi'
-            elif cacert is not None:
-                protocol = 'ldaps'
-            else:
-                protocol = 'ldap'
-
-        if protocol == 'ldaps':
-            return 'ldaps://%s' % format_netloc(host, port)
-        elif protocol == 'ldapi':
-            return 'ldapi://%%2fvar%%2frun%%2fslapd-%s.socket' % (
-                "-".join(realm.split(".")))
-        elif protocol == 'ldap':
-            return 'ldap://%s' % format_netloc(host, port)
+def get_ldap_uri(
+    host="", port=389, cacert=None, ldapi=False, realm=None, protocol=None
+):
+    if protocol is None:
+        if ldapi:
+            protocol = "ldapi"
+        elif cacert is not None:
+            protocol = "ldaps"
         else:
-            raise ValueError('Protocol %r not supported' % protocol)
+            protocol = "ldap"
+
+    if protocol == "ldaps":
+        return "ldaps://%s" % format_netloc(host, port)
+    elif protocol == "ldapi":
+        return "ldapi://%%2fvar%%2frun%%2fslapd-%s.socket" % (
+            "-".join(realm.split("."))
+        )
+    elif protocol == "ldap":
+        return "ldap://%s" % format_netloc(host, port)
+    else:
+        raise ValueError("Protocol %r not supported" % protocol)

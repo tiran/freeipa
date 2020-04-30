@@ -4,4 +4,4 @@
 
 from ipalib.text import _
 
-__doc__ = _('Host-based access control commands')
+__doc__ = _("Host-based access control commands")

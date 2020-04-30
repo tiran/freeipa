@@ -15,22 +15,21 @@ class WithCertOutArgs(MethodOverride):
 
     takes_options = (
         Str(
-            'certificate_out?',
-            doc=_('Write certificate (chain if --chain used) to file'),
-            include='cli',
-            cli_metavar='FILE',
+            "certificate_out?",
+            doc=_("Write certificate (chain if --chain used) to file"),
+            include="cli",
+            cli_metavar="FILE",
         ),
     )
 
     def forward(self, *keys, **options):
         filename = None
-        if 'certificate_out' in options:
-            filename = options.pop('certificate_out')
+        if "certificate_out" in options:
+            filename = options.pop("certificate_out")
             try:
                 util.check_writable_file(filename)
             except errors.FileError as e:
-                raise errors.ValidationError(name='certificate-out',
-                                             error=str(e))
+                raise errors.ValidationError(name="certificate-out", error=str(e))
 
         result = super(WithCertOutArgs, self).forward(*keys, **options)
 
@@ -41,16 +40,16 @@ class WithCertOutArgs(MethodOverride):
             # message in this case, which the client automatically prints.
             # So in this section we just ignore it and move on.
             certs = None
-            if options.get('chain', False):
-                if 'certificate_chain' in result['result']:
-                    certs = result['result']['certificate_chain']
+            if options.get("chain", False):
+                if "certificate_chain" in result["result"]:
+                    certs = result["result"]["certificate_chain"]
             else:
-                if 'certificate' in result['result']:
-                    certs = [base64.b64decode(result['result']['certificate'])]
+                if "certificate" in result["result"]:
+                    certs = [base64.b64decode(result["result"]["certificate"])]
             if certs:
                 x509.write_certificate_list(
-                    (x509.load_der_x509_certificate(cert) for cert in certs),
-                    filename)
+                    (x509.load_der_x509_certificate(cert) for cert in certs), filename
+                )
 
         return result
 

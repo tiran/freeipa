@@ -24,22 +24,25 @@ These tests are skipped if trust is not established.
 from ipalib import api
 from ipapython.dn import DN
 from ipatests.test_xmlrpc import objectclasses
-from ipatests.test_xmlrpc.xmlrpc_test import (Declarative, fuzzy_uuid,
-                                              fuzzy_user_or_group_sid)
+from ipatests.test_xmlrpc.xmlrpc_test import (
+    Declarative,
+    fuzzy_uuid,
+    fuzzy_user_or_group_sid,
+)
 import pytest
 
-group_name = u'external_group'
-group_desc = u'Test external group'
-group_dn = DN(('cn', group_name), api.env.container_group, api.env.basedn)
+group_name = u"external_group"
+group_desc = u"Test external group"
+group_dn = DN(("cn", group_name), api.env.container_group, api.env.basedn)
 
 
 def get_trusted_group_name():
-    trusts = api.Command['trust_find']()
-    if trusts['count'] == 0:
+    trusts = api.Command["trust_find"]()
+    if trusts["count"] == 0:
         return None
 
-    ad_netbios = trusts['result'][0]['ipantflatname']
-    return r'%s\Domain Admins' % ad_netbios
+    ad_netbios = trusts["result"][0]["ipantflatname"]
+    return r"%s\Domain Admins" % ad_netbios
 
 
 @pytest.mark.tier1
@@ -49,20 +52,22 @@ class test_external_members(Declarative):
         if not api.Backend.rpcclient.isconnected():
             api.Backend.rpcclient.connect()
 
-        trusts = api.Command['trust_find']()
-        if trusts['count'] == 0:
-            pytest.skip('Trust is not established')
+        trusts = api.Command["trust_find"]()
+        if trusts["count"] == 0:
+            pytest.skip("Trust is not established")
 
     cleanup_commands = [
-        ('group_del', [group_name], {}),
+        ("group_del", [group_name], {}),
     ]
 
     tests = [
         dict(
             desc='Create external group "%s"' % group_name,
             command=(
-                'group_add', [group_name], dict(description=group_desc, external=True)
-                ),
+                "group_add",
+                [group_name],
+                dict(description=group_desc, external=True),
+            ),
             expected=dict(
                 value=group_name,
                 summary=u'Added group "%s"' % group_name,
@@ -76,60 +81,61 @@ class test_external_members(Declarative):
             ),
         ),
         dict(
-            desc='Add external member "%s" to group "%s"' % (get_trusted_group_name(), group_name),
+            desc='Add external member "%s" to group "%s"'
+            % (get_trusted_group_name(), group_name),
             command=(
-                'group_add_member', [group_name], dict(ipaexternalmember=get_trusted_group_name())
+                "group_add_member",
+                [group_name],
+                dict(ipaexternalmember=get_trusted_group_name()),
             ),
             expected=dict(
                 completed=1,
-                failed=dict(
-                    member=dict(
-                        group=tuple(),
-                        user=tuple(),
-                    ),
-                ),
+                failed=dict(member=dict(group=tuple(), user=tuple(),),),
                 result=dict(
-                        dn=group_dn,
-                        ipaexternalmember=[fuzzy_user_or_group_sid],
-                        cn=[group_name],
-                        description=[group_desc],
+                    dn=group_dn,
+                    ipaexternalmember=[fuzzy_user_or_group_sid],
+                    cn=[group_name],
+                    description=[group_desc],
                 ),
             ),
         ),
         dict(
-            desc='Try to add duplicate external member "%s" to group "%s"' % (get_trusted_group_name(), group_name),
+            desc='Try to add duplicate external member "%s" to group "%s"'
+            % (get_trusted_group_name(), group_name),
             command=(
-                'group_add_member', [group_name], dict(ipaexternalmember=get_trusted_group_name())
+                "group_add_member",
+                [group_name],
+                dict(ipaexternalmember=get_trusted_group_name()),
             ),
             expected=dict(
                 completed=0,
                 failed=dict(
                     member=dict(
-                        group=[(fuzzy_user_or_group_sid, u'This entry is already a member')],
+                        group=[
+                            (fuzzy_user_or_group_sid, u"This entry is already a member")
+                        ],
                         user=tuple(),
                     ),
                 ),
                 result=dict(
-                        dn=group_dn,
-                        ipaexternalmember=[fuzzy_user_or_group_sid],
-                        cn=[group_name],
-                        description=[group_desc],
+                    dn=group_dn,
+                    ipaexternalmember=[fuzzy_user_or_group_sid],
+                    cn=[group_name],
+                    description=[group_desc],
                 ),
             ),
         ),
         dict(
-            desc='Remove external member "%s" from group "%s"' % (get_trusted_group_name(), group_name),
+            desc='Remove external member "%s" from group "%s"'
+            % (get_trusted_group_name(), group_name),
             command=(
-                'group_remove_member', [group_name], dict(ipaexternalmember=get_trusted_group_name())
+                "group_remove_member",
+                [group_name],
+                dict(ipaexternalmember=get_trusted_group_name()),
             ),
             expected=dict(
                 completed=1,
-                failed=dict(
-                    member=dict(
-                        group=tuple(),
-                        user=tuple(),
-                    ),
-                ),
+                failed=dict(member=dict(group=tuple(), user=tuple(),),),
                 result=dict(
                     dn=group_dn,
                     cn=[group_name],
@@ -139,23 +145,24 @@ class test_external_members(Declarative):
             ),
         ),
         dict(
-            desc='Try to remove external entry "%s" which is not a member of group "%s" from group "%s"' % (get_trusted_group_name(), group_name, group_name),
+            desc='Try to remove external entry "%s" which is not a member of group "%s" from group "%s"'
+            % (get_trusted_group_name(), group_name, group_name),
             command=(
-                'group_remove_member', [group_name], dict(ipaexternalmember=get_trusted_group_name())
+                "group_remove_member",
+                [group_name],
+                dict(ipaexternalmember=get_trusted_group_name()),
             ),
             expected=dict(
                 completed=0,
                 failed=dict(
                     member=dict(
-                        group=[(fuzzy_user_or_group_sid, u'This entry is not a member')],
+                        group=[
+                            (fuzzy_user_or_group_sid, u"This entry is not a member")
+                        ],
                         user=tuple(),
                     ),
                 ),
-                result=dict(
-                        dn=group_dn,
-                        cn=[group_name],
-                        description=[group_desc],
-                ),
+                result=dict(dn=group_dn, cn=[group_name], description=[group_desc],),
             ),
         ),
     ]

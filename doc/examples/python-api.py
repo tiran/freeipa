@@ -34,7 +34,7 @@ def example():
     #   -e in_server=True  Force running in server mode
     #   -e xmlrpc_uri=https://foo.com/ipa/xml  # Connect to a specific server
 
-    api.bootstrap_with_global_options(context='example')
+    api.bootstrap_with_global_options(context="example")
     api.finalize()
 
     # You will need to create a connection.  If you're in_server, call
@@ -46,9 +46,9 @@ def example():
         api.Backend.rpcclient.connect()
 
     # Now that you're connected, you can make calls to api.Command.whatever():
-    print('The admin user:')
-    print(api.Command.user_show(u'admin'))
+    print("The admin user:")
+    print(api.Command.user_show(u"admin"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     example()

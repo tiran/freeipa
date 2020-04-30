@@ -23,7 +23,8 @@ def xunit_testdir(ipa_testdir):
     """
     Create xnit style test module within testdir.
     """
-    ipa_testdir.makepyfile("""
+    ipa_testdir.makepyfile(
+        """
         def setup_module():
             pass
         def teardown_module():
@@ -46,7 +47,8 @@ def xunit_testdir(ipa_testdir):
                 pass
             def test_m(self):
                 pass
-        """)
+        """
+    )
     return ipa_testdir
 
 
@@ -55,7 +57,8 @@ def unittest_testdir(ipa_testdir):
     """
     Create unittest style test module within testdir.
     """
-    ipa_testdir.makepyfile("""
+    ipa_testdir.makepyfile(
+        """
         import unittest
         def setUpModule():
             pass
@@ -75,25 +78,30 @@ def unittest_testdir(ipa_testdir):
                 pass
             def test_m(self):
                 pass
-        """)
+        """
+    )
     return ipa_testdir
 
 
 def test_xunit(xunit_testdir):
     result = xunit_testdir.runpytest()
     result.assert_outcomes(passed=1)
-    result.stdout.fnmatch_lines([
-        "* PytestDeprecationWarning: xunit style is deprecated in favour of "
-        "fixtures style",
-        "* 8 warning*",
-    ])
+    result.stdout.fnmatch_lines(
+        [
+            "* PytestDeprecationWarning: xunit style is deprecated in favour of "
+            "fixtures style",
+            "* 8 warning*",
+        ]
+    )
 
 
 def test_unittest(unittest_testdir):
     result = unittest_testdir.runpytest()
     result.assert_outcomes(passed=1)
-    result.stdout.fnmatch_lines([
-        "* PytestDeprecationWarning: unittest is deprecated in favour of "
-        "fixtures style",
-        "* 1 warning*",
-    ])
+    result.stdout.fnmatch_lines(
+        [
+            "* PytestDeprecationWarning: unittest is deprecated in favour of "
+            "fixtures style",
+            "* 1 warning*",
+        ]
+    )

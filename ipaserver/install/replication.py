@@ -48,52 +48,68 @@ if six.PY3:
 logger = logging.getLogger(__name__)
 
 # the default container used by AD for user entries
-WIN_USER_CONTAINER = DN(('cn', 'Users'))
+WIN_USER_CONTAINER = DN(("cn", "Users"))
 # the default container used by IPA for user entries
-IPA_USER_CONTAINER = DN(('cn', 'users'), ('cn', 'accounts'))
+IPA_USER_CONTAINER = DN(("cn", "users"), ("cn", "accounts"))
 PORT = 636
 DEFAULT_PORT = 389
 TIMEOUT = 120
-REPL_MAN_DN = DN(('cn', 'replication manager'), ('cn', 'config'))
-DNA_DN = DN(('cn', 'Posix IDs'), ('cn', 'Distributed Numeric Assignment Plugin'), ('cn', 'plugins'), ('cn', 'config'))
-REPL_MANAGERS_CN = DN(('cn', 'replication managers'))
+REPL_MAN_DN = DN(("cn", "replication manager"), ("cn", "config"))
+DNA_DN = DN(
+    ("cn", "Posix IDs"),
+    ("cn", "Distributed Numeric Assignment Plugin"),
+    ("cn", "plugins"),
+    ("cn", "config"),
+)
+REPL_MANAGERS_CN = DN(("cn", "replication managers"))
 
 IPA_REPLICA = 1
 WINSYNC = 2
 
 # List of attributes that need to be excluded from replication initialization.
-TOTAL_EXCLUDES = ('entryusn',
-                 'krblastsuccessfulauth',
-                 'krblastfailedauth',
-                 'krbloginfailedcount')
+TOTAL_EXCLUDES = (
+    "entryusn",
+    "krblastsuccessfulauth",
+    "krblastfailedauth",
+    "krbloginfailedcount",
+)
 
 # List of attributes that need to be excluded from normal replication.
-EXCLUDES = ('memberof', 'idnssoaserial') + TOTAL_EXCLUDES
+EXCLUDES = ("memberof", "idnssoaserial") + TOTAL_EXCLUDES
 
 # List of attributes that are not updated on empty replication
-STRIP_ATTRS = ('modifiersName',
-               'modifyTimestamp',
-               'internalModifiersName',
-               'internalModifyTimestamp')
+STRIP_ATTRS = (
+    "modifiersName",
+    "modifyTimestamp",
+    "internalModifiersName",
+    "internalModifyTimestamp",
+)
 
 # settings for cn=replica,cn=$DB,cn=mapping tree,cn=config
 # during replica installation
 REPLICA_CREATION_SETTINGS = {
     "nsds5ReplicaReleaseTimeout": ["20"],
     "nsds5ReplicaBackoffMax": ["3"],
-    "nsDS5ReplicaBindDnGroupCheckInterval": ["2"]
+    "nsDS5ReplicaBindDnGroupCheckInterval": ["2"],
 }
 # after replica installation
 REPLICA_FINAL_SETTINGS = {
     "nsds5ReplicaReleaseTimeout": ["60"],
     "nsds5ReplicaBackoffMax": ["300"],  # default
-    "nsDS5ReplicaBindDnGroupCheckInterval": ["60"]
+    "nsDS5ReplicaBindDnGroupCheckInterval": ["60"],
 }
 
 
-def replica_conn_check(master_host, host_name, realm, check_ca,
-                       dogtag_master_ds_port, admin_password=None,
-                       principal="admin", ca_cert_file=None):
+def replica_conn_check(
+    master_host,
+    host_name,
+    realm,
+    check_ca,
+    dogtag_master_ds_port,
+    admin_password=None,
+    principal="admin",
+    ca_cert_file=None,
+):
     """
     Check the ports used by the replica both locally and remotely to be sure
     that replication will work.
@@ -101,32 +117,39 @@ def replica_conn_check(master_host, host_name, realm, check_ca,
     Does not return a value, will raise ScriptError on failure.
     """
     print("Run connection check to master")
-    args = [paths.IPA_REPLICA_CONNCHECK, "--master", master_host,
-            "--auto-master-check", "--realm", realm,
-            "--hostname", host_name]
-    nolog=tuple()
+    args = [
+        paths.IPA_REPLICA_CONNCHECK,
+        "--master",
+        master_host,
+        "--auto-master-check",
+        "--realm",
+        realm,
+        "--hostname",
+        host_name,
+    ]
+    nolog = tuple()
 
     if principal is not None:
         args.extend(["--principal", principal])
 
     if admin_password:
         args.extend(["--password", admin_password])
-        nolog=(admin_password,)
+        nolog = (admin_password,)
 
     if check_ca and dogtag_master_ds_port == 7389:
-        args.append('--check-ca')
+        args.append("--check-ca")
 
     if ca_cert_file:
         args.extend(["--ca-cert-file", ca_cert_file])
 
-    result = ipautil.run(
-        args, raiseonerr=False, capture_output=False, nolog=nolog)
+    result = ipautil.run(args, raiseonerr=False, capture_output=False, nolog=nolog)
 
     if result.returncode != 0:
         raise ScriptError(
             "Connection check failed!"
             "\nSee /var/log/ipareplica-conncheck.log for more information."
-            "\nIf the check results are not valid it can be skipped with --skip-conncheck parameter.")
+            "\nIf the check results are not valid it can be skipped with --skip-conncheck parameter."
+        )
     else:
         print("Connection check OK")
 
@@ -139,15 +162,14 @@ def enable_replication_version_checking(realm, dirman_passwd):
     """
     conn = ipaldap.LDAPClient.from_realm(realm)
     if dirman_passwd:
-        conn.simple_bind(bind_dn=ipaldap.DIRMAN_DN,
-                         bind_password=dirman_passwd)
+        conn.simple_bind(bind_dn=ipaldap.DIRMAN_DN, bind_password=dirman_passwd)
     else:
         conn.gssapi_bind()
-    entry = conn.get_entry(DN(('cn', 'IPA Version Replication'),
-                              ('cn', 'plugins'),
-                              ('cn', 'config')))
-    if entry.single_value.get('nsslapd-pluginenabled') == 'off':
-        conn.modify_s(entry.dn, [(ldap.MOD_REPLACE, 'nsslapd-pluginenabled', 'on')])
+    entry = conn.get_entry(
+        DN(("cn", "IPA Version Replication"), ("cn", "plugins"), ("cn", "config"))
+    )
+    if entry.single_value.get("nsslapd-pluginenabled") == "off":
+        conn.modify_s(entry.dn, [(ldap.MOD_REPLACE, "nsslapd-pluginenabled", "on")])
         conn.unbind()
         serverid = "-".join(realm.split("."))
         installutils.restart_dirsrv(serverid)
@@ -164,19 +186,22 @@ def wait_for_task(conn, dn):
     """
     assert isinstance(dn, DN)
     attrlist = [
-        'nsTaskLog', 'nsTaskStatus', 'nsTaskExitCode', 'nsTaskCurrentItem',
-        'nsTaskTotalItems']
+        "nsTaskLog",
+        "nsTaskStatus",
+        "nsTaskExitCode",
+        "nsTaskCurrentItem",
+        "nsTaskTotalItems",
+    ]
     while True:
         entry = conn.get_entry(dn, attrlist)
-        if entry.single_value.get('nsTaskExitCode'):
-            exit_code = int(entry.single_value['nsTaskExitCode'])
+        if entry.single_value.get("nsTaskExitCode"):
+            exit_code = int(entry.single_value["nsTaskExitCode"])
             break
         time.sleep(1)
     return exit_code
 
 
-def wait_for_entry(connection, dn, timeout, attr=None, attrvalue='*',
-                   quiet=True):
+def wait_for_entry(connection, dn, timeout, attr=None, attrvalue="*", quiet=True):
     """Wait for entry and/or attr to show up
     """
     log = logger.debug if quiet else logger.info
@@ -186,14 +211,18 @@ def wait_for_entry(connection, dn, timeout, attr=None, attrvalue='*',
         attrlist.append(attr)
     else:
         filterstr = "(objectclass=*)"
-    log("Waiting up to %s seconds for replication (%s) %s %s",
-        timeout, connection, dn, filterstr)
+    log(
+        "Waiting up to %s seconds for replication (%s) %s %s",
+        timeout,
+        connection,
+        dn,
+        filterstr,
+    )
     entry = []
     deadline = time.time() + timeout
     for i in itertools.count(start=1):
         try:
-            entry = connection.get_entries(
-                dn, ldap.SCOPE_BASE, filterstr, attrlist)
+            entry = connection.get_entries(dn, ldap.SCOPE_BASE, filterstr, attrlist)
         except errors.NotFound:
             pass  # no entry yet
         except Exception as e:  # badness
@@ -205,9 +234,7 @@ def wait_for_entry(connection, dn, timeout, attr=None, attrvalue='*',
             return
         elif time.time() > deadline:
             raise errors.NotFound(
-                reason="wait_for_entry timeout on {} for {}".format(
-                    connection, dn
-                )
+                reason="wait_for_entry timeout on {} for {}".format(connection, dn)
             )
         else:
             if i % 10 == 0:
@@ -224,9 +251,9 @@ def get_ds_version(conn):
     :return: a tuple containing the DS version
     """
     # Find which 389-ds is installed
-    rootdse = conn.get_entry(DN(''), ['vendorVersion'])
-    version = rootdse.single_value.get('vendorVersion')
-    mo = re.search(r'(\d+)\.(\d+)\.(\d+)[\.\d]*', version)
+    rootdse = conn.get_entry(DN(""), ["vendorVersion"])
+    version = rootdse.single_value.get("vendorVersion")
+    mo = re.search(r"(\d+)\.(\d+)\.(\d+)[\.\d]*", version)
     vendor_version = tuple(int(v) for v in mo.groups())
     return vendor_version
 
@@ -237,8 +264,9 @@ class ReplicationManager:
     between DS servers, and sync  agreements with Windows servers
     """
 
-    def __init__(self, realm, hostname, dirman_passwd=None, port=PORT,
-                 starttls=False, conn=None):
+    def __init__(
+        self, realm, hostname, dirman_passwd=None, port=PORT, starttls=False, conn=None
+    ):
         self.hostname = hostname
         self.port = port
         self.dirman_passwd = dirman_passwd
@@ -254,14 +282,17 @@ class ReplicationManager:
         if conn is None:
             # If we are passed a password we'll use it as the DM password
             # otherwise we'll do a GSSAPI bind.
-            protocol = 'ldap' if starttls else None
+            protocol = "ldap" if starttls else None
             ldap_uri = ipaldap.get_ldap_uri(
-                hostname, port, protocol=protocol, cacert=paths.IPA_CA_CRT)
-            self.conn = ipaldap.LDAPClient(ldap_uri, cacert=paths.IPA_CA_CRT,
-                                           start_tls=starttls)
+                hostname, port, protocol=protocol, cacert=paths.IPA_CA_CRT
+            )
+            self.conn = ipaldap.LDAPClient(
+                ldap_uri, cacert=paths.IPA_CA_CRT, start_tls=starttls
+            )
             if dirman_passwd:
-                self.conn.simple_bind(bind_dn=ipaldap.DIRMAN_DN,
-                                      bind_password=dirman_passwd)
+                self.conn.simple_bind(
+                    bind_dn=ipaldap.DIRMAN_DN, bind_password=dirman_passwd
+                )
             else:
                 self.conn.gssapi_bind()
         else:
@@ -274,7 +305,8 @@ class ReplicationManager:
         self.repl_man_dn = REPL_MAN_DN
         self.repl_man_cn = "replication manager"
         self.repl_man_group_dn = DN(
-            REPL_MANAGERS_CN, api.env.container_sysaccounts, api.env.basedn)
+            REPL_MANAGERS_CN, api.env.container_sysaccounts, api.env.basedn
+        )
 
     def _get_replica_id(self, conn, master_conn):
         """
@@ -291,8 +323,8 @@ class ReplicationManager:
         except errors.NotFound:
             pass
         else:
-            if replica.single_value.get('nsDS5ReplicaId'):
-                return int(replica.single_value['nsDS5ReplicaId'])
+            if replica.single_value.get("nsDS5ReplicaId"):
+                return int(replica.single_value["nsDS5ReplicaId"])
 
         # Ok, either the entry doesn't exist or the attribute isn't set
         # so get it from the other master
@@ -308,34 +340,41 @@ class ReplicationManager:
         :param attempts: number of attempts to update nsDS5ReplicaId
         :return: value of nsDS5ReplicaId before incrementation
         """
-        dn = DN(('cn','replication'),('cn','etc'), self.suffix)
+        dn = DN(("cn", "replication"), ("cn", "etc"), self.suffix)
 
         for a in range(1, attempts + 1):
             try:
-                logger.debug('Fetching nsDS5ReplicaId from master '
-                             '[attempt %d/%d]', a, attempts)
+                logger.debug(
+                    "Fetching nsDS5ReplicaId from master " "[attempt %d/%d]",
+                    a,
+                    attempts,
+                )
                 replica = master_conn.get_entry(dn)
-                id_values = replica.get('nsDS5ReplicaId')
+                id_values = replica.get("nsDS5ReplicaId")
                 if not id_values:
-                    logger.debug("Unable to retrieve nsDS5ReplicaId from "
-                                 "remote server")
-                    raise RuntimeError("Unable to retrieve nsDS5ReplicaId from remote server")
+                    logger.debug(
+                        "Unable to retrieve nsDS5ReplicaId from " "remote server"
+                    )
+                    raise RuntimeError(
+                        "Unable to retrieve nsDS5ReplicaId from remote server"
+                    )
                 # nsDS5ReplicaId is single-valued now, but historically it could
                 # contain multiple values, of which we need the highest.
                 # see bug: https://fedorahosted.org/freeipa/ticket/3394
                 retval = max(int(v) for v in id_values)
 
                 # Now update the value on the master
-                mod_list = [(ldap.MOD_DELETE, 'nsDS5ReplicaId', str(retval)),
-                            (ldap.MOD_ADD, 'nsDS5ReplicaId', str(retval + 1))]
+                mod_list = [
+                    (ldap.MOD_DELETE, "nsDS5ReplicaId", str(retval)),
+                    (ldap.MOD_ADD, "nsDS5ReplicaId", str(retval + 1)),
+                ]
 
                 master_conn.modify_s(dn, mod_list)
-                logger.debug('Successfully updated nsDS5ReplicaId.')
+                logger.debug("Successfully updated nsDS5ReplicaId.")
                 return retval
 
             except errors.NotFound:
-                logger.debug("Unable to retrieve nsDS5ReplicaId from remote "
-                             "server")
+                logger.debug("Unable to retrieve nsDS5ReplicaId from remote " "server")
                 raise
             # these errors signal a conflict in updating replica ID.
             # We then wait for a random time interval and try again
@@ -348,8 +387,7 @@ class ReplicationManager:
                 logger.debug("Problem updating nsDS5ReplicaID %s", e)
                 raise
 
-        raise RuntimeError("Failed to update nsDS5ReplicaId in %d attempts"
-                           % attempts)
+        raise RuntimeError("Failed to update nsDS5ReplicaId in %d attempts" % attempts)
 
     def get_agreement_filter(self, agreement_types=None, host=None):
         """
@@ -363,17 +401,21 @@ class ReplicationManager:
 
         agreement_types_filters = []
         if IPA_REPLICA in agreement_types:
-            agreement_types_filters.append('(&(objectclass=nsds5ReplicationAgreement)(nsDS5ReplicaRoot=%s))'
-                                           % self.db_suffix)
+            agreement_types_filters.append(
+                "(&(objectclass=nsds5ReplicationAgreement)(nsDS5ReplicaRoot=%s))"
+                % self.db_suffix
+            )
         if WINSYNC in agreement_types:
-            agreement_types_filters.append('(objectclass=nsDSWindowsReplicationAgreement)')
+            agreement_types_filters.append(
+                "(objectclass=nsDSWindowsReplicationAgreement)"
+            )
         if len(agreement_types_filters) > 1:
-            agreement_filter = '(|%s)' % ''.join(agreement_types_filters)
+            agreement_filter = "(|%s)" % "".join(agreement_types_filters)
         else:
-            agreement_filter = ''.join(agreement_types_filters)
+            agreement_filter = "".join(agreement_types_filters)
 
         if host is not None:
-            agreement_filter = '(&%s(nsDS5ReplicaHost=%s))' % (agreement_filter, host)
+            agreement_filter = "(&%s(nsDS5ReplicaHost=%s))" % (agreement_filter, host)
 
         return agreement_filter
 
@@ -391,8 +433,8 @@ class ReplicationManager:
         filt = self.get_agreement_filter()
         try:
             ents = self.conn.get_entries(
-                DN(('cn', 'mapping tree'), ('cn', 'config')),
-                ldap.SCOPE_SUBTREE, filt)
+                DN(("cn", "mapping tree"), ("cn", "config")), ldap.SCOPE_SUBTREE, filt
+            )
         except errors.NotFound:
             ents = []
         return ents
@@ -408,8 +450,8 @@ class ReplicationManager:
         filt = self.get_agreement_filter(IPA_REPLICA)
         try:
             ents = self.conn.get_entries(
-                DN(('cn', 'mapping tree'), ('cn', 'config')),
-                ldap.SCOPE_SUBTREE, filt)
+                DN(("cn", "mapping tree"), ("cn", "config")), ldap.SCOPE_SUBTREE, filt
+            )
         except errors.NotFound:
             ents = []
 
@@ -428,15 +470,15 @@ class ReplicationManager:
         filt = self.get_agreement_filter(host=hostname)
         try:
             entries = self.conn.get_entries(
-                DN(('cn', 'mapping tree'), ('cn', 'config')),
-                ldap.SCOPE_SUBTREE, filt)
+                DN(("cn", "mapping tree"), ("cn", "config")), ldap.SCOPE_SUBTREE, filt
+            )
         except errors.NotFound:
             return None
 
         if len(entries) == 0:
             return None
         else:
-            return entries[0] # There can be only one
+            return entries[0]  # There can be only one
 
     def add_replication_manager(self, conn, dn, pw):
         """
@@ -449,11 +491,11 @@ class ReplicationManager:
         ent = conn.make_entry(
             dn,
             {
-                'objectclass': ["top", "person"],
+                "objectclass": ["top", "person"],
                 rdn_attr: [rdn_val],
-                'userpassword': [pw],
-                'sn': ["replication manager pseudo user"],
-            }
+                "userpassword": [pw],
+                "sn": ["replication manager pseudo user"],
+            },
         )
 
         try:
@@ -475,8 +517,12 @@ class ReplicationManager:
             return "2"
 
     def replica_dn(self):
-        return DN(('cn', 'replica'), ('cn', self.db_suffix),
-                  ('cn', 'mapping tree'), ('cn', 'config'))
+        return DN(
+            ("cn", "replica"),
+            ("cn", self.db_suffix),
+            ("cn", "mapping tree"),
+            ("cn", "config"),
+        )
 
     def _set_replica_binddngroup(self, r_conn, entry):
         """
@@ -485,13 +531,13 @@ class ReplicationManager:
         this case log the error and fall back to setting replica's binddn
         directly.
         """
-        binddn_groups = {
-            DN(p) for p in entry.get('nsds5replicabinddngroup', [])}
+        binddn_groups = {DN(p) for p in entry.get("nsds5replicabinddngroup", [])}
 
         mod = []
         if self.repl_man_group_dn not in binddn_groups:
-            mod.append((ldap.MOD_ADD, 'nsds5replicabinddngroup',
-                        self.repl_man_group_dn))
+            mod.append(
+                (ldap.MOD_ADD, "nsds5replicabinddngroup", self.repl_man_group_dn)
+            )
 
         if mod:
             try:
@@ -499,7 +545,8 @@ class ReplicationManager:
             except ldap.UNWILLING_TO_PERFORM:
                 logger.debug(
                     "nsds5replicabinddngroup attribute not supported on "
-                    "remote master.")
+                    "remote master."
+                )
             except (ldap.ALREADY_EXISTS, ldap.CONSTRAINT_VIOLATION):
                 logger.debug("No update to %s necessary", entry.dn)
 
@@ -538,7 +585,7 @@ class ReplicationManager:
                 return entry
 
         # either existing entry or lost race
-        binddns = entry.setdefault('nsDS5ReplicaBindDN', [])
+        binddns = entry.setdefault("nsDS5ReplicaBindDN", [])
         if replica_binddn not in {DN(m) for m in binddns}:
             # Add the new replication manager
             binddns.append(replica_binddn)
@@ -551,8 +598,10 @@ class ReplicationManager:
             for key, value in REPLICA_CREATION_SETTINGS.items():
                 entry[key] = value
         else:
-            logger.debug("replication attributes not supported "
-                         "on remote master, skipping update.")
+            logger.debug(
+                "replication attributes not supported "
+                "on remote master, skipping update."
+            )
 
         try:
             conn.update_entry(entry)
@@ -568,19 +617,23 @@ class ReplicationManager:
     def setup_changelog(self, conn):
         ent = conn.get_entry(
             DN(
-                ('cn', 'config'), ('cn', 'ldbm database'),
-                ('cn', 'plugins'), ('cn', 'config')),
-            ['nsslapd-directory'])
-        dbdir = os.path.dirname(ent.single_value.get('nsslapd-directory'))
+                ("cn", "config"),
+                ("cn", "ldbm database"),
+                ("cn", "plugins"),
+                ("cn", "config"),
+            ),
+            ["nsslapd-directory"],
+        )
+        dbdir = os.path.dirname(ent.single_value.get("nsslapd-directory"))
 
         entry = conn.make_entry(
-            DN(('cn', 'changelog5'), ('cn', 'config')),
+            DN(("cn", "changelog5"), ("cn", "config")),
             {
-                'objectclass': ["top", "extensibleobject"],
-                'cn': ["changelog5"],
-                'nsslapd-changelogdir': [os.path.join(dbdir, "cldb")],
-                'nsslapd-changelogmaxage': ['7d'],
-            }
+                "objectclass": ["top", "extensibleobject"],
+                "cn": ["changelog5"],
+                "nsslapd-changelogdir": [os.path.join(dbdir, "cldb")],
+                "nsslapd-changelogmaxage": ["7d"],
+            },
         )
         try:
             conn.add_entry(entry)
@@ -602,8 +655,9 @@ class ReplicationManager:
         except errors.EmptyModlist:
             pass
 
-    def finalize_replica_config(self, r_hostname, r_binddn=None,
-                                r_bindpw=None, cacert=paths.IPA_CA_CRT):
+    def finalize_replica_config(
+        self, r_hostname, r_binddn=None, r_bindpw=None, cacert=paths.IPA_CA_CRT
+    ):
         """Apply final cn=replica settings
 
         replica_config() sets several attribute to fast cache invalidation
@@ -619,9 +673,7 @@ class ReplicationManager:
         """
         self._finalize_replica_settings(self.conn)
 
-        r_conn = ipaldap.LDAPClient.from_hostname_secure(
-            r_hostname, cacert=cacert
-        )
+        r_conn = ipaldap.LDAPClient.from_hostname_secure(r_hostname, cacert=cacert)
         if r_bindpw:
             r_conn.simple_bind(r_binddn, r_bindpw)
         else:
@@ -635,12 +687,14 @@ class ReplicationManager:
             # we can safely modify them
             self._finalize_replica_settings(r_conn)
         else:
-            logger.debug("replication attributes not supported "
-                         "on remote master, skipping update.")
+            logger.debug(
+                "replication attributes not supported "
+                "on remote master, skipping update."
+            )
         r_conn.close()
 
     def setup_chaining_backend(self, conn):
-        chaindn = DN(('cn', 'chaining database'), ('cn', 'plugins'), ('cn', 'config'))
+        chaindn = DN(("cn", "chaining database"), ("cn", "plugins"), ("cn", "config"))
         benamebase = "chaindb"
         urls = [conn.ldap_uri]
         cn = ""
@@ -648,19 +702,18 @@ class ReplicationManager:
         done = False
         while not done:
             try:
-                cn = benamebase + str(benum) # e.g. localdb1
-                dn = DN(('cn', cn), chaindn)
+                cn = benamebase + str(benum)  # e.g. localdb1
+                dn = DN(("cn", cn), chaindn)
                 entry = conn.make_entry(
                     dn,
                     {
-                        'objectclass': [
-                            'top', 'extensibleObject', 'nsBackendInstance'],
-                        'cn': [cn],
-                        'nsslapd-suffix': [str(self.db_suffix)],
-                        'nsfarmserverurl': urls,
-                        'nsmultiplexorbinddn': [self.repl_man_dn],
-                        'nsmultiplexorcredentials': [self.repl_man_passwd],
-                    }
+                        "objectclass": ["top", "extensibleObject", "nsBackendInstance"],
+                        "cn": [cn],
+                        "nsslapd-suffix": [str(self.db_suffix)],
+                        "nsfarmserverurl": urls,
+                        "nsmultiplexorbinddn": [self.repl_man_dn],
+                        "nsmultiplexorcredentials": [self.repl_man_passwd],
+                    },
                 )
                 self.conn.add_entry(entry)
                 done = True
@@ -674,54 +727,71 @@ class ReplicationManager:
 
     def setup_chaining_farm(self, conn):
         try:
-            conn.modify_s(self.db_suffix, [(ldap.MOD_ADD, 'aci',
-                                    [ "(targetattr = \"*\")(version 3.0; acl \"Proxied authorization for database links\"; allow (proxy) userdn = \"ldap:///%s\";)" % self.repl_man_dn ])])
+            conn.modify_s(
+                self.db_suffix,
+                [
+                    (
+                        ldap.MOD_ADD,
+                        "aci",
+                        [
+                            '(targetattr = "*")(version 3.0; acl "Proxied authorization for database links"; allow (proxy) userdn = "ldap:///%s";)'
+                            % self.repl_man_dn
+                        ],
+                    )
+                ],
+            )
         except ldap.TYPE_OR_VALUE_EXISTS:
-            logger.debug("proxy aci already exists in suffix %s on %s",
-                         self.db_suffix, conn.ldap_uri)
+            logger.debug(
+                "proxy aci already exists in suffix %s on %s",
+                self.db_suffix,
+                conn.ldap_uri,
+            )
 
     def get_mapping_tree_entry(self):
         try:
             entries = self.conn.get_entries(
-                DN(('cn', 'mapping tree'), ('cn', 'config')),
+                DN(("cn", "mapping tree"), ("cn", "config")),
                 ldap.SCOPE_ONELEVEL,
-                "(cn=\"%s\")" % (self.db_suffix))
+                '(cn="%s")' % (self.db_suffix),
+            )
             # TODO: Check we got only one entry
             return entries[0]
         except errors.NotFound:
-            logger.debug(
-                "failed to find mapping tree entry for %s", self.db_suffix)
+            logger.debug("failed to find mapping tree entry for %s", self.db_suffix)
             raise
-
 
     def enable_chain_on_update(self, bename):
         mtent = self.get_mapping_tree_entry()
         dn = mtent.dn
 
         plgent = self.conn.get_entry(
-            DN(('cn', 'Multimaster Replication Plugin'), ('cn', 'plugins'),
-               ('cn', 'config')),
-            ['nsslapd-pluginPath'])
-        path = plgent.single_value.get('nsslapd-pluginPath')
+            DN(
+                ("cn", "Multimaster Replication Plugin"),
+                ("cn", "plugins"),
+                ("cn", "config"),
+            ),
+            ["nsslapd-pluginPath"],
+        )
+        path = plgent.single_value.get("nsslapd-pluginPath")
 
-        mod = [(ldap.MOD_REPLACE, 'nsslapd-state', 'backend'),
-               (ldap.MOD_ADD, 'nsslapd-backend', bename),
-               (ldap.MOD_ADD, 'nsslapd-distribution-plugin', path),
-               (ldap.MOD_ADD, 'nsslapd-distribution-funct', 'repl_chain_on_update')]
+        mod = [
+            (ldap.MOD_REPLACE, "nsslapd-state", "backend"),
+            (ldap.MOD_ADD, "nsslapd-backend", bename),
+            (ldap.MOD_ADD, "nsslapd-distribution-plugin", path),
+            (ldap.MOD_ADD, "nsslapd-distribution-funct", "repl_chain_on_update"),
+        ]
 
         try:
             self.conn.modify_s(dn, mod)
         except ldap.TYPE_OR_VALUE_EXISTS:
-            logger.debug("chainOnUpdate already enabled for %s",
-                         self.db_suffix)
+            logger.debug("chainOnUpdate already enabled for %s", self.db_suffix)
 
     def setup_chain_on_update(self, other_conn):
         chainbe = self.setup_chaining_backend(other_conn)
         self.enable_chain_on_update(chainbe)
 
     def add_passsync_user(self, conn, password):
-        pass_dn = DN(('uid', 'passsync'), api.env.container_sysaccounts,
-                     self.suffix)
+        pass_dn = DN(("uid", "passsync"), api.env.container_sysaccounts, self.suffix)
         print("The user for the Windows PassSync service is %s" % pass_dn)
         try:
             conn.get_entry(pass_dn)
@@ -741,30 +811,34 @@ class ReplicationManager:
                 pass
 
         # Add the user to the list of users allowed to bypass password policy
-        extop_dn = DN(('cn', 'ipa_pwd_extop'), ('cn', 'plugins'), ('cn', 'config'))
+        extop_dn = DN(("cn", "ipa_pwd_extop"), ("cn", "plugins"), ("cn", "config"))
         entry = conn.get_entry(extop_dn)
-        pass_mgrs = entry.get('passSyncManagersDNs', [])
+        pass_mgrs = entry.get("passSyncManagersDNs", [])
         pass_mgrs.append(pass_dn)
-        mod = [(ldap.MOD_REPLACE, 'passSyncManagersDNs', pass_mgrs)]
+        mod = [(ldap.MOD_REPLACE, "passSyncManagersDNs", pass_mgrs)]
         try:
             conn.modify_s(extop_dn, mod)
         except ldap.TYPE_OR_VALUE_EXISTS:
-            logger.debug("Plugin '%s' already '%s' in passSyncManagersDNs",
-                         extop_dn, pass_dn)
+            logger.debug(
+                "Plugin '%s' already '%s' in passSyncManagersDNs", extop_dn, pass_dn
+            )
 
         # And finally add it is a member of PassSync privilege to allow
         # displaying user NT attributes and reset passwords
-        passsync_privilege_dn = DN(('cn','PassSync Service'),
-                api.env.container_privilege,
-                api.env.basedn)
-        members = entry.get('member', [])
+        passsync_privilege_dn = DN(
+            ("cn", "PassSync Service"), api.env.container_privilege, api.env.basedn
+        )
+        members = entry.get("member", [])
         members.append(pass_dn)
-        mod = [(ldap.MOD_REPLACE, 'member', members)]
+        mod = [(ldap.MOD_REPLACE, "member", members)]
         try:
             conn.modify_s(passsync_privilege_dn, mod)
         except ldap.TYPE_OR_VALUE_EXISTS:
-            logger.debug("PassSync service '%s' already have '%s' as member",
-                         passsync_privilege_dn, pass_dn)
+            logger.debug(
+                "PassSync service '%s' already have '%s' as member",
+                passsync_privilege_dn,
+                pass_dn,
+            )
 
     def setup_winsync_agmt(self, entry, win_subtree=None):
         if win_subtree is None:
@@ -776,8 +850,8 @@ class ReplicationManager:
         entry["nsds7WindowsReplicaSubtree"] = [win_subtree]
         entry["nsds7DirectoryReplicaSubtree"] = [ds_subtree]
         # for now, just sync users and ignore groups
-        entry["nsds7NewWinUserSyncEnabled"] = ['true']
-        entry["nsds7NewWinGroupSyncEnabled"] = ['false']
+        entry["nsds7NewWinUserSyncEnabled"] = ["true"]
+        entry["nsds7NewWinGroupSyncEnabled"] = ["false"]
         entry["nsds7WindowsDomain"] = [windomain]
 
     def agreement_dn(self, hostname, master=None):
@@ -787,14 +861,22 @@ class ReplicationManager:
         tell which side we want.
         """
         cn = self.agreement_name_format % (hostname)
-        dn = DN(('cn', cn), self.replica_dn())
+        dn = DN(("cn", cn), self.replica_dn())
 
         return (cn, dn)
 
-    def setup_agreement(self, a_conn, b_hostname, port=389,
-                        repl_man_dn=None, repl_man_passwd=None,
-                        iswinsync=False, win_subtree=None, isgssapi=False,
-                        master=None):
+    def setup_agreement(
+        self,
+        a_conn,
+        b_hostname,
+        port=389,
+        repl_man_dn=None,
+        repl_man_passwd=None,
+        iswinsync=False,
+        win_subtree=None,
+        isgssapi=False,
+        master=None,
+    ):
         """
         master is used to determine which side of the agreement we are
         creating. This is only needed for dogtag replication agreements
@@ -823,27 +905,33 @@ class ReplicationManager:
             description=["me to %s" % b_hostname],
         )
         if master is None:
-            entry['nsDS5ReplicatedAttributeList'] = [
-                '(objectclass=*) $ EXCLUDE %s' % " ".join(EXCLUDES)]
+            entry["nsDS5ReplicatedAttributeList"] = [
+                "(objectclass=*) $ EXCLUDE %s" % " ".join(EXCLUDES)
+            ]
         if isgssapi:
-            entry['nsds5replicatransportinfo'] = ['LDAP']
-            entry['nsds5replicabindmethod'] = ['SASL/GSSAPI']
+            entry["nsds5replicatransportinfo"] = ["LDAP"]
+            entry["nsds5replicabindmethod"] = ["SASL/GSSAPI"]
         else:
-            entry['nsds5replicabinddn'] = [repl_man_dn]
-            entry['nsds5replicacredentials'] = [repl_man_passwd]
-            entry['nsds5replicatransportinfo'] = ['TLS']
-            entry['nsds5replicabindmethod'] = ['simple']
+            entry["nsds5replicabinddn"] = [repl_man_dn]
+            entry["nsds5replicacredentials"] = [repl_man_passwd]
+            entry["nsds5replicatransportinfo"] = ["TLS"]
+            entry["nsds5replicabindmethod"] = ["simple"]
 
         if iswinsync:
             self.setup_winsync_agmt(entry, win_subtree)
         else:
-            entry['nsds5ReplicaStripAttrs'] = [" ".join(STRIP_ATTRS)]
+            entry["nsds5ReplicaStripAttrs"] = [" ".join(STRIP_ATTRS)]
 
         a_conn.add_entry(entry)
 
         try:
-            mod = [(ldap.MOD_ADD, 'nsDS5ReplicatedAttributeListTotal',
-                   '(objectclass=*) $ EXCLUDE %s' % " ".join(TOTAL_EXCLUDES))]
+            mod = [
+                (
+                    ldap.MOD_ADD,
+                    "nsDS5ReplicatedAttributeListTotal",
+                    "(objectclass=*) $ EXCLUDE %s" % " ".join(TOTAL_EXCLUDES),
+                )
+            ]
             a_conn.modify_s(dn, mod)
         except ldap.LDAPError:
             # Apparently there are problems set the total list
@@ -851,9 +939,7 @@ class ReplicationManager:
             # that we will have to set the memberof fixup task
             self.need_memberof_fixup = True
 
-        wait_for_entry(
-            a_conn, entry.dn, timeout=api.env.replication_wait_timeout
-        )
+        wait_for_entry(a_conn, entry.dn, timeout=api.env.replication_wait_timeout)
 
     def needs_memberof_fixup(self):
         return self.need_memberof_fixup
@@ -872,43 +958,46 @@ class ReplicationManager:
         If either of the DNs doesn't exist after the retries are
         exhausted an exception is raised.
         """
-        filter_a = '(krbprincipalname=ldap/%s@%s)' % (a.host, self.realm)
-        filter_b = '(krbprincipalname=ldap/%s@%s)' % (b.host, self.realm)
+        filter_a = "(krbprincipalname=ldap/%s@%s)" % (a.host, self.realm)
+        filter_b = "(krbprincipalname=ldap/%s@%s)" % (b.host, self.realm)
 
         a_entry = None
         b_entry = None
-        error_message = ''
+        error_message = ""
 
-        while (retries > 0 ):
-            logger.info('Getting ldap service principals for conversion: '
-                        '%s and %s', filter_a, filter_b)
+        while retries > 0:
+            logger.info(
+                "Getting ldap service principals for conversion: " "%s and %s",
+                filter_a,
+                filter_b,
+            )
             try:
-                a_entry = b.get_entries(self.suffix, ldap.SCOPE_SUBTREE,
-                                        filter=filter_a)
+                a_entry = b.get_entries(
+                    self.suffix, ldap.SCOPE_SUBTREE, filter=filter_a
+                )
             except errors.NotFound:
                 pass
 
             try:
-                b_entry = a.get_entries(self.suffix, ldap.SCOPE_SUBTREE,
-                                        filter=filter_b)
+                b_entry = a.get_entries(
+                    self.suffix, ldap.SCOPE_SUBTREE, filter=filter_b
+                )
             except errors.NotFound:
                 pass
 
             if a_entry and b_entry:
-                logger.debug('Found both principals.')
+                logger.debug("Found both principals.")
                 break
 
             # One or both is missing, force sync again
             if not a_entry:
-                logger.debug('Unable to find entry for %s on %s',
-                             filter_a, str(b))
+                logger.debug("Unable to find entry for %s on %s", filter_a, str(b))
                 self.force_sync(a, b.host)
                 _cn, dn = self.agreement_dn(b.host)
                 _haserror, error_message = self.wait_for_repl_update(a, dn, 60)
 
             if not b_entry:
-                logger.debug('Unable to find entry for %s on %s',
-                             filter_b, str(a))
+                logger.debug("Unable to find entry for %s on %s", filter_b, str(a))
                 self.force_sync(b, a.host)
                 _cn, dn = self.agreement_dn(a.host)
                 _haserror, error_message = self.wait_for_repl_update(b, dn, 60)
@@ -916,10 +1005,12 @@ class ReplicationManager:
             retries -= 1
 
         if not a_entry or not b_entry:
-            error = 'One of the ldap service principals is missing. ' \
-                    'Replication agreement cannot be converted.'
+            error = (
+                "One of the ldap service principals is missing. "
+                "Replication agreement cannot be converted."
+            )
             if error_message:
-                error += '\nReplication error message: %s' % error_message
+                error += "\nReplication error message: %s" % error_message
             raise RuntimeError(error)
 
         return (a_entry[0].dn, b_entry[0].dn)
@@ -963,11 +1054,13 @@ class ReplicationManager:
 
         self.setup_krb_princs_as_replica_binddns(a, b)
 
-        #change replication agreements to connect to other host using GSSAPI
-        mod = [(ldap.MOD_REPLACE, "nsds5replicatransportinfo", "LDAP"),
-               (ldap.MOD_REPLACE, "nsds5replicabindmethod", "SASL/GSSAPI"),
-               (ldap.MOD_DELETE, "nsds5replicabinddn", None),
-               (ldap.MOD_DELETE, "nsds5replicacredentials", None)]
+        # change replication agreements to connect to other host using GSSAPI
+        mod = [
+            (ldap.MOD_REPLACE, "nsds5replicatransportinfo", "LDAP"),
+            (ldap.MOD_REPLACE, "nsds5replicabindmethod", "SASL/GSSAPI"),
+            (ldap.MOD_DELETE, "nsds5replicabinddn", None),
+            (ldap.MOD_DELETE, "nsds5replicacredentials", None),
+        ]
 
         _cn, a_ag_dn = self.agreement_dn(b.host)
         a.modify_s(a_ag_dn, mod)
@@ -1002,12 +1095,15 @@ class ReplicationManager:
         return self.conn.delete_entry(dn)
 
     def delete_referral(self, hostname):
-        dn = DN(('cn', self.db_suffix),
-                ('cn', 'mapping tree'), ('cn', 'config'))
+        dn = DN(("cn", self.db_suffix), ("cn", "mapping tree"), ("cn", "config"))
         # TODO: should we detect proto/port somehow ?
-        mod = [(ldap.MOD_DELETE, 'nsslapd-referral',
-                'ldap://%s/%s' % (ipautil.format_netloc(hostname, 389),
-                                  self.db_suffix))]
+        mod = [
+            (
+                ldap.MOD_DELETE,
+                "nsslapd-referral",
+                "ldap://%s/%s" % (ipautil.format_netloc(hostname, 389), self.db_suffix),
+            )
+        ]
 
         try:
             self.conn.modify_s(dn, mod)
@@ -1017,42 +1113,51 @@ class ReplicationManager:
     def check_repl_init(self, conn, agmtdn, start):
         done = False
         hasError = 0
-        attrlist = ['cn', 'nsds5BeginReplicaRefresh',
-                    'nsds5replicaUpdateInProgress',
-                    'nsds5ReplicaLastInitStatus',
-                    'nsds5ReplicaLastInitStart',
-                    'nsds5ReplicaLastInitEnd']
+        attrlist = [
+            "cn",
+            "nsds5BeginReplicaRefresh",
+            "nsds5replicaUpdateInProgress",
+            "nsds5ReplicaLastInitStatus",
+            "nsds5ReplicaLastInitStart",
+            "nsds5ReplicaLastInitEnd",
+        ]
         entry = conn.get_entry(agmtdn, attrlist)
         if not entry:
             print("Error reading status from agreement", agmtdn)
             hasError = 1
         else:
-            refresh = entry.single_value.get('nsds5BeginReplicaRefresh')
-            inprogress = entry.single_value.get('nsds5replicaUpdateInProgress')
-            status = entry.single_value.get('nsds5ReplicaLastInitStatus')
-            if not refresh: # done - check status
+            refresh = entry.single_value.get("nsds5BeginReplicaRefresh")
+            inprogress = entry.single_value.get("nsds5replicaUpdateInProgress")
+            status = entry.single_value.get("nsds5ReplicaLastInitStatus")
+            if not refresh:  # done - check status
                 if not status:
                     print("No status yet")
                 elif status.find("replica busy") > -1:
-                    print("[%s] reports: Replica Busy! Status: [%s]"
-                          % (conn.ldap_uri, status))
+                    print(
+                        "[%s] reports: Replica Busy! Status: [%s]"
+                        % (conn.ldap_uri, status)
+                    )
                     done = True
                     hasError = 2
                 elif status.find("Total update succeeded") > -1:
                     print("\nUpdate succeeded")
                     done = True
-                elif inprogress.lower() == 'true':
+                elif inprogress.lower() == "true":
                     print("\nUpdate in progress yet not in progress")
                 else:
-                    print("\n[%s] reports: Update failed! Status: [%s]"
-                          % (conn.ldap_uri, status))
+                    print(
+                        "\n[%s] reports: Update failed! Status: [%s]"
+                        % (conn.ldap_uri, status)
+                    )
                     hasError = 1
                     done = True
             else:
                 now = datetime.datetime.now()
                 d = now - start
-                sys.stdout.write('\r')
-                sys.stdout.write("Update in progress, %d seconds elapsed" % int(d.total_seconds()))
+                sys.stdout.write("\r")
+                sys.stdout.write(
+                    "Update in progress, %d seconds elapsed" % int(d.total_seconds())
+                )
                 sys.stdout.flush()
 
         return done, hasError
@@ -1060,23 +1165,27 @@ class ReplicationManager:
     def check_repl_update(self, conn, agmtdn):
         done = False
         hasError = 0
-        error_message = ''
-        attrlist = ['cn', 'nsds5replicaUpdateInProgress',
-                    'nsds5ReplicaLastUpdateStatus', 'nsds5ReplicaLastUpdateStart',
-                    'nsds5ReplicaLastUpdateEnd']
+        error_message = ""
+        attrlist = [
+            "cn",
+            "nsds5replicaUpdateInProgress",
+            "nsds5ReplicaLastUpdateStatus",
+            "nsds5ReplicaLastUpdateStart",
+            "nsds5ReplicaLastUpdateEnd",
+        ]
         entry = conn.get_entry(agmtdn, attrlist)
         if not entry:
             print("Error reading status from agreement", agmtdn)
             hasError = 1
         else:
-            inprogress = entry.single_value.get('nsds5replicaUpdateInProgress')
-            status = entry.single_value.get('nsds5ReplicaLastUpdateStatus')
+            inprogress = entry.single_value.get("nsds5replicaUpdateInProgress")
+            status = entry.single_value.get("nsds5ReplicaLastUpdateStatus")
             try:
                 # nsds5ReplicaLastUpdateStart is either a GMT time
                 # ending with Z or 0 (see 389-ds ticket 47836)
                 # Remove the Z and convert to int
-                start = entry.single_value['nsds5ReplicaLastUpdateStart']
-                if start.endswith('Z'):
+                start = entry.single_value["nsds5ReplicaLastUpdateStart"]
+                if start.endswith("Z"):
                     start = start[:-1]
                 start = int(start)
             except (ValueError, TypeError, KeyError):
@@ -1085,28 +1194,32 @@ class ReplicationManager:
                 # nsds5ReplicaLastUpdateEnd is either a GMT time
                 # ending with Z or 0 (see 389-ds ticket 47836)
                 # Remove the Z and convert to int
-                end = entry.single_value['nsds5ReplicaLastUpdateEnd']
-                if end.endswith('Z'):
+                end = entry.single_value["nsds5ReplicaLastUpdateEnd"]
+                if end.endswith("Z"):
                     end = end[:-1]
                 end = int(end)
             except (ValueError, TypeError, KeyError):
                 end = 0
             # incremental update is done if inprogress is false and end >= start
-            done = inprogress and inprogress.lower() == 'false' and start <= end
-            logger.info("Replication Update in progress: %s: status: %s: "
-                        "start: %d: end: %d",
-                        inprogress, status, start, end)
-            if status: # always check for errors
+            done = inprogress and inprogress.lower() == "false" and start <= end
+            logger.info(
+                "Replication Update in progress: %s: status: %s: " "start: %d: end: %d",
+                inprogress,
+                status,
+                start,
+                end,
+            )
+            if status:  # always check for errors
                 # status will usually be a number followed by a string
                 # number != 0 means error
                 # Since 389-ds-base 1.3.5 it is 'Error (%d) %s'
                 # so we need to remove a prefix string and parentheses
-                if status.startswith('Error '):
-                    rc, msg = status[6:].split(' ', 1)
-                    rc = rc.strip('()')
+                if status.startswith("Error "):
+                    rc, msg = status[6:].split(" ", 1)
+                    rc = rc.strip("()")
                 else:
-                    rc, msg = status.split(' ', 1)
-                if rc != '0':
+                    rc, msg = status.split(" ", 1)
+                if rc != "0":
                     hasError = 1
                     error_message = msg
                     done = True
@@ -1126,13 +1239,15 @@ class ReplicationManager:
     def wait_for_repl_update(self, conn, agmtdn, maxtries=600):
         done = False
         haserror = 0
-        error_message = ''
+        error_message = ""
         while not done and not haserror and maxtries > 0:
             time.sleep(1)  # give it a few seconds to get going
             done, haserror, error_message = self.check_repl_update(conn, agmtdn)
             maxtries -= 1
-        if maxtries == 0: # too many tries
-            print("Error: timeout: could not determine agreement status: please check your directory server logs for possible errors")
+        if maxtries == 0:  # too many tries
+            print(
+                "Error: timeout: could not determine agreement status: please check your directory server logs for possible errors"
+            )
             haserror = 1
         return haserror, error_message
 
@@ -1142,7 +1257,7 @@ class ReplicationManager:
             hostname = self.hostname
         _cn, dn = self.agreement_dn(hostname, master)
 
-        mod = [(ldap.MOD_ADD, 'nsds5BeginReplicaRefresh', 'start')]
+        mod = [(ldap.MOD_ADD, "nsds5BeginReplicaRefresh", "start")]
         conn.modify_s(dn, mod)
 
         return self.wait_for_repl_init(conn, dn)
@@ -1154,9 +1269,16 @@ class ReplicationManager:
         self.replica_config(conn, replica_id, repldn)
         self.setup_changelog(conn)
 
-    def setup_replication(self, r_hostname, r_port=389, r_sslport=636,
-                          r_binddn=None, r_bindpw=None,
-                          is_cs_replica=False, local_port=None):
+    def setup_replication(
+        self,
+        r_hostname,
+        r_port=389,
+        r_sslport=636,
+        r_binddn=None,
+        r_bindpw=None,
+        is_cs_replica=False,
+        local_port=None,
+    ):
         assert isinstance(r_binddn, DN)
         if local_port is None:
             local_port = r_port
@@ -1169,34 +1291,52 @@ class ReplicationManager:
         else:
             r_conn.gssapi_bind()
 
-        #Setup the first half
+        # Setup the first half
         l_id = self._get_replica_id(self.conn, r_conn)
-        self.basic_replication_setup(self.conn, l_id,
-                                     self.repl_man_dn, self.repl_man_passwd)
+        self.basic_replication_setup(
+            self.conn, l_id, self.repl_man_dn, self.repl_man_passwd
+        )
 
         # Now setup the other half
         r_id = self._get_replica_id(r_conn, r_conn)
-        self.basic_replication_setup(r_conn, r_id,
-                                     self.repl_man_dn, self.repl_man_passwd)
+        self.basic_replication_setup(
+            r_conn, r_id, self.repl_man_dn, self.repl_man_passwd
+        )
 
         if is_cs_replica:
-            self.setup_agreement(r_conn, self.hostname, port=local_port,
-                                 repl_man_dn=self.repl_man_dn,
-                                 repl_man_passwd=self.repl_man_passwd,
-                                 master=False)
-            self.setup_agreement(self.conn, r_hostname, port=r_port,
-                                 repl_man_dn=self.repl_man_dn,
-                                 repl_man_passwd=self.repl_man_passwd,
-                                 master=True)
+            self.setup_agreement(
+                r_conn,
+                self.hostname,
+                port=local_port,
+                repl_man_dn=self.repl_man_dn,
+                repl_man_passwd=self.repl_man_passwd,
+                master=False,
+            )
+            self.setup_agreement(
+                self.conn,
+                r_hostname,
+                port=r_port,
+                repl_man_dn=self.repl_man_dn,
+                repl_man_passwd=self.repl_man_passwd,
+                master=True,
+            )
         else:
-            self.setup_agreement(r_conn, self.hostname, port=local_port,
-                                 repl_man_dn=self.repl_man_dn,
-                                 repl_man_passwd=self.repl_man_passwd)
-            self.setup_agreement(self.conn, r_hostname, port=r_port,
-                                 repl_man_dn=self.repl_man_dn,
-                                 repl_man_passwd=self.repl_man_passwd)
+            self.setup_agreement(
+                r_conn,
+                self.hostname,
+                port=local_port,
+                repl_man_dn=self.repl_man_dn,
+                repl_man_passwd=self.repl_man_passwd,
+            )
+            self.setup_agreement(
+                self.conn,
+                r_hostname,
+                port=r_port,
+                repl_man_dn=self.repl_man_dn,
+                repl_man_passwd=self.repl_man_passwd,
+            )
 
-        #Finally start replication
+        # Finally start replication
         ret = self.start_replication(r_conn, master=False)
         if ret != 0:
             raise RuntimeError("Failed to start replication")
@@ -1209,57 +1349,65 @@ class ReplicationManager:
             return
 
         # Check the validity of the value
-        if value.lower() not in ['off', 'on', 'nolog']:
+        if value.lower() not in ["off", "on", "nolog"]:
             return
 
         # Change the value if needed
-        entry = conn.get_entry(DN(('cn', 'config')),
-                               ['nsslapd-unhashed-pw-switch'])
+        entry = conn.get_entry(DN(("cn", "config")), ["nsslapd-unhashed-pw-switch"])
         toggle = entry.single_value.get("nsslapd-unhashed-pw-switch")
         if not toggle or not (toggle.lower() == value.lower()):
             entry["nsslapd-unhashed-pw-switch"] = value.lower()
             conn.update_entry(entry)
 
         # if unhashed password are being logged, display a warning
-        if value.lower() == 'on':
+        if value.lower() == "on":
             try:
                 entry = conn.get_entry(
-                    DN(('cn', 'changelog5'),
-                       ('cn', 'config')),
-                    ['nsslapd-changelogdir'])
+                    DN(("cn", "changelog5"), ("cn", "config")), ["nsslapd-changelogdir"]
+                )
                 cldb = entry.single_value.get("nsslapd-changelogdir")
-                logger.warning("This configuration (\"--winsync\") may imply "
-                               "that the log file contains clear text "
-                               "passwords.\n"
-                               "Please ensure that these files can be accessed"
-                               " only by trusted accounts.\n"
-                               "Log files are under %s", cldb)
+                logger.warning(
+                    'This configuration ("--winsync") may imply '
+                    "that the log file contains clear text "
+                    "passwords.\n"
+                    "Please ensure that these files can be accessed"
+                    " only by trusted accounts.\n"
+                    "Log files are under %s",
+                    cldb,
+                )
             except errors.NotFound:
-                logger.warning("This configuration (\"--winsync\") may imply "
-                               "that the log file contains clear text "
-                               "passwords.\n"
-                               "Please ensure that these files can be accessed"
-                               " only by trusted accounts.")
+                logger.warning(
+                    'This configuration ("--winsync") may imply '
+                    "that the log file contains clear text "
+                    "passwords.\n"
+                    "Please ensure that these files can be accessed"
+                    " only by trusted accounts."
+                )
 
-    def setup_winsync_replication(self,
-                                  ad_dc_name, ad_binddn, ad_pwd,
-                                  passsync_pw, ad_subtree,
-                                  cacert=paths.IPA_CA_CRT):
+    def setup_winsync_replication(
+        self,
+        ad_dc_name,
+        ad_binddn,
+        ad_pwd,
+        passsync_pw,
+        ad_subtree,
+        cacert=paths.IPA_CA_CRT,
+    ):
         self.ad_suffix = ""
         try:
             # Validate AD connection
             ad_conn = ldap_initialize(
-                'ldap://%s' % ipautil.format_netloc(ad_dc_name),
-                cacertfile=cacert
+                "ldap://%s" % ipautil.format_netloc(ad_dc_name), cacertfile=cacert
             )
             ad_conn.start_tls_s()
             ad_conn.simple_bind_s(str(ad_binddn), ad_pwd)
-            res = ad_conn.search_s("", ldap.SCOPE_BASE, '(objectClass=*)',
-                                   ['defaultNamingContext'])
-            for dn,entry in res:
+            res = ad_conn.search_s(
+                "", ldap.SCOPE_BASE, "(objectClass=*)", ["defaultNamingContext"]
+            )
+            for dn, entry in res:
                 if dn == "":
-                    ad_suffix = entry['defaultNamingContext'][0]
-                    self.ad_suffix = ad_suffix.decode('utf-8')
+                    ad_suffix = entry["defaultNamingContext"][0]
+                    self.ad_suffix = ad_suffix.decode("utf-8")
                     logger.info("AD Suffix is: %s", self.ad_suffix)
             if self.ad_suffix == "":
                 raise RuntimeError("Failed to lookup AD's Ldap suffix")
@@ -1274,22 +1422,33 @@ class ReplicationManager:
         # there is no other side to get a replica ID from
         # So we generate one locally
         replica_id = self._get_replica_id(self.conn, self.conn)
-        self.basic_replication_setup(self.conn, replica_id,
-                                     self.repl_man_dn, self.repl_man_passwd)
+        self.basic_replication_setup(
+            self.conn, replica_id, self.repl_man_dn, self.repl_man_passwd
+        )
 
-        #now add a passync user allowed to access the AD server
+        # now add a passync user allowed to access the AD server
         self.add_passsync_user(self.conn, passsync_pw)
-        self.setup_agreement(self.conn, ad_dc_name,
-                             repl_man_dn=ad_binddn, repl_man_passwd=ad_pwd,
-                             iswinsync=True, win_subtree=ad_subtree)
-        logger.info("Added new sync agreement, waiting for it to become "
-                    "ready . . .")
+        self.setup_agreement(
+            self.conn,
+            ad_dc_name,
+            repl_man_dn=ad_binddn,
+            repl_man_passwd=ad_pwd,
+            iswinsync=True,
+            win_subtree=ad_subtree,
+        )
+        logger.info("Added new sync agreement, waiting for it to become " "ready . . .")
         _cn, dn = self.agreement_dn(ad_dc_name)
         self.wait_for_repl_update(self.conn, dn, 300)
         logger.info("Agreement is ready, starting replication . . .")
 
         # Add winsync replica to the public DIT
-        dn = DN(('cn',ad_dc_name),('cn','replicas'),('cn','ipa'),('cn','etc'), self.suffix)
+        dn = DN(
+            ("cn", ad_dc_name),
+            ("cn", "replicas"),
+            ("cn", "ipa"),
+            ("cn", "etc"),
+            self.suffix,
+        )
         entry = self.conn.make_entry(
             dn,
             objectclass=["nsContainer", "ipaConfigObject"],
@@ -1304,10 +1463,9 @@ class ReplicationManager:
 
         # For winsync, unhashed passwords needs to be in replication changelog
         # Time to alarm about a security risk
-        self.unhashed_password_log(self.conn, 'on')
+        self.unhashed_password_log(self.conn, "on")
 
-
-        #Finally start replication
+        # Finally start replication
         ret = self.start_replication(self.conn, ad_dc_name)
         if ret != 0:
             raise RuntimeError("Failed to start replication")
@@ -1355,8 +1513,10 @@ class ReplicationManager:
         self.setup_agreement(r_conn, self.hostname, isgssapi=True)
 
     def initialize_replication(self, dn, conn):
-        mod = [(ldap.MOD_ADD, 'nsds5BeginReplicaRefresh', 'start'),
-               (ldap.MOD_REPLACE, 'nsds5ReplicaEnabled', 'on')]
+        mod = [
+            (ldap.MOD_ADD, "nsds5BeginReplicaRefresh", "start"),
+            (ldap.MOD_REPLACE, "nsds5ReplicaEnabled", "on"),
+        ]
         try:
             conn.modify_s(dn, mod)
         except ldap.ALREADY_EXISTS:
@@ -1364,36 +1524,34 @@ class ReplicationManager:
 
     def force_sync(self, conn, hostname):
 
-        newschedule = '2358-2359 0'
+        newschedule = "2358-2359 0"
 
         filter = self.get_agreement_filter(host=hostname)
         try:
-            entries = conn.get_entries(
-                DN(('cn', 'config')), ldap.SCOPE_SUBTREE, filter)
+            entries = conn.get_entries(DN(("cn", "config")), ldap.SCOPE_SUBTREE, filter)
         except errors.NotFound:
-            logger.error("Unable to find replication agreement for %s",
-                         hostname)
+            logger.error("Unable to find replication agreement for %s", hostname)
             raise RuntimeError("Unable to proceed")
         if len(entries) > 1:
             logger.error("Found multiple agreements for %s", hostname)
             logger.error("Using the first one only (%s)", entries[0].dn)
 
         dn = entries[0].dn
-        schedule = entries[0].single_value.get('nsds5replicaupdateschedule')
+        schedule = entries[0].single_value.get("nsds5replicaupdateschedule")
 
         # On the remote chance of a match. We force a synch to happen right
         # now by setting the schedule to something and quickly removing it.
         if schedule is not None:
             if newschedule == schedule:
-                newschedule = '2358-2359 1'
-        logger.info("Setting agreement %s schedule to %s to force synch",
-                    dn, newschedule)
-        mod = [(ldap.MOD_REPLACE, 'nsDS5ReplicaUpdateSchedule', [ newschedule ])]
+                newschedule = "2358-2359 1"
+        logger.info(
+            "Setting agreement %s schedule to %s to force synch", dn, newschedule
+        )
+        mod = [(ldap.MOD_REPLACE, "nsDS5ReplicaUpdateSchedule", [newschedule])]
         conn.modify_s(dn, mod)
         time.sleep(1)
-        logger.info("Deleting schedule %s from agreement %s",
-                    newschedule, dn)
-        mod = [(ldap.MOD_DELETE, 'nsDS5ReplicaUpdateSchedule', None)]
+        logger.info("Deleting schedule %s from agreement %s", newschedule, dn)
+        mod = [(ldap.MOD_DELETE, "nsDS5ReplicaUpdateSchedule", None)]
         conn.modify_s(dn, mod)
 
     def get_agreement_type(self, hostname):
@@ -1401,7 +1559,8 @@ class ReplicationManager:
         entry = self.get_replication_agreement(hostname)
         if not entry:
             raise errors.NotFound(
-                reason="Replication agreement for %s not found" % hostname)
+                reason="Replication agreement for %s not found" % hostname
+            )
         objectclass = entry.get("objectclass")
 
         for o in objectclass:
@@ -1425,8 +1584,10 @@ class ReplicationManager:
         # delete master kerberos key and all its svc principals
         try:
             entries = self.conn.get_entries(
-                self.suffix, ldap.SCOPE_SUBTREE,
-                filter='(krbprincipalname=*/%s@%s)' % (replica, realm))
+                self.suffix,
+                ldap.SCOPE_SUBTREE,
+                filter="(krbprincipalname=*/%s@%s)" % (replica, realm),
+            )
             if entries:
                 entries.sort(key=lambda x: len(x.dn), reverse=True)
                 for entry in entries:
@@ -1440,25 +1601,40 @@ class ReplicationManager:
                 err = e
 
         # remove replica memberPrincipal from s4u2proxy configuration
-        dn1 = DN(('cn', 'ipa-http-delegation'), api.env.container_s4u2proxy, self.suffix)
+        dn1 = DN(
+            ("cn", "ipa-http-delegation"), api.env.container_s4u2proxy, self.suffix
+        )
         member_principal1 = "HTTP/%(fqdn)s@%(realm)s" % dict(fqdn=replica, realm=realm)
 
-        dn2 = DN(('cn', 'ipa-ldap-delegation-targets'), api.env.container_s4u2proxy, self.suffix)
+        dn2 = DN(
+            ("cn", "ipa-ldap-delegation-targets"),
+            api.env.container_s4u2proxy,
+            self.suffix,
+        )
         member_principal2 = "ldap/%(fqdn)s@%(realm)s" % dict(fqdn=replica, realm=realm)
 
-        dn3 = DN(('cn', 'ipa-cifs-delegation-targets'), api.env.container_s4u2proxy, self.suffix)
+        dn3 = DN(
+            ("cn", "ipa-cifs-delegation-targets"),
+            api.env.container_s4u2proxy,
+            self.suffix,
+        )
         member_principal3 = "cifs/%(fqdn)s@%(realm)s" % dict(fqdn=replica, realm=realm)
 
-        for (dn, member_principal) in ((dn1, member_principal1),
-                                       (dn2, member_principal2),
-                                       (dn3, member_principal3)):
+        for (dn, member_principal) in (
+            (dn1, member_principal1),
+            (dn2, member_principal2),
+            (dn3, member_principal3),
+        ):
             try:
-                mod = [(ldap.MOD_DELETE, 'memberPrincipal', member_principal)]
+                mod = [(ldap.MOD_DELETE, "memberPrincipal", member_principal)]
                 self.conn.modify_s(dn, mod)
             except (ldap.NO_SUCH_OBJECT, ldap.NO_SUCH_ATTRIBUTE):
-                logger.debug("Replica (%s) memberPrincipal (%s) not found in "
-                             "%s",
-                             replica, member_principal, dn)
+                logger.debug(
+                    "Replica (%s) memberPrincipal (%s) not found in " "%s",
+                    replica,
+                    member_principal,
+                    dn,
+                )
             except Exception as e:
                 if not force:
                     raise e
@@ -1467,7 +1643,7 @@ class ReplicationManager:
 
         # delete master entry with all active services
         try:
-            dn = DN(('cn', replica), api.env.container_masters, self.suffix)
+            dn = DN(("cn", replica), api.env.container_masters, self.suffix)
             entries = self.conn.get_entries(dn, ldap.SCOPE_SUBTREE)
             if entries:
                 entries.sort(key=lambda x: len(x.dn), reverse=True)
@@ -1482,10 +1658,9 @@ class ReplicationManager:
                 err = e
 
         try:
-            basedn = DN(('cn', 'etc'), self.suffix)
-            filter = '(dnaHostname=%s)' % replica
-            entries = self.conn.get_entries(
-                basedn, ldap.SCOPE_SUBTREE, filter=filter)
+            basedn = DN(("cn", "etc"), self.suffix)
+            filter = "(dnaHostname=%s)" % replica
+            entries = self.conn.get_entries(basedn, ldap.SCOPE_SUBTREE, filter=filter)
             if len(entries) != 0:
                 for entry in entries:
                     self.conn.delete_entry(entry)
@@ -1509,14 +1684,14 @@ class ReplicationManager:
                 err = e
 
         try:
-            dn = DN(('cn', 'default'), ('ou', 'profile'), self.suffix)
+            dn = DN(("cn", "default"), ("ou", "profile"), self.suffix)
             ret = self.conn.get_entry(dn)
-            srvlist = ret.single_value.get('defaultServerList', '')
+            srvlist = ret.single_value.get("defaultServerList", "")
             srvlist = srvlist.split()
             if replica in srvlist:
                 srvlist.remove(replica)
-                attr = ' '.join(srvlist)
-                ret['defaultServerList'] = attr
+                attr = " ".join(srvlist)
+                ret["defaultServerList"] = attr
                 self.conn.update_entry(ret)
         except errors.NotFound:
             pass
@@ -1526,12 +1701,12 @@ class ReplicationManager:
             pass
         except Exception as e:
             if force and err:
-                raise err   #pylint: disable=E0702
+                raise err  # pylint: disable=E0702
             else:
                 raise e
 
         if err:
-            raise err   #pylint: disable=E0702
+            raise err  # pylint: disable=E0702
 
     def set_readonly(self, readonly, critical=False):
         """
@@ -1540,10 +1715,14 @@ class ReplicationManager:
         @readonly: boolean for read-only status
         @critical: boolean to raise an exception on failure, default False.
         """
-        dn = DN(('cn', 'userRoot'), ('cn', 'ldbm database'),
-                ('cn', 'plugins'), ('cn', 'config'))
+        dn = DN(
+            ("cn", "userRoot"),
+            ("cn", "ldbm database"),
+            ("cn", "plugins"),
+            ("cn", "config"),
+        )
 
-        mod = [(ldap.MOD_REPLACE, 'nsslapd-readonly', 'on' if readonly else 'off')]
+        mod = [(ldap.MOD_REPLACE, "nsslapd-readonly", "on" if readonly else "off")]
         try:
             self.conn.modify_s(dn, mod)
         except ldap.INSUFFICIENT_ACCESS as e:
@@ -1551,8 +1730,9 @@ class ReplicationManager:
             # This usually isn't a show-stopper.
             if critical:
                 raise e
-            logger.debug("No permission to modify replica read-only status, "
-                         "continuing anyway")
+            logger.debug(
+                "No permission to modify replica read-only status, " "continuing anyway"
+            )
 
     def cleanallruv(self, replicaId):
         """
@@ -1561,23 +1741,30 @@ class ReplicationManager:
         """
         logger.debug("Creating CLEANALLRUV task for replica id %d", replicaId)
 
-        dn = DN(('cn', 'clean %d' % replicaId), ('cn', 'cleanallruv'),('cn', 'tasks'), ('cn', 'config'))
+        dn = DN(
+            ("cn", "clean %d" % replicaId),
+            ("cn", "cleanallruv"),
+            ("cn", "tasks"),
+            ("cn", "config"),
+        )
         e = self.conn.make_entry(
             dn,
             {
-                'objectclass': ['top', 'extensibleObject'],
-                'cn': ['clean %d' % replicaId],
-                'replica-base-dn': [self.db_suffix],
-                'replica-id': [replicaId],
-                'replica-force-cleaning': ['yes'],
-            }
+                "objectclass": ["top", "extensibleObject"],
+                "cn": ["clean %d" % replicaId],
+                "replica-base-dn": [self.db_suffix],
+                "replica-id": [replicaId],
+                "replica-force-cleaning": ["yes"],
+            },
         )
         try:
             self.conn.add_entry(e)
         except errors.DuplicateEntry:
             print("CLEANALLRUV task for replica id %d already exists." % replicaId)
         else:
-            print("Background task created to clean replication data. This may take a while.")
+            print(
+                "Background task created to clean replication data. This may take a while."
+            )
 
         print("This may be safely interrupted with Ctrl+C")
 
@@ -1587,24 +1774,34 @@ class ReplicationManager:
         """
         Create a task to abort a CLEANALLRUV operation.
         """
-        logger.debug("Creating task to abort a CLEANALLRUV operation for "
-                     "replica id %d", replicaId)
+        logger.debug(
+            "Creating task to abort a CLEANALLRUV operation for " "replica id %d",
+            replicaId,
+        )
 
-        dn = DN(('cn', 'abort %d' % replicaId), ('cn', 'abort cleanallruv'),('cn', 'tasks'), ('cn', 'config'))
+        dn = DN(
+            ("cn", "abort %d" % replicaId),
+            ("cn", "abort cleanallruv"),
+            ("cn", "tasks"),
+            ("cn", "config"),
+        )
         e = self.conn.make_entry(
             dn,
             {
-                'replica-base-dn': [api.env.basedn],
-                'replica-id': [replicaId],
-                'objectclass': ['top', 'extensibleObject'],
-                'cn': ['abort %d' % replicaId],
-                'replica-certify-all': ['no'] if force else ['yes'],
-            }
+                "replica-base-dn": [api.env.basedn],
+                "replica-id": [replicaId],
+                "objectclass": ["top", "extensibleObject"],
+                "cn": ["abort %d" % replicaId],
+                "replica-certify-all": ["no"] if force else ["yes"],
+            },
         )
         try:
             self.conn.add_entry(e)
         except errors.DuplicateEntry:
-            print("An abort CLEANALLRUV task for replica id %d already exists." % replicaId)
+            print(
+                "An abort CLEANALLRUV task for replica id %d already exists."
+                % replicaId
+            )
         else:
             print("Background task created. This may take a while.")
 
@@ -1658,7 +1855,7 @@ class ReplicationManager:
             return (None, None)
 
         try:
-            (next, max) = range.split('-')
+            (next, max) = range.split("-")
         except ValueError:
             # Should not happen, malformed entry, return nothing.
             return (None, None)
@@ -1715,11 +1912,11 @@ class ReplicationManager:
         """
         entry = self.get_replication_agreement(hostname)
         if not entry:
-            raise errors.NotFound(reason=_(
-                "Replication agreement for %(hostname)s not found") % {
-                    'hostname': hostname
-                })
-        entry['nsds5ReplicaEnabled'] = 'off'
+            raise errors.NotFound(
+                reason=_("Replication agreement for %(hostname)s not found")
+                % {"hostname": hostname}
+            )
+        entry["nsds5ReplicaEnabled"] = "off"
 
         try:
             self.conn.update_entry(entry)
@@ -1734,11 +1931,11 @@ class ReplicationManager:
         """
         entry = self.get_replication_agreement(hostname)
         if not entry:
-            raise errors.NotFound(reason=_(
-                "Replication agreement for %(hostname)s not found") % {
-                    'hostname': hostname
-                })
-        entry['nsds5ReplicaEnabled'] = 'on'
+            raise errors.NotFound(
+                reason=_("Replication agreement for %(hostname)s not found")
+                % {"hostname": hostname}
+            )
+        entry["nsds5ReplicaEnabled"] = "on"
 
         try:
             self.conn.update_entry(entry)
@@ -1748,8 +1945,8 @@ class ReplicationManager:
     def _add_replication_managers(self, conn):
         entry = conn.make_entry(
             self.repl_man_group_dn,
-            objectclass=['top', 'groupofnames'],
-            cn=['replication managers']
+            objectclass=["top", "groupofnames"],
+            cn=["replication managers"],
         )
         try:
             conn.add_entry(entry)
@@ -1765,14 +1962,14 @@ class ReplicationManager:
         attribute, add replica bind DN directly into the replica entry.
         """
         my_dn = DN(
-            ('krbprincipalname', u'ldap/%s@%s' % (self.hostname, self.realm)),
+            ("krbprincipalname", u"ldap/%s@%s" % (self.hostname, self.realm)),
             api.env.container_service,
-            api.env.basedn
+            api.env.basedn,
         )
         remote_dn = DN(
-            ('krbprincipalname', u'ldap/%s@%s' % (r_hostname, self.realm)),
+            ("krbprincipalname", u"ldap/%s@%s" % (r_hostname, self.realm)),
             api.env.container_service,
-            api.env.basedn
+            api.env.basedn,
         )
 
         try:
@@ -1789,32 +1986,36 @@ class ReplicationManager:
         Create a special user to let SASL Mapping find a valid user
         on first replication.
         """
-        name = 'ldap/%s@%s' % (r_hostname, self.realm)
-        replica_binddn = DN(('cn', name), ('cn', 'config'))
+        name = "ldap/%s@%s" % (r_hostname, self.realm)
+        replica_binddn = DN(("cn", name), ("cn", "config"))
         entry = conn.make_entry(
             replica_binddn,
             objectclass=["top", "person"],
             cn=[name],
-            sn=["replication manager pseudo user"]
+            sn=["replication manager pseudo user"],
         )
         conn.add_entry(entry)
 
         entry = conn.get_entry(self.replica_dn())
-        entry['nsDS5ReplicaBindDN'].append(replica_binddn)
+        entry["nsDS5ReplicaBindDN"].append(replica_binddn)
         try:
             conn.update_entry(entry)
         except errors.EmptyModlist:
             pass
 
         entry = conn.make_entry(
-            DN(('cn', 'Peer Master'), ('cn', 'mapping'), ('cn', 'sasl'),
-                ('cn', 'config')),
+            DN(
+                ("cn", "Peer Master"),
+                ("cn", "mapping"),
+                ("cn", "sasl"),
+                ("cn", "config"),
+            ),
             objectclass=["top", "nsSaslMapping"],
             cn=["Peer Master"],
-            nsSaslMapRegexString=['^[^:@]+$'],
-            nsSaslMapBaseDNTemplate=[DN(('cn', 'config'))],
-            nsSaslMapFilterTemplate=['(cn=&@%s)' % self.realm],
-            nsSaslMapPriority=['1'],
+            nsSaslMapRegexString=["^[^:@]+$"],
+            nsSaslMapBaseDNTemplate=[DN(("cn", "config"))],
+            nsSaslMapFilterTemplate=["(cn=&@%s)" % self.realm],
+            nsSaslMapPriority=["1"],
         )
         try:
             conn.add_entry(entry)
@@ -1825,19 +2026,19 @@ class ReplicationManager:
         """
         Remove the special SASL Mapping user created in a previous step.
         """
-        name = 'ldap/%s@%s' % (r_hostname, self.realm)
-        replica_binddn = DN(('cn', name), ('cn', 'config'))
+        name = "ldap/%s@%s" % (r_hostname, self.realm)
+        replica_binddn = DN(("cn", name), ("cn", "config"))
         conn.delete_entry(replica_binddn)
 
         entry = conn.get_entry(self.replica_dn())
-        while replica_binddn in entry['nsDS5ReplicaBindDN']:
-            entry['nsDS5ReplicaBindDN'].remove(replica_binddn)
+        while replica_binddn in entry["nsDS5ReplicaBindDN"]:
+            entry["nsDS5ReplicaBindDN"].remove(replica_binddn)
         conn.update_entry(entry)
 
-    def setup_promote_replication(self, r_hostname, r_binddn=None,
-                                  r_bindpw=None, cacert=paths.IPA_CA_CRT):
-        r_conn = ipaldap.LDAPClient.from_hostname_secure(
-            r_hostname, cacert=cacert)
+    def setup_promote_replication(
+        self, r_hostname, r_binddn=None, r_bindpw=None, cacert=paths.IPA_CA_CRT
+    ):
+        r_conn = ipaldap.LDAPClient.from_hostname_secure(r_hostname, cacert=cacert)
         if r_bindpw:
             r_conn.simple_bind(r_binddn, r_bindpw)
         else:
@@ -1875,9 +2076,10 @@ class CSReplicationManager(ReplicationManager):
 
     def __init__(self, realm, hostname, dirman_passwd, port):
         super(CSReplicationManager, self).__init__(
-            realm, hostname, dirman_passwd, port, starttls=True)
-        self.db_suffix = DN(('o', 'ipaca'))
-        self.hostnames = [] # set before calling or agreement_dn() will fail
+            realm, hostname, dirman_passwd, port, starttls=True
+        )
+        self.db_suffix = DN(("o", "ipaca"))
+        self.hostnames = []  # set before calling or agreement_dn() will fail
 
     def agreement_dn(self, hostname, master=None):
         """
@@ -1893,9 +2095,9 @@ class CSReplicationManager(ReplicationManager):
         dn = None
         cn = None
         if self.conn.port == 7389:
-            instance_name = 'pki-ca'
+            instance_name = "pki-ca"
         else:
-            instance_name = 'pki-tomcat'
+            instance_name = "pki-tomcat"
 
         # if master is not None we know what dn to return:
         if master is not None:
@@ -1903,32 +2105,31 @@ class CSReplicationManager(ReplicationManager):
                 name = "master"
             else:
                 name = "clone"
-            cn="%sAgreement1-%s-%s" % (name, hostname, instance_name)
-            dn = DN(('cn', cn), self.replica_dn())
+            cn = "%sAgreement1-%s-%s" % (name, hostname, instance_name)
+            dn = DN(("cn", cn), self.replica_dn())
             return (cn, dn)
 
         for host in self.hostnames:
             for master in ["master", "clone"]:
                 try:
-                    cn="%sAgreement1-%s-%s" % (master, host, instance_name)
-                    dn = DN(('cn', cn), self.replica_dn())
+                    cn = "%sAgreement1-%s-%s" % (master, host, instance_name)
+                    dn = DN(("cn", cn), self.replica_dn())
                     self.conn.get_entry(dn)
                     return (cn, dn)
                 except errors.NotFound:
                     dn = None
                     cn = None
 
-        raise errors.NotFound(reason='No agreement found for %s' % hostname)
+        raise errors.NotFound(reason="No agreement found for %s" % hostname)
 
     def delete_referral(self, hostname, port):
-        dn = DN(('cn', self.db_suffix),
-                ('cn', 'mapping tree'), ('cn', 'config'))
+        dn = DN(("cn", self.db_suffix), ("cn", "mapping tree"), ("cn", "config"))
         entry = self.conn.get_entry(dn)
         try:
             # TODO: should we detect proto somehow ?
-            entry['nsslapd-referral'].remove(
-                'ldap://%s/%s' %
-                (ipautil.format_netloc(hostname, port), self.db_suffix))
+            entry["nsslapd-referral"].remove(
+                "ldap://%s/%s" % (ipautil.format_netloc(hostname, port), self.db_suffix)
+            )
             self.conn.update_entry(entry)
         except Exception as e:
             logger.debug("Failed to remove referral value: %s", e)
@@ -1957,16 +2158,17 @@ def get_cs_replication_manager(realm, host, dirman_passwd):
     # If it doesn't, raise exception.
     ports = [389, 7389]
     for port in ports:
-        logger.debug('Looking for PKI DS on %s:%s', host, port)
-        replication_manager = CSReplicationManager(
-            realm, host, dirman_passwd, port)
+        logger.debug("Looking for PKI DS on %s:%s", host, port)
+        replication_manager = CSReplicationManager(realm, host, dirman_passwd, port)
         if replication_manager.has_ipaca():
-            logger.debug('PKI DS found on %s:%s', host, port)
+            logger.debug("PKI DS found on %s:%s", host, port)
             return replication_manager
         else:
-            logger.debug('PKI tree not found on %s:%s', host, port)
+            logger.debug("PKI tree not found on %s:%s", host, port)
 
-    raise errors.NotFound(reason='Cannot reach PKI DS at %s on ports %s' % (host, ports))
+    raise errors.NotFound(
+        reason="Cannot reach PKI DS at %s on ports %s" % (host, ports)
+    )
 
 
 class CAReplicationManager(ReplicationManager):
@@ -1979,8 +2181,9 @@ class CAReplicationManager(ReplicationManager):
         conn = ipaldap.LDAPClient.from_realm(realm)
         conn.external_bind()
         super(CAReplicationManager, self).__init__(
-            realm, hostname, None, port=DEFAULT_PORT, conn=conn)
-        self.db_suffix = DN(('o', 'ipaca'))
+            realm, hostname, None, port=DEFAULT_PORT, conn=conn
+        )
+        self.db_suffix = DN(("o", "ipaca"))
         self.agreement_name_format = "caTo%s"
 
     def setup_cs_replication(self, r_hostname):
@@ -2019,8 +2222,8 @@ def run_server_del_as_cli(api_instance, hostname, **options):
     """
     server_del_cmd = api_instance.Command.server_del
 
-    if 'version' not in options:
-        options['version'] = api_instance.env.api_version
+    if "version" not in options:
+        options["version"] = api_instance.env.api_version
 
     result = server_del_cmd(hostname, **options)
 

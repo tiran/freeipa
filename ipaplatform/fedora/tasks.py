@@ -19,9 +19,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
+"""
 This module contains default Fedora-specific implementations of system tasks.
-'''
+"""
 
 from __future__ import absolute_import
 
@@ -31,15 +31,11 @@ from ipaplatform.paths import paths
 
 
 class FedoraTaskNamespace(RedHatTaskNamespace):
-
     def configure_httpd_protocol(self):
         # On Fedora 31 and earlier DEFAULT crypto-policy has TLS 1.0 and 1.1
         # enabled.
         directivesetter.set_directive(
-            paths.HTTPD_SSL_CONF,
-            'SSLProtocol',
-            "all -SSLv3 -TLSv1 -TLSv1.1",
-            False
+            paths.HTTPD_SSL_CONF, "SSLProtocol", "all -SSLv3 -TLSv1 -TLSv1.1", False
         )
 
 

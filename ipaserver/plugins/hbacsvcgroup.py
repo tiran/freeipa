@@ -27,10 +27,12 @@ from .baseldap import (
     LDAPSearch,
     LDAPDelete,
     LDAPAddMember,
-    LDAPRemoveMember)
+    LDAPRemoveMember,
+)
 from ipalib import _, ngettext
 
-__doc__ = _("""
+__doc__ = _(
+    """
 HBAC Service Groups
 
 HBAC service groups can contain any number of individual services,
@@ -49,127 +51,136 @@ EXAMPLES:
 
  Delete an HBAC service group:
    ipa hbacsvcgroup-del login
-""")
+"""
+)
 
 register = Registry()
 
-topic = 'hbac'
+topic = "hbac"
+
 
 @register()
 class hbacsvcgroup(LDAPObject):
     """
     HBAC service group object.
     """
+
     container_dn = api.env.container_hbacservicegroup
-    object_name = _('HBAC service group')
-    object_name_plural = _('HBAC service groups')
-    object_class = ['ipaobject', 'ipahbacservicegroup']
-    permission_filter_objectclasses = ['ipahbacservicegroup']
-    default_attributes = [ 'cn', 'description', 'member' ]
-    uuid_attribute = 'ipauniqueid'
+    object_name = _("HBAC service group")
+    object_name_plural = _("HBAC service groups")
+    object_class = ["ipaobject", "ipahbacservicegroup"]
+    permission_filter_objectclasses = ["ipahbacservicegroup"]
+    default_attributes = ["cn", "description", "member"]
+    uuid_attribute = "ipauniqueid"
     attribute_members = {
-        'member': ['hbacsvc'],
+        "member": ["hbacsvc"],
     }
     managed_permissions = {
-        'System: Read HBAC Service Groups': {
-            'replaces_global_anonymous_aci': True,
-            'ipapermbindruletype': 'all',
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'businesscategory', 'cn', 'description', 'ipauniqueid',
-                'member', 'o', 'objectclass', 'ou', 'owner', 'seealso',
-                'memberuser', 'memberhost',
+        "System: Read HBAC Service Groups": {
+            "replaces_global_anonymous_aci": True,
+            "ipapermbindruletype": "all",
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {
+                "businesscategory",
+                "cn",
+                "description",
+                "ipauniqueid",
+                "member",
+                "o",
+                "objectclass",
+                "ou",
+                "owner",
+                "seealso",
+                "memberuser",
+                "memberhost",
             },
         },
-        'System: Add HBAC Service Groups': {
-            'ipapermright': {'add'},
-            'replaces': [
+        "System: Add HBAC Service Groups": {
+            "ipapermright": {"add"},
+            "replaces": [
                 '(target = "ldap:///cn=*,cn=hbacservicegroups,cn=hbac,$SUFFIX")(version 3.0;acl "permission:Add HBAC service groups";allow (add) groupdn = "ldap:///cn=Add HBAC service groups,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'HBAC Administrator'},
+            "default_privileges": {"HBAC Administrator"},
         },
-        'System: Delete HBAC Service Groups': {
-            'ipapermright': {'delete'},
-            'replaces': [
+        "System: Delete HBAC Service Groups": {
+            "ipapermright": {"delete"},
+            "replaces": [
                 '(target = "ldap:///cn=*,cn=hbacservicegroups,cn=hbac,$SUFFIX")(version 3.0;acl "permission:Delete HBAC service groups";allow (delete) groupdn = "ldap:///cn=Delete HBAC service groups,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'HBAC Administrator'},
+            "default_privileges": {"HBAC Administrator"},
         },
-        'System: Manage HBAC Service Group Membership': {
-            'ipapermright': {'write'},
-            'ipapermdefaultattr': {'member'},
-            'replaces': [
+        "System: Manage HBAC Service Group Membership": {
+            "ipapermright": {"write"},
+            "ipapermdefaultattr": {"member"},
+            "replaces": [
                 '(targetattr = "member")(target = "ldap:///cn=*,cn=hbacservicegroups,cn=hbac,$SUFFIX")(version 3.0;acl "permission:Manage HBAC service group membership";allow (write) groupdn = "ldap:///cn=Manage HBAC service group membership,cn=permissions,cn=pbac,$SUFFIX";)',
             ],
-            'default_privileges': {'HBAC Administrator'},
+            "default_privileges": {"HBAC Administrator"},
         },
     }
 
-    label = _('HBAC Service Groups')
-    label_singular = _('HBAC Service Group')
+    label = _("HBAC Service Groups")
+    label_singular = _("HBAC Service Group")
 
     takes_params = (
-        Str('cn',
-            cli_name='name',
-            label=_('Service group name'),
+        Str(
+            "cn",
+            cli_name="name",
+            label=_("Service group name"),
             primary_key=True,
             normalizer=lambda value: value.lower(),
         ),
-        Str('description?',
-            cli_name='desc',
-            label=_('Description'),
-            doc=_('HBAC service group description'),
+        Str(
+            "description?",
+            cli_name="desc",
+            label=_("Description"),
+            doc=_("HBAC service group description"),
         ),
     )
-
 
 
 @register()
 class hbacsvcgroup_add(LDAPCreate):
-    __doc__ = _('Add a new HBAC service group.')
+    __doc__ = _("Add a new HBAC service group.")
 
     msg_summary = _('Added HBAC service group "%(value)s"')
 
 
-
 @register()
 class hbacsvcgroup_del(LDAPDelete):
-    __doc__ = _('Delete an HBAC service group.')
+    __doc__ = _("Delete an HBAC service group.")
 
     msg_summary = _('Deleted HBAC service group "%(value)s"')
 
 
-
 @register()
 class hbacsvcgroup_mod(LDAPUpdate):
-    __doc__ = _('Modify an HBAC service group.')
+    __doc__ = _("Modify an HBAC service group.")
 
     msg_summary = _('Modified HBAC service group "%(value)s"')
 
 
-
 @register()
 class hbacsvcgroup_find(LDAPSearch):
-    __doc__ = _('Search for an HBAC service group.')
+    __doc__ = _("Search for an HBAC service group.")
 
     msg_summary = ngettext(
-        '%(count)d HBAC service group matched', '%(count)d HBAC service groups matched', 0
+        "%(count)d HBAC service group matched",
+        "%(count)d HBAC service groups matched",
+        0,
     )
-
 
 
 @register()
 class hbacsvcgroup_show(LDAPRetrieve):
-    __doc__ = _('Display information about an HBAC service group.')
-
+    __doc__ = _("Display information about an HBAC service group.")
 
 
 @register()
 class hbacsvcgroup_add_member(LDAPAddMember):
-    __doc__ = _('Add members to an HBAC service group.')
-
+    __doc__ = _("Add members to an HBAC service group.")
 
 
 @register()
 class hbacsvcgroup_remove_member(LDAPRemoveMember):
-    __doc__ = _('Remove members from an HBAC service group.')
+    __doc__ = _("Remove members from an HBAC service group.")

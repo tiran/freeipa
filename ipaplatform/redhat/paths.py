@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
+"""
 This Red Hat OS family base platform module exports default filesystem paths as
 common in Red Hat OS family-based systems.
-'''
+"""
 
 from __future__ import absolute_import
 
@@ -32,14 +32,14 @@ from ipaplatform.base.paths import BasePathNamespace
 
 class RedHatPathNamespace(BasePathNamespace):
     # https://docs.python.org/2/library/platform.html#cross-platform
-    if sys.maxsize > 2**32:
+    if sys.maxsize > 2 ** 32:
         LIBSOFTHSM2_SO = BasePathNamespace.LIBSOFTHSM2_SO_64
         PAM_KRB5_SO = BasePathNamespace.PAM_KRB5_SO_64
         BIND_LDAP_SO = BasePathNamespace.BIND_LDAP_SO_64
-    AUTHCONFIG = '/usr/sbin/authconfig'
-    AUTHSELECT = '/usr/bin/authselect'
-    SYSCONF_NETWORK = '/etc/sysconfig/network'
-    NSSWITCH_CONF = '/etc/authselect/user-nsswitch.conf'
+    AUTHCONFIG = "/usr/sbin/authconfig"
+    AUTHSELECT = "/usr/bin/authselect"
+    SYSCONF_NETWORK = "/etc/sysconfig/network"
+    NSSWITCH_CONF = "/etc/authselect/user-nsswitch.conf"
 
 
 paths = RedHatPathNamespace()

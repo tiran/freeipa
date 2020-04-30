@@ -20,7 +20,13 @@ from __future__ import absolute_import
 
 # pylint: disable=deprecated-module
 from optparse import (
-    Option, Values, OptionParser, IndentedHelpFormatter, OptionValueError)
+    Option,
+    Values,
+    OptionParser,
+    IndentedHelpFormatter,
+    OptionValueError,
+)
+
 # pylint: enable=deprecated-module
 from copy import copy
 from configparser import SafeConfigParser
@@ -38,7 +44,7 @@ from ipapython.ipautil import CheckedIPAddress, CheckedIPAddressLoopback
 
 
 class IPAConfigError(Exception):
-    def __init__(self, msg=''):
+    def __init__(self, msg=""):
         self.msg = msg
         Exception.__init__(self, msg)
 
@@ -47,8 +53,10 @@ class IPAConfigError(Exception):
 
     __str__ = __repr__
 
+
 class IPAFormatter(IndentedHelpFormatter):
     """Our own optparse formatter that indents multiple lined usage string."""
+
     def format_usage(self, usage):
         usage_string = "Usage:"
         spacing = " " * len(usage_string)
@@ -66,8 +74,10 @@ def check_ip_option(option, opt, value, allow_loopback=False):
         else:
             return CheckedIPAddress(value)
     except Exception as e:
-        raise OptionValueError("option {}: invalid IP address {}: {}"
-                               .format(opt, value, e))
+        raise OptionValueError(
+            "option {}: invalid IP address {}: {}".format(opt, value, e)
+        )
+
 
 def check_dn_option(option, opt, value):
     try:
@@ -90,12 +100,14 @@ class IPAOption(Option):
     optparse.Option subclass with support of options labeled as
     security-sensitive such as passwords.
     """
+
     ATTRS = Option.ATTRS + ["sensitive", "constructor"]
     TYPES = Option.TYPES + ("ip", "dn", "constructor", "ip_with_loopback")
     TYPE_CHECKER = copy(Option.TYPE_CHECKER)
     TYPE_CHECKER["ip"] = check_ip_option
-    TYPE_CHECKER["ip_with_loopback"] = functools.partial(check_ip_option,
-                                                         allow_loopback=True)
+    TYPE_CHECKER["ip_with_loopback"] = functools.partial(
+        check_ip_option, allow_loopback=True
+    )
     TYPE_CHECKER["dn"] = check_dn_option
     TYPE_CHECKER["constructor"] = check_constructor
 
@@ -105,19 +117,31 @@ class IPAOptionParser(OptionParser):
     optparse.OptionParser subclass that uses IPAOption by default
     for storing options.
     """
-    def __init__(self,
-                 usage=None,
-                 option_list=None,
-                 option_class=IPAOption,
-                 version=None,
-                 conflict_handler="error",
-                 description=None,
-                 formatter=None,
-                 add_help_option=True,
-                 prog=None):
-        OptionParser.__init__(self, usage, option_list, option_class,
-                              version, conflict_handler, description,
-                              formatter, add_help_option, prog)
+
+    def __init__(
+        self,
+        usage=None,
+        option_list=None,
+        option_class=IPAOption,
+        version=None,
+        conflict_handler="error",
+        description=None,
+        formatter=None,
+        add_help_option=True,
+        prog=None,
+    ):
+        OptionParser.__init__(
+            self,
+            usage,
+            option_list,
+            option_class,
+            version,
+            conflict_handler,
+            description,
+            formatter,
+            add_help_option,
+            prog,
+        )
 
     def get_safe_opts(self, opts):
         """
@@ -125,8 +149,7 @@ class IPAOptionParser(OptionParser):
         fashion as parse_args would
         """
         all_opts_dict = {
-            o.dest: o for o in self._get_all_options()
-            if hasattr(o, 'sensitive')
+            o.dest: o for o in self._get_all_options() if hasattr(o, "sensitive")
         }
         safe_opts_dict = {}
 
@@ -136,7 +159,8 @@ class IPAOptionParser(OptionParser):
 
         return Values(safe_opts_dict)
 
-def verify_args(parser, args, needed_args = None):
+
+def verify_args(parser, args, needed_args=None):
     """Verify that we have all positional arguments we need, if not, exit."""
     if needed_args:
         needed_list = needed_args.split(" ")
@@ -174,10 +198,12 @@ class IPAConfig:
         else:
             raise IPAConfigError("no default domain")
 
+
 # Global library config
 config = IPAConfig()
 
-def __parse_config(discover_server = True):
+
+def __parse_config(discover_server=True):
     p = SafeConfigParser()
     p.read(paths.IPA_DEFAULT_CONF)
 
@@ -199,7 +225,8 @@ def __parse_config(discover_server = True):
     except Exception:
         pass
 
-def __discover_config(discover_server = True):
+
+def __discover_config(discover_server=True):
     servers = []
     try:
         if not config.default_domain:
@@ -219,7 +246,7 @@ def __discover_config(discover_server = True):
                 while True:
                     domain = domain.parent()
 
-                    if str(domain) == '.':
+                    if str(domain) == ".":
                         return False
                     name = "_ldap._tcp.%s" % domain
                     try:
@@ -249,9 +276,11 @@ def __discover_config(discover_server = True):
 
 def add_standard_options(parser):
     parser.add_option("--realm", dest="realm", help="Override default IPA realm")
-    parser.add_option("--server", dest="server",
-                      help="Override default FQDN of IPA server")
+    parser.add_option(
+        "--server", dest="server", help="Override default FQDN of IPA server"
+    )
     parser.add_option("--domain", dest="domain", help="Override default IPA DNS domain")
+
 
 def init_config(options=None):
     if options:
@@ -275,8 +304,14 @@ def init_config(options=None):
     config.default_server = new_server
 
     if not config.default_realm:
-        raise IPAConfigError("IPA realm not found in DNS, in the config file (/etc/ipa/default.conf) or on the command line.")
+        raise IPAConfigError(
+            "IPA realm not found in DNS, in the config file (/etc/ipa/default.conf) or on the command line."
+        )
     if not config.default_server:
-        raise IPAConfigError("IPA server not found in DNS, in the config file (/etc/ipa/default.conf) or on the command line.")
+        raise IPAConfigError(
+            "IPA server not found in DNS, in the config file (/etc/ipa/default.conf) or on the command line."
+        )
     if not config.default_domain:
-        raise IPAConfigError("IPA domain not found in the config file (/etc/ipa/default.conf) or on the command line.")
+        raise IPAConfigError(
+            "IPA domain not found in the config file (/etc/ipa/default.conf) or on the command line."
+        )

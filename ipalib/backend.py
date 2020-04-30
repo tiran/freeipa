@@ -52,7 +52,7 @@ class Connectible(Backend):
         if shared_instance:
             self.id = self.name
         else:
-            self.id = '%s_%s' % (self.name, str(id(self)))
+            self.id = "%s_%s" % (self.name, str(id(self)))
 
     def connect(self, *args, **kw):
         """
@@ -61,34 +61,30 @@ class Connectible(Backend):
         if hasattr(context, self.id):
             raise Exception(
                 "{0} is already connected ({1} in {2})".format(
-                    self.name,
-                    self.id,
-                    threading.currentThread().getName()
+                    self.name, self.id, threading.currentThread().getName()
                 )
             )
         conn = self.create_connection(*args, **kw)
         setattr(context, self.id, Connection(conn, self.disconnect))
         assert self.conn is conn
-        logger.debug('Created connection context.%s', self.id)
+        logger.debug("Created connection context.%s", self.id)
 
     def create_connection(self, *args, **kw):
-        raise NotImplementedError('%s.create_connection()' % self.id)
+        raise NotImplementedError("%s.create_connection()" % self.id)
 
     def disconnect(self):
         if not hasattr(context, self.id):
             raise Exception(
                 "{0} is not connected ({1} in {2})".format(
-                    self.name,
-                    self.id,
-                    threading.currentThread().getName()
+                    self.name, self.id, threading.currentThread().getName()
                 )
             )
         self.destroy_connection()
         delattr(context, self.id)
-        logger.debug('Destroyed connection context.%s', self.id)
+        logger.debug("Destroyed connection context.%s", self.id)
 
     def destroy_connection(self):
-        raise NotImplementedError('%s.destroy_connection()' % self.id)
+        raise NotImplementedError("%s.destroy_connection()" % self.id)
 
     def isconnected(self):
         """
@@ -103,17 +99,15 @@ class Connectible(Backend):
         if not hasattr(context, self.id):
             raise AttributeError(
                 "{0} is not connected ({1} in {2})".format(
-                    self.name,
-                    self.id,
-                    threading.currentThread().getName()
+                    self.name, self.id, threading.currentThread().getName()
                 )
             )
         return getattr(context, self.id).conn
+
     conn = property(__get_conn)
 
 
 class Executioner(Backend):
-
     def create_context(self, ccache=None, client_ip=None):
         """
         client_ip: The IP address of the remote client.
@@ -123,9 +117,7 @@ class Executioner(Backend):
             os.environ["KRB5CCNAME"] = ccache
 
         if self.env.in_server:
-            self.Backend.ldap2.connect(ccache=ccache,
-                                       size_limit=None,
-                                       time_limit=None)
+            self.Backend.ldap2.connect(ccache=ccache, size_limit=None, time_limit=None)
         else:
             self.Backend.rpcclient.connect()
         if client_ip is not None:
@@ -142,9 +134,7 @@ class Executioner(Backend):
         except PublicError:  # pylint: disable=try-except-raise
             raise
         except Exception as e:
-            logger.exception(
-                'non-public: %s: %s', e.__class__.__name__, str(e)
-            )
+            logger.exception("non-public: %s: %s", e.__class__.__name__, str(e))
             raise InternalError()
         finally:
             destroy_context()

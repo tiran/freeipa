@@ -21,44 +21,44 @@ from ipatests.pytest_ipa.integration import tasks
 
 
 def test_topology_star():
-    topo = tasks.get_topo('star')
+    topo = tasks.get_topo("star")
     assert topo is tasks.star_topo
-    assert list(topo('M', [1, 2, 3, 4, 5])) == [
-        ('M', 1),
-        ('M', 2),
-        ('M', 3),
-        ('M', 4),
-        ('M', 5),
+    assert list(topo("M", [1, 2, 3, 4, 5])) == [
+        ("M", 1),
+        ("M", 2),
+        ("M", 3),
+        ("M", 4),
+        ("M", 5),
     ]
-    assert list(topo('M', [])) == []
+    assert list(topo("M", [])) == []
 
 
 def test_topology_line():
-    topo = tasks.get_topo('line')
+    topo = tasks.get_topo("line")
     assert topo is tasks.line_topo
-    assert list(topo('M', [1, 2, 3, 4, 5])) == [
-        ('M', 1),
+    assert list(topo("M", [1, 2, 3, 4, 5])) == [
+        ("M", 1),
         (1, 2),
         (2, 3),
         (3, 4),
         (4, 5),
     ]
-    assert list(topo('M', [])) == []
+    assert list(topo("M", [])) == []
 
 
 def test_topology_tree():
-    topo = tasks.get_topo('tree')
+    topo = tasks.get_topo("tree")
     assert topo is tasks.tree_topo
-    assert list(topo('M', [1, 2, 3, 4, 5])) == [
-        ('M', 1),
-        ('M', 2),
+    assert list(topo("M", [1, 2, 3, 4, 5])) == [
+        ("M", 1),
+        ("M", 2),
         (1, 3),
         (1, 4),
         (2, 5),
     ]
-    assert list(topo('M', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])) == [
-        ('M', 1),
-        ('M', 2),
+    assert list(topo("M", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])) == [
+        ("M", 1),
+        ("M", 2),
         (1, 3),
         (1, 4),
         (2, 5),
@@ -68,46 +68,46 @@ def test_topology_tree():
         (4, 9),
         (4, 10),
     ]
-    assert list(topo('M', [])) == []
+    assert list(topo("M", [])) == []
 
 
 def test_topology_tree2():
-    topo = tasks.get_topo('tree2')
+    topo = tasks.get_topo("tree2")
     assert topo is tasks.tree2_topo
-    assert list(topo('M', [1, 2, 3, 4, 5])) == [
-        ('M', 1),
-        ('M', 2),
+    assert list(topo("M", [1, 2, 3, 4, 5])) == [
+        ("M", 1),
+        ("M", 2),
         (2, 3),
         (3, 4),
         (4, 5),
     ]
-    assert list(topo('M', [])) == []
+    assert list(topo("M", [])) == []
 
 
 def test_topology_complete():
-    topo = tasks.get_topo('complete')
+    topo = tasks.get_topo("complete")
     assert topo is tasks.complete_topo
-    assert list(topo('M', [1, 2, 3])) == [
-        ('M', 1),
-        ('M', 2),
-        ('M', 3),
+    assert list(topo("M", [1, 2, 3])) == [
+        ("M", 1),
+        ("M", 2),
+        ("M", 3),
         (1, 2),
         (1, 3),
         (2, 3),
     ]
-    assert list(topo('M', [])) == []
+    assert list(topo("M", [])) == []
 
 
 def test_topology_two_connected():
-    topo = tasks.get_topo('2-connected')
+    topo = tasks.get_topo("2-connected")
     assert topo is tasks.two_connected_topo
-    assert list(topo('M', [1, 2, 3, 4, 5, 6, 7, 8])) == [
-        ('M', 1),
-        ('M', 2),
+    assert list(topo("M", [1, 2, 3, 4, 5, 6, 7, 8])) == [
+        ("M", 1),
+        ("M", 2),
         (2, 3),
         (1, 3),
-        ('M', 4),
-        ('M', 5),
+        ("M", 4),
+        ("M", 5),
         (4, 6),
         (5, 6),
         (2, 4),
@@ -115,14 +115,14 @@ def test_topology_two_connected():
         (4, 8),
         (7, 8),
     ]
-    assert list(topo('M', [])) == []
+    assert list(topo("M", [])) == []
 
 
 def test_topology_double_circle_topo():
-    topo = tasks.get_topo('double-circle')
+    topo = tasks.get_topo("double-circle")
     assert topo is tasks.double_circle_topo
-    assert list(topo('M', list(range(1, 30)))) == [
-        ('M', 1),
+    assert list(topo("M", list(range(1, 30)))) == [
+        ("M", 1),
         (1, 6),
         (1, 12),
         (6, 7),
@@ -133,11 +133,11 @@ def test_topology_double_circle_topo():
         (13, 24),
         (18, 19),
         (19, 24),
-        (19, 'M'),
+        (19, "M"),
         (24, 25),
-        (25, 'M'),
+        (25, "M"),
         (25, 6),
-        ('M', 2),
+        ("M", 2),
         (2, 3),
         (2, 4),
         (2, 5),
@@ -178,4 +178,4 @@ def test_topology_double_circle_topo():
         (28, 29),
         (25, 29),
     ]
-    assert list(topo('M', [])) == []
+    assert list(topo("M", [])) == []

@@ -16,7 +16,11 @@ import six
 
 from ipalib.constants import IPA_CA_CN
 from ipalib.install import certstore
-from ipalib.install.service import enroll_only, master_install_only, replica_install_only
+from ipalib.install.service import (
+    enroll_only,
+    master_install_only,
+    replica_install_only,
+)
 from ipaserver.install import sysupgrade
 from ipapython.install import typing
 from ipapython.install.core import group, knob, extend_knob
@@ -37,13 +41,34 @@ if six.PY3:
     unicode = str
 
 VALID_SUBJECT_BASE_ATTRS = {
-    'st', 'o', 'ou', 'dnqualifier', 'c', 'serialnumber', 'l', 'title', 'sn',
-    'givenname', 'initials', 'generationqualifier', 'dc', 'mail', 'uid',
-    'postaladdress', 'postalcode', 'postofficebox', 'houseidentifier', 'e',
-    'street', 'pseudonym', 'incorporationlocality', 'incorporationstate',
-    'incorporationcountry', 'businesscategory',
+    "st",
+    "o",
+    "ou",
+    "dnqualifier",
+    "c",
+    "serialnumber",
+    "l",
+    "title",
+    "sn",
+    "givenname",
+    "initials",
+    "generationqualifier",
+    "dc",
+    "mail",
+    "uid",
+    "postaladdress",
+    "postalcode",
+    "postofficebox",
+    "houseidentifier",
+    "e",
+    "street",
+    "pseudonym",
+    "incorporationlocality",
+    "incorporationstate",
+    "incorporationcountry",
+    "businesscategory",
 }
-VALID_SUBJECT_ATTRS = {'cn'} | VALID_SUBJECT_BASE_ATTRS
+VALID_SUBJECT_ATTRS = {"cn"} | VALID_SUBJECT_BASE_ATTRS
 
 logger = logging.getLogger(__name__)
 
@@ -53,30 +78,30 @@ external_ca_file = None
 
 def subject_validator(valid_attrs, value):
     if not isinstance(value, unicode):
-        v = unicode(value, 'utf-8')
+        v = unicode(value, "utf-8")
     else:
         v = value
     if any(ord(c) < 0x20 for c in v):
         raise ValueError("must not contain control characters")
-    if '&' in v:
-        raise ValueError("must not contain an ampersand (\"&\")")
+    if "&" in v:
+        raise ValueError('must not contain an ampersand ("&")')
     try:
         dn = DN(v)
         for rdn in dn:
             if rdn.attr.lower() not in valid_attrs:
-                raise ValueError("invalid attribute: \"%s\"" % rdn.attr)
+                raise ValueError('invalid attribute: "%s"' % rdn.attr)
     except ValueError as e:
         raise ValueError("invalid DN: %s" % e)
 
 
 def lookup_ca_subject(api, subject_base):
-    dn = DN(('cn', IPA_CA_CN), api.env.container_ca, api.env.basedn)
+    dn = DN(("cn", IPA_CA_CN), api.env.container_ca, api.env.basedn)
     try:
         # we do not use api.Command.ca_show because it attempts to
         # talk to the CA (to read certificate / chain), but the RA
         # backend may be unavailable (ipa-replica-install) or unusable
         # due to RA Agent cert not yet created (ipa-ca-install).
-        ca_subject = api.Backend.ldap2.get_entry(dn)['ipacasubjectdn'][0]
+        ca_subject = api.Backend.ldap2.get_entry(dn)["ipacasubjectdn"][0]
     except errors.NotFound:
         # if the entry doesn't exist, we are dealing with a pre-v4.4
         # installation, where the default CA subject was always based
@@ -84,13 +109,13 @@ def lookup_ca_subject(api, subject_base):
         #
         # installutils.default_ca_subject_dn is NOT used here in
         # case the default changes in the future.
-        ca_subject = DN(('CN', 'Certificate Authority'), subject_base)
+        ca_subject = DN(("CN", "Certificate Authority"), subject_base)
     return str(ca_subject)
 
 
 def set_subject_base_in_config(subject_base):
     entry_attrs = api.Backend.ldap2.get_ipa_config()
-    entry_attrs['ipacertificatesubjectbase'] = [str(subject_base)]
+    entry_attrs["ipacertificatesubjectbase"] = [str(subject_base)]
     try:
         api.Backend.ldap2.update_entry(entry_attrs)
     except errors.EmptyModlist:
@@ -119,13 +144,14 @@ def uninstall_check(options):
     """Check if the host is CRL generation master"""
     # Skip the checks if the host is not a CA instance
     ca = cainstance.CAInstance(api.env.realm)
-    if not (api.Command.ca_is_enabled()['result'] and
-       cainstance.is_ca_installed_locally()):
+    if not (
+        api.Command.ca_is_enabled()["result"] and cainstance.is_ca_installed_locally()
+    ):
         return
 
     # skip the checks if the host is the last master
-    ipa_config = api.Command.config_show()['result']
-    ipa_masters = ipa_config.get('ipa_master_server', [])
+    ipa_config = api.Command.config_show()["result"]
+    ipa_masters = ipa_config.get("ipa_master_server", [])
     if len(ipa_masters) <= 1:
         return
 
@@ -137,12 +163,17 @@ def uninstall_check(options):
         crlgen_enabled = True
 
     if crlgen_enabled:
-        print("Deleting this server will leave your installation "
-              "without a CRL generation master.")
-        if (options.unattended and not options.ignore_last_of_role) or \
-           not (options.unattended or ipautil.user_input(
-                "Are you sure you want to continue with the uninstall "
-                "procedure?", False)):
+        print(
+            "Deleting this server will leave your installation "
+            "without a CRL generation master."
+        )
+        if (options.unattended and not options.ignore_last_of_role) or not (
+            options.unattended
+            or ipautil.user_input(
+                "Are you sure you want to continue with the uninstall " "procedure?",
+                False,
+            )
+        ):
             raise ScriptError("Aborting uninstall operation.")
 
 
@@ -169,15 +200,21 @@ def install_check(standalone, replica_config, options):
         return
 
     if replica_config is not None:
-        if standalone and api.env.ra_plugin == 'selfsign':
-            raise ScriptError('A selfsign CA can not be added')
+        if standalone and api.env.ra_plugin == "selfsign":
+            raise ScriptError("A selfsign CA can not be added")
 
         if standalone and not options.skip_conncheck:
             principal = options.principal
             replica_conn_check(
-                replica_config.ca_host_name, host_name, realm_name, True,
-                replica_config.ca_ds_port, options.admin_password,
-                principal=principal, ca_cert_file=options.ca_cert_file)
+                replica_config.ca_host_name,
+                host_name,
+                realm_name,
+                True,
+                replica_config.ca_ds_port,
+                options.admin_password,
+                principal=principal,
+                ca_cert_file=options.ca_cert_file,
+            )
 
         if options.skip_schema_check:
             logger.info("Skipping CA DS schema check")
@@ -185,7 +222,7 @@ def install_check(standalone, replica_config, options):
         return
 
     if standalone:
-        if api.Command.ca_is_enabled()['result']:
+        if api.Command.ca_is_enabled()["result"]:
             raise ScriptError(
                 "One or more CA masters are already present in IPA realm "
                 "'%s'.\nIf you wish to replicate CA to this host, please "
@@ -198,37 +235,39 @@ def install_check(standalone, replica_config, options):
             # This can happen if someone passes external_ca_file without
             # already having done the first stage of the CA install.
             raise ScriptError(
-                  "CA is not installed yet. To install with an external CA "
-                  "is a two-stage process.\nFirst run the installer with "
-                  "--external-ca.")
+                "CA is not installed yet. To install with an external CA "
+                "is a two-stage process.\nFirst run the installer with "
+                "--external-ca."
+            )
 
         external_cert_file, external_ca_file = installutils.load_external_cert(
-            options.external_cert_files, options._ca_subject)
+            options.external_cert_files, options._ca_subject
+        )
     elif options.external_ca:
         if cainstance.is_step_one_done():
             raise ScriptError(
                 "CA is already installed.\nRun the installer with "
-                "--external-cert-file.")
+                "--external-cert-file."
+            )
         if os.path.isfile(paths.ROOT_IPA_CSR):
             raise ScriptError(
                 "CA CSR file %s already exists.\nIn order to continue "
-                "remove the file and run the installer again." %
-                paths.ROOT_IPA_CSR)
+                "remove the file and run the installer again." % paths.ROOT_IPA_CSR
+            )
 
         if not options.external_ca_type:
             options.external_ca_type = x509.ExternalCAType.GENERIC.value
 
         if options.external_ca_profile is not None:
             # check that profile is valid for the external ca type
-            if options.external_ca_type \
-                    not in options.external_ca_profile.valid_for:
+            if options.external_ca_type not in options.external_ca_profile.valid_for:
                 raise ScriptError(
                     "External CA profile specification '{}' "
-                    "cannot be used with external CA type '{}'."
-                    .format(
+                    "cannot be used with external CA type '{}'.".format(
                         options.external_ca_profile.unparsed_input,
-                        options.external_ca_type)
+                        options.external_ca_type,
                     )
+                )
 
     if not options.external_cert_files:
         if not cainstance.check_ports():
@@ -239,12 +278,15 @@ def install_check(standalone, replica_config, options):
             raise ScriptError("Aborting installation")
 
     if standalone:
-        dirname = dsinstance.config_dirname(
-            ipaldap.realm_to_serverid(realm_name))
-        cadb = certs.CertDB(realm_name, nssdir=paths.PKI_TOMCAT_ALIAS_DIR,
-                            subject_base=options._subject_base)
+        dirname = dsinstance.config_dirname(ipaldap.realm_to_serverid(realm_name))
+        cadb = certs.CertDB(
+            realm_name,
+            nssdir=paths.PKI_TOMCAT_ALIAS_DIR,
+            subject_base=options._subject_base,
+        )
         dsdb = certs.CertDB(
-            realm_name, nssdir=dirname, subject_base=options._subject_base)
+            realm_name, nssdir=dirname, subject_base=options._subject_base
+        )
 
         # Check that we can add our CA cert to DS and PKI NSS databases
         for db in (cadb, dsdb):
@@ -254,7 +296,8 @@ def install_check(standalone, replica_config, options):
                 if nickname == certdb.get_ca_nickname(realm_name):
                     raise ScriptError(
                         "Certificate with nickname %s is present in %s, "
-                        "cannot continue." % (nickname, db.secdir))
+                        "cannot continue." % (nickname, db.secdir)
+                    )
 
                 cert = db.get_cert_from_db(nickname)
                 if not cert:
@@ -263,7 +306,8 @@ def install_check(standalone, replica_config, options):
                 if subject == DN(options._ca_subject):
                     raise ScriptError(
                         "Certificate with subject %s is present in %s, "
-                        "cannot continue." % (subject, db.secdir))
+                        "cannot continue." % (subject, db.secdir)
+                    )
 
 
 def install(standalone, replica_config, options, custodia):
@@ -302,10 +346,8 @@ def install_step_0(standalone, replica_config, options, custodia):
         ra_only = False
         promote = False
     else:
-        cafile = os.path.join(replica_config.dir, 'cacert.p12')
-        custodia.get_ca_keys(
-            cafile,
-            replica_config.dirman_password)
+        cafile = os.path.join(replica_config.dir, "cacert.p12")
+        custodia.get_ca_keys(cafile, replica_config.dirman_password)
 
         ca_signing_algorithm = None
         ca_type = None
@@ -316,7 +358,7 @@ def install_step_0(standalone, replica_config, options, custodia):
         pkcs12_info = (cafile,)
         master_host = replica_config.ca_host_name
         master_replication_port = replica_config.ca_ds_port
-        ra_p12 = os.path.join(replica_config.dir, 'ra.p12')
+        ra_p12 = os.path.join(replica_config.dir, "ra.p12")
         ra_only = not replica_config.setup_ca
         promote = True
 
@@ -324,19 +366,18 @@ def install_step_0(standalone, replica_config, options, custodia):
     # certmap.conf and subject_base configuration
     #
     set_subject_base_in_config(subject_base)
-    sysupgrade.set_upgrade_state(
-        'certmap.conf', 'subject_base', str(subject_base))
+    sysupgrade.set_upgrade_state("certmap.conf", "subject_base", str(subject_base))
     dsinstance.write_certmap_conf(realm_name, ca_subject)
 
     # use secure ldaps when installing a replica or upgrading to CA-ful
     # In both cases, 389-DS is already configured to have a trusted cert.
     use_ldaps = standalone or replica_config is not None
 
-    ca = cainstance.CAInstance(
-        realm=realm_name, host_name=host_name, custodia=custodia
-    )
+    ca = cainstance.CAInstance(realm=realm_name, host_name=host_name, custodia=custodia)
     ca.configure_instance(
-        host_name, dm_password, dm_password,
+        host_name,
+        dm_password,
+        dm_password,
         subject_base=subject_base,
         ca_subject=ca_subject,
         ca_signing_algorithm=ca_signing_algorithm,
@@ -365,11 +406,9 @@ def install_step_1(standalone, replica_config, options, custodia):
     subject_base = options._subject_base
     basedn = ipautil.realm_to_suffix(realm_name)
 
-    ca = cainstance.CAInstance(
-        realm=realm_name, host_name=host_name, custodia=custodia
-    )
+    ca = cainstance.CAInstance(realm=realm_name, host_name=host_name, custodia=custodia)
 
-    ca.stop('pki-tomcat')
+    ca.stop("pki-tomcat")
 
     # This is done within stopped_service context, which restarts CA
     ca.enable_client_auth_to_db()
@@ -388,17 +427,22 @@ def install_step_1(standalone, replica_config, options, custodia):
 
         # Store the new IPA CA cert chain in DS NSS database and LDAP
         cadb = certs.CertDB(
-            realm_name, nssdir=paths.PKI_TOMCAT_ALIAS_DIR,
-            subject_base=subject_base)
-        dsdb = certs.CertDB(
-            realm_name, nssdir=dirname, subject_base=subject_base)
-        cacert = cadb.get_cert_from_db('caSigningCert cert-pki-ca')
+            realm_name, nssdir=paths.PKI_TOMCAT_ALIAS_DIR, subject_base=subject_base
+        )
+        dsdb = certs.CertDB(realm_name, nssdir=dirname, subject_base=subject_base)
+        cacert = cadb.get_cert_from_db("caSigningCert cert-pki-ca")
         nickname = certdb.get_ca_nickname(realm_name)
         trust_flags = certdb.IPA_CA_TRUST_FLAGS
         dsdb.add_cert(cacert, nickname, trust_flags)
-        certstore.put_ca_cert_nss(api.Backend.ldap2, api.env.basedn,
-                                  cacert, nickname, trust_flags,
-                                  config_ipa=True, config_compat=True)
+        certstore.put_ca_cert_nss(
+            api.Backend.ldap2,
+            api.env.basedn,
+            cacert,
+            nickname,
+            trust_flags,
+            config_ipa=True,
+            config_compat=True,
+        )
 
         # Store DS CA cert in Dogtag NSS database
         trust_flags = dict(reversed(dsdb.list_certs()))
@@ -410,7 +454,7 @@ def install_step_1(standalone, replica_config, options, custodia):
 
     installutils.restart_dirsrv()
 
-    ca.start('pki-tomcat')
+    ca.start("pki-tomcat")
 
     if standalone or replica_config is not None:
         # We need to restart apache as we drop a new config file in there
@@ -433,14 +477,13 @@ def uninstall():
 
 
 class CASigningAlgorithm(enum.Enum):
-    SHA1_WITH_RSA = 'SHA1withRSA'
-    SHA_256_WITH_RSA = 'SHA256withRSA'
-    SHA_512_WITH_RSA = 'SHA512withRSA'
+    SHA1_WITH_RSA = "SHA1withRSA"
+    SHA_256_WITH_RSA = "SHA256withRSA"
+    SHA_512_WITH_RSA = "SHA512withRSA"
 
 
 @group
-class CAInstallInterface(dogtag.DogtagInstallInterface,
-                         conncheck.ConnCheckInterface):
+class CAInstallInterface(dogtag.DogtagInstallInterface, conncheck.ConnCheckInterface):
     """
     Interface of the CA installer
 
@@ -450,13 +493,14 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
     * ipa-replica-install
     * ipa-ca-install
     """
+
     description = "Certificate system"
 
     principal = conncheck.ConnCheckInterface.principal
     principal = extend_knob(
         principal,
         description="User allowed to manage replicas",
-        cli_names=list(principal.cli_names) + ['-P'],
+        cli_names=list(principal.cli_names) + ["-P"],
     )
     principal = enroll_only(principal)
     principal = replica_install_only(principal)
@@ -465,38 +509,44 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
     admin_password = extend_knob(
         admin_password,
         description="Admin user Kerberos password used for connection check",
-        cli_names=list(admin_password.cli_names) + ['-w'],
+        cli_names=list(admin_password.cli_names) + ["-w"],
     )
     admin_password = enroll_only(admin_password)
 
     external_ca = knob(
         None,
-        description=("Generate a CSR for the IPA CA certificate to be signed "
-                     "by an external CA"),
+        description=(
+            "Generate a CSR for the IPA CA certificate to be signed "
+            "by an external CA"
+        ),
     )
     external_ca = master_install_only(external_ca)
 
     external_ca_type = knob(
-        x509.ExternalCAType, None, description="Type of the external CA")
+        x509.ExternalCAType, None, description="Type of the external CA"
+    )
     external_ca_type = master_install_only(external_ca_type)
 
     external_ca_profile = knob(
         type=x509.ExternalCAProfile,
         default=None,
         description=(
-            "Specify the certificate profile/template to use at the "
-            "external CA"),
+            "Specify the certificate profile/template to use at the " "external CA"
+        ),
     )
     external_ca_profile = master_install_only(external_ca_profile)
 
     external_cert_files = knob(
         # pylint: disable=invalid-sequence-index
-        typing.List[str], None,
-        description=("File containing the IPA CA certificate and the external "
-                     "CA certificate chain"),
-        cli_names='--external-cert-file',
-        cli_deprecated_names=['--external_cert_file', '--external_ca_file'],
-        cli_metavar='FILE',
+        typing.List[str],
+        None,
+        description=(
+            "File containing the IPA CA certificate and the external "
+            "CA certificate chain"
+        ),
+        cli_names="--external-cert-file",
+        cli_deprecated_names=["--external_cert_file", "--external_ca_file"],
+        cli_metavar="FILE",
     )
     external_cert_files = master_install_only(external_cert_files)
 
@@ -506,12 +556,13 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
             raise ValueError("must use an absolute path")
 
     subject_base = knob(
-        str, None,
+        str,
+        None,
         description=(
             "The certificate subject base (default O=<realm-name>). "
             "RDNs are in LDAP order (most specific RDN first)."
         ),
-        cli_deprecated_names=['--subject'],
+        cli_deprecated_names=["--subject"],
     )
     subject_base = master_install_only(subject_base)
 
@@ -520,7 +571,8 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
         subject_validator(VALID_SUBJECT_BASE_ATTRS, value)
 
     ca_subject = knob(
-        str, None,
+        str,
+        None,
         description=(
             "The CA certificate subject DN "
             "(default CN=Certificate Authority,O=<realm-name>). "
@@ -534,14 +586,14 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
         subject_validator(VALID_SUBJECT_ATTRS, value)
 
     ca_signing_algorithm = knob(
-        CASigningAlgorithm, None,
+        CASigningAlgorithm,
+        None,
         description="Signing algorithm of the IPA CA certificate",
     )
     ca_signing_algorithm = master_install_only(ca_signing_algorithm)
 
     skip_schema_check = knob(
-        None,
-        description="skip check for updated CA DS schema on the remote master",
+        None, description="skip check for updated CA DS schema on the remote master",
     )
     skip_schema_check = enroll_only(skip_schema_check)
     skip_schema_check = replica_install_only(skip_schema_check)

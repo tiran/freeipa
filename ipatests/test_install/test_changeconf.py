@@ -6,10 +6,10 @@ import pytest
 from ipapython.ipachangeconf import IPAChangeConf
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def config_filename(tmpdir):
-    filename = tmpdir.mkdir('data').join('config_file.conf')
-    filename.write('SOME_CONF /some/user/defined/path\n')
+    filename = tmpdir.mkdir("data").join("config_file.conf")
+    filename.write("SOME_CONF /some/user/defined/path\n")
     return filename
 
 
@@ -22,29 +22,29 @@ def test_addifnotset_action(config_filename):
 
     New settings will be added without any note.
     """
-    ipa_conf = IPAChangeConf('IPA Installer Test')
-    ipa_conf.setOptionAssignment(' ')
+    ipa_conf = IPAChangeConf("IPA Installer Test")
+    ipa_conf.setOptionAssignment(" ")
 
     opts = [
         {
-            'action': 'addifnotset',
-            'name': 'SOME_CONF',
-            'type': 'option',
-            'value': '/path/defined/by/ipa',
+            "action": "addifnotset",
+            "name": "SOME_CONF",
+            "type": "option",
+            "value": "/path/defined/by/ipa",
         },
         {
-            'action': 'addifnotset',
-            'name': 'NEW_CONF',
-            'type': 'option',
-            'value': '/path/to/somewhere',
+            "action": "addifnotset",
+            "name": "NEW_CONF",
+            "type": "option",
+            "value": "/path/to/somewhere",
         },
     ]
 
     ipa_conf.changeConf(str(config_filename), opts)
 
     assert config_filename.readlines() == [
-        '# SOME_CONF modified by IPA\n',
-        '#SOME_CONF /path/defined/by/ipa\n',
-        'SOME_CONF /some/user/defined/path\n',
-        'NEW_CONF /path/to/somewhere\n',
+        "# SOME_CONF modified by IPA\n",
+        "#SOME_CONF /path/defined/by/ipa\n",
+        "SOME_CONF /some/user/defined/path\n",
+        "NEW_CONF /path/to/somewhere\n",
     ]

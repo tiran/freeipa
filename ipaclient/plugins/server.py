@@ -12,10 +12,11 @@ register = Registry()
 @register(override=True, no_fail=True)
 class server_del(MethodOverride):
     def interactive_prompt_callback(self, kw):
-        server_list = kw.get('cn')
+        server_list = kw.get("cn")
         if not server_list:
-            raise errors.RequirementError(name='cn')
+            raise errors.RequirementError(name="cn")
 
         self.api.Backend.textui.print_plain(
-            _("Removing %(servers)s from replication topology, "
-              "please wait...") % {'servers': ', '.join(server_list)})
+            _("Removing %(servers)s from replication topology, " "please wait...")
+            % {"servers": ", ".join(server_list)}
+        )

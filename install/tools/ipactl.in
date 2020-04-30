@@ -21,5 +21,5 @@
 from ipaserver.install import installutils
 from ipaserver.install.ipactl import main
 
-if __name__ == '__main__':
-    installutils.run_script(main, operation_name='ipactl')
+if __name__ == "__main__":
+    installutils.run_script(main, operation_name="ipactl")

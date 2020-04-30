@@ -37,7 +37,8 @@ from ipaserver.plugins.service import validate_realm
 if six.PY3:
     unicode = str
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Set a user's password
 
 If someone other than a user changes that user's password (e.g., Helpdesk
@@ -54,7 +55,8 @@ EXAMPLES:
 
  To change another user's password:
    ipa passwd tuser1
-""")
+"""
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,8 @@ register = Registry()
 
 # We only need to prompt for the current password when changing a password
 # for yourself, but the parameter is still required
-MAGIC_VALUE = u'CHANGING_PASSWORD_FOR_ANOTHER_USER'
+MAGIC_VALUE = u"CHANGING_PASSWORD_FOR_ANOTHER_USER"
+
 
 def get_current_password(principal):
     """
@@ -76,38 +79,34 @@ def get_current_password(principal):
     else:
         return MAGIC_VALUE
 
+
 @register()
 class passwd(Command):
     __doc__ = _("Set a user's password.")
 
     takes_args = (
         Principal(
-            'principal',
+            "principal",
             validate_realm,
-            cli_name='user',
-            label=_('User name'),
+            cli_name="user",
+            label=_("User name"),
             primary_key=True,
             autofill=True,
             default_from=lambda: kerberos.Principal(krb_utils.get_principal()),
             normalizer=lambda value: normalize_user_principal(value),
         ),
-        Password('password',
-                 label=_('New Password'),
-        ),
-        Password('current_password',
-                 label=_('Current Password'),
-                 confirm=False,
-                 default_from=lambda principal: get_current_password(principal),
-                 autofill=True,
+        Password("password", label=_("New Password"),),
+        Password(
+            "current_password",
+            label=_("Current Password"),
+            confirm=False,
+            default_from=lambda principal: get_current_password(principal),
+            autofill=True,
         ),
     )
 
-    takes_options =  (
-        Password('otp?',
-                 label=_('OTP'),
-                 doc=_('One Time Password'),
-                 confirm=False,
-        ),
+    takes_options = (
+        Password("otp?", label=_("OTP"), doc=_("One Time Password"), confirm=False,),
     )
 
     has_output = output.simple_value
@@ -131,24 +130,25 @@ class passwd(Command):
         principal = unicode(principal)
 
         entry_attrs = ldap.find_entry_by_attr(
-            'krbprincipalname', principal, 'posixaccount', [''],
-            DN(api.env.container_user, api.env.basedn)
+            "krbprincipalname",
+            principal,
+            "posixaccount",
+            [""],
+            DN(api.env.container_user, api.env.basedn),
         )
 
-        if principal == getattr(context, 'principal') and \
-            current_password == MAGIC_VALUE:
+        if (
+            principal == getattr(context, "principal")
+            and current_password == MAGIC_VALUE
+        ):
             # No cheating
-            logger.warning('User attempted to change password using magic '
-                           'value')
-            raise errors.ACIError(info=_('Invalid credentials'))
+            logger.warning("User attempted to change password using magic " "value")
+            raise errors.ACIError(info=_("Invalid credentials"))
 
         if current_password == MAGIC_VALUE:
             ldap.modify_password(entry_attrs.dn, password)
         else:
-            otp = options.get('otp')
+            otp = options.get("otp")
             ldap.modify_password(entry_attrs.dn, password, current_password, otp)
 
-        return dict(
-            result=True,
-            value=principal,
-        )
+        return dict(result=True, value=principal,)

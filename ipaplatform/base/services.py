@@ -18,10 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-'''
+"""
 This base module contains default implementations of IPA interface for
 interacting with system services.
-'''
+"""
 
 from __future__ import absolute_import
 
@@ -51,25 +51,48 @@ logger = logging.getLogger(__name__)
 # should make them available through knownservices.<name> and take care of
 # re-mapping internally, if needed
 wellknownservices = [
-    'certmonger', 'dirsrv', 'httpd', 'ipa', 'krb5kdc',
-    'dbus', 'nslcd', 'nscd', 'ntpd', 'portmap',
-    'rpcbind', 'kadmin', 'sshd', 'autofs', 'rpcgssd',
-    'rpcidmapd', 'pki_tomcatd', 'chronyd', 'domainname',
-    'named', 'ods_enforcerd', 'ods_signerd', 'gssproxy',
-    'nfs-utils', 'sssd', 'NetworkManager', 'ipa-custodia',
-    'ipa-dnskeysyncd', 'ipa-otpd', 'ipa-ods-exporter'
+    "certmonger",
+    "dirsrv",
+    "httpd",
+    "ipa",
+    "krb5kdc",
+    "dbus",
+    "nslcd",
+    "nscd",
+    "ntpd",
+    "portmap",
+    "rpcbind",
+    "kadmin",
+    "sshd",
+    "autofs",
+    "rpcgssd",
+    "rpcidmapd",
+    "pki_tomcatd",
+    "chronyd",
+    "domainname",
+    "named",
+    "ods_enforcerd",
+    "ods_signerd",
+    "gssproxy",
+    "nfs-utils",
+    "sssd",
+    "NetworkManager",
+    "ipa-custodia",
+    "ipa-dnskeysyncd",
+    "ipa-otpd",
+    "ipa-ods-exporter",
 ]
 
 # The common ports for these services. This is used to wait for the
 # service to become available.
 wellknownports = {
-    'dirsrv': [389],  # only used if the incoming instance name is blank
-    'pki-tomcatd@pki-tomcat.service': [8080, 8443],
-    'pki-tomcat': [8080, 8443],
-    'pki-tomcatd': [8080, 8443],  # used if the incoming instance name is blank
+    "dirsrv": [389],  # only used if the incoming instance name is blank
+    "pki-tomcatd@pki-tomcat.service": [8080, 8443],
+    "pki-tomcat": [8080, 8443],
+    "pki-tomcatd": [8080, 8443],  # used if the incoming instance name is blank
 }
 
-SERVICE_POLL_INTERVAL = 0.1 # seconds
+SERVICE_POLL_INTERVAL = 0.1  # seconds
 
 
 class KnownServices(Mapping):
@@ -79,6 +102,7 @@ class KnownServices(Mapping):
     instances as its own attributes on first access (or instance creation)
     and cache them.
     """
+
     def __init__(self, d):
         self.__d = d
 
@@ -111,6 +135,7 @@ class PlatformService:
     def __init__(self, service_name, api=None):
         # pylint: disable=ipa-forbidden-import
         import ipalib  # FixMe: break import cycle
+
         # pylint: enable=ipa-forbidden-import
         self.service_name = service_name
         if api is not None:
@@ -120,10 +145,13 @@ class PlatformService:
             warnings.warn(
                 "{s.__class__.__name__}('{s.service_name}', api=None) "
                 "is deprecated.".format(s=self),
-                RuntimeWarning, stacklevel=2)
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
-    def start(self, instance_name="", capture_output=True, wait=True,
-        update_service_list=True):
+    def start(
+        self, instance_name="", capture_output=True, wait=True, update_service_list=True
+    ):
         """
         When a service is started record the fact in a special file.
         This allows ipactl stop to always stop all services that have
@@ -133,7 +161,7 @@ class PlatformService:
             return
         svc_list = []
         try:
-            with open(paths.SVC_LIST_FILE, 'r') as f:
+            with open(paths.SVC_LIST_FILE, "r") as f:
                 svc_list = json.load(f)
         except Exception:
             # not fatal, may be the first service
@@ -142,11 +170,10 @@ class PlatformService:
         if self.service_name not in svc_list:
             svc_list.append(self.service_name)
 
-        with open(paths.SVC_LIST_FILE, 'w') as f:
+        with open(paths.SVC_LIST_FILE, "w") as f:
             json.dump(svc_list, f)
 
-    def stop(self, instance_name="", capture_output=True,
-             update_service_list=True):
+    def stop(self, instance_name="", capture_output=True, update_service_list=True):
         """
         When a service is stopped remove it from the service list file.
         """
@@ -154,7 +181,7 @@ class PlatformService:
             return
         svc_list = []
         try:
-            with open(paths.SVC_LIST_FILE, 'r') as f:
+            with open(paths.SVC_LIST_FILE, "r") as f:
                 svc_list = json.load(f)
         except Exception:
             # not fatal, may be the first service
@@ -163,11 +190,10 @@ class PlatformService:
         while self.service_name in svc_list:
             svc_list.remove(self.service_name)
 
-        with open(paths.SVC_LIST_FILE, 'w') as f:
+        with open(paths.SVC_LIST_FILE, "w") as f:
             json.dump(svc_list, f)
 
-    def reload_or_restart(self, instance_name="", capture_output=True,
-                          wait=True):
+    def reload_or_restart(self, instance_name="", capture_output=True, wait=True):
         pass
 
     def restart(self, instance_name="", capture_output=True, wait=True):
@@ -213,8 +239,7 @@ class SystemdService(PlatformService):
     def __init__(self, service_name, systemd_name, api=None):
         super(SystemdService, self).__init__(service_name, api=api)
         self.systemd_name = systemd_name
-        self.lib_path = os.path.join(paths.LIB_SYSTEMD_SYSTEMD_DIR,
-                                     self.systemd_name)
+        self.lib_path = os.path.join(paths.LIB_SYSTEMD_SYSTEMD_DIR, self.systemd_name)
         self.lib_path_exists = None
 
     def service_instance(self, instance_name, operation=None):
@@ -224,17 +249,16 @@ class SystemdService(PlatformService):
         elements = self.systemd_name.split("@")
 
         # Make sure the correct DS instance is returned
-        if elements[0] == 'dirsrv' and not instance_name:
+        if elements[0] == "dirsrv" and not instance_name:
 
-            return ('dirsrv@%s.service'
-                    % str(self.api.env.realm.replace('.', '-')))
+            return "dirsrv@%s.service" % str(self.api.env.realm.replace(".", "-"))
 
         # Short-cut: if there is already exact service name, return it
         if self.lib_path_exists and instance_name:
             if len(elements) == 1:
                 # service name is like pki-tomcatd.target or krb5kdc.service
                 return self.systemd_name
-            if len(elements) > 1 and elements[1][0] != '.':
+            if len(elements) > 1 and elements[1][0] != ".":
                 # Service name is like pki-tomcatd@pki-tomcat.service
                 # and that file exists
                 return self.systemd_name
@@ -281,8 +305,9 @@ class SystemdService(PlatformService):
             if elements[0] in wellknownports:
                 ports = wellknownports[elements[0]]
         if ports:
-            ipautil.wait_for_open_ports('localhost', ports,
-                                        self.api.env.startup_timeout)
+            ipautil.wait_for_open_ports(
+                "localhost", ports, self.api.env.startup_timeout
+            )
 
     def stop(self, instance_name="", capture_output=True):
         instance = self.service_instance(instance_name)
@@ -297,71 +322,69 @@ class SystemdService(PlatformService):
 
         ipautil.run(args, skip_output=not capture_output)
 
-        update_service_list = getattr(self.api.env, 'context',
-                                      None) in ['ipactl', 'installer']
+        update_service_list = getattr(self.api.env, "context", None) in [
+            "ipactl",
+            "installer",
+        ]
         super(SystemdService, self).stop(
-            instance_name,
-            update_service_list=update_service_list)
-        logger.debug('Stop of %s complete', instance)
+            instance_name, update_service_list=update_service_list
+        )
+        logger.debug("Stop of %s complete", instance)
 
     def start(self, instance_name="", capture_output=True, wait=True):
-        ipautil.run([paths.SYSTEMCTL, "start",
-                     self.service_instance(instance_name)],
-                    skip_output=not capture_output)
+        ipautil.run(
+            [paths.SYSTEMCTL, "start", self.service_instance(instance_name)],
+            skip_output=not capture_output,
+        )
 
-        update_service_list = getattr(self.api.env, 'context',
-                                      None) in ['ipactl', 'installer']
+        update_service_list = getattr(self.api.env, "context", None) in [
+            "ipactl",
+            "installer",
+        ]
 
         if wait and self.is_running(instance_name):
             self.wait_for_open_ports(self.service_instance(instance_name))
         super(SystemdService, self).start(
-            instance_name,
-            update_service_list=update_service_list)
-        logger.debug('Start of %s complete',
-                     self.service_instance(instance_name))
+            instance_name, update_service_list=update_service_list
+        )
+        logger.debug("Start of %s complete", self.service_instance(instance_name))
 
-    def _restart_base(self, instance_name, operation, capture_output=True,
-                      wait=False):
+    def _restart_base(self, instance_name, operation, capture_output=True, wait=False):
 
-        ipautil.run([paths.SYSTEMCTL, operation,
-                    self.service_instance(instance_name)],
-                    skip_output=not capture_output)
+        ipautil.run(
+            [paths.SYSTEMCTL, operation, self.service_instance(instance_name)],
+            skip_output=not capture_output,
+        )
 
         if wait and self.is_running(instance_name):
             self.wait_for_open_ports(self.service_instance(instance_name))
-        logger.debug('Restart of %s complete',
-                     self.service_instance(instance_name))
+        logger.debug("Restart of %s complete", self.service_instance(instance_name))
 
-    def reload_or_restart(self, instance_name="", capture_output=True,
-                          wait=True):
-        self._restart_base(instance_name, "reload-or-restart",
-                           capture_output, wait)
+    def reload_or_restart(self, instance_name="", capture_output=True, wait=True):
+        self._restart_base(instance_name, "reload-or-restart", capture_output, wait)
 
     def restart(self, instance_name="", capture_output=True, wait=True):
-        self._restart_base(instance_name, "restart",
-                           capture_output, wait)
+        self._restart_base(instance_name, "restart", capture_output, wait)
 
     def try_restart(self, instance_name="", capture_output=True, wait=True):
-        self._restart_base(instance_name, "try-restart",
-                           capture_output, wait)
+        self._restart_base(instance_name, "try-restart", capture_output, wait)
 
     def is_running(self, instance_name="", wait=True):
-        instance = self.service_instance(instance_name, 'is-active')
+        instance = self.service_instance(instance_name, "is-active")
 
         while True:
             try:
                 result = ipautil.run(
-                    [paths.SYSTEMCTL, "is-active", instance],
-                    capture_output=True
+                    [paths.SYSTEMCTL, "is-active", instance], capture_output=True
                 )
             except ipautil.CalledProcessError as e:
-                if e.returncode == 3 and 'activating' in str(e.output):
+                if e.returncode == 3 and "activating" in str(e.output):
                     time.sleep(SERVICE_POLL_INTERVAL)
                     continue
                 return False
             else:
                 # activating
-                if result.returncode == 3 and 'activating' in result.output:
+                if result.returncode == 3 and "activating" in result.output:
                     time.sleep(SERVICE_POLL_INTERVAL)
                     continue
                 # active
@@ -373,8 +396,8 @@ class SystemdService(PlatformService):
     def is_installed(self):
         try:
             result = ipautil.run(
-                [paths.SYSTEMCTL, "list-unit-files", "--full"],
-                capture_output=True)
+                [paths.SYSTEMCTL, "list-unit-files", "--full"], capture_output=True
+            )
             if result.returncode != 0:
                 return False
             else:
@@ -383,7 +406,7 @@ class SystemdService(PlatformService):
                     # systemd doesn't show the service
                     return False
         except ipautil.CalledProcessError:
-                return False
+            return False
 
         return True
 
@@ -391,29 +414,29 @@ class SystemdService(PlatformService):
         enabled = True
         try:
             result = ipautil.run(
-                [paths.SYSTEMCTL, "is-enabled",
-                 self.service_instance(instance_name)])
+                [paths.SYSTEMCTL, "is-enabled", self.service_instance(instance_name)]
+            )
 
             if result.returncode != 0:
                 enabled = False
 
         except ipautil.CalledProcessError:
-                enabled = False
+            enabled = False
         return enabled
 
     def is_masked(self, instance_name=""):
         masked = False
         try:
             result = ipautil.run(
-                [paths.SYSTEMCTL, "is-enabled",
-                 self.service_instance(instance_name)],
-                capture_output=True)
+                [paths.SYSTEMCTL, "is-enabled", self.service_instance(instance_name)],
+                capture_output=True,
+            )
 
-            if result.returncode == 1 and result.output == 'masked':
+            if result.returncode == 1 and result.output == "masked":
                 masked = True
 
         except ipautil.CalledProcessError:
-                pass
+            pass
         return masked
 
     def enable(self, instance_name=""):
@@ -422,7 +445,7 @@ class SystemdService(PlatformService):
         elements = self.systemd_name.split("@")
         l = len(elements)
 
-        if self.lib_path_exists and (l > 1 and elements[1][0] != '.'):
+        if self.lib_path_exists and (l > 1 and elements[1][0] != "."):
             # There is explicit service unit supporting this instance,
             # follow normal systemd enabler
             self.__enable(instance_name)
@@ -442,10 +465,10 @@ class SystemdService(PlatformService):
             #    <service>@<instance_name>.service to
             #    /lib/systemd/system/<service>@.service
 
-            srv_tgt = os.path.join(paths.ETC_SYSTEMD_SYSTEM_DIR,
-                                   self.SYSTEMD_SRV_TARGET % (elements[0]))
-            srv_lnk = os.path.join(srv_tgt,
-                                   self.service_instance(instance_name))
+            srv_tgt = os.path.join(
+                paths.ETC_SYSTEMD_SYSTEM_DIR, self.SYSTEMD_SRV_TARGET % (elements[0])
+            )
+            srv_lnk = os.path.join(srv_tgt, self.service_instance(instance_name))
 
             try:
                 if not os.path.isdir(srv_tgt):
@@ -477,10 +500,10 @@ class SystemdService(PlatformService):
             # <service>@<instance_name>.service
             # to /lib/systemd/system/<service>@.service
 
-            srv_tgt = os.path.join(paths.ETC_SYSTEMD_SYSTEM_DIR,
-                                   self.SYSTEMD_SRV_TARGET % (elements[0]))
-            srv_lnk = os.path.join(srv_tgt,
-                                   self.service_instance(instance_name))
+            srv_tgt = os.path.join(
+                paths.ETC_SYSTEMD_SYSTEM_DIR, self.SYSTEMD_SRV_TARGET % (elements[0])
+            )
+            srv_lnk = os.path.join(srv_tgt, self.service_instance(instance_name))
 
             try:
                 if os.path.isdir(srv_tgt):
@@ -491,32 +514,36 @@ class SystemdService(PlatformService):
                 pass
         else:
             try:
-                ipautil.run([paths.SYSTEMCTL, "disable",
-                             self.service_instance(instance_name)])
+                ipautil.run(
+                    [paths.SYSTEMCTL, "disable", self.service_instance(instance_name)]
+                )
             except ipautil.CalledProcessError:
                 pass
 
     def mask(self, instance_name=""):
-        srv_tgt = os.path.join(paths.ETC_SYSTEMD_SYSTEM_DIR, self.service_instance(instance_name))
+        srv_tgt = os.path.join(
+            paths.ETC_SYSTEMD_SYSTEM_DIR, self.service_instance(instance_name)
+        )
         if os.path.exists(srv_tgt):
             os.unlink(srv_tgt)
         try:
-            ipautil.run([paths.SYSTEMCTL, "mask",
-                         self.service_instance(instance_name)])
+            ipautil.run([paths.SYSTEMCTL, "mask", self.service_instance(instance_name)])
         except ipautil.CalledProcessError:
             pass
 
     def unmask(self, instance_name=""):
         try:
-            ipautil.run([paths.SYSTEMCTL, "unmask",
-                         self.service_instance(instance_name)])
+            ipautil.run(
+                [paths.SYSTEMCTL, "unmask", self.service_instance(instance_name)]
+            )
         except ipautil.CalledProcessError:
             pass
 
     def __enable(self, instance_name=""):
         try:
-            ipautil.run([paths.SYSTEMCTL, "enable",
-                         self.service_instance(instance_name)])
+            ipautil.run(
+                [paths.SYSTEMCTL, "enable", self.service_instance(instance_name)]
+            )
         except ipautil.CalledProcessError:
             pass
 
@@ -529,6 +556,7 @@ class SystemdService(PlatformService):
 
 # Objects below are expected to be exported by platform module
 
+
 def base_service_class_factory(name, api=None):
     raise NotImplementedError
 
@@ -538,4 +566,4 @@ knownservices = KnownServices({})
 
 # System may support more time&date services. FreeIPA supports chrony only.
 # Other services will be disabled during IPA installation
-timedate_services = ['ntpd', 'chronyd']
+timedate_services = ["ntpd", "chronyd"]

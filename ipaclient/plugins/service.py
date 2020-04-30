@@ -32,17 +32,18 @@ register = Registry()
 @register(override=True, no_fail=True)
 class service_show(MethodOverride):
     def forward(self, *keys, **options):
-        if 'out' in options:
-            util.check_writable_file(options['out'])
+        if "out" in options:
+            util.check_writable_file(options["out"])
             result = super(service_show, self).forward(*keys, **options)
-            if 'usercertificate' in result['result']:
-                certs = (x509.load_der_x509_certificate(c)
-                         for c in result['result']['usercertificate'])
-                x509.write_certificate_list(certs, options['out'])
-                result['summary'] = (
-                    _('Certificate(s) stored in file \'%(file)s\'')
-                    % dict(file=options['out'])
+            if "usercertificate" in result["result"]:
+                certs = (
+                    x509.load_der_x509_certificate(c)
+                    for c in result["result"]["usercertificate"]
                 )
+                x509.write_certificate_list(certs, options["out"])
+                result["summary"] = _(
+                    "Certificate(s) stored in file '%(file)s'"
+                ) % dict(file=options["out"])
                 return result
             else:
                 raise errors.NoCertificateError(entry=keys[-1])

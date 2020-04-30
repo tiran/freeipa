@@ -10,7 +10,8 @@ from ipaserver.install import certs
 
 
 def main():
-    certs.renewal_lock.acquire('renew_ra_cert')
+    certs.renewal_lock.acquire("renew_ra_cert")
+
 
 try:
     main()

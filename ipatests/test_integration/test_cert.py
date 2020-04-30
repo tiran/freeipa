@@ -18,7 +18,7 @@ from cryptography.hazmat.backends import default_backend
 from ipatests.pytest_ipa.integration import tasks
 from ipatests.test_integration.base import IntegrationTest
 
-DEFAULT_RA_AGENT_SUBMITTED_VAL = '19700101000000'
+DEFAULT_RA_AGENT_SUBMITTED_VAL = "19700101000000"
 
 
 def get_certmonger_fs_id(input_str):
@@ -28,7 +28,7 @@ def get_certmonger_fs_id(input_str):
 
     :return request ID string
     """
-    request_id = re.findall(r'\d+', input_str)
+    request_id = re.findall(r"\d+", input_str)
     return request_id[1]
 
 
@@ -39,15 +39,14 @@ def get_certmonger_request_value(host, requestid, state):
     :return submitted timestamp value
     """
     result = host.run_command(
-        ['grep', '-rl', 'id={0}'.format(requestid),
-         paths.CERTMONGER_REQUESTS_DIR]
+        ["grep", "-rl", "id={0}".format(requestid), paths.CERTMONGER_REQUESTS_DIR]
     )
     assert result.stdout_text is not None
     filename = result.stdout_text.strip()
-    request_file = host.get_file_contents(filename, encoding='utf-8')
+    request_file = host.get_file_contents(filename, encoding="utf-8")
     val = None
-    for line in request_file.split('\n'):
-        if line.startswith('%s=' % state):
+    for line in request_file.split("\n"):
+        if line.startswith("%s=" % state):
             _unused, val = line.partition("=")[::2]
             break
     return val
@@ -60,9 +59,7 @@ class TestInstallMasterClient(IntegrationTest):
     def install(cls, mh):
         tasks.install_master(cls.master, setup_dns=True)
         # use master's DNS so nsupdate adds correct IP address for client
-        tasks.config_host_resolvconf_with_master_data(
-            cls.master, cls.clients[0]
-        )
+        tasks.config_host_resolvconf_with_master_data(cls.master, cls.clients[0])
         tasks.install_client(cls.master, cls.clients[0])
 
     def test_cacert_file_appear_with_option_F(self):
@@ -75,50 +72,63 @@ class TestInstallMasterClient(IntegrationTest):
 
         related: https://pagure.io/freeipa/issue/8105
         """
-        cmd_arg = ['ipa-getcert', 'request',
-                   '-f', '/etc/pki/tls/certs/test.pem',
-                   '-k', '/etc/pki/tls/private/test.key',
-                   '-K', 'test/%s' % self.clients[0].hostname,
-                   '-F', '/etc/pki/tls/test.CA']
+        cmd_arg = [
+            "ipa-getcert",
+            "request",
+            "-f",
+            "/etc/pki/tls/certs/test.pem",
+            "-k",
+            "/etc/pki/tls/private/test.key",
+            "-K",
+            "test/%s" % self.clients[0].hostname,
+            "-F",
+            "/etc/pki/tls/test.CA",
+        ]
         result = self.clients[0].run_command(cmd_arg)
-        request_id = re.findall(r'\d+', result.stdout_text)
+        request_id = re.findall(r"\d+", result.stdout_text)
 
         # check if certificate is in MONITORING state
         status = tasks.wait_for_request(self.clients[0], request_id[0], 50)
         assert status == "MONITORING"
 
-        self.clients[0].run_command(['ls', '-l', '/etc/pki/tls/test.CA'])
+        self.clients[0].run_command(["ls", "-l", "/etc/pki/tls/test.CA"])
 
     def test_ipa_getcert_san_aci(self):
         """Test for DNS and IP SAN extensions + ACIs
         """
         hostname = self.clients[0].hostname
-        certfile = '/etc/pki/tls/certs/test2.pem'
+        certfile = "/etc/pki/tls/certs/test2.pem"
 
         tasks.kinit_admin(self.master)
-        name, zone = hostname.split('.', 1)
-        self.master.run_command(['ipa', 'dnsrecord-show', zone, name])
+        name, zone = hostname.split(".", 1)
+        self.master.run_command(["ipa", "dnsrecord-show", zone, name])
         tasks.kdestroy_all(self.master)
 
         cmd_arg = [
-            'ipa-getcert', 'request', '-v', '-w',
-            '-f', certfile,
-            '-k', '/etc/pki/tls/private/test2.key',
-            '-K', f'test/{hostname}',
-            '-D', hostname,
-            '-A', self.clients[0].ip,
+            "ipa-getcert",
+            "request",
+            "-v",
+            "-w",
+            "-f",
+            certfile,
+            "-k",
+            "/etc/pki/tls/private/test2.key",
+            "-K",
+            f"test/{hostname}",
+            "-D",
+            hostname,
+            "-A",
+            self.clients[0].ip,
         ]
         result = self.clients[0].run_command(cmd_arg)
-        request_id = re.findall(r'\d+', result.stdout_text)
+        request_id = re.findall(r"\d+", result.stdout_text)
 
         # check if certificate is in MONITORING state
         status = tasks.wait_for_request(self.clients[0], request_id[0], 50)
         assert status == "MONITORING"
 
         certdata = self.clients[0].get_file_contents(certfile)
-        cert = x509.load_pem_x509_certificate(
-            certdata, default_backend()
-        )
+        cert = x509.load_pem_x509_certificate(certdata, default_backend())
         ext = cert.extensions.get_extension_for_oid(
             ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
@@ -160,60 +170,61 @@ class TestCertmongerInterruption(IntegrationTest):
 
         Pagure Issue: https://pagure.io/freeipa/issue/8164
         """
-        cmd = ['getcert', 'list', '-f', paths.RA_AGENT_PEM]
+        cmd = ["getcert", "list", "-f", paths.RA_AGENT_PEM]
         result = self.replicas[0].run_command(cmd)
 
         # Get Request ID and Submitted Values
         request_id = get_certmonger_fs_id(result.stdout_text)
-        start_val = get_certmonger_request_value(self.replicas[0],
-                                                 request_id, "submitted")
+        start_val = get_certmonger_request_value(
+            self.replicas[0], request_id, "submitted"
+        )
 
         # at this point submitted value for RA agent cert should be
         # 19700101000000 since it has never been submitted for renewal.
         assert start_val == DEFAULT_RA_AGENT_SUBMITTED_VAL
 
-        cmd = ['getcert', 'resubmit', '-f', paths.RA_AGENT_PEM]
+        cmd = ["getcert", "resubmit", "-f", paths.RA_AGENT_PEM]
         self.replicas[0].run_command(cmd)
 
-        tasks.wait_for_certmonger_status(self.replicas[0],
-                                         ('CA_WORKING', 'MONITORING'),
-                                         request_id)
+        tasks.wait_for_certmonger_status(
+            self.replicas[0], ("CA_WORKING", "MONITORING"), request_id
+        )
 
-        resubmit_val = get_certmonger_request_value(self.replicas[0],
-                                                    request_id,
-                                                    "submitted")
+        resubmit_val = get_certmonger_request_value(
+            self.replicas[0], request_id, "submitted"
+        )
 
         if resubmit_val == DEFAULT_RA_AGENT_SUBMITTED_VAL:
             pytest.fail("Request was not resubmitted")
 
-        ca_error = get_certmonger_request_value(self.replicas[0],
-                                                request_id, "ca_error")
-        state = get_certmonger_request_value(self.replicas[0],
-                                             request_id, "state")
+        ca_error = get_certmonger_request_value(
+            self.replicas[0], request_id, "ca_error"
+        )
+        state = get_certmonger_request_value(self.replicas[0], request_id, "state")
 
         assert ca_error is None
-        assert state == 'CA_WORKING'
+        assert state == "CA_WORKING"
 
-        cmd = ['getcert', 'resubmit', '-f', paths.RA_AGENT_PEM]
+        cmd = ["getcert", "resubmit", "-f", paths.RA_AGENT_PEM]
         self.replicas[0].run_command(cmd)
 
-        tasks.wait_for_certmonger_status(self.replicas[0],
-                                         ('CA_WORKING', 'MONITORING'),
-                                         request_id)
+        tasks.wait_for_certmonger_status(
+            self.replicas[0], ("CA_WORKING", "MONITORING"), request_id
+        )
 
-        resubmit2_val = get_certmonger_request_value(self.replicas[0],
-                                                     request_id,
-                                                     "submitted")
+        resubmit2_val = get_certmonger_request_value(
+            self.replicas[0], request_id, "submitted"
+        )
 
         if resubmit_val == DEFAULT_RA_AGENT_SUBMITTED_VAL:
             pytest.fail("Request was not resubmitted")
 
         assert resubmit2_val > resubmit_val
 
-        ca_error = get_certmonger_request_value(self.replicas[0],
-                                                request_id, "ca_error")
-        state = get_certmonger_request_value(self.replicas[0],
-                                             request_id, "state")
+        ca_error = get_certmonger_request_value(
+            self.replicas[0], request_id, "ca_error"
+        )
+        state = get_certmonger_request_value(self.replicas[0], request_id, "state")
 
         assert ca_error is None
-        assert state == 'CA_WORKING'
+        assert state == "CA_WORKING"

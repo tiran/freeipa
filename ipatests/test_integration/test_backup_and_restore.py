@@ -49,9 +49,9 @@ def assert_entries_equal(a, b):
 def assert_results_equal(a, b):
     def to_dict(r):
         return {
-            'stdout': r.stdout_text,
-            'stderr': r.stderr_text,
-            'returncode': r.returncode,
+            "stdout": r.stdout_text,
+            "stderr": r.stderr_text,
+            "returncode": r.returncode,
         }
 
     assert_deepequal(to_dict(a), to_dict(b))
@@ -60,53 +60,51 @@ def assert_results_equal(a, b):
 def check_admin_in_ldap(host):
     ldap = host.ldap_connect()
     basedn = host.domain.basedn
-    user_dn = DN(('uid', 'admin'), ('cn', 'users'), ('cn', 'accounts'), basedn)
+    user_dn = DN(("uid", "admin"), ("cn", "users"), ("cn", "accounts"), basedn)
     entry = ldap.get_entry(user_dn)
     print(entry)
     assert entry.dn == user_dn
-    assert entry['uid'] == ['admin']
+    assert entry["uid"] == ["admin"]
 
-    entry.pop('krbLastSuccessfulAuth', None)
+    entry.pop("krbLastSuccessfulAuth", None)
 
     return entry
 
 
 def check_admin_in_cli(host):
-    result = host.run_command(['ipa', 'user-show', 'admin'])
-    assert 'User login: admin' in result.stdout_text, result.stdout_text
+    result = host.run_command(["ipa", "user-show", "admin"])
+    assert "User login: admin" in result.stdout_text, result.stdout_text
 
     # LDAP do not guarantee any order, so the test cannot assume it. Based on
     # that, the code bellow order the 'Member of groups' field to able to
     # assert it latter.
     data = dict(re.findall(r"\W*(.+):\W*(.+)\W*", result.stdout_text))
-    data["Member of groups"] = ', '.join(sorted(data["Member of groups"]
-                                                .split(", ")))
-    result.stdout_text = ''.join([' {}: {}\n'.format(k, v)
-                                  for k, v in data.items()])
+    data["Member of groups"] = ", ".join(sorted(data["Member of groups"].split(", ")))
+    result.stdout_text = "".join([" {}: {}\n".format(k, v) for k, v in data.items()])
     return result
 
 
 def check_admin_in_id(host):
-    result = host.run_command(['id', 'admin'])
-    assert 'admin' in result.stdout_text, result.stdout_text
+    result = host.run_command(["id", "admin"])
+    assert "admin" in result.stdout_text, result.stdout_text
     return result
 
 
 def check_certs(host):
-    result = host.run_command(['ipa', 'cert-find'])
-    assert re.search(r'^Number of entries returned [1-9]\d*$',
-                     result.stdout_text, re.MULTILINE), result.stdout_text
+    result = host.run_command(["ipa", "cert-find"])
+    assert re.search(
+        r"^Number of entries returned [1-9]\d*$", result.stdout_text, re.MULTILINE
+    ), result.stdout_text
     return result
 
 
 def check_dns(host):
-    result = host.run_command(['host', host.hostname, 'localhost'])
+    result = host.run_command(["host", host.hostname, "localhost"])
     return result
 
 
 def check_kinit(host):
-    result = host.run_command(['kinit', 'admin'],
-                              stdin_text=host.config.admin_password)
+    result = host.run_command(["kinit", "admin"], stdin_text=host.config.admin_password)
     return result
 
 
@@ -136,7 +134,7 @@ CHECKS = [
     (check_dns, assert_results_equal),
     (check_kinit, assert_results_equal),
     (check_custodia_files, assert_deepequal),
-    (check_pkcs11_modules, assert_deepequal)
+    (check_pkcs11_modules, assert_deepequal),
 ]
 
 
@@ -147,7 +145,7 @@ def restore_checker(host):
 
     results = []
     for check, assert_func in CHECKS:
-        logger.info('Storing result for %s', check.__name__)
+        logger.info("Storing result for %s", check.__name__)
         results.append(check(host))
 
     yield
@@ -157,7 +155,7 @@ def restore_checker(host):
     tasks.kinit_admin(host)
 
     for (check, assert_func), expected in zip(CHECKS, results):
-        logger.info('Checking result for %s', check.__name__)
+        logger.info("Checking result for %s", check.__name__)
         got = check(host)
         assert_func(expected, got)
 
@@ -168,45 +166,47 @@ def cert_sign_request(request):
     hosts = [master] + request.instance.replicas
     csrs = {}
     for host in hosts:
-        request_path = host.run_command(['mktemp']).stdout_text.strip()
+        request_path = host.run_command(["mktemp"]).stdout_text.strip()
         openssl_command = [
-            'openssl', 'req', '-new', '-nodes', '-out', request_path,
-            '-subj', '/CN=' + master.hostname
+            "openssl",
+            "req",
+            "-new",
+            "-nodes",
+            "-out",
+            request_path,
+            "-subj",
+            "/CN=" + master.hostname,
         ]
         host.run_command(openssl_command)
         csrs[host.hostname] = request_path
     yield csrs
     for host in hosts:
-        host.run_command(['rm', csrs[host.hostname]])
+        host.run_command(["rm", csrs[host.hostname]])
 
 
 class TestBackupAndRestore(IntegrationTest):
-    topology = 'star'
+    topology = "star"
 
     def test_full_backup_and_restore(self):
         """backup, uninstall, restore"""
         with restore_checker(self.master):
             backup_path = tasks.get_backup_dir(self.master)
 
-            self.master.run_command(['ipa-server-install',
-                                     '--uninstall',
-                                     '-U'])
-            assert not self.master.transport.file_exists(
-                paths.IPA_CUSTODIA_KEYS)
-            assert not self.master.transport.file_exists(
-                paths.IPA_CUSTODIA_CONF)
+            self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
+            assert not self.master.transport.file_exists(paths.IPA_CUSTODIA_KEYS)
+            assert not self.master.transport.file_exists(paths.IPA_CUSTODIA_CONF)
 
             dirman_password = self.master.config.dirman_password
-            self.master.run_command(['ipa-restore', backup_path],
-                                    stdin_text=dirman_password + '\nyes')
+            self.master.run_command(
+                ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+            )
 
             # check the file permssion and ownership is set to 770 and
             # dirsrv:dirsrv after restore on /var/log/dirsrv/slapd-<instance>
             # related ticket : https://pagure.io/freeipa/issue/7725
             instance = realm_to_serverid(self.master.domain.realm)
             log_path = paths.VAR_LOG_DIRSRV_INSTANCE_TEMPLATE % instance
-            cmd = self.master.run_command(['stat', '-c',
-                                           '"%a %G:%U"', log_path])
+            cmd = self.master.run_command(["stat", "-c", '"%a %G:%U"', log_path])
             assert "770 dirsrv:dirsrv" in cmd.stdout_text
 
     def test_full_backup_and_restore_with_removed_users(self):
@@ -214,62 +214,61 @@ class TestBackupAndRestore(IntegrationTest):
         with restore_checker(self.master):
             backup_path = tasks.get_backup_dir(self.master)
 
-            logger.info('Backup path for %s is %s', self.master, backup_path)
+            logger.info("Backup path for %s is %s", self.master, backup_path)
 
-            self.master.run_command(['ipa-server-install',
-                                     '--uninstall',
-                                     '-U'])
+            self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
 
-            homedir = os.path.join(self.master.config.test_dir,
-                                   'testuser_homedir')
-            self.master.run_command(['useradd', 'ipatest_user1',
-                                     '--system',
-                                     '-d', homedir])
+            homedir = os.path.join(self.master.config.test_dir, "testuser_homedir")
+            self.master.run_command(
+                ["useradd", "ipatest_user1", "--system", "-d", homedir]
+            )
             try:
                 dirman_password = self.master.config.dirman_password
-                self.master.run_command(['ipa-restore', backup_path],
-                                        stdin_text=dirman_password + '\nyes')
+                self.master.run_command(
+                    ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+                )
             finally:
-                self.master.run_command(['userdel', 'ipatest_user1'])
+                self.master.run_command(["userdel", "ipatest_user1"])
 
     @pytest.mark.skipif(
-        not platformtasks.is_selinux_enabled(),
-        reason="Test needs SELinux enabled")
+        not platformtasks.is_selinux_enabled(), reason="Test needs SELinux enabled"
+    )
     def test_full_backup_and_restore_with_selinux_booleans_off(self):
         """regression test for https://fedorahosted.org/freeipa/ticket/4157"""
         with restore_checker(self.master):
             backup_path = tasks.get_backup_dir(self.master)
 
-            logger.info('Backup path for %s is %s', self.master, backup_path)
+            logger.info("Backup path for %s is %s", self.master, backup_path)
 
-            self.master.run_command(['ipa-server-install',
-                                     '--uninstall',
-                                     '-U'])
+            self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
 
-            self.master.run_command([
-                'setsebool', '-P',
-                'httpd_can_network_connect=off',
-                'httpd_manage_ipa=off',
-            ])
+            self.master.run_command(
+                [
+                    "setsebool",
+                    "-P",
+                    "httpd_can_network_connect=off",
+                    "httpd_manage_ipa=off",
+                ]
+            )
 
             dirman_password = self.master.config.dirman_password
-            self.master.run_command(['ipa-restore', backup_path],
-                                    stdin_text=dirman_password + '\nyes')
+            self.master.run_command(
+                ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+            )
 
-        result = self.master.run_command([
-            'getsebool',
-            'httpd_can_network_connect',
-            'httpd_manage_ipa',
-        ])
-        assert 'httpd_can_network_connect --> on' in result.stdout_text
-        assert 'httpd_manage_ipa --> on' in result.stdout_text
+        result = self.master.run_command(
+            ["getsebool", "httpd_can_network_connect", "httpd_manage_ipa",]
+        )
+        assert "httpd_can_network_connect --> on" in result.stdout_text
+        assert "httpd_manage_ipa --> on" in result.stdout_text
 
 
 class BaseBackupAndRestoreWithDNS(IntegrationTest):
     """
     Abstract class for DNS restore tests
     """
-    topology = 'star'
+
+    topology = "star"
 
     example_test_zone = "example.test."
     example2_test_zone = "example2.test."
@@ -284,40 +283,38 @@ class BaseBackupAndRestoreWithDNS(IntegrationTest):
         Test for bug https://pagure.io/freeipa/issue/7630.
         """
         with restore_checker(self.master):
-            self.master.run_command([
-                'ipa', 'dnszone-add',
-                self.example_test_zone,
-            ])
+            self.master.run_command(
+                ["ipa", "dnszone-add", self.example_test_zone,]
+            )
 
             tasks.resolve_record(self.master.ip, self.example_test_zone)
 
             backup_path = tasks.get_backup_dir(self.master)
 
-            self.master.run_command(['ipa-server-install',
-                                     '--uninstall',
-                                     '-U'])
+            self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
 
-            tasks.uninstall_packages(self.master, ['*ipa-server-dns'])
+            tasks.uninstall_packages(self.master, ["*ipa-server-dns"])
 
             dirman_password = self.master.config.dirman_password
             result = self.master.run_command(
-                ['ipa-restore', backup_path],
-                stdin_text=dirman_password + '\nyes',
-                raiseonerr=False)
-            assert 'Please install the package' in result.stderr_text
+                ["ipa-restore", backup_path],
+                stdin_text=dirman_password + "\nyes",
+                raiseonerr=False,
+            )
+            assert "Please install the package" in result.stderr_text
 
-            tasks.install_packages(self.master, ['*ipa-server-dns'])
+            tasks.install_packages(self.master, ["*ipa-server-dns"])
             if reinstall:
                 tasks.install_master(self.master, setup_dns=True)
-            self.master.run_command(['ipa-restore', backup_path],
-                                    stdin_text=dirman_password + '\nyes')
+            self.master.run_command(
+                ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+            )
             tasks.resolve_record(self.master.ip, self.example_test_zone)
 
             tasks.kinit_admin(self.master)
-            self.master.run_command([
-                'ipa', 'dnszone-add',
-                self.example2_test_zone,
-            ])
+            self.master.run_command(
+                ["ipa", "dnszone-add", self.example2_test_zone,]
+            )
 
             tasks.resolve_record(self.master.ip, self.example2_test_zone)
 
@@ -338,7 +335,8 @@ class BaseBackupAndRestoreWithDNSSEC(IntegrationTest):
     """
     Abstract class for DNSSEC restore tests
     """
-    topology = 'star'
+
+    topology = "star"
 
     example_test_zone = "example.test."
     example2_test_zone = "example2.test."
@@ -349,52 +347,45 @@ class BaseBackupAndRestoreWithDNSSEC(IntegrationTest):
         args = [
             "ipa-dns-install",
             "--dnssec-master",
-            "--forwarder", cls.master.config.dns_forwarder,
+            "--forwarder",
+            cls.master.config.dns_forwarder,
             "-U",
         ]
         cls.master.run_command(args)
 
     def _full_backup_and_restore_with_DNSSEC_zone(self, reinstall=False):
         with restore_checker(self.master):
-            self.master.run_command([
-                'ipa', 'dnszone-add',
-                self.example_test_zone,
-                '--dnssec', 'true',
-            ])
+            self.master.run_command(
+                ["ipa", "dnszone-add", self.example_test_zone, "--dnssec", "true",]
+            )
 
-            assert (
-                wait_until_record_is_signed(
-                    self.master.ip, self.example_test_zone)
+            assert wait_until_record_is_signed(
+                self.master.ip, self.example_test_zone
             ), "Zone is not signed"
 
             backup_path = tasks.get_backup_dir(self.master)
 
-            self.master.run_command(['ipa-server-install',
-                                     '--uninstall',
-                                     '-U'])
+            self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
 
             if reinstall:
                 tasks.install_master(self.master, setup_dns=True)
 
             dirman_password = self.master.config.dirman_password
-            self.master.run_command(['ipa-restore', backup_path],
-                                    stdin_text=dirman_password + '\nyes')
+            self.master.run_command(
+                ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+            )
 
-            assert (
-                wait_until_record_is_signed(
-                    self.master.ip, self.example_test_zone)
+            assert wait_until_record_is_signed(
+                self.master.ip, self.example_test_zone
             ), "Zone is not signed after restore"
 
             tasks.kinit_admin(self.master)
-            self.master.run_command([
-                'ipa', 'dnszone-add',
-                self.example2_test_zone,
-                '--dnssec', 'true',
-            ])
+            self.master.run_command(
+                ["ipa", "dnszone-add", self.example2_test_zone, "--dnssec", "true",]
+            )
 
-            assert (
-                wait_until_record_is_signed(
-                    self.master.ip, self.example2_test_zone)
+            assert wait_until_record_is_signed(
+                self.master.ip, self.example2_test_zone
             ), "A new zone is not signed"
 
 
@@ -414,7 +405,8 @@ class BaseBackupAndRestoreWithKRA(IntegrationTest):
     """
     Abstract class for KRA restore tests
     """
-    topology = 'star'
+
+    topology = "star"
 
     vault_name = "ci_test_vault"
     vault_password = "password"
@@ -427,48 +419,65 @@ class BaseBackupAndRestoreWithKRA(IntegrationTest):
     def _full_backup_restore_with_vault(self, reinstall=False):
         with restore_checker(self.master):
             # create vault
-            self.master.run_command([
-                "ipa", "vault-add",
-                self.vault_name,
-                "--password", self.vault_password,
-                "--type", "symmetric",
-            ])
+            self.master.run_command(
+                [
+                    "ipa",
+                    "vault-add",
+                    self.vault_name,
+                    "--password",
+                    self.vault_password,
+                    "--type",
+                    "symmetric",
+                ]
+            )
 
             # archive secret
-            self.master.run_command([
-                "ipa", "vault-archive",
-                self.vault_name,
-                "--password", self.vault_password,
-                "--data", self.vault_data,
-            ])
+            self.master.run_command(
+                [
+                    "ipa",
+                    "vault-archive",
+                    self.vault_name,
+                    "--password",
+                    self.vault_password,
+                    "--data",
+                    self.vault_data,
+                ]
+            )
 
             # retrieve secret
-            self.master.run_command([
-                "ipa", "vault-retrieve",
-                self.vault_name,
-                "--password", self.vault_password,
-            ])
+            self.master.run_command(
+                [
+                    "ipa",
+                    "vault-retrieve",
+                    self.vault_name,
+                    "--password",
+                    self.vault_password,
+                ]
+            )
 
             backup_path = tasks.get_backup_dir(self.master)
 
-            self.master.run_command(['ipa-server-install',
-                                     '--uninstall',
-                                     '-U'])
+            self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
 
             if reinstall:
                 tasks.install_master(self.master, setup_dns=True)
 
             dirman_password = self.master.config.dirman_password
-            self.master.run_command(['ipa-restore', backup_path],
-                                    stdin_text=dirman_password + '\nyes')
+            self.master.run_command(
+                ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+            )
 
             tasks.kinit_admin(self.master)
             # retrieve secret after restore
-            self.master.run_command([
-                "ipa", "vault-retrieve",
-                self.vault_name,
-                "--password", self.vault_password,
-            ])
+            self.master.run_command(
+                [
+                    "ipa",
+                    "vault-retrieve",
+                    self.vault_name,
+                    "--password",
+                    self.vault_password,
+                ]
+            )
 
 
 class TestBackupAndRestoreWithKRA(BaseBackupAndRestoreWithKRA):
@@ -495,6 +504,7 @@ class TestBackupAndRestoreWithReplica(IntegrationTest):
             - CA can be installed on existing replica
             - new replica with CA can be setup
     """
+
     num_replicas = 2
     topology = "star"
 
@@ -509,140 +519,168 @@ class TestBackupAndRestoreWithReplica(IntegrationTest):
         # Configure /etc/resolv.conf on each replica to use the master as DNS
         # Otherwise ipa-replica-manage re-initialize is unable to
         # resolve the master name
-        tasks.config_host_resolvconf_with_master_data(
-            cls.master, cls.replica1
-        )
-        tasks.config_host_resolvconf_with_master_data(
-            cls.master, cls.replica2
-        )
+        tasks.config_host_resolvconf_with_master_data(cls.master, cls.replica1)
+        tasks.config_host_resolvconf_with_master_data(cls.master, cls.replica2)
         # Configure only master and one replica.
         # Replica is configured without CA
         tasks.install_topo(
-            cls.topology, cls.master, [cls.replica1],
-            cls.clients, domain_level,
-            setup_replica_cas=False
+            cls.topology,
+            cls.master,
+            [cls.replica1],
+            cls.clients,
+            domain_level,
+            setup_replica_cas=False,
         )
 
     def get_users(self, host):
-        res = host.run_command(['ipa', 'user-find'])
+        res = host.run_command(["ipa", "user-find"])
         users = set()
         for line in res.stdout_text.splitlines():
-            k, _unused, v = line.strip().partition(': ')
-            if k == 'User login':
+            k, _unused, v = line.strip().partition(": ")
+            if k == "User login":
                 users.add(v)
         return users
 
     def check_replication_error(self, host):
-        status = r'Error \(19\) Replication error acquiring replica: ' \
-                 'Replica has different database generation ID'
+        status = (
+            r"Error \(19\) Replication error acquiring replica: "
+            "Replica has different database generation ID"
+        )
         tasks.wait_for_replication(
-            host.ldap_connect(), target_status_re=status,
-            raise_on_timeout=True)
+            host.ldap_connect(), target_status_re=status, raise_on_timeout=True
+        )
 
     def check_replication_success(self, host):
-        status = r'Error \(0\) Replica acquired successfully: ' \
-                 'Incremental update succeeded'
+        status = (
+            r"Error \(0\) Replica acquired successfully: "
+            "Incremental update succeeded"
+        )
         tasks.wait_for_replication(
-            host.ldap_connect(), target_status_re=status,
-            raise_on_timeout=True)
+            host.ldap_connect(), target_status_re=status, raise_on_timeout=True
+        )
 
-    def request_test_service_cert(self, host, request_path,
-                                  expect_connection_error=False):
-        res = host.run_command([
-            'ipa', 'cert-request', '--principal=TEST/' + self.master.hostname,
-            request_path
-        ], raiseonerr=not expect_connection_error)
+    def request_test_service_cert(
+        self, host, request_path, expect_connection_error=False
+    ):
+        res = host.run_command(
+            [
+                "ipa",
+                "cert-request",
+                "--principal=TEST/" + self.master.hostname,
+                request_path,
+            ],
+            raiseonerr=not expect_connection_error,
+        )
         if expect_connection_error:
-            assert (1 == res.returncode and
-                    '[Errno 111] Connection refused' in res.stderr_text)
+            assert (
+                1 == res.returncode
+                and "[Errno 111] Connection refused" in res.stderr_text
+            )
 
     def test_full_backup_and_restore_with_replica(self, cert_sign_request):
         # check prerequisites
         self.check_replication_success(self.master)
         self.check_replication_success(self.replica1)
 
-        self.master.run_command(
-            ['ipa', 'service-add', 'TEST/' + self.master.hostname])
+        self.master.run_command(["ipa", "service-add", "TEST/" + self.master.hostname])
 
-        tasks.user_add(self.master, 'test1_master')
-        tasks.user_add(self.replica1, 'test1_replica')
+        tasks.user_add(self.master, "test1_master")
+        tasks.user_add(self.replica1, "test1_replica")
 
         with restore_checker(self.master):
             backup_path = tasks.get_backup_dir(self.master)
 
             # change data after backup
-            self.master.run_command(['ipa', 'user-del', 'test1_master'])
-            self.replica1.run_command(['ipa', 'user-del', 'test1_replica'])
-            tasks.user_add(self.master, 'test2_master')
-            tasks.user_add(self.replica1, 'test2_replica')
+            self.master.run_command(["ipa", "user-del", "test1_master"])
+            self.replica1.run_command(["ipa", "user-del", "test1_replica"])
+            tasks.user_add(self.master, "test2_master")
+            tasks.user_add(self.replica1, "test2_replica")
 
             # simulate master crash
-            self.master.run_command(['ipactl', 'stop'])
+            self.master.run_command(["ipactl", "stop"])
             tasks.uninstall_master(self.master, clean=False)
 
             logger.info("Stopping and disabling oddjobd service")
-            self.master.run_command([
-                "systemctl", "stop", "oddjobd"
-            ])
-            self.master.run_command([
-                "systemctl", "disable", "oddjobd"
-            ])
+            self.master.run_command(["systemctl", "stop", "oddjobd"])
+            self.master.run_command(["systemctl", "disable", "oddjobd"])
 
-            self.master.run_command(['ipa-restore', '-U', backup_path])
+            self.master.run_command(["ipa-restore", "-U", backup_path])
 
-        status = self.master.run_command([
-            "systemctl", "status", "oddjobd"
-        ])
+        status = self.master.run_command(["systemctl", "status", "oddjobd"])
         assert "active (running)" in status.stdout_text
 
         # replication should not work after restoration
         # create users to force master and replica to try to replicate
-        tasks.user_add(self.master, 'test3_master')
-        tasks.user_add(self.replica1, 'test3_replica')
+        tasks.user_add(self.master, "test3_master")
+        tasks.user_add(self.replica1, "test3_replica")
         self.check_replication_error(self.master)
         self.check_replication_error(self.replica1)
-        assert {'admin', 'test1_master', 'test1_replica', 'test3_master'} == \
-            self.get_users(self.master)
-        assert {'admin', 'test2_master', 'test2_replica', 'test3_replica'} == \
-            self.get_users(self.replica1)
+        assert {
+            "admin",
+            "test1_master",
+            "test1_replica",
+            "test3_master",
+        } == self.get_users(self.master)
+        assert {
+            "admin",
+            "test2_master",
+            "test2_replica",
+            "test3_replica",
+        } == self.get_users(self.replica1)
 
         # reestablish and check replication
-        self.replica1.run_command(['ipa-replica-manage', 're-initialize',
-                                  '--from', self.master.hostname])
+        self.replica1.run_command(
+            ["ipa-replica-manage", "re-initialize", "--from", self.master.hostname]
+        )
         # create users to force master and replica to try to replicate
-        tasks.user_add(self.master, 'test4_master')
-        tasks.user_add(self.replica1, 'test4_replica')
+        tasks.user_add(self.master, "test4_master")
+        tasks.user_add(self.replica1, "test4_replica")
         self.check_replication_success(self.master)
         self.check_replication_success(self.replica1)
-        assert {'admin', 'test1_master', 'test1_replica',
-                'test3_master', 'test4_master', 'test4_replica'} == \
-            self.get_users(self.master)
-        assert {'admin', 'test1_master', 'test1_replica',
-                'test3_master', 'test4_master', 'test4_replica'} == \
-            self.get_users(self.replica1)
+        assert {
+            "admin",
+            "test1_master",
+            "test1_replica",
+            "test3_master",
+            "test4_master",
+            "test4_replica",
+        } == self.get_users(self.master)
+        assert {
+            "admin",
+            "test1_master",
+            "test1_replica",
+            "test3_master",
+            "test4_master",
+            "test4_replica",
+        } == self.get_users(self.replica1)
 
         # CA on master should be accesible from master and replica
         self.request_test_service_cert(
-            self.master, cert_sign_request[self.master.hostname])
+            self.master, cert_sign_request[self.master.hostname]
+        )
         self.request_test_service_cert(
-            self.replica1, cert_sign_request[self.replica1.hostname])
+            self.replica1, cert_sign_request[self.replica1.hostname]
+        )
 
         # replica should not be able to sign certificates without CA on master
-        self.master.run_command(['ipactl', 'stop'])
+        self.master.run_command(["ipactl", "stop"])
         try:
             self.request_test_service_cert(
-                self.replica1, cert_sign_request[self.replica1.hostname],
-                expect_connection_error=True)
+                self.replica1,
+                cert_sign_request[self.replica1.hostname],
+                expect_connection_error=True,
+            )
         finally:
-            self.master.run_command(['ipactl', 'start'])
+            self.master.run_command(["ipactl", "start"])
 
         tasks.install_ca(self.replica1)
 
         # now replica should be able to sign certificates without CA on master
-        self.master.run_command(['ipactl', 'stop'])
+        self.master.run_command(["ipactl", "stop"])
         self.request_test_service_cert(
-            self.replica1, cert_sign_request[self.replica1.hostname])
-        self.master.run_command(['ipactl', 'start'])
+            self.replica1, cert_sign_request[self.replica1.hostname]
+        )
+        self.master.run_command(["ipactl", "start"])
 
         # check installation of new replica
         tasks.install_replica(self.master, self.replica2, setup_ca=True)
@@ -650,14 +688,15 @@ class TestBackupAndRestoreWithReplica(IntegrationTest):
 
         # new replica should be able to sign certificates without CA on master
         # and old replica
-        self.master.run_command(['ipactl', 'stop'])
-        self.replica1.run_command(['ipactl', 'stop'])
+        self.master.run_command(["ipactl", "stop"])
+        self.replica1.run_command(["ipactl", "stop"])
         try:
             self.request_test_service_cert(
-                self.replica2, cert_sign_request[self.replica2.hostname])
+                self.replica2, cert_sign_request[self.replica2.hostname]
+            )
         finally:
-            self.replica1.run_command(['ipactl', 'start'])
-            self.master.run_command(['ipactl', 'start'])
+            self.replica1.run_command(["ipactl", "start"])
+            self.master.run_command(["ipactl", "start"])
 
 
 class TestUserRootFilesOwnershipPermission(IntegrationTest):
@@ -687,60 +726,68 @@ class TestUserRootFilesOwnershipPermission(IntegrationTest):
     @classmethod
     def install(cls, mh):
         super(TestUserRootFilesOwnershipPermission, cls).install(mh)
-        cls.bashrc_file = cls.master.get_file_contents('/root/.bashrc')
+        cls.bashrc_file = cls.master.get_file_contents("/root/.bashrc")
 
     def test_userroot_ldif_files_ownership_and_permission(self):
         """backup, uninstall, restore, backup"""
         tasks.install_master(self.master)
         backup_path = tasks.get_backup_dir(self.master)
 
-        self.master.run_command(['ipa-server-install',
-                                 '--uninstall',
-                                 '-U'])
+        self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
 
         # set umask to 077 just to check if restore success.
         self.master.run_command('echo "umask 0077" >> /root/.bashrc')
-        result = self.master.run_command(['umask'])
-        assert '0077' in result.stdout_text
+        result = self.master.run_command(["umask"])
+        assert "0077" in result.stdout_text
 
         dirman_password = self.master.config.dirman_password
-        result = self.master.run_command(['ipa-restore', backup_path],
-                                         stdin_text=dirman_password + '\nyes')
-        assert 'Temporary setting umask to 022' in result.stderr_text
+        result = self.master.run_command(
+            ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+        )
+        assert "Temporary setting umask to 022" in result.stderr_text
 
         # check if umask reset to 077 after restore.
-        result = self.master.run_command(['umask'])
-        assert '0077' in result.stdout_text
+        result = self.master.run_command(["umask"])
+        assert "0077" in result.stdout_text
 
         # check if files have proper owner and group.
-        dashed_domain = self.master.domain.realm.replace(".", '-')
-        arg = ['stat',
-               '-c', '%U:%G',
-               '{}/ldif/'.format(
-                   paths.VAR_LIB_SLAPD_INSTANCE_DIR_TEMPLATE %
-                   dashed_domain)]
+        dashed_domain = self.master.domain.realm.replace(".", "-")
+        arg = [
+            "stat",
+            "-c",
+            "%U:%G",
+            "{}/ldif/".format(
+                paths.VAR_LIB_SLAPD_INSTANCE_DIR_TEMPLATE % dashed_domain
+            ),
+        ]
         cmd = self.master.run_command(arg)
-        expected = '{}:{}'.format(constants.DS_USER, constants.DS_GROUP)
+        expected = "{}:{}".format(constants.DS_USER, constants.DS_GROUP)
         assert expected in cmd.stdout_text
 
         # also check of access rights are set to 644.
-        arg = ['stat',
-               '-c', '%U:%G:%a',
-               '{}/ldif/{}-ipaca.ldif'.format(
-                   paths.VAR_LIB_SLAPD_INSTANCE_DIR_TEMPLATE %
-                   dashed_domain, dashed_domain)]
+        arg = [
+            "stat",
+            "-c",
+            "%U:%G:%a",
+            "{}/ldif/{}-ipaca.ldif".format(
+                paths.VAR_LIB_SLAPD_INSTANCE_DIR_TEMPLATE % dashed_domain, dashed_domain
+            ),
+        ]
         cmd = self.master.run_command(arg)
-        assert '{}:644'.format(expected) in cmd.stdout_text
+        assert "{}:644".format(expected) in cmd.stdout_text
 
-        arg = ['stat',
-               '-c', '%U:%G:%a',
-               '{}/ldif/{}-userRoot.ldif'.format(
-                   paths.VAR_LIB_SLAPD_INSTANCE_DIR_TEMPLATE %
-                   dashed_domain, dashed_domain)]
+        arg = [
+            "stat",
+            "-c",
+            "%U:%G:%a",
+            "{}/ldif/{}-userRoot.ldif".format(
+                paths.VAR_LIB_SLAPD_INSTANCE_DIR_TEMPLATE % dashed_domain, dashed_domain
+            ),
+        ]
         cmd = self.master.run_command(arg)
-        assert '{}:644'.format(expected) in cmd.stdout_text
+        assert "{}:644".format(expected) in cmd.stdout_text
 
-        cmd = self.master.run_command(['ipa-backup', '-d'])
+        cmd = self.master.run_command(["ipa-backup", "-d"])
         unexp_str = "CRITICAL: db2ldif failed:"
         assert cmd.returncode == 0
         assert unexp_str not in cmd.stdout_text
@@ -748,12 +795,13 @@ class TestUserRootFilesOwnershipPermission(IntegrationTest):
     def test_files_ownership_and_permission_teardown(self):
         """ Method to restore the default bashrc contents"""
         if self.bashrc_file is not None:
-            self.master.put_file_contents('/root/.bashrc', self.bashrc_file)
+            self.master.put_file_contents("/root/.bashrc", self.bashrc_file)
 
 
 class TestBackupAndRestoreDMPassword(IntegrationTest):
     """Negative tests for incorrect DM password"""
-    topology = 'star'
+
+    topology = "star"
 
     def test_restore_bad_dm_password(self):
         """backup, uninstall, restore, wrong DM password (expect failure)"""
@@ -762,9 +810,11 @@ class TestBackupAndRestoreDMPassword(IntegrationTest):
 
             # No uninstall, just pure restore, the only case where
             # prompting for the DM password matters.
-            result = self.master.run_command(['ipa-restore', backup_path],
-                                             stdin_text='badpass\nyes',
-                                             raiseonerr=False)
+            result = self.master.run_command(
+                ["ipa-restore", backup_path],
+                stdin_text="badpass\nyes",
+                raiseonerr=False,
+            )
             assert result.returncode == 1
 
     def test_restore_dirsrv_not_running(self):
@@ -774,13 +824,14 @@ class TestBackupAndRestoreDMPassword(IntegrationTest):
         # an error thrown when dirsrv is down.
         backup_path = tasks.get_backup_dir(self.master)
 
-        self.master.run_command(['ipactl', 'stop'])
+        self.master.run_command(["ipactl", "stop"])
 
         dirman_password = self.master.config.dirman_password
         result = self.master.run_command(
-            ['ipa-restore', backup_path],
-            stdin_text=dirman_password + '\nyes',
-            raiseonerr=False)
+            ["ipa-restore", backup_path],
+            stdin_text=dirman_password + "\nyes",
+            raiseonerr=False,
+        )
         assert result.returncode == 1
 
 
@@ -818,14 +869,12 @@ class TestReplicaInstallAfterRestore(IntegrationTest):
             "changetype: modify\n"
             "replace: nsds5ReplicaEnabled\n"
             "nsds5ReplicaEnabled: off\n\n"
-
             "dn: cn=caTo{hostname},cn=replica,"
             "cn=o\\3Dipaca,cn=mapping tree,cn=config\n"
             "changetype: modify\n"
             "replace: nsds5ReplicaEnabled\n"
-            "nsds5ReplicaEnabled: off").format(
-            hostname=replica1.hostname,
-            suffix=suffix)
+            "nsds5ReplicaEnabled: off"
+        ).format(hostname=replica1.hostname, suffix=suffix)
         # disable replication agreement
         tasks.ldapmodify_dm(master, entry_ldif)
 
@@ -834,17 +883,20 @@ class TestReplicaInstallAfterRestore(IntegrationTest):
 
         # master restore.
         dirman_password = master.config.dirman_password
-        master.run_command(['ipa-restore', backup_path],
-                           stdin_text=dirman_password + '\nyes')
+        master.run_command(
+            ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+        )
 
         # re-initialize topology after restore.
         topo_name = "{}-to-{}".format(master.hostname, replica1.hostname)
-        for topo_suffix in 'domain', 'ca':
-            arg = ['ipa',
-                   'topologysegment-reinitialize',
-                   topo_suffix,
-                   topo_name,
-                   '--left']
+        for topo_suffix in "domain", "ca":
+            arg = [
+                "ipa",
+                "topologysegment-reinitialize",
+                topo_suffix,
+                topo_name,
+                "--left",
+            ]
             replica1.run_command(arg)
 
         # wait sometime for re-initialization
@@ -857,38 +909,47 @@ class TestReplicaInstallAfterRestore(IntegrationTest):
 
 class TestBackupAndRestoreTrust(IntegrationTest):
     """Test for Backup and Restore for Trust scenario"""
-    topology = 'star'
+
+    topology = "star"
 
     def test_restore_trust_pkg_before_restore(self):
         """Test restore with adtrust when trust-ad pkg is missing.
 
         Test for bug https://pagure.io/freeipa/issue/7630.
         """
-        tasks.install_packages(self.master, ['*ipa-server-trust-ad'])
-        self.master.run_command(['ipa-adtrust-install', '-U',
-                                 '--enable-compat', '--netbios-name', 'IPA',
-                                 '-a', self.master.config.admin_password,
-                                 '--add-sids'])
+        tasks.install_packages(self.master, ["*ipa-server-trust-ad"])
+        self.master.run_command(
+            [
+                "ipa-adtrust-install",
+                "-U",
+                "--enable-compat",
+                "--netbios-name",
+                "IPA",
+                "-a",
+                self.master.config.admin_password,
+                "--add-sids",
+            ]
+        )
 
         with restore_checker(self.master):
             backup_path = tasks.get_backup_dir(self.master)
 
-            self.master.run_command(['ipa-server-install',
-                                     '--uninstall',
-                                     '-U'])
+            self.master.run_command(["ipa-server-install", "--uninstall", "-U"])
 
-            tasks.uninstall_packages(self.master, ['*ipa-server-trust-ad'])
+            tasks.uninstall_packages(self.master, ["*ipa-server-trust-ad"])
 
             dirman_password = self.master.config.dirman_password
             result = self.master.run_command(
-                ['ipa-restore', backup_path],
-                stdin_text=dirman_password + '\nyes',
-                raiseonerr=False)
-            assert 'Please install the package' in result.stderr_text
+                ["ipa-restore", backup_path],
+                stdin_text=dirman_password + "\nyes",
+                raiseonerr=False,
+            )
+            assert "Please install the package" in result.stderr_text
 
-            tasks.install_packages(self.master, ['*ipa-server-trust-ad'])
-            self.master.run_command(['ipa-restore', backup_path],
-                                    stdin_text=dirman_password + '\nyes')
+            tasks.install_packages(self.master, ["*ipa-server-trust-ad"])
+            self.master.run_command(
+                ["ipa-restore", backup_path], stdin_text=dirman_password + "\nyes"
+            )
 
 
 class TestBackupRoles(IntegrationTest):
@@ -897,14 +958,14 @@ class TestBackupRoles(IntegrationTest):
     """
 
     num_replicas = 1
-    topology = 'star'
+    topology = "star"
 
     serverroles = {
-        'ADTA': u'AD trust agent',
-        'ADTC': u'AD trust controller',
-        'CA': u'CA server',
-        'DNS': u'DNS server',
-        'KRA': u'KRA server'
+        "ADTA": u"AD trust agent",
+        "ADTC": u"AD trust controller",
+        "CA": u"CA server",
+        "DNS": u"DNS server",
+        "KRA": u"KRA server",
     }
 
     @classmethod
@@ -925,15 +986,17 @@ class TestBackupRoles(IntegrationTest):
     def _check_rolecheck_backup_success(self, host):
         result = tasks.ipa_backup(host)
         assert result.returncode == 0
-        assert "Local roles match globally used roles, proceeding." \
-            in result.stderr_text
+        assert (
+            "Local roles match globally used roles, proceeding." in result.stderr_text
+        )
 
     def _ipa_replica_role_check(self, replica, role):
-        return "enabled" in self.master.run_command([
-            'ipa', 'server-role-find',
-            '--server', replica,
-            '--role', role
-        ]).stdout_text
+        return (
+            "enabled"
+            in self.master.run_command(
+                ["ipa", "server-role-find", "--server", replica, "--role", role]
+            ).stdout_text
+        )
 
     def test_rolecheck_DNS_CA(self):
         """ipa-backup rolecheck:
@@ -944,26 +1007,26 @@ class TestBackupRoles(IntegrationTest):
 
         # single master: check that backup works.
         assert self._ipa_replica_role_check(
-            self.master.hostname, self.serverroles['DNS']
+            self.master.hostname, self.serverroles["DNS"]
         )
         assert self._ipa_replica_role_check(
-            self.master.hostname, self.serverroles['CA']
+            self.master.hostname, self.serverroles["CA"]
         )
         assert not self._ipa_replica_role_check(
-            self.master.hostname, self.serverroles['KRA']
+            self.master.hostname, self.serverroles["KRA"]
         )
         self._check_rolecheck_backup_success(self.master)
 
         # install CA-less, DNS-less replica
         tasks.install_replica(self.master, self.replicas[0], setup_ca=False)
         assert not self._ipa_replica_role_check(
-            self.replicas[0].hostname, self.serverroles['DNS']
+            self.replicas[0].hostname, self.serverroles["DNS"]
         )
         assert not self._ipa_replica_role_check(
-            self.replicas[0].hostname, self.serverroles['CA']
+            self.replicas[0].hostname, self.serverroles["CA"]
         )
         assert not self._ipa_replica_role_check(
-            self.replicas[0].hostname, self.serverroles['KRA']
+            self.replicas[0].hostname, self.serverroles["KRA"]
         )
         self._check_rolecheck_backup_success(self.master)
         self._check_rolecheck_backup_failure(self.replicas[0])
@@ -971,7 +1034,7 @@ class TestBackupRoles(IntegrationTest):
         # install DNS on replica
         tasks.install_dns(self.replicas[0])
         assert self._ipa_replica_role_check(
-            self.replicas[0].hostname, self.serverroles['DNS']
+            self.replicas[0].hostname, self.serverroles["DNS"]
         )
         self._check_rolecheck_backup_failure(self.replicas[0])
 
@@ -983,7 +1046,7 @@ class TestBackupRoles(IntegrationTest):
         tasks.install_ca(self.replicas[0])
         # master and replicas[0] have matching roles now.
         assert self._ipa_replica_role_check(
-            self.replicas[0].hostname, self.serverroles['CA']
+            self.replicas[0].hostname, self.serverroles["CA"]
         )
         self._check_rolecheck_backup_success(self.master)
         self._check_rolecheck_backup_success(self.replicas[0])
@@ -991,7 +1054,7 @@ class TestBackupRoles(IntegrationTest):
         # install KRA on replica
         tasks.install_kra(self.replicas[0], first_instance=True)
         assert self._ipa_replica_role_check(
-            self.replicas[0].hostname, self.serverroles['KRA']
+            self.replicas[0].hostname, self.serverroles["KRA"]
         )
         self._check_rolecheck_backup_success(self.replicas[0])
         self._check_rolecheck_backup_failure(self.master)
@@ -1000,7 +1063,7 @@ class TestBackupRoles(IntegrationTest):
         tasks.install_kra(self.master)
         # master and replicas[0] have matching roles now.
         assert self._ipa_replica_role_check(
-            self.master.hostname, self.serverroles['KRA']
+            self.master.hostname, self.serverroles["KRA"]
         )
         self._check_rolecheck_backup_success(self.replicas[0])
         self._check_rolecheck_backup_success(self.master)
@@ -1010,24 +1073,30 @@ class TestBackupRoles(IntegrationTest):
         """
 
         # install AD Trust packages on replica first
-        tasks.install_packages(self.replicas[0], ['*ipa-server-trust-ad'])
+        tasks.install_packages(self.replicas[0], ["*ipa-server-trust-ad"])
         self._check_rolecheck_backup_success(self.replicas[0])
         self._check_rolecheck_backup_success(self.master)
-        tasks.install_packages(self.master, ['*ipa-server-trust-ad'])
+        tasks.install_packages(self.master, ["*ipa-server-trust-ad"])
 
         # make replicas[0] become Trust Controller
-        self.replicas[0].run_command([
-            'ipa-adtrust-install', '-U', '--netbios-name', 'IPA',
-            '-a', self.master.config.admin_password,
-            '--add-sids'
-        ])
+        self.replicas[0].run_command(
+            [
+                "ipa-adtrust-install",
+                "-U",
+                "--netbios-name",
+                "IPA",
+                "-a",
+                self.master.config.admin_password,
+                "--add-sids",
+            ]
+        )
         # double-check
         assert self._ipa_replica_role_check(
-            self.replicas[0].hostname, self.serverroles['ADTC']
+            self.replicas[0].hostname, self.serverroles["ADTC"]
         )
         # check that master has no AD Trust-related role
         assert not self._ipa_replica_role_check(
-            self.master.hostname, self.serverroles['ADTA']
+            self.master.hostname, self.serverroles["ADTA"]
         )
         self._check_rolecheck_backup_success(self.replicas[0])
         self._check_rolecheck_backup_failure(self.master)
@@ -1035,13 +1104,16 @@ class TestBackupRoles(IntegrationTest):
         # make master become Trust Agent
         cmd_input = (
             # admin password:
-            self.master.config.admin_password + '\n' +
+            self.master.config.admin_password
+            + "\n"
+            +
             # WARNING: The smb.conf already exists. Running ipa-adtrust-install
             # will break your existing samba configuration.
             # Do you wish to continue? [no]:
-            'yes\n'
+            "yes\n"
             # Enable trusted domains support in slapi-nis? [no]:
-            '\n' +
+            "\n"
+            +
             # WARNING: 1 IPA masters are not yet able to serve information
             # about users from trusted forests.
             # Installer can add them to the list of IPA masters allowed to
@@ -1050,40 +1122,43 @@ class TestBackupRoles(IntegrationTest):
             # those masters.
             # Refer to ipa-adtrust-install(1) man page for details.
             # IPA master[replica1.testrelm.test]?[no]:
-            'yes\n'
+            "yes\n"
         )
-        self.replicas[0].run_command([
-            'ipa-adtrust-install', '--add-agents'], stdin_text=cmd_input
+        self.replicas[0].run_command(
+            ["ipa-adtrust-install", "--add-agents"], stdin_text=cmd_input
         )
         # check that master is now an AD Trust agent
         assert self._ipa_replica_role_check(
-            self.master.hostname, self.serverroles['ADTA']
+            self.master.hostname, self.serverroles["ADTA"]
         )
         # but not an AD Trust controller
         assert not self._ipa_replica_role_check(
-            self.master.hostname, self.serverroles['ADTC']
+            self.master.hostname, self.serverroles["ADTC"]
         )
         self._check_rolecheck_backup_success(self.replicas[0])
         self._check_rolecheck_backup_failure(self.master)
 
         # make master become Trust Controller
-        self.master.run_command([
-            'ipa-adtrust-install', '-U', '--netbios-name', 'IPA',
-            '-a', self.master.config.admin_password,
-            '--add-sids'
-        ])
+        self.master.run_command(
+            [
+                "ipa-adtrust-install",
+                "-U",
+                "--netbios-name",
+                "IPA",
+                "-a",
+                self.master.config.admin_password,
+                "--add-sids",
+            ]
+        )
         # master and replicas[0] are both AD Trust Controllers now.
         for hostname in [self.master.hostname, self.replicas[0].hostname]:
-            assert self._ipa_replica_role_check(
-                hostname, self.serverroles['ADTC']
-            )
+            assert self._ipa_replica_role_check(hostname, self.serverroles["ADTC"])
         self._check_rolecheck_backup_success(self.master)
         self._check_rolecheck_backup_success(self.replicas[0])
 
         # switch replicas[0] to hidden
-        self.replicas[0].run_command([
-            'ipa', 'server-state',
-            self.replicas[0].hostname, '--state=hidden'
-        ])
+        self.replicas[0].run_command(
+            ["ipa", "server-state", self.replicas[0].hostname, "--state=hidden"]
+        )
         self._check_rolecheck_backup_success(self.master)
         self._check_rolecheck_backup_success(self.replicas[0])

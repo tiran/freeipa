@@ -34,6 +34,7 @@ import random
 from hashlib import sha256
 
 import six
+
 # pylint: disable=import-error
 if six.PY3:
     # The SafeConfigParser class has been renamed to ConfigParser in Py3
@@ -58,7 +59,7 @@ SYSRESTORE_STATEFILE = "sysrestore.state"
 class FileStore:
     """Class for handling backup and restore of files"""
 
-    def __init__(self, path = SYSRESTORE_PATH, index_file = SYSRESTORE_INDEXFILE):
+    def __init__(self, path=SYSRESTORE_PATH, index_file=SYSRESTORE_INDEXFILE):
         """Create a _StoreFiles object, that uses @path as the
         base directory.
 
@@ -91,7 +92,6 @@ class FileStore:
                 for (key, value) in p.items(section):
                     self.files[key] = value
 
-
     def save(self):
         """Save the file list to @_index. If @files is an empty
         dict, then @_index should be removed.
@@ -107,9 +107,9 @@ class FileStore:
         p = SafeConfigParser()
         p.optionxform = str
 
-        p.add_section('files')
+        p.add_section("files")
         for (key, value) in self.files.items():
-            p.set('files', key, str(value))
+            p.set("files", key, str(value))
 
         with open(self._index, "w") as f:
             p.write(f)
@@ -130,23 +130,21 @@ class FileStore:
 
         _reldir, backupfile = os.path.split(path)
 
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             cont_hash = sha256(f.read()).hexdigest()
 
-        filename = "{hexhash}-{bcppath}".format(
-                hexhash=cont_hash, bcppath=backupfile)
+        filename = "{hexhash}-{bcppath}".format(hexhash=cont_hash, bcppath=backupfile)
 
         backup_path = os.path.join(self._path, filename)
         if os.path.exists(backup_path):
-            logger.debug("  -> Not backing up - already have a copy of '%s'",
-                         path)
+            logger.debug("  -> Not backing up - already have a copy of '%s'", path)
             return
 
         shutil.copy2(path, backup_path)
 
         stat = os.stat(path)
 
-        template = '{stat.st_mode},{stat.st_uid},{stat.st_gid},{path}'
+        template = "{stat.st_mode},{stat.st_uid},{stat.st_gid},{path}"
         self.files[filename] = template.format(stat=stat, path=path)
         self.save()
 
@@ -157,13 +155,13 @@ class FileStore:
         """
         result = False
         for _key, value in self.files.items():
-            _mode, _uid, _gid, filepath = value.split(',', 3)
-            if (filepath == path):
+            _mode, _uid, _gid, filepath = value.split(",", 3)
+            if filepath == path:
                 result = True
                 break
         return result
 
-    def restore_file(self, path, new_path = None):
+    def restore_file(self, path, new_path=None):
         """Restore the copy of a file at @path to its original
         location and delete the copy.
 
@@ -175,11 +173,11 @@ class FileStore:
         """
 
         if new_path is None:
-            logger.debug("Restoring system configuration file '%s'",
-                         path)
+            logger.debug("Restoring system configuration file '%s'", path)
         else:
-            logger.debug("Restoring system configuration file '%s' to '%s'",
-                         path, new_path)
+            logger.debug(
+                "Restoring system configuration file '%s' to '%s'", path, new_path
+            )
 
         if not os.path.isabs(path):
             raise ValueError("Absolute path required")
@@ -192,8 +190,8 @@ class FileStore:
         filename = None
 
         for (key, value) in self.files.items():
-            (mode,uid,gid,filepath) = value.split(',', 3)
-            if (filepath == path):
+            (mode, uid, gid, filepath) = value.split(",", 3)
+            if filepath == path:
                 filename = key
                 break
 
@@ -202,8 +200,7 @@ class FileStore:
 
         backup_path = os.path.join(self._path, filename)
         if not os.path.exists(backup_path):
-            logger.debug("  -> Not restoring - '%s' doesn't exist",
-                         backup_path)
+            logger.debug("  -> Not restoring - '%s' doesn't exist", backup_path)
             return False
 
         if new_path is not None:
@@ -235,12 +232,11 @@ class FileStore:
 
         for (filename, value) in self.files.items():
 
-            (mode,uid,gid,path) = value.split(',', 3)
+            (mode, uid, gid, path) = value.split(",", 3)
 
             backup_path = os.path.join(self._path, filename)
             if not os.path.exists(backup_path):
-                logger.debug("  -> Not restoring - '%s' doesn't exist",
-                             backup_path)
+                logger.debug("  -> Not restoring - '%s' doesn't exist", backup_path)
                 continue
 
             shutil.copy(backup_path, path)  # SELinux needs copy
@@ -282,8 +278,8 @@ class FileStore:
         filename = None
 
         for (key, value) in self.files.items():
-            _mode, _uid, _gid, filepath = value.split(',', 3)
-            if (filepath == path):
+            _mode, _uid, _gid, filepath = value.split(",", 3)
+            if filepath == path:
                 filename = key
                 break
 
@@ -292,14 +288,13 @@ class FileStore:
 
         backup_path = os.path.join(self._path, filename)
         if not os.path.exists(backup_path):
-            logger.debug("  -> Not restoring - '%s' doesn't exist",
-                         backup_path)
+            logger.debug("  -> Not restoring - '%s' doesn't exist", backup_path)
             return False
 
         try:
             os.unlink(backup_path)
         except Exception as e:
-            logger.error('Error removing %s: %s', backup_path, str(e))
+            logger.error("Error removing %s: %s", backup_path, str(e))
 
         del self.files[filename]
         self.save()
@@ -320,7 +315,7 @@ class StateFile:
     enabled=False
     """
 
-    def __init__(self, path = SYSRESTORE_PATH, state_file = SYSRESTORE_STATEFILE):
+    def __init__(self, path=SYSRESTORE_PATH, state_file=SYSRESTORE_STATEFILE):
         """Create a StateFile object, loading from @path.
 
         The dictionary @modules, a member of the returned object,

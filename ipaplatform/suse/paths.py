@@ -36,9 +36,7 @@ class SusePathNamespace(BasePathNamespace):
     SYSCONFIG_NTPD = "/etc/sysconfig/ntp"
     SYSCONF_NETWORK = "/etc/sysconfig/network/config"
     SYSTEMD_SYSTEM_HTTPD_D_DIR = "/etc/systemd/system/apache2.service.d/"
-    SYSTEMD_SYSTEM_HTTPD_IPA_CONF = (
-        "/etc/systemd/system/apache2.service.d/ipa.conf"
-    )
+    SYSTEMD_SYSTEM_HTTPD_IPA_CONF = "/etc/systemd/system/apache2.service.d/ipa.conf"
     CERTMONGER_COMMAND_TEMPLATE = "/usr/lib/ipa/certmonger/%s"
     CHROMIUM_BROWSER = "/usr/bin/chromium"
     BIN_NISDOMAINNAME = "/bin/nisdomainname"
@@ -52,9 +50,7 @@ class SusePathNamespace(BasePathNamespace):
     DOGTAG_IPA_CA_RENEW_AGENT_SUBMIT = (
         "/usr/lib/certmonger/dogtag-ipa-ca-renew-agent-submit"
     )
-    DOGTAG_IPA_RENEW_AGENT_SUBMIT = (
-        "/usr/lib/certmonger/dogtag-ipa-renew-agent-submit"
-    )
+    DOGTAG_IPA_RENEW_AGENT_SUBMIT = "/usr/lib/certmonger/dogtag-ipa-renew-agent-submit"
     CERTMONGER_DOGTAG_SUBMIT = "/usr/lib/certmonger/dogtag-submit"
     IPA_SERVER_GUARD = "/usr/lib/certmonger/ipa-server-guard"
     GENERATE_RNDC_KEY = "/usr/lib/generate-rndc-key.sh"

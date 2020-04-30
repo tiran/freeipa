@@ -26,26 +26,29 @@ class KerberosAliasMixin:
     """KerberosAliasMixin"""
 
     def _make_add_alias_cmd(self):
-        raise NotImplementedError("The _make_add_alias_cmd method "
-                                  "is not implemented.")
+        raise NotImplementedError(
+            "The _make_add_alias_cmd method " "is not implemented."
+        )
 
     def _make_remove_alias_cmd(self):
-        raise NotImplementedError("The _make_remove_alias_cmd method "
-                                  "is not implemented.")
+        raise NotImplementedError(
+            "The _make_remove_alias_cmd method " "is not implemented."
+        )
 
     def _check_for_krbprincipalname_attr(self):
         # Check if the tracker has a principal name
         # Each compatible entry has at least one kerberos
         # principal matching the canonical principal name
-        principals = self.attrs.get('krbprincipalname')
+        principals = self.attrs.get("krbprincipalname")
         if self.exists:
             if not principals:
                 raise KerberosAliasError(
-                    "{} doesn't have krbprincipalname attribute"
-                    .format(self.__class__.__name__))
+                    "{} doesn't have krbprincipalname attribute".format(
+                        self.__class__.__name__
+                    )
+                )
         else:
-            raise ValueError("The entry {} doesn't seem to exist"
-                             .format(self.name))
+            raise ValueError("The entry {} doesn't seem to exist".format(self.name))
 
     def _normalize_principal_list(self, principal_list):
         """Normalize the list for further manipulation."""
@@ -56,7 +59,7 @@ class KerberosAliasMixin:
 
     def _normalize_principal_value(self, principal):
         """Normalize principal value by appending the realm string."""
-        return u'@'.join((principal, self.api.env.realm))
+        return u"@".join((principal, self.api.env.realm))
 
     def add_principal(self, principal_list, **options):
         """Add kerberos principal alias to the entity.
@@ -71,9 +74,10 @@ class KerberosAliasMixin:
         cmd = self._make_add_alias_cmd()
         cmd(principal_list, **options)
 
-        tracker_principals = self.attrs.get('krbprincipalname')
-        tracker_principals.extend((
-            self._normalize_principal_value(item) for item in principal_list))
+        tracker_principals = self.attrs.get("krbprincipalname")
+        tracker_principals.extend(
+            (self._normalize_principal_value(item) for item in principal_list)
+        )
 
     def remove_principal(self, principal_list, **options):
         """Remove kerberos principal alias from an entry.
@@ -91,9 +95,9 @@ class KerberosAliasMixin:
         # if there is an error deleting the aliases
         # This can happen when deleting multiple aliases and at least
         # one of them doesn't exist, raising ValueError
-        tracker_principals = self.attrs.get('krbprincipalname')[:]
+        tracker_principals = self.attrs.get("krbprincipalname")[:]
 
         for item in principal_list:
             tracker_principals.remove(self._normalize_principal_value(item))
 
-        self.attrs['krbprincipalname'] = tracker_principals
+        self.attrs["krbprincipalname"] = tracker_principals

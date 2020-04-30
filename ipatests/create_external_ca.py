@@ -27,7 +27,7 @@ from cryptography.hazmat.primitives import serialization
 
 import datetime
 
-ISSUER_CN = 'example.test'
+ISSUER_CN = "example.test"
 
 
 class ExternalCA:
@@ -50,9 +50,7 @@ class ExternalCA:
         with weaker keys than the IPA base CA.
         """
         self.ca_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=self.key_size,
-            backend=default_backend(),
+            public_exponent=65537, key_size=self.key_size, backend=default_backend(),
         )
         self.ca_public_key = self.ca_key.public_key()
 
@@ -70,9 +68,9 @@ class ExternalCA:
         """
         if self.ca_key is None:
             self.create_ca_key()
-        subject = self.issuer = x509.Name([
-            x509.NameAttribute(NameOID.COMMON_NAME, str(cn)),
-        ])
+        subject = self.issuer = x509.Name(
+            [x509.NameAttribute(NameOID.COMMON_NAME, str(cn)),]
+        )
 
         builder = x509.CertificateBuilder()
         builder = builder.subject_name(subject)
@@ -98,8 +96,7 @@ class ExternalCA:
         )
 
         builder = builder.add_extension(
-            x509.BasicConstraints(ca=True, path_length=path_length),
-            critical=True,
+            x509.BasicConstraints(ca=True, path_length=path_length), critical=True,
         )
 
         builder = builder.add_extension(
@@ -108,9 +105,7 @@ class ExternalCA:
         )
 
         builder = builder.add_extension(
-            x509.AuthorityKeyIdentifier.from_issuer_public_key(
-                 self.ca_public_key
-                 ),
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(self.ca_public_key),
             critical=False,
         )
 
@@ -157,20 +152,16 @@ class ExternalCA:
         )
 
         builder = builder.add_extension(
-            x509.SubjectKeyIdentifier.from_public_key(csr_public_key),
+            x509.SubjectKeyIdentifier.from_public_key(csr_public_key), critical=False,
+        )
+
+        builder = builder.add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(self.ca_public_key),
             critical=False,
         )
 
         builder = builder.add_extension(
-            x509.AuthorityKeyIdentifier.from_issuer_public_key(
-                 self.ca_public_key
-                 ),
-            critical=False,
-        )
-
-        builder = builder.add_extension(
-            x509.BasicConstraints(ca=True, path_length=path_length),
-            critical=True,
+            x509.BasicConstraints(ca=True, path_length=path_length), critical=True,
         )
 
         cert = self.sign(builder)
@@ -179,21 +170,27 @@ class ExternalCA:
 
 
 def main():
-    IPA_CSR = '/root/ipa.csr'
-    ROOT_CA = '/tmp/rootca.pem'
-    IPA_CA = '/tmp/ipaca.pem'
+    IPA_CSR = "/root/ipa.csr"
+    ROOT_CA = "/tmp/rootca.pem"
+    IPA_CA = "/tmp/ipaca.pem"
     parser = argparse.ArgumentParser("Create external CA")
     parser.add_argument(
-        '--csr', type=argparse.FileType('rb'), default=IPA_CSR,
-        help="Path to ipa.csr (default: {})".format(IPA_CSR)
+        "--csr",
+        type=argparse.FileType("rb"),
+        default=IPA_CSR,
+        help="Path to ipa.csr (default: {})".format(IPA_CSR),
     )
     parser.add_argument(
-        '--rootca', type=argparse.FileType('wb'), default=ROOT_CA,
-        help="New root CA file (default: {})".format(ROOT_CA)
+        "--rootca",
+        type=argparse.FileType("wb"),
+        default=ROOT_CA,
+        help="New root CA file (default: {})".format(ROOT_CA),
     )
     parser.add_argument(
-        '--ipaca', type=argparse.FileType('wb'), default=IPA_CA,
-        help="New IPA CA file (default: {})".format(ROOT_CA)
+        "--ipaca",
+        type=argparse.FileType("wb"),
+        default=IPA_CA,
+        help="New IPA CA file (default: {})".format(ROOT_CA),
     )
 
     args = parser.parse_args()
@@ -215,5 +212,5 @@ def main():
     print(o.format(args.rootca.name, args.ipaca.name))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

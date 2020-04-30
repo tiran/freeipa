@@ -86,10 +86,10 @@ class _IndentationTracker:
     A simple wrapper that tracks the indentation level of the generated bash
     commands
     """
+
     def __init__(self, spaces_per_indent=0):
         if spaces_per_indent <= 0:
-            raise ValueError(
-                "Indentation increments cannot be zero or negative")
+            raise ValueError("Indentation increments cannot be zero or negative")
         self.spaces_per_indent = spaces_per_indent
         self._indentation_stack = []
         self._total_indentation_level = 0
@@ -161,25 +161,27 @@ class IfBranch(CompoundStatement):
     Base wrapper around `if` branch. The closing statement is empty so it
     leaves trailing block that can be closed off or continued by else branches
     """
+
     def __init__(self, advice_output, conditional):
         super(IfBranch, self).__init__(advice_output)
         self.conditional = conditional
 
     def begin_statement(self):
-        self.advice_output.command('if {}'.format(self.conditional))
-        self.advice_output.command('then')
+        self.advice_output.command("if {}".format(self.conditional))
+        self.advice_output.command("then")
 
 
 class ElseIfBranch(CompoundStatement):
     """
     Wrapper for `else if <CONDITIONAL>`
     """
+
     def __init__(self, advice_output, alternative_conditional):
         super(ElseIfBranch, self).__init__(advice_output)
         self.alternative_conditional = alternative_conditional
 
     def begin_statement(self):
-        command = 'else if {}'.format(self.alternative_conditional)
+        command = "else if {}".format(self.alternative_conditional)
 
         self.advice_output.command(command)
 
@@ -188,25 +190,28 @@ class ElseBranch(CompoundStatement):
     """
     Wrapper for final `else` block
     """
+
     def begin_statement(self):
-        self.advice_output.command('else')
+        self.advice_output.command("else")
 
     def end_statement(self):
-        self.advice_output.command('fi')
+        self.advice_output.command("fi")
 
 
 class UnbranchedIfStatement(IfBranch):
     """
     Plain `if` without branches
     """
+
     def end_statement(self):
-        self.advice_output.command('fi')
+        self.advice_output.command("fi")
 
 
 class ForLoop(CompoundStatement):
     """
     Wrapper around the for loop
     """
+
     def __init__(self, advice_output, loop_variable, iterable):
         super(ForLoop, self).__init__(advice_output)
         self.loop_variable = loop_variable
@@ -214,22 +219,23 @@ class ForLoop(CompoundStatement):
 
     def begin_statement(self):
         self.advice_output.command(
-            'for {} in {}'.format(self.loop_variable, self.iterable))
-        self.advice_output.command('do')
+            "for {} in {}".format(self.loop_variable, self.iterable)
+        )
+        self.advice_output.command("do")
 
     def end_statement(self):
-        self.advice_output.command('done')
+        self.advice_output.command("done")
 
 
 class _AdviceOutput:
-
     def __init__(self):
         self.content = []
-        self.prefix = '# '
+        self.prefix = "# "
         self.options = None
         self.pkgmgr_detected = False
         self._indentation_tracker = _IndentationTracker(
-            spaces_per_indent=DEFAULT_INDENTATION_INCREMENT)
+            spaces_per_indent=DEFAULT_INDENTATION_INCREMENT
+        )
 
     def indent(self):
         """
@@ -261,8 +267,7 @@ class _AdviceOutput:
         """
         append wrapped and indented comment to the output
         """
-        for wrapped_indented_line in wrap(
-                self.indent_statement(line), character_limit):
+        for wrapped_indented_line in wrap(self.indent_statement(line), character_limit):
             self.append_comment(wrapped_indented_line)
 
     def append_comment(self, line):
@@ -276,13 +281,13 @@ class _AdviceOutput:
         self.content.append(self.indent_statement(statement))
 
     def indent_statement(self, statement):
-        return '{indent}{statement}'.format(
-            indent=self._indentation_tracker.indentation_string,
-            statement=statement)
+        return "{indent}{statement}".format(
+            indent=self._indentation_tracker.indentation_string, statement=statement
+        )
 
     def debug(self, line):
         if self.options.verbose:
-            self.comment('DEBUG: ' + line)
+            self.comment("DEBUG: " + line)
 
     def command(self, line):
         self.append_statement(line)
@@ -293,17 +298,13 @@ class _AdviceOutput:
     def _format_error(self, error_message):
         return 'echo "{}" >&2'.format(error_message)
 
-    def exit_on_failed_command(self, command_to_run,
-                               error_message_lines):
+    def exit_on_failed_command(self, command_to_run, error_message_lines):
         self.command(command_to_run)
-        self.exit_on_predicate(
-            '[ "$?" -ne "0" ]',
-            error_message_lines)
+        self.exit_on_predicate('[ "$?" -ne "0" ]', error_message_lines)
 
     def exit_on_nonroot_euid(self):
         self.exit_on_predicate(
-            '[ "$(id -u)" -ne "0" ]',
-            ["This script has to be run as root user"]
+            '[ "$(id -u)" -ne "0" ]', ["This script has to be run as root user"]
         )
 
     def exit_on_predicate(self, predicate, error_message_lines):
@@ -311,42 +312,34 @@ class _AdviceOutput:
             for error_message_line in error_message_lines:
                 self.command(self._format_error(error_message_line))
 
-            self.command('exit 1')
+            self.command("exit 1")
 
     def detect_pkgmgr(self):
         self.commands_on_predicate(
-            'which yum >/dev/null',
-            commands_to_run_when_true=['PKGMGR=yum'],
-            commands_to_run_when_false=['PKGMGR=dnf']
+            "which yum >/dev/null",
+            commands_to_run_when_true=["PKGMGR=yum"],
+            commands_to_run_when_false=["PKGMGR=dnf"],
         )
         self.pkgmgr_detected = True
 
     def install_packages(self, names, error_message_lines):
         assert isinstance(names, list)
         self.detect_pkgmgr()
-        self.command('rpm -qi {} > /dev/null'.format(' '.join(names)))
+        self.command("rpm -qi {} > /dev/null".format(" ".join(names)))
         self.commands_on_predicate(
-            '[ "$?" -ne "0" ]',
-            ['$PKGMGR install -y {}'.format(' '.join(names))]
+            '[ "$?" -ne "0" ]', ["$PKGMGR install -y {}".format(" ".join(names))]
         )
-        self.exit_on_predicate(
-            '[ "$?" -ne "0" ]',
-            error_message_lines
-        )
+        self.exit_on_predicate('[ "$?" -ne "0" ]', error_message_lines)
 
     def remove_package(self, name, error_message_lines):
         # remove only supports one package name
-        assert ' ' not in name
+        assert " " not in name
         self.detect_pkgmgr()
-        self.command('rpm -qi {} > /dev/null'.format(name))
+        self.command("rpm -qi {} > /dev/null".format(name))
         self.commands_on_predicate(
-            '[ "$?" -eq "0" ]',
-            ['$PKGMGR remove -y {} || exit 1'.format(name)]
+            '[ "$?" -eq "0" ]', ["$PKGMGR remove -y {} || exit 1".format(name)]
         )
-        self.exit_on_predicate(
-            '[ "$?" -ne "0" ]',
-            error_message_lines
-        )
+        self.exit_on_predicate('[ "$?" -ne "0" ]', error_message_lines)
 
     @contextmanager
     def unbranched_if(self, predicate):
@@ -358,8 +351,9 @@ class _AdviceOutput:
         with statement_cls(self, *args):
             yield
 
-    def commands_on_predicate(self, predicate, commands_to_run_when_true,
-                              commands_to_run_when_false=None):
+    def commands_on_predicate(
+        self, predicate, commands_to_run_when_true, commands_to_run_when_false=None
+    ):
         if commands_to_run_when_false is not None:
             if_statement = self.if_branch
         else:
@@ -367,8 +361,7 @@ class _AdviceOutput:
 
         with if_statement(predicate):
             for command_to_run_when_true in commands_to_run_when_true:
-                self.command(
-                    command_to_run_when_true)
+                self.command(command_to_run_when_true)
 
         if commands_to_run_when_false is not None:
             with self.else_branch():
@@ -403,7 +396,7 @@ class Advice(Plugin):
 
     options = None
     require_root = False
-    description = ''
+    description = ""
 
     def __init__(self, api):
         super(Advice, self).__init__(api)
@@ -429,7 +422,9 @@ class AdviseAPI(API):
     @property
     def packages(self):
         import ipaserver.advise.plugins
+
         return (ipaserver.advise.plugins,)
+
 
 advise_api = AdviseAPI()
 
@@ -440,11 +435,13 @@ class IpaAdvise(admintool.AdminTool):
     configure the systems for various use cases.
     """
 
-    command_name = 'ipa-advise'
+    command_name = "ipa-advise"
     usage = "%prog ADVICE"
-    description = "Provides configuration advice for various use cases. To "\
-                  "see the list of possible ADVICEs, run ipa-advise without "\
-                  "any arguments."
+    description = (
+        "Provides configuration advice for various use cases. To "
+        "see the list of possible ADVICEs, run ipa-advise without "
+        "any arguments."
+    )
 
     def __init__(self, options, args):
         super(IpaAdvise, self).__init__(options, args)
@@ -458,25 +455,25 @@ class IpaAdvise(admintool.AdminTool):
         installutils.check_server_configuration()
 
         if len(self.args) > 1:
-            raise self.option_parser.error("You can only provide one "
-                                           "positional argument.")
+            raise self.option_parser.error(
+                "You can only provide one " "positional argument."
+            )
 
     def log_success(self):
         pass
 
     def print_config_list(self):
-        self.print_header('List of available advices')
+        self.print_header("List of available advices")
 
-        max_keyword_len = max(
-            (len(advice.name) for advice in advise_api.Advice))
+        max_keyword_len = max((len(advice.name) for advice in advise_api.Advice))
 
         for advice in advise_api.Advice:
-            description = getattr(advice, 'description', '')
-            keyword = advice.name.replace('_', '-')
+            description = getattr(advice, "description", "")
+            keyword = advice.name.replace("_", "-")
 
             # Compute the number of spaces needed for the table to be aligned
             offset = max_keyword_len - len(keyword)
-            prefix = "    {key} {off}: ".format(key=keyword, off=' ' * offset)
+            prefix = "    {key} {off}: ".format(key=keyword, off=" " * offset)
             wrapped_description = wrap(description, 80 - len(prefix))
 
             # Print the first line with the prefix (keyword)
@@ -484,22 +481,22 @@ class IpaAdvise(admintool.AdminTool):
 
             # Print the rest wrapped behind the colon
             for line in wrapped_description[1:]:
-                print("{off}{line}".format(off=' ' * len(prefix), line=line))
+                print("{off}{line}".format(off=" " * len(prefix), line=line))
 
     def print_header(self, header, print_shell=False):
         header_size = len(header)
 
-        prefix = ''
+        prefix = ""
         if print_shell:
-            prefix = '# '
-            print('#!/bin/sh')
+            prefix = "# "
+            print("#!/bin/sh")
 
         # Do not print out empty header
         if header_size > 0:
-            print((prefix + '-' * 70))
+            print((prefix + "-" * 70))
             for line in wrap(header, 70):
                 print((prefix + line))
-            print((prefix + '-' * 70))
+            print((prefix + "-" * 70))
 
     def print_advice(self, keyword):
         advice = getattr(advise_api.Advice, keyword, None)
@@ -509,15 +506,20 @@ class IpaAdvise(admintool.AdminTool):
             raise ValidationError(
                 name="advice",
                 error="No instructions are available for '{con}'. "
-                      "See the list of available configuration "
-                      "by invoking the ipa-advise command with no argument."
-                      .format(con=keyword.replace('_', '-')))
+                "See the list of available configuration "
+                "by invoking the ipa-advise command with no argument.".format(
+                    con=keyword.replace("_", "-")
+                ),
+            )
 
         # Check whether root privileges are needed
         if advice.require_root and os.getegid() != 0:
             raise admintool.ScriptError(
-                'Must be root to get advice for {adv}'
-                .format(adv=keyword.replace('_', '-')), 1)
+                "Must be root to get advice for {adv}".format(
+                    adv=keyword.replace("_", "-")
+                ),
+                1,
+            )
 
         # Print out nicely formatted header
         self.print_header(advice.description, print_shell=True)
@@ -535,17 +537,13 @@ class IpaAdvise(admintool.AdminTool):
     def run(self):
         super(IpaAdvise, self).run()
 
-        api.bootstrap(in_server=False,
-                      context='cli',
-                      confdir=paths.ETC_IPA)
+        api.bootstrap(in_server=False, context="cli", confdir=paths.ETC_IPA)
         api.finalize()
-        advise_api.bootstrap(in_server=False,
-                             context='cli',
-                             confdir=paths.ETC_IPA)
+        advise_api.bootstrap(in_server=False, context="cli", confdir=paths.ETC_IPA)
         advise_api.finalize()
         if not self.options.verbose:
             # Do not print connection information by default
-            logger_name = r'ipalib\.rpc'
+            logger_name = r"ipalib\.rpc"
             root_logger = logging.getLogger()
             root_logger.addFilter(Filter(logger_name, logging.WARNING))
 
@@ -554,5 +552,5 @@ class IpaAdvise(admintool.AdminTool):
             self.print_config_list()
             return
         else:
-            keyword = self.args[0].replace('-', '_')
+            keyword = self.args[0].replace("-", "_")
             self.print_advice(keyword)

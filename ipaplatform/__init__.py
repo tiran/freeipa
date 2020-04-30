@@ -6,6 +6,6 @@
 In the presence of a namespace package, any code in this module will be
 ignore.
 """
-__import__('pkg_resources').declare_namespace(__name__)
+__import__("pkg_resources").declare_namespace(__name__)
 
 NAME = None  # initialized by ipaplatform.osinfo

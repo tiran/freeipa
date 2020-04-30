@@ -13,21 +13,21 @@ from ipapython.dn import DN
 from ipapython.ipaldap import LDAPClient, realm_to_ldapi_uri
 from . import common
 
-CN_CONFIG = DN(('cn', 'config'))
-ROOTPW = 'nsslapd-rootpw'
+CN_CONFIG = DN(("cn", "config"))
+ROOTPW = "nsslapd-rootpw"
 
 
 def export_key(args, tmpdir, conn):
     entry = conn.get_entry(CN_CONFIG, [ROOTPW])
     data = {
-        'dmhash': entry.single_value[ROOTPW],
+        "dmhash": entry.single_value[ROOTPW],
     }
     common.json_dump(data, args.exportfile)
 
 
 def import_key(args, tmpdir, conn):
     data = json.load(args.importfile)
-    dmhash = data['dmhash'].encode('ascii')
+    dmhash = data["dmhash"].encode("ascii")
     entry = conn.get_entry(CN_CONFIG, [ROOTPW])
     entry.single_value[ROOTPW] = dmhash
     try:
@@ -37,15 +37,13 @@ def import_key(args, tmpdir, conn):
 
 
 def main():
-    parser = common.mkparser(
-        description='ipa-custodia LDAP DM hash handler'
-    )
+    parser = common.mkparser(description="ipa-custodia LDAP DM hash handler")
 
     if os.getegid() != 0:
         parser.error("Must be run as root user.\n")
 
     # create LDAP connection using LDAPI and EXTERNAL bind as root
-    if not api.isdone('bootstrap'):
+    if not api.isdone("bootstrap"):
         api.bootstrap(confdir=paths.ETC_IPA, log=None)
     realm = api.env.realm
     ldap_uri = realm_to_ldapi_uri(realm)
@@ -59,5 +57,5 @@ def main():
         common.main(parser, export_key, import_key, conn=conn)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -18,27 +18,33 @@ def export_key(args, tmpdir):
 
     The PKCS#12 file is encrypted with a password.
     """
-    pk12file = os.path.join(tmpdir, 'export.p12')
+    pk12file = os.path.join(tmpdir, "export.p12")
 
     password = ipautil.ipa_generate_password()
-    pk12pk12pwfile = os.path.join(tmpdir, 'passwd')
-    with open(pk12pk12pwfile, 'w') as f:
+    pk12pk12pwfile = os.path.join(tmpdir, "passwd")
+    with open(pk12pk12pwfile, "w") as f:
         f.write(password)
 
     nssdb = NSSDatabase(args.nssdb_path)
-    nssdb.run_pk12util([
-        "-o", pk12file,
-        "-n", args.nickname,
-        "-k", args.nssdb_pwdfile,
-        "-w", pk12pk12pwfile,
-    ])
+    nssdb.run_pk12util(
+        [
+            "-o",
+            pk12file,
+            "-n",
+            args.nickname,
+            "-k",
+            args.nssdb_pwdfile,
+            "-w",
+            pk12pk12pwfile,
+        ]
+    )
 
-    with open(pk12file, 'rb') as f:
+    with open(pk12file, "rb") as f:
         p12data = f.read()
 
     data = {
-        'export password': password,
-        'pkcs12 data': p12data,
+        "export password": password,
+        "pkcs12 data": p12data,
     }
     common.json_dump(data, args.exportfile)
 
@@ -47,63 +53,54 @@ def import_key(args, tmpdir):
     """Import key and certificate from a PKCS#12 file to a NSS DB.
     """
     data = json.load(args.importfile)
-    password = data['export password']
-    p12data = base64.b64decode(data['pkcs12 data'])
+    password = data["export password"]
+    p12data = base64.b64decode(data["pkcs12 data"])
 
-    pk12pwfile = os.path.join(tmpdir, 'passwd')
-    with open(pk12pwfile, 'w') as f:
+    pk12pwfile = os.path.join(tmpdir, "passwd")
+    with open(pk12pwfile, "w") as f:
         f.write(password)
 
-    pk12file = os.path.join(tmpdir, 'import.p12')
-    with open(pk12file, 'wb') as f:
+    pk12file = os.path.join(tmpdir, "import.p12")
+    with open(pk12file, "wb") as f:
         f.write(p12data)
 
     nssdb = NSSDatabase(args.nssdb_path)
-    nssdb.run_pk12util([
-        "-i", pk12file,
-        "-n", args.nickname,
-        "-k", args.nssdb_pwdfile,
-        "-w", pk12pwfile,
-    ])
+    nssdb.run_pk12util(
+        [
+            "-i",
+            pk12file,
+            "-n",
+            args.nickname,
+            "-k",
+            args.nssdb_pwdfile,
+            "-w",
+            pk12pwfile,
+        ]
+    )
 
 
 def default_parser():
     """Generic interface
     """
-    parser = common.mkparser(
-        description='ipa-custodia NSS cert handler'
+    parser = common.mkparser(description="ipa-custodia NSS cert handler")
+    parser.add_argument(
+        "--nssdb", dest="nssdb_path", help="path to NSS DB", required=True
     )
     parser.add_argument(
-        '--nssdb',
-        dest='nssdb_path',
-        help='path to NSS DB',
-        required=True
+        "--pwdfile",
+        dest="nssdb_pwdfile",
+        help="path to password file for NSS DB",
+        required=True,
     )
-    parser.add_argument(
-        '--pwdfile',
-        dest='nssdb_pwdfile',
-        help='path to password file for NSS DB',
-        required=True
-    )
-    parser.add_argument(
-        '--nickname',
-        help='nick name of certificate',
-        required=True
-    )
+    parser.add_argument("--nickname", help="nick name of certificate", required=True)
     return parser
 
 
 def pki_tomcat_parser():
     """Hard-code Dogtag's NSSDB and its password file
     """
-    parser = common.mkparser(
-        description='ipa-custodia pki-tomcat NSS cert handler'
-    )
-    parser.add_argument(
-        '--nickname',
-        help='nick name of certificate',
-        required=True
-    )
+    parser = common.mkparser(description="ipa-custodia pki-tomcat NSS cert handler")
+    parser.add_argument("--nickname", help="nick name of certificate", required=True)
     parser.set_defaults(
         nssdb_path=paths.PKI_TOMCAT_ALIAS_DIR,
         nssdb_pwdfile=paths.PKI_TOMCAT_ALIAS_PWDFILE_TXT,
@@ -118,5 +115,5 @@ def main(parser=None):
     common.main(parser, export_key, import_key)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

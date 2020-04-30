@@ -34,17 +34,15 @@ from ipaplatform.paths import paths
 
 
 def _main():
-    api.bootstrap(
-        in_server=True, context='restart', confdir=paths.ETC_IPA, log=None
-    )
+    api.bootstrap(in_server=True, context="restart", confdir=paths.ETC_IPA, log=None)
     api.finalize()
 
     tmpdir = tempfile.mkdtemp(prefix="tmp-")
     try:
-        principal = str('host/%s@%s' % (api.env.host, api.env.realm))
-        ccache_filename = os.path.join(tmpdir, 'ccache')
+        principal = str("host/%s@%s" % (api.env.host, api.env.realm))
+        ccache_filename = os.path.join(tmpdir, "ccache")
         kinit_keytab(principal, paths.KRB5_KEYTAB, ccache_filename)
-        os.environ['KRB5CCNAME'] = ccache_filename
+        os.environ["KRB5CCNAME"] = ccache_filename
 
         api.Backend.ldap2.connect()
 
@@ -56,14 +54,17 @@ def _main():
                 cert = x509.load_certificate_from_file(ra_certpath)
             except IOError as e:
                 syslog.syslog(
-                    syslog.LOG_ERR, "Can't open '{certpath}': {err}"
-                    .format(certpath=ra_certpath, err=e)
+                    syslog.LOG_ERR,
+                    "Can't open '{certpath}': {err}".format(
+                        certpath=ra_certpath, err=e
+                    ),
                 )
                 sys.exit(1)
             except (TypeError, ValueError):
                 syslog.syslog(
-                    syslog.LOG_ERR, "'{certpath}' is not a valid certificate "
-                    "file".format(certpath=ra_certpath)
+                    syslog.LOG_ERR,
+                    "'{certpath}' is not a valid certificate "
+                    "file".format(certpath=ra_certpath),
                 )
                 sys.exit(1)
 
@@ -80,7 +81,7 @@ def main():
         _main()
     finally:
         # lock acquired in renew_ra_cert_pre
-        certs.renewal_lock.release('renew_ra_cert')
+        certs.renewal_lock.release("renew_ra_cert")
 
 
 try:

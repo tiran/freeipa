@@ -28,8 +28,11 @@ class update_referint(Updater):
     Old and new style cannot be mixed, all nslapd-pluginArg* attrs have to be removed
     """
 
-    referint_dn = DN(('cn', 'referential integrity postoperation'),
-                           ('cn', 'plugins'), ('cn', 'config'))
+    referint_dn = DN(
+        ("cn", "referential integrity postoperation"),
+        ("cn", "plugins"),
+        ("cn", "config"),
+    )
 
     def execute(self, **options):
 
@@ -46,32 +49,32 @@ class update_referint(Updater):
         logger.debug("Initial value: %s", repr(entry))
 
         # nsslapd-pluginArg0    -> referint-update-delay
-        update_delay = entry.get('nsslapd-pluginArg0')
+        update_delay = entry.get("nsslapd-pluginArg0")
         if update_delay:
             logger.debug("add: referint-update-delay: %s", update_delay)
-            entry['referint-update-delay'] = update_delay
-            entry['nsslapd-pluginArg0'] = None
+            entry["referint-update-delay"] = update_delay
+            entry["nsslapd-pluginArg0"] = None
         else:
             logger.debug("Plugin already uses new style, skipping")
             return False, []
 
         # nsslapd-pluginArg1    -> referint-logfile
-        logfile = entry.get('nsslapd-pluginArg1')
+        logfile = entry.get("nsslapd-pluginArg1")
         if logfile:
             logger.debug("add: referint-logfile: %s", logfile)
-            entry['referint-logfile'] = logfile
-            entry['nsslapd-pluginArg1'] = None
+            entry["referint-logfile"] = logfile
+            entry["nsslapd-pluginArg1"] = None
 
         # nsslapd-pluginArg2    -> referint-logchanges
-        logchanges = entry.get('nsslapd-pluginArg2')
+        logchanges = entry.get("nsslapd-pluginArg2")
         if logchanges:
             logger.debug("add: referint-logchanges: %s", logchanges)
-            entry['referint-logchanges'] = logchanges
-            entry['nsslapd-pluginArg2'] = None
+            entry["referint-logchanges"] = logchanges
+            entry["nsslapd-pluginArg2"] = None
 
         # nsslapd-pluginArg3..N -> referint-membership-attr [3..N]
         for key in list(entry):
-            if key.lower().startswith('nsslapd-pluginarg'):
+            if key.lower().startswith("nsslapd-pluginarg"):
                 arg_val = entry.single_value[key]
                 if arg_val:
                     referint_membership_attrs.append(arg_val)
@@ -80,7 +83,7 @@ class update_referint(Updater):
         if referint_membership_attrs:
             # entry['referint-membership-attr'] is None, plugin doesn't allow
             # mixing old and new style
-            entry['referint-membership-attr'] = referint_membership_attrs
+            entry["referint-membership-attr"] = referint_membership_attrs
 
         logger.debug("Final value: %s", repr(entry))
         try:

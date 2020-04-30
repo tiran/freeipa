@@ -25,27 +25,24 @@ from ipatests.test_webui.ui_driver import UI_driver
 from ipatests.test_webui.ui_driver import screenshot
 import pytest
 
-ENTITY = 'delegation'
-PKEY = 'itest-delegation-rule'
+ENTITY = "delegation"
+PKEY = "itest-delegation-rule"
 
 DATA = {
-    'pkey': PKEY,
-    'add': [
-        ('textbox', 'aciname', PKEY),
-        ('combobox', 'group', 'editors'),
-        ('combobox', 'memberof', 'ipausers'),
-        ('checkbox', 'attrs', 'audio'),
-        ('checkbox', 'attrs', 'businesscategory'),
+    "pkey": PKEY,
+    "add": [
+        ("textbox", "aciname", PKEY),
+        ("combobox", "group", "editors"),
+        ("combobox", "memberof", "ipausers"),
+        ("checkbox", "attrs", "audio"),
+        ("checkbox", "attrs", "businesscategory"),
     ],
-    'mod': [
-        ('checkbox', 'attrs', 'businesscategory'),
-    ],
+    "mod": [("checkbox", "attrs", "businesscategory"),],
 }
 
 
 @pytest.mark.tier1
 class test_delegation(UI_driver):
-
     @screenshot
     def test_crud(self):
         """

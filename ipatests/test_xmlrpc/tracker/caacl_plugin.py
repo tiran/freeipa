@@ -4,8 +4,11 @@
 
 from ipalib import errors
 from ipatests.util import assert_deepequal
-from ipatests.test_xmlrpc.xmlrpc_test import (fuzzy_caacldn, fuzzy_uuid,
-                                              fuzzy_ipauniqueid)
+from ipatests.test_xmlrpc.xmlrpc_test import (
+    fuzzy_caacldn,
+    fuzzy_uuid,
+    fuzzy_ipauniqueid,
+)
 from ipatests.test_xmlrpc import objectclasses
 from ipatests.test_xmlrpc.tracker.base import Tracker
 
@@ -32,28 +35,64 @@ class CAACLTracker(Tracker):
     """
 
     member_keys = {
-        u'memberuser_user', u'memberuser_group',
-        u'memberhost_host', u'memberhost_hostgroup',
-        u'memberservice_service',
-        u'ipamembercertprofile_certprofile',
-        u'ipamemberca_ca'}
+        u"memberuser_user",
+        u"memberuser_group",
+        u"memberhost_host",
+        u"memberhost_hostgroup",
+        u"memberservice_service",
+        u"ipamembercertprofile_certprofile",
+        u"ipamemberca_ca",
+    }
     category_keys = {
-        u'ipacacategory', u'ipacertprofilecategory', u'usercategory',
-        u'hostcategory', u'servicecategory', u'ipacacategory'}
-    retrieve_keys = {
-        u'dn', u'cn', u'description', u'ipaenabledflag',
-        u'ipamemberca', u'ipamembercertprofile', u'memberuser',
-        u'memberhost', u'memberservice'} | member_keys | category_keys
-    retrieve_all_keys = retrieve_keys | {u'objectclass', u'ipauniqueid'}
-    create_keys = {u'dn', u'cn', u'description', u'ipacertprofilecategory',
-                   u'usercategory', u'hostcategory', u'ipacacategory',
-                   u'servicecategory', u'ipaenabledflag', u'objectclass',
-                   u'ipauniqueid'}
-    update_keys = create_keys - {u'dn'}
+        u"ipacacategory",
+        u"ipacertprofilecategory",
+        u"usercategory",
+        u"hostcategory",
+        u"servicecategory",
+        u"ipacacategory",
+    }
+    retrieve_keys = (
+        {
+            u"dn",
+            u"cn",
+            u"description",
+            u"ipaenabledflag",
+            u"ipamemberca",
+            u"ipamembercertprofile",
+            u"memberuser",
+            u"memberhost",
+            u"memberservice",
+        }
+        | member_keys
+        | category_keys
+    )
+    retrieve_all_keys = retrieve_keys | {u"objectclass", u"ipauniqueid"}
+    create_keys = {
+        u"dn",
+        u"cn",
+        u"description",
+        u"ipacertprofilecategory",
+        u"usercategory",
+        u"hostcategory",
+        u"ipacacategory",
+        u"servicecategory",
+        u"ipaenabledflag",
+        u"objectclass",
+        u"ipauniqueid",
+    }
+    update_keys = create_keys - {u"dn"}
 
-    def __init__(self, name, ipacertprofile_category=None, user_category=None,
-                 service_category=None, host_category=None,
-                 ipaca_category=None, description=None, default_version=None):
+    def __init__(
+        self,
+        name,
+        ipacertprofile_category=None,
+        user_category=None,
+        service_category=None,
+        host_category=None,
+        ipaca_category=None,
+        description=None,
+        default_version=None,
+    ):
         super(CAACLTracker, self).__init__(default_version=default_version)
 
         self._name = name
@@ -63,7 +102,8 @@ class CAACLTracker(Tracker):
             ipacacategory=ipaca_category,
             usercategory=user_category,
             servicecategory=service_category,
-            hostcategory=host_category)
+            hostcategory=host_category,
+        )
 
         self.dn = fuzzy_caacldn
 
@@ -88,16 +128,19 @@ class CAACLTracker(Tracker):
         return {cat: [v] for cat, v in self.categories.items() if v}
 
     def make_create_command(self):
-        return self.make_command(u'caacl_add', self.name,
-                                 description=self.description,
-                                 **self.categories)
+        return self.make_command(
+            u"caacl_add", self.name, description=self.description, **self.categories
+        )
 
     def check_create(self, result):
-        assert_deepequal(dict(
-            value=self.name,
-            summary=u'Added CA ACL "{}"'.format(self.name),
-            result=dict(self.filter_attrs(self.create_keys))
-        ), result)
+        assert_deepequal(
+            dict(
+                value=self.name,
+                summary=u'Added CA ACL "{}"'.format(self.name),
+                result=dict(self.filter_attrs(self.create_keys)),
+            ),
+            result,
+        )
 
     def track_create(self):
         self.attrs = dict(
@@ -105,26 +148,30 @@ class CAACLTracker(Tracker):
             ipauniqueid=[fuzzy_uuid],
             cn=[self.name],
             objectclass=objectclasses.caacl,
-            ipaenabledflag=[u'TRUE'])
+            ipaenabledflag=[u"TRUE"],
+        )
 
         self.attrs.update(self.create_categories)
         if self.description:
-            self.attrs.update({u'description', [self.description]})
+            self.attrs.update({u"description", [self.description]})
 
         self.exists = True
 
     def make_delete_command(self):
-        return self.make_command('caacl_del', self.name)
+        return self.make_command("caacl_del", self.name)
 
     def check_delete(self, result):
-        assert_deepequal(dict(
-            value=[self.name],
-            summary=u'Deleted CA ACL "{}"'.format(self.name),
-            result=dict(failed=[])
-        ), result)
+        assert_deepequal(
+            dict(
+                value=[self.name],
+                summary=u'Deleted CA ACL "{}"'.format(self.name),
+                result=dict(failed=[]),
+            ),
+            result,
+        )
 
     def make_retrieve_command(self, all=False, raw=False):
-        return self.make_command('caacl_show', self.name, all=all, raw=raw)
+        return self.make_command("caacl_show", self.name, all=all, raw=raw)
 
     def check_retrieve(self, result, all=False, raw=False):
         if all:
@@ -132,14 +179,10 @@ class CAACLTracker(Tracker):
         else:
             expected = self.filter_attrs(self.retrieve_keys)
 
-        assert_deepequal(dict(
-            value=self.name,
-            summary=None,
-            result=expected
-        ), result)
+        assert_deepequal(dict(value=self.name, summary=None, result=expected), result)
 
     def make_find_command(self, *args, **kwargs):
-        return self.make_command('caacl_find', *args, **kwargs)
+        return self.make_command("caacl_find", *args, **kwargs)
 
     def check_find(self, result, all=False, raw=False):
         if all:
@@ -147,15 +190,15 @@ class CAACLTracker(Tracker):
         else:
             expected = self.filter_attrs(self.retrieve_keys)
 
-        assert_deepequal(dict(
-            count=1,
-            truncated=False,
-            summary=u'1 CA ACL matched',
-            result=[expected]
-        ), result)
+        assert_deepequal(
+            dict(
+                count=1, truncated=False, summary=u"1 CA ACL matched", result=[expected]
+            ),
+            result,
+        )
 
     def make_update_command(self, updates):
-        return self.make_command('caacl_mod', self.name, **updates)
+        return self.make_command("caacl_mod", self.name, **updates)
 
     def update(self, updates, expected_updates=None, silent=False):
         """If removing a category, delete it from tracker as well"""
@@ -187,16 +230,20 @@ class CAACLTracker(Tracker):
             if silent:
                 self.attrs.update(filtered_updates)
                 self.attrs.update(expected_updates)
-                self.check_update(result,
-                                  extra_keys=set(self.update_keys) |
-                                  set(expected_updates.keys()))
+                self.check_update(
+                    result,
+                    extra_keys=set(self.update_keys) | set(expected_updates.keys()),
+                )
 
     def check_update(self, result, extra_keys=()):
-        assert_deepequal(dict(
-            value=self.name,
-            summary=u'Modified CA ACL "{}"'.format(self.name),
-            result=self.filter_attrs(self.update_keys | set(extra_keys))
-        ), result)
+        assert_deepequal(
+            dict(
+                value=self.name,
+                summary=u'Modified CA ACL "{}"'.format(self.name),
+                result=self.filter_attrs(self.update_keys | set(extra_keys)),
+            ),
+            result,
+        )
 
     # Helper methods for caacl subcommands. The check methods will be
     # implemented in standalone test
@@ -306,78 +353,72 @@ class CAACLTracker(Tracker):
         """
 
         options = {
-            u'memberhost_host': {u'host': host},
-            u'memberhost_hostgroup': {u'hostgroup': hostgroup}}
+            u"memberhost_host": {u"host": host},
+            u"memberhost_hostgroup": {u"hostgroup": hostgroup},
+        }
 
-        return self._add_acl_component(u'caacl_add_host', options, track)
+        return self._add_acl_component(u"caacl_add_host", options, track)
 
     def remove_host(self, host=None, hostgroup=None, track=True):
         options = {
-            u'memberhost_host': {u'host': host},
-            u'memberhost_hostgroup': {u'hostgroup': hostgroup}}
+            u"memberhost_host": {u"host": host},
+            u"memberhost_hostgroup": {u"hostgroup": hostgroup},
+        }
 
-        return self._remove_acl_component(u'caacl_remove_host', options, track)
+        return self._remove_acl_component(u"caacl_remove_host", options, track)
 
     def add_user(self, user=None, group=None, track=True):
         options = {
-            u'memberuser_user': {u'user': user},
-            u'memberuser_group': {u'group': group}}
+            u"memberuser_user": {u"user": user},
+            u"memberuser_group": {u"group": group},
+        }
 
-        return self._add_acl_component(u'caacl_add_user', options, track)
+        return self._add_acl_component(u"caacl_add_user", options, track)
 
     def remove_user(self, user=None, group=None, track=True):
         options = {
-            u'memberuser_user': {u'user': user},
-            u'memberuser_group': {u'group': group}}
+            u"memberuser_user": {u"user": user},
+            u"memberuser_group": {u"group": group},
+        }
 
-        return self._remove_acl_component(u'caacl_remove_user', options, track)
+        return self._remove_acl_component(u"caacl_remove_user", options, track)
 
     def add_service(self, service=None, track=True):
-        options = {
-            u'memberservice_service': {u'service': service}}
+        options = {u"memberservice_service": {u"service": service}}
 
-        return self._add_acl_component(u'caacl_add_service', options, track)
+        return self._add_acl_component(u"caacl_add_service", options, track)
 
     def remove_service(self, service=None, track=True):
-        options = {
-            u'memberservice_service': {u'service': service}}
+        options = {u"memberservice_service": {u"service": service}}
 
-        return self._remove_acl_component(u'caacl_remove_service', options, track)
+        return self._remove_acl_component(u"caacl_remove_service", options, track)
 
     def add_profile(self, certprofile=None, track=True):
-        options = {
-            u'ipamembercertprofile_certprofile':
-                {u'certprofile': certprofile}}
+        options = {u"ipamembercertprofile_certprofile": {u"certprofile": certprofile}}
 
-        return self._add_acl_component(u'caacl_add_profile', options, track)
+        return self._add_acl_component(u"caacl_add_profile", options, track)
 
     def remove_profile(self, certprofile=None, track=True):
-        options = {
-            u'ipamembercertprofile_certprofile':
-                {u'certprofile': certprofile}}
+        options = {u"ipamembercertprofile_certprofile": {u"certprofile": certprofile}}
 
-        return self._remove_acl_component(u'caacl_remove_profile', options, track)
+        return self._remove_acl_component(u"caacl_remove_profile", options, track)
 
     def add_ca(self, ca=None, track=True):
-        options = {
-            u'ipamemberca_ca':
-                {u'ca': ca}}
+        options = {u"ipamemberca_ca": {u"ca": ca}}
 
-        return self._add_acl_component(u'caacl_add_ca', options, track)
+        return self._add_acl_component(u"caacl_add_ca", options, track)
 
     def remove_ca(self, ca=None, track=True):
-        options = {
-            u'ipamemberca_ca':
-                {u'ca': ca}}
+        options = {u"ipamemberca_ca": {u"ca": ca}}
 
-        return self._remove_acl_component(u'caacl_remove_ca', options, track)
+        return self._remove_acl_component(u"caacl_remove_ca", options, track)
 
     def enable(self):
-        command = self.make_command(u'caacl_enable', self.name)
-        self.attrs.update({u'ipaenabledflag': [u'TRUE']})
+        command = self.make_command(u"caacl_enable", self.name)
+        self.attrs.update({u"ipaenabledflag": [u"TRUE"]})
         command()
 
     def disable(self):
-        command = self.make_command(u'caacl_disable', self.name)
-        self.attrs.update({u'ipaenabledflag': [u'FALSE']})
+        command = self.make_command(u"caacl_disable", self.name)
+        self.attrs.update({u"ipaenabledflag": [u"FALSE"]})
         command()

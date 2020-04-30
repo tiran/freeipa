@@ -32,8 +32,7 @@ class update_nis_configuration(Updater):
         # if all following DNs are missing, but 'NIS Server' container exists
         # we are experiencig bug and maps should be fixed
 
-        if sysupgrade.get_upgrade_state('nis',
-                                        'done_recover_from_missing_maps'):
+        if sysupgrade.get_upgrade_state("nis", "done_recover_from_missing_maps"):
             # this recover must be done only once, a user may deleted some
             # maps, we do not want to restore them again
             return
@@ -43,7 +42,8 @@ class update_nis_configuration(Updater):
         suffix = "cn=NIS Server,cn=plugins,cn=config"
         domain = self.api.env.domain
         missing_dn_list = [
-            DN(nis_map.format(domain=domain, suffix=suffix)) for nis_map in [
+            DN(nis_map.format(domain=domain, suffix=suffix))
+            for nis_map in [
                 "nis-domain={domain}+nis-map=passwd.byname,{suffix}",
                 "nis-domain={domain}+nis-map=passwd.byuid,{suffix}",
                 "nis-domain={domain}+nis-map=group.byname,{suffix}",
@@ -55,7 +55,7 @@ class update_nis_configuration(Updater):
 
         for dn in missing_dn_list:
             try:
-                ldap.get_entry(dn, attrs_list=['cn'])
+                ldap.get_entry(dn, attrs_list=["cn"])
             except errors.NotFound:
                 pass
             else:
@@ -63,8 +63,7 @@ class update_nis_configuration(Updater):
                 # maps was detected
                 return
 
-        sysupgrade.set_upgrade_state('nis', 'done_recover_from_missing_maps',
-                                     True)
+        sysupgrade.set_upgrade_state("nis", "done_recover_from_missing_maps", True)
 
         # bug is effective run update to recreate missing maps
         ld = LDAPUpdate(sub_dict={}, ldapi=True)
@@ -72,16 +71,15 @@ class update_nis_configuration(Updater):
 
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
-        dn = DN(('cn', 'NIS Server'), ('cn', 'plugins'), ('cn', 'config'))
+        dn = DN(("cn", "NIS Server"), ("cn", "plugins"), ("cn", "config"))
         try:
-            ldap.get_entry(dn, attrs_list=['cn'])
+            ldap.get_entry(dn, attrs_list=["cn"])
         except errors.NotFound:
             # NIS is not configured on system, do not execute update
             logger.debug("Skipping NIS update, NIS Server is not configured")
 
             # container does not exist, bug #5507 is not effective
-            sysupgrade.set_upgrade_state(
-                'nis', 'done_recover_from_missing_maps', True)
+            sysupgrade.set_upgrade_state("nis", "done_recover_from_missing_maps", True)
         else:
             self.__recover_from_missing_maps(ldap)
 

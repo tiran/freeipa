@@ -35,27 +35,26 @@ class user_del(MethodOverride):
         for option in super(user_del, self).get_options():
             yield option
         yield Flag(
-            'preserve?',
-            include='cli',
-            doc=_('Delete a user, keeping the entry available for future use'),
+            "preserve?",
+            include="cli",
+            doc=_("Delete a user, keeping the entry available for future use"),
         )
         yield Flag(
-            'no_preserve?',
-            include='cli',
-            doc=_('Delete a user'),
+            "no_preserve?", include="cli", doc=_("Delete a user"),
         )
 
     def forward(self, *keys, **options):
-        if self.api.env.context == 'cli':
-            no_preserve = options.pop('no_preserve', False)
-            preserve = options.pop('preserve', False)
+        if self.api.env.context == "cli":
+            no_preserve = options.pop("no_preserve", False)
+            preserve = options.pop("preserve", False)
             if no_preserve and preserve:
                 raise errors.MutuallyExclusiveError(
-                    reason=_("preserve and no-preserve cannot be both set"))
+                    reason=_("preserve and no-preserve cannot be both set")
+                )
             elif no_preserve:
-                options['preserve'] = False
+                options["preserve"] = False
             elif preserve:
-                options['preserve'] = True
+                options["preserve"] = True
 
         return super(user_del, self).forward(*keys, **options)
 
@@ -63,17 +62,18 @@ class user_del(MethodOverride):
 @register(override=True, no_fail=True)
 class user_show(MethodOverride):
     def forward(self, *keys, **options):
-        if 'out' in options:
-            util.check_writable_file(options['out'])
+        if "out" in options:
+            util.check_writable_file(options["out"])
             result = super(user_show, self).forward(*keys, **options)
-            if 'usercertificate' in result['result']:
-                certs = (x509.load_der_x509_certificate(c)
-                         for c in result['result']['usercertificate'])
-                x509.write_certificate_list(certs, options['out'])
-                result['summary'] = (
-                    _('Certificate(s) stored in file \'%(file)s\'')
-                    % dict(file=options['out'])
+            if "usercertificate" in result["result"]:
+                certs = (
+                    x509.load_der_x509_certificate(c)
+                    for c in result["result"]["usercertificate"]
                 )
+                x509.write_certificate_list(certs, options["out"])
+                result["summary"] = _(
+                    "Certificate(s) stored in file '%(file)s'"
+                ) % dict(file=options["out"])
                 return result
             else:
                 raise errors.NoCertificateError(entry=keys[-1])

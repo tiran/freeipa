@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
+"""
 This base platform module exports default filesystem paths.
-'''
+"""
 
 import os
 
@@ -80,7 +80,7 @@ class BasePathNamespace:
     LIBNSS_LDAP_CONF = "/etc/libnss-ldap.conf"
     NAMED_CONF = "/etc/named.conf"
     NAMED_CUSTOM_CONFIG = "/etc/named/ipa-ext.conf"
-    NAMED_CUSTOM_CFG_SRC = '/usr/share/ipa/bind.ipa-ext.conf'
+    NAMED_CUSTOM_CFG_SRC = "/usr/share/ipa/bind.ipa-ext.conf"
     NAMED_VAR_DIR = "/var/named"
     NAMED_KEYTAB = "/etc/named.keytab"
     NAMED_RFC1912_ZONES = "/etc/named.rfc1912.zones"
@@ -144,12 +144,17 @@ class BasePathNamespace:
     ETC_SYSTEMD_SYSTEM_DIR = "/etc/systemd/system/"
     SYSTEMD_SYSTEM_HTTPD_D_DIR = "/etc/systemd/system/httpd.service.d/"
     SYSTEMD_SYSTEM_HTTPD_IPA_CONF = "/etc/systemd/system/httpd.service.d/ipa.conf"
-    SYSTEMD_CERTMONGER_SERVICE = "/etc/systemd/system/multi-user.target.wants/certmonger.service"
+    SYSTEMD_CERTMONGER_SERVICE = (
+        "/etc/systemd/system/multi-user.target.wants/certmonger.service"
+    )
     SYSTEMD_IPA_SERVICE = "/etc/systemd/system/multi-user.target.wants/ipa.service"
     SYSTEMD_SSSD_SERVICE = "/etc/systemd/system/multi-user.target.wants/sssd.service"
-    SYSTEMD_PKI_TOMCAT_SERVICE = "/etc/systemd/system/pki-tomcatd.target.wants/pki-tomcatd@pki-tomcat.service"
-    SYSTEMD_PKI_TOMCAT_IPA_CONF = \
+    SYSTEMD_PKI_TOMCAT_SERVICE = (
+        "/etc/systemd/system/pki-tomcatd.target.wants/pki-tomcatd@pki-tomcat.service"
+    )
+    SYSTEMD_PKI_TOMCAT_IPA_CONF = (
         "/etc/systemd/system/pki-tomcatd@pki-tomcat.service.d/ipa.conf"
+    )
     ETC_TMPFILESD_DIRSRV = "/etc/tmpfiles.d/dirsrv-%s.conf"
     DNSSEC_TRUSTED_KEY = "/etc/trusted-key.key"
     HOME_DIR = "/home"
@@ -181,7 +186,7 @@ class BasePathNamespace:
     GPG_CONNECT_AGENT = "/usr/bin/gpg-connect-agent"
     GPG_AGENT = "/usr/bin/gpg-agent"
     IPA_GETCERT = "/usr/bin/ipa-getcert"
-    KADMIN_LOCAL = '/usr/sbin/kadmin.local'
+    KADMIN_LOCAL = "/usr/sbin/kadmin.local"
     KDESTROY = "/usr/bin/kdestroy"
     KINIT = "/usr/bin/kinit"
     KLIST = "/usr/bin/klist"
@@ -218,8 +223,12 @@ class BasePathNamespace:
     LIBSOFTHSM2_SO_64 = "/usr/lib64/pkcs11/libsofthsm2.so"
     PAM_KRB5_SO_64 = "/usr/lib64/security/pam_krb5.so"
     LIBEXEC_CERTMONGER_DIR = "/usr/libexec/certmonger"
-    DOGTAG_IPA_CA_RENEW_AGENT_SUBMIT = "/usr/libexec/certmonger/dogtag-ipa-ca-renew-agent-submit"
-    DOGTAG_IPA_RENEW_AGENT_SUBMIT = "/usr/libexec/certmonger/dogtag-ipa-renew-agent-submit"
+    DOGTAG_IPA_CA_RENEW_AGENT_SUBMIT = (
+        "/usr/libexec/certmonger/dogtag-ipa-ca-renew-agent-submit"
+    )
+    DOGTAG_IPA_RENEW_AGENT_SUBMIT = (
+        "/usr/libexec/certmonger/dogtag-ipa-renew-agent-submit"
+    )
     CERTMONGER_DOGTAG_SUBMIT = "/usr/libexec/certmonger/dogtag-submit"
     IPA_SERVER_GUARD = "/usr/libexec/certmonger/ipa-server-guard"
     GENERATE_RNDC_KEY = "/usr/libexec/generate-rndc-key.sh"
@@ -312,8 +321,7 @@ class BasePathNamespace:
     CA_BACKUP_KEYS_P12 = "/var/lib/pki/pki-tomcat/alias/ca_backup_keys.p12"
     KRA_BACKUP_KEYS_P12 = "/var/lib/pki/pki-tomcat/alias/kra_backup_keys.p12"
     CA_CS_CFG_PATH = "/var/lib/pki/pki-tomcat/conf/ca/CS.cfg"
-    CASIGNEDLOGCERT_CFG = (
-        "/var/lib/pki/pki-tomcat/ca/profiles/ca/caSignedLogCert.cfg")
+    CASIGNEDLOGCERT_CFG = "/var/lib/pki/pki-tomcat/ca/profiles/ca/caSignedLogCert.cfg"
     KRA_CS_CFG_PATH = "/var/lib/pki/pki-tomcat/conf/kra/CS.cfg"
     KRACERT_P12 = "/root/kracert.p12"
     SAMBA_DIR = "/var/lib/samba/"
@@ -367,32 +375,32 @@ class BasePathNamespace:
     SVC_LIST_FILE = "/run/ipa/services.list"
     KRB5CC_SAMBA = "/run/samba/krb5cc_samba"
     SLAPD_INSTANCE_SOCKET_TEMPLATE = "/run/slapd-%s.socket"
-    ADMIN_CERT_PATH = '/root/.dogtag/pki-tomcat/ca_admin.cert'
-    ENTROPY_AVAIL = '/proc/sys/kernel/random/entropy_avail'
-    KDCPROXY_CONFIG = '/etc/ipa/kdcproxy/kdcproxy.conf'
-    CERTMONGER = '/usr/sbin/certmonger'
-    NETWORK_MANAGER_CONFIG_DIR = '/etc/NetworkManager/conf.d'
-    NETWORK_MANAGER_IPA_CONF = '/etc/NetworkManager/conf.d/zzz-ipa.conf'
-    IPA_CUSTODIA_CONF_DIR = '/etc/ipa/custodia'
-    IPA_CUSTODIA_CONF = '/etc/ipa/custodia/custodia.conf'
-    IPA_CUSTODIA_KEYS = '/etc/ipa/custodia/server.keys'
-    IPA_CUSTODIA_SOCKET = '/run/httpd/ipa-custodia.sock'
-    IPA_CUSTODIA_AUDIT_LOG = '/var/log/ipa-custodia.audit.log'
+    ADMIN_CERT_PATH = "/root/.dogtag/pki-tomcat/ca_admin.cert"
+    ENTROPY_AVAIL = "/proc/sys/kernel/random/entropy_avail"
+    KDCPROXY_CONFIG = "/etc/ipa/kdcproxy/kdcproxy.conf"
+    CERTMONGER = "/usr/sbin/certmonger"
+    NETWORK_MANAGER_CONFIG_DIR = "/etc/NetworkManager/conf.d"
+    NETWORK_MANAGER_IPA_CONF = "/etc/NetworkManager/conf.d/zzz-ipa.conf"
+    IPA_CUSTODIA_CONF_DIR = "/etc/ipa/custodia"
+    IPA_CUSTODIA_CONF = "/etc/ipa/custodia/custodia.conf"
+    IPA_CUSTODIA_KEYS = "/etc/ipa/custodia/server.keys"
+    IPA_CUSTODIA_SOCKET = "/run/httpd/ipa-custodia.sock"
+    IPA_CUSTODIA_AUDIT_LOG = "/var/log/ipa-custodia.audit.log"
     IPA_CUSTODIA_HANDLER = "/usr/libexec/ipa/custodia"
-    IPA_GETKEYTAB = '/usr/sbin/ipa-getkeytab'
-    EXTERNAL_SCHEMA_DIR = '/usr/share/ipa/schema.d'
-    GSSPROXY_CONF = '/etc/gssproxy/10-ipa.conf'
-    KRB5CC_HTTPD = '/tmp/krb5cc-httpd'
-    IF_INET6 = '/proc/net/if_inet6'
+    IPA_GETKEYTAB = "/usr/sbin/ipa-getkeytab"
+    EXTERNAL_SCHEMA_DIR = "/usr/share/ipa/schema.d"
+    GSSPROXY_CONF = "/etc/gssproxy/10-ipa.conf"
+    KRB5CC_HTTPD = "/tmp/krb5cc-httpd"
+    IF_INET6 = "/proc/net/if_inet6"
     WSGI_PREFIX_DIR = "/run/httpd/wsgi"
     AUTHCONFIG = None
     AUTHSELECT = None
     SYSCONF_NETWORK = None
     ETC_PKCS11_MODULES_DIR = "/etc/pkcs11/modules"
     # 389 DS related commands.
-    DSCREATE = '/usr/sbin/dscreate'
-    DSCTL = '/usr/sbin/dsctl'
-    DSCONF = '/usr/sbin/dsconf'
+    DSCREATE = "/usr/sbin/dscreate"
+    DSCTL = "/usr/sbin/dsctl"
+    DSCONF = "/usr/sbin/dsconf"
     # DS related constants
     ETC_DIRSRV = "/etc/dirsrv"
     DS_KEYTAB = "/etc/dirsrv/ds.keytab"
@@ -411,16 +419,17 @@ class BasePathNamespace:
     SLAPD_INSTANCE_ACCESS_LOG_TEMPLATE = "/var/log/dirsrv/slapd-%s/access"
     SLAPD_INSTANCE_ERROR_LOG_TEMPLATE = "/var/log/dirsrv/slapd-%s/errors"
     SLAPD_INSTANCE_AUDIT_LOG_TEMPLATE = "/var/log/dirsrv/slapd-%s/audit"
-    SLAPD_INSTANCE_SYSTEMD_IPA_ENV_TEMPLATE = \
+    SLAPD_INSTANCE_SYSTEMD_IPA_ENV_TEMPLATE = (
         "/etc/systemd/system/dirsrv@%s.service.d/ipa-env.conf"
-    IPA_SERVER_UPGRADE = '/usr/sbin/ipa-server-upgrade'
-    KEYCTL = '/bin/keyctl'
-    GETENT = '/usr/bin/getent'
-    SSHD = '/usr/sbin/sshd'
-    SSSCTL = '/usr/sbin/sssctl'
+    )
+    IPA_SERVER_UPGRADE = "/usr/sbin/ipa-server-upgrade"
+    KEYCTL = "/bin/keyctl"
+    GETENT = "/usr/bin/getent"
+    SSHD = "/usr/sbin/sshd"
+    SSSCTL = "/usr/sbin/sssctl"
     LIBARCH = "64"
-    TDBTOOL = '/usr/bin/tdbtool'
-    SECRETS_TDB = '/var/lib/samba/private/secrets.tdb'
+    TDBTOOL = "/usr/bin/tdbtool"
+    SECRETS_TDB = "/var/lib/samba/private/secrets.tdb"
 
     def check_paths(self):
         """Check paths for missing files
@@ -428,8 +437,12 @@ class BasePathNamespace:
         python3 -c 'from ipaplatform.paths import paths; paths.check_paths()'
         """
         executables = (
-            "/bin", "/sbin", "/usr/bin", "/usr/sbin",
-            self.LIBEXEC_IPA_DIR, self.LIBEXEC_CERTMONGER_DIR
+            "/bin",
+            "/sbin",
+            "/usr/bin",
+            "/usr/sbin",
+            self.LIBEXEC_IPA_DIR,
+            self.LIBEXEC_CERTMONGER_DIR,
         )
         for name in sorted(dir(self)):
             if not name[0].isupper():

@@ -45,10 +45,12 @@ except errors.DatabaseError:
 except Exception as e:
     server_available = False
 
+
 class cmdline_test(XMLRPC_test):
     """
     Base class for all command-line tests
     """
+
     # some reasonable default command
     command = paths.LS
 
@@ -64,10 +66,6 @@ class cmdline_test(XMLRPC_test):
         # raise an error if the command is missing even if the remote
         # server is not available.
         if not cls.command:
-            raise AssertionError(
-                'Command %r not available' % original_command
-            )
+            raise AssertionError("Command %r not available" % original_command)
         if not server_available:
-            pytest.skip(
-                'Server not available: %r' % api.env.xmlrpc_uri
-            )
+            pytest.skip("Server not available: %r" % api.env.xmlrpc_uri)

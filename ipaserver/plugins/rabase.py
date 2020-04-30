@@ -42,12 +42,12 @@ class rabase(Backend):
     """
     Request Authority backend plugin.
     """
+
     def __init__(self, api):
         self.ca_cert = api.env.tls_ca_cert
         if api.env.in_tree:
-            self.client_certfile = os.path.join(
-                api.env.dot_ipa, 'ra-agent.pem')
-            self.client_keyfile = os.path.join(api.env.dot_ipa, 'ra-agent.key')
+            self.client_certfile = os.path.join(api.env.dot_ipa, "ra-agent.pem")
+            self.client_keyfile = os.path.join(api.env.dot_ipa, "ra-agent.key")
         else:
             self.client_certfile = paths.RA_AGENT_PEM
             self.client_keyfile = paths.RA_AGENT_KEY
@@ -59,7 +59,7 @@ class rabase(Backend):
 
         :param request_id: request ID
         """
-        raise errors.NotImplementedError(name='%s.check_request_status' % self.name)
+        raise errors.NotImplementedError(name="%s.check_request_status" % self.name)
 
     def get_certificate(self, serial_number):
         """
@@ -67,10 +67,9 @@ class rabase(Backend):
 
         :param serial_number: certificate serial number
         """
-        raise errors.NotImplementedError(name='%s.get_certificate' % self.name)
+        raise errors.NotImplementedError(name="%s.get_certificate" % self.name)
 
-    def request_certificate(
-            self, csr, profile_id, ca_id, request_type='pkcs10'):
+    def request_certificate(self, csr, profile_id, ca_id, request_type="pkcs10"):
         """
         Submit certificate signing request.
 
@@ -79,7 +78,7 @@ class rabase(Backend):
         :param ca_id: The Authority ID to send request to. ``None`` is allowed.
         :param request_type: The request type (defaults to ``'pkcs10'``).
         """
-        raise errors.NotImplementedError(name='%s.request_certificate' % self.name)
+        raise errors.NotImplementedError(name="%s.request_certificate" % self.name)
 
     def revoke_certificate(self, serial_number, revocation_reason=0):
         """
@@ -105,7 +104,7 @@ class rabase(Backend):
         :param serial_number: Certificate serial number.
         :param revocation_reason: Integer code of revocation reason.
         """
-        raise errors.NotImplementedError(name='%s.revoke_certificate' % self.name)
+        raise errors.NotImplementedError(name="%s.revoke_certificate" % self.name)
 
     def take_certificate_off_hold(self, serial_number):
         """
@@ -113,8 +112,9 @@ class rabase(Backend):
 
         :param serial_number: Certificate serial number.
         """
-        raise errors.NotImplementedError(name='%s.take_certificate_off_hold' % self.name)
-
+        raise errors.NotImplementedError(
+            name="%s.take_certificate_off_hold" % self.name
+        )
 
     def find(self, options):
         """
@@ -122,13 +122,13 @@ class rabase(Backend):
 
         :param options: dictionary of search options
         """
-        raise errors.NotImplementedError(name='%s.find' % self.name)
+        raise errors.NotImplementedError(name="%s.find" % self.name)
 
-    def updateCRL(self, wait='false'):
+    def updateCRL(self, wait="false"):
         """
         Force update of the CRL
 
         :param wait: if true, the call will be synchronous and return only
                      when the CRL has been generated
         """
-        raise errors.NotImplementedError(name='%s.updateCRL' % self.name)
+        raise errors.NotImplementedError(name="%s.updateCRL" % self.name)

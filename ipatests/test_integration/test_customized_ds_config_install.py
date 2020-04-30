@@ -1,4 +1,3 @@
-
 from ipatests.test_integration.base import IntegrationTest
 from ipatests.pytest_ipa.integration import tasks
 
@@ -50,22 +49,27 @@ CONFIG_LDIF_PATH = "/root/dirsrv-config-mod.ldif"
 class TestCustomDSConfigInstall(IntegrationTest):
     """Install master and replica with custom DS config
     """
-    topology = 'star'
+
+    topology = "star"
     num_replicas = 1
 
     @classmethod
     def install(cls, mh):
         # just prepare LDIF file on both master and replica
         cls.master.put_file_contents(CONFIG_LDIF_PATH, DIRSRV_CONFIG_MODS)
-        cls.replicas[0].put_file_contents(CONFIG_LDIF_PATH,
-                                          DIRSRV_CONFIG_MODS)
+        cls.replicas[0].put_file_contents(CONFIG_LDIF_PATH, DIRSRV_CONFIG_MODS)
 
     def test_customized_ds_install_master(self):
-        tasks.install_master(self.master, setup_dns=False, extra_args=[
-            '--dirsrv-config-file', CONFIG_LDIF_PATH
-        ])
+        tasks.install_master(
+            self.master,
+            setup_dns=False,
+            extra_args=["--dirsrv-config-file", CONFIG_LDIF_PATH],
+        )
 
     def test_customized_ds_install_replica(self):
         tasks.install_replica(
-            self.master, self.replicas[0], setup_ca=False,
-            extra_args=['--dirsrv-config-file', CONFIG_LDIF_PATH])
+            self.master,
+            self.replicas[0],
+            setup_ca=False,
+            extra_args=["--dirsrv-config-file", CONFIG_LDIF_PATH],
+        )

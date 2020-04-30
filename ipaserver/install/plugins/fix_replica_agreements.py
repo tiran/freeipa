@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 register = Registry()
 
-EXCLUDE_TEMPLATE = '(objectclass=*) $ EXCLUDE %s'
+EXCLUDE_TEMPLATE = "(objectclass=*) $ EXCLUDE %s"
 
 
 @register()
@@ -43,9 +43,9 @@ class update_replica_attribute_lists(Updater):
         logger.debug("Start replication agreement exclude list update task")
         conn = self.api.Backend.ldap2
 
-        repl = replication.ReplicationManager(self.api.env.realm,
-                                              self.api.env.host,
-                                              None, conn=conn)
+        repl = replication.ReplicationManager(
+            self.api.env.realm, self.api.env.host, None, conn=conn
+        )
 
         # We need to update only IPA replica agreements, not winsync
         ipa_replicas = repl.find_ipa_replication_agreements()
@@ -53,23 +53,32 @@ class update_replica_attribute_lists(Updater):
         logger.debug("Found %d agreement(s)", len(ipa_replicas))
 
         for replica in ipa_replicas:
-            for desc in replica.get('description', []):
-                logger.debug('%s', desc)
+            for desc in replica.get("description", []):
+                logger.debug("%s", desc)
 
-            self._update_attr(repl, replica,
-                'nsDS5ReplicatedAttributeList',
-                replication.EXCLUDES, template=EXCLUDE_TEMPLATE)
-            self._update_attr(repl, replica,
-                'nsDS5ReplicatedAttributeListTotal',
-                replication.TOTAL_EXCLUDES, template=EXCLUDE_TEMPLATE)
-            self._update_attr(repl, replica,
-                'nsds5ReplicaStripAttrs', replication.STRIP_ATTRS)
+            self._update_attr(
+                repl,
+                replica,
+                "nsDS5ReplicatedAttributeList",
+                replication.EXCLUDES,
+                template=EXCLUDE_TEMPLATE,
+            )
+            self._update_attr(
+                repl,
+                replica,
+                "nsDS5ReplicatedAttributeListTotal",
+                replication.TOTAL_EXCLUDES,
+                template=EXCLUDE_TEMPLATE,
+            )
+            self._update_attr(
+                repl, replica, "nsds5ReplicaStripAttrs", replication.STRIP_ATTRS
+            )
 
         logger.debug("Done updating agreements")
 
         return False, []  # No restart, no updates
 
-    def _update_attr(self, repl, replica, attribute, values, template='%s'):
+    def _update_attr(self, repl, replica, attribute, values, template="%s"):
         """Add or update an attribute of a replication agreement
 
         If the attribute doesn't already exist, it is added and set to
@@ -98,21 +107,19 @@ class update_replica_attribute_lists(Updater):
 
         else:
             attrlist_normalized = attrlist.lower().split()
-            missing = [a for a in values
-                if a.lower() not in attrlist_normalized]
+            missing = [a for a in values if a.lower() not in attrlist_normalized]
 
             if missing:
-                logger.debug("%s needs updating (missing: %s)", attribute,
-                             ', '.join(missing))
+                logger.debug(
+                    "%s needs updating (missing: %s)", attribute, ", ".join(missing)
+                )
 
-                replica[attribute] = [
-                    '%s %s' % (attrlist, ' '.join(missing))]
+                replica[attribute] = ["%s %s" % (attrlist, " ".join(missing))]
 
                 try:
                     repl.conn.update_entry(replica)
                     logger.debug("Updated %s", attribute)
                 except Exception as e:
-                    logger.error("Error caught updating %s: %s",
-                                 attribute, str(e))
+                    logger.error("Error caught updating %s: %s", attribute, str(e))
             else:
                 logger.debug("%s: No update necessary", attribute)

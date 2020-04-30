@@ -19,6 +19,7 @@
 
 import re
 
+
 def Email(mail, notEmpty=True):
     """Do some basic validation of an e-mail address.
        Return True if ok
@@ -31,15 +32,15 @@ def Email(mail, notEmpty=True):
     domainRE = re.compile(r"^[a-z0-9][a-z0-9\.\-_]*\.[a-z]+$", re.I)
 
     if not mail or mail is None:
-        if  notEmpty is True:
+        if notEmpty is True:
             return False
         else:
             return True
 
     mail = mail.strip()
-    s = mail.split('@', 1)
+    s = mail.split("@", 1)
     try:
-        username, domain=s
+        username, domain = s
     except ValueError:
         return False
     if not usernameRE.search(username):
@@ -48,6 +49,7 @@ def Email(mail, notEmpty=True):
         return False
 
     return True
+
 
 def Plain(text, notEmpty=False, allowSpaces=True):
     """Do some basic validation of a plain text field
@@ -72,6 +74,7 @@ def Plain(text, notEmpty=False, allowSpaces=True):
 
     return True
 
+
 def String(text, notEmpty=False):
     """A string type. This is much looser in what it allows than plain"""
 
@@ -82,6 +85,7 @@ def String(text, notEmpty=False):
             return True
 
     return True
+
 
 def Path(text, notEmpty=False):
     """Do some basic validation of a path
@@ -106,6 +110,7 @@ def Path(text, notEmpty=False):
         return False
 
     return True
+
 
 def GoodName(text, notEmpty=False):
     """From shadow-utils:

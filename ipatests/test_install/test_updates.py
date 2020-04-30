@@ -65,19 +65,22 @@ class TestUpdate:
             pytest.skip("No directory manager password")
         self.updater = LDAPUpdate(dm_password=self.dm_password, sub_dict={})
         self.ld = ipaldap.LDAPClient.from_hostname_secure(fqdn)
-        self.ld.simple_bind(bind_dn=ipaldap.DIRMAN_DN,
-                            bind_password=self.dm_password)
+        self.ld.simple_bind(bind_dn=ipaldap.DIRMAN_DN, bind_password=self.dm_password)
         self.testdir = os.path.abspath(os.path.dirname(__file__))
-        if not os.path.isfile(os.path.join(self.testdir,
-                                                "0_reset.update")):
+        if not os.path.isfile(os.path.join(self.testdir, "0_reset.update")):
             pytest.skip("Unable to find test update files")
 
-        self.container_dn = DN(self.updater._template_str('cn=test, cn=accounts, $SUFFIX'))
-        self.user_dn = DN(self.updater._template_str('uid=tuser, cn=test, cn=accounts, $SUFFIX'))
+        self.container_dn = DN(
+            self.updater._template_str("cn=test, cn=accounts, $SUFFIX")
+        )
+        self.user_dn = DN(
+            self.updater._template_str("uid=tuser, cn=test, cn=accounts, $SUFFIX")
+        )
 
         def fin():
             if self.ld:
                 self.ld.unbind()
+
         request.addfinalizer(fin)
 
     def test_0_reset(self):
@@ -85,8 +88,9 @@ class TestUpdate:
         Reset the updater test data to a known initial state (test_0_reset)
         """
         try:
-            modified = self.updater.update([os.path.join(self.testdir,
-                                                         "0_reset.update")])
+            modified = self.updater.update(
+                [os.path.join(self.testdir, "0_reset.update")]
+            )
         except errors.NotFound:
             # Just means the entry doesn't exist yet
             modified = True
@@ -95,141 +99,144 @@ class TestUpdate:
 
         with pytest.raises(errors.NotFound):
             self.ld.get_entries(
-                self.container_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+                self.container_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+            )
 
         with pytest.raises(errors.NotFound):
             self.ld.get_entries(
-                self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+                self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+            )
 
     def test_1_add(self):
         """
         Test the updater with an add directive (test_1_add)
         """
-        modified = self.updater.update([os.path.join(self.testdir,
-                                                     "1_add.update")])
+        modified = self.updater.update([os.path.join(self.testdir, "1_add.update")])
 
         assert modified
 
         entries = self.ld.get_entries(
-            self.container_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.container_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
 
-        objectclasses = entry.get('objectclass')
-        for item in ('top', 'nsContainer'):
+        objectclasses = entry.get("objectclass")
+        for item in ("top", "nsContainer"):
             assert item in objectclasses
 
-        assert entry.single_value['cn'] == 'test'
+        assert entry.single_value["cn"] == "test"
 
         entries = self.ld.get_entries(
-            self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
 
-        objectclasses = entry.get('objectclass')
-        for item in ('top', 'person', 'posixaccount', 'krbprincipalaux', 'inetuser'):
+        objectclasses = entry.get("objectclass")
+        for item in ("top", "person", "posixaccount", "krbprincipalaux", "inetuser"):
             assert item in objectclasses
 
-        actual = entry.single_value['loginshell']
+        actual = entry.single_value["loginshell"]
         assert actual == platformconstants.DEFAULT_ADMIN_SHELL
-        assert entry.single_value['sn'] == 'User'
-        assert entry.single_value['uid'] == 'tuser'
-        assert entry.single_value['cn'] == 'Test User'
-
+        assert entry.single_value["sn"] == "User"
+        assert entry.single_value["uid"] == "tuser"
+        assert entry.single_value["cn"] == "Test User"
 
     def test_2_update(self):
         """
         Test the updater when adding an attribute to an existing entry (test_2_update)
         """
-        modified = self.updater.update([os.path.join(self.testdir,
-                                                     "2_update.update")])
+        modified = self.updater.update([os.path.join(self.testdir, "2_update.update")])
         assert modified
 
         entries = self.ld.get_entries(
-            self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
-        assert entry.single_value['gecos'] == 'Test User'
+        assert entry.single_value["gecos"] == "Test User"
 
     def test_3_update(self):
         """
         Test the updater forcing an attribute to a given value (test_3_update)
         """
-        modified = self.updater.update([os.path.join(self.testdir,
-                                                     "3_update.update")])
+        modified = self.updater.update([os.path.join(self.testdir, "3_update.update")])
         assert modified
 
         entries = self.ld.get_entries(
-            self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
-        assert entry.single_value['gecos'] == 'Test User New'
+        assert entry.single_value["gecos"] == "Test User New"
 
     def test_4_update(self):
         """
         Test the updater adding a new value to a single-valued attribute (test_4_update)
         """
-        modified = self.updater.update([os.path.join(self.testdir,
-                                                     "4_update.update")])
+        modified = self.updater.update([os.path.join(self.testdir, "4_update.update")])
         assert modified
 
         entries = self.ld.get_entries(
-            self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
-        assert entry.single_value['gecos'] == 'Test User New2'
+        assert entry.single_value["gecos"] == "Test User New2"
 
     def test_5_update(self):
         """
         Test the updater adding a new value to a multi-valued attribute (test_5_update)
         """
-        modified = self.updater.update([os.path.join(self.testdir,
-                                                     "5_update.update")])
+        modified = self.updater.update([os.path.join(self.testdir, "5_update.update")])
         assert modified
 
         entries = self.ld.get_entries(
-            self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
-        actual = sorted(entry.get('cn'))
-        expected = sorted(['Test User', 'Test User New'])
+        actual = sorted(entry.get("cn"))
+        expected = sorted(["Test User", "Test User New"])
         assert actual == expected
 
     def test_6_update(self):
         """
         Test the updater removing a value from a multi-valued attribute (test_6_update)
         """
-        modified = self.updater.update([os.path.join(self.testdir,
-                                                     "6_update.update")])
+        modified = self.updater.update([os.path.join(self.testdir, "6_update.update")])
         assert modified
 
         entries = self.ld.get_entries(
-            self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
-        assert sorted(entry.get('cn')) == sorted(['Test User'])
+        assert sorted(entry.get("cn")) == sorted(["Test User"])
 
     def test_6_update_1(self):
         """
         Test the updater removing a non-existent value from a multi-valued attribute (test_6_update_1)
         """
-        modified = self.updater.update([os.path.join(self.testdir,
-                                                     "6_update.update")])
+        modified = self.updater.update([os.path.join(self.testdir, "6_update.update")])
         assert not modified
 
         entries = self.ld.get_entries(
-            self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+            self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+        )
         assert len(entries) == 1
         entry = entries[0]
-        assert sorted(entry.get('cn')) == sorted(['Test User'])
+        assert sorted(entry.get("cn")) == sorted(["Test User"])
 
     def test_7_cleanup(self):
         """
         Reset the test data to a known initial state (test_7_cleanup)
         """
         try:
-            modified = self.updater.update([os.path.join(self.testdir,
-                                                         "0_reset.update")])
+            modified = self.updater.update(
+                [os.path.join(self.testdir, "0_reset.update")]
+            )
         except errors.NotFound:
             # Just means the entry doesn't exist yet
             modified = True
@@ -238,24 +245,24 @@ class TestUpdate:
 
         with pytest.raises(errors.NotFound):
             self.ld.get_entries(
-                self.container_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+                self.container_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+            )
 
         with pytest.raises(errors.NotFound):
             self.ld.get_entries(
-                self.user_dn, self.ld.SCOPE_BASE, 'objectclass=*', ['*'])
+                self.user_dn, self.ld.SCOPE_BASE, "objectclass=*", ["*"]
+            )
 
     def test_8_badsyntax(self):
         """
         Test the updater with an unknown keyword (test_8_badsyntax)
         """
         with pytest.raises(BadSyntax):
-            self.updater.update(
-                [os.path.join(self.testdir, "8_badsyntax.update")])
+            self.updater.update([os.path.join(self.testdir, "8_badsyntax.update")])
 
     def test_9_badsyntax(self):
         """
         Test the updater with an incomplete line (test_9_badsyntax)
         """
         with pytest.raises(BadSyntax):
-            self.updater.update(
-                [os.path.join(self.testdir, "9_badsyntax.update")])
+            self.updater.update([os.path.join(self.testdir, "9_badsyntax.update")])

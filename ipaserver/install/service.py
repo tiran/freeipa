@@ -39,7 +39,10 @@ from ipalib import api, errors, x509
 from ipaplatform import services
 from ipaplatform.paths import paths
 from ipaserver.masters import (
-    CONFIGURED_SERVICE, ENABLED_SERVICE, HIDDEN_SERVICE, SERVICE_LIST
+    CONFIGURED_SERVICE,
+    ENABLED_SERVICE,
+    HIDDEN_SERVICE,
+    SERVICE_LIST,
 )
 from ipaserver.servroles import HIDDEN
 
@@ -61,14 +64,15 @@ def format_seconds(seconds):
     parts = []
     minutes, seconds = divmod(seconds, 60)
     if minutes:
-        parts.append('%d minute' % minutes)
+        parts.append("%d minute" % minutes)
         if minutes != 1:
-            parts[-1] += 's'
+            parts[-1] += "s"
     if seconds or not minutes:
-        parts.append('%d second' % seconds)
+        parts.append("%d second" % seconds)
         if seconds != 1:
-            parts[-1] += 's'
-    return ' '.join(parts)
+            parts[-1] += "s"
+    return " ".join(parts)
+
 
 def add_principals_to_group(admin_conn, group, member_attr, principals):
     """Add principals to a GroupOfNames LDAP group
@@ -83,21 +87,20 @@ def add_principals_to_group(admin_conn, group, member_attr, principals):
         if len(members) == 0:
             current[member_attr] = []
         for amember in principals:
-            if not(amember in members):
+            if not (amember in members):
                 current[member_attr].extend([amember])
         admin_conn.update_entry(current)
     except errors.NotFound:
         entry = admin_conn.make_entry(
-                group,
-                objectclass=["top", "GroupOfNames"],
-                cn=[group['cn']],
-                member=principals,
+            group,
+            objectclass=["top", "GroupOfNames"],
+            cn=[group["cn"]],
+            member=principals,
         )
         admin_conn.add_entry(entry)
     except errors.EmptyModlist:
         # If there are no changes just pass
         pass
-
 
 
 def case_insensitive_attr_has_value(attr, value):
@@ -111,16 +114,15 @@ def case_insensitive_attr_has_value(attr, value):
     :returns: True if the case-insensitive match succeeds, false otherwise
 
     """
-    if any(value.lower() == val.lower()
-           for val in attr):
+    if any(value.lower() == val.lower() for val in attr):
         return True
 
     return False
 
 
-def set_service_entry_config(name, fqdn, config_values,
-                             ldap_suffix='',
-                             post_add_config=()):
+def set_service_entry_config(
+    name, fqdn, config_values, ldap_suffix="", post_add_config=()
+):
     """
     Sets the 'ipaConfigString' values on the entry. If the entry is not present
     already, create a new one with desired 'ipaConfigString'
@@ -134,30 +136,27 @@ def set_service_entry_config(name, fqdn, config_values,
     """
     assert isinstance(ldap_suffix, DN)
 
-    entry_name = DN(
-        ('cn', name), ('cn', fqdn), api.env.container_masters, ldap_suffix)
+    entry_name = DN(("cn", name), ("cn", fqdn), api.env.container_masters, ldap_suffix)
 
     # enable disabled service
     try:
-        entry = api.Backend.ldap2.get_entry(
-            entry_name, ['ipaConfigString'])
+        entry = api.Backend.ldap2.get_entry(entry_name, ["ipaConfigString"])
     except errors.NotFound:
         pass
     else:
-        existing_values = entry.get('ipaConfigString', [])
+        existing_values = entry.get("ipaConfigString", [])
         for value in config_values:
             if case_insensitive_attr_has_value(existing_values, value):
-                logger.debug(
-                    "service %s: config string %s already set", name, value)
+                logger.debug("service %s: config string %s already set", name, value)
 
-            entry.setdefault('ipaConfigString', []).append(value)
+            entry.setdefault("ipaConfigString", []).append(value)
 
         try:
             api.Backend.ldap2.update_entry(entry)
         except errors.EmptyModlist:
             logger.debug(
-                "service %s has already enabled config values %s", name,
-                config_values)
+                "service %s has already enabled config values %s", name, config_values
+            )
             return
         except BaseException:
             logger.debug("failed to set service %s config values", name)
@@ -212,11 +211,9 @@ def sync_services_state(fqdn):
     :param fqdn: hostname of server
     """
     result = api.Command.server_role_find(
-        server_server=fqdn,
-        role_servrole=u'IPA master',
-        status=HIDDEN
+        server_server=fqdn, role_servrole=u"IPA master", status=HIDDEN
     )
-    if result['count']:
+    if result["count"]:
         # one hidden server role
         hide_services(fqdn)
     else:
@@ -231,35 +228,34 @@ def _set_services_state(fqdn, dest_state):
     :param dest_state: destination state
     """
     ldap2 = api.Backend.ldap2
-    search_base = DN(('cn', fqdn), api.env.container_masters, api.env.basedn)
+    search_base = DN(("cn", fqdn), api.env.container_masters, api.env.basedn)
 
     source_states = {
         CONFIGURED_SERVICE.lower(),
         ENABLED_SERVICE.lower(),
-        HIDDEN_SERVICE.lower()
+        HIDDEN_SERVICE.lower(),
     }
     source_states.remove(dest_state.lower())
 
     search_filter = ldap2.combine_filters(
         [
-            ldap2.make_filter({'objectClass': 'ipaConfigObject'}),
+            ldap2.make_filter({"objectClass": "ipaConfigObject"}),
             ldap2.make_filter(
-                {'ipaConfigString': list(source_states)},
-                rules=ldap2.MATCH_ANY
+                {"ipaConfigString": list(source_states)}, rules=ldap2.MATCH_ANY
             ),
         ],
-        rules=ldap2.MATCH_ALL
+        rules=ldap2.MATCH_ALL,
     )
 
     entries = ldap2.get_entries(
         search_base,
         filter=search_filter,
         scope=api.Backend.ldap2.SCOPE_ONELEVEL,
-        attrs_list=['cn', 'ipaConfigString']
+        attrs_list=["cn", "ipaConfigString"],
     )
     for entry in entries:
-        name = entry['cn']
-        cfgstrings = entry.setdefault('ipaConfigString', [])
+        name = entry["cn"]
+        cfgstrings = entry.setdefault("ipaConfigString", [])
         for value in list(cfgstrings):
             if value.lower() in source_states:
                 cfgstrings.remove(value)
@@ -274,16 +270,22 @@ def _set_services_state(fqdn, dest_state):
             logger.exception("failed to set service %s config values", name)
             raise
         else:
-            logger.debug(
-                "Set service %s for %s to %s", name, fqdn, dest_state
-            )
+            logger.debug("Set service %s for %s to %s", name, fqdn, dest_state)
 
 
 class Service:
-    def __init__(self, service_name, service_desc=None, sstore=None,
-                 fstore=None, api=api, realm_name=None,
-                 service_user=None, service_prefix=None,
-                 keytab=None):
+    def __init__(
+        self,
+        service_name,
+        service_desc=None,
+        sstore=None,
+        fstore=None,
+        api=api,
+        realm_name=None,
+        service_user=None,
+        service_prefix=None,
+        keytab=None,
+    ):
         self.service_name = service_name
         self.service_desc = service_desc
         self.service = services.service(service_name, api)
@@ -315,16 +317,16 @@ class Service:
 
     @property
     def principal(self):
-        if any(attr is None for attr in (self.realm, self.fqdn,
-                                         self.service_prefix)):
+        if any(attr is None for attr in (self.realm, self.fqdn, self.service_prefix)):
             return None
 
         return unicode(
-            kerberos.Principal(
-                (self.service_prefix, self.fqdn), realm=self.realm))
+            kerberos.Principal((self.service_prefix, self.fqdn), realm=self.realm)
+        )
 
-    def _ldap_mod(self, ldif, sub_dict=None, raise_on_err=True,
-                  ldap_uri=None, dm_password=None):
+    def _ldap_mod(
+        self, ldif, sub_dict=None, raise_on_err=True, ldap_uri=None, dm_password=None
+    ):
         pw_name = None
         fd = None
         path = os.path.join(paths.USR_SHARE_IPA_DIR, ldif)
@@ -336,10 +338,10 @@ class Service:
             path = fd.name
 
             # do not log passwords
-            if 'PASSWORD' in sub_dict:
-                nologlist.append(sub_dict['PASSWORD'])
-            if 'RANDOM_PASSWORD' in sub_dict:
-                nologlist.append(sub_dict['RANDOM_PASSWORD'])
+            if "PASSWORD" in sub_dict:
+                nologlist.append(sub_dict["PASSWORD"])
+            if "RANDOM_PASSWORD" in sub_dict:
+                nologlist.append(sub_dict["RANDOM_PASSWORD"])
 
         args = [paths.LDAPMODIFY, "-v", "-f", path]
 
@@ -351,8 +353,7 @@ class Service:
         args += ["-H", ldap_uri]
 
         if dm_password:
-            with tempfile.NamedTemporaryFile(
-                    mode='w', delete=False) as pw_file:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False) as pw_file:
                 pw_file.write(dm_password)
                 pw_name = pw_file.name
             auth_parms = ["-x", "-D", "cn=Directory Manager", "-y", pw_name]
@@ -382,22 +383,34 @@ class Service:
         cn=kerberos to cn=services
         """
 
-        dn = DN(('krbprincipalname', principal), ('cn', self.realm), ('cn', 'kerberos'), self.suffix)
+        dn = DN(
+            ("krbprincipalname", principal),
+            ("cn", self.realm),
+            ("cn", "kerberos"),
+            self.suffix,
+        )
         try:
             entry = api.Backend.ldap2.get_entry(dn)
         except errors.NotFound:
             # There is no service in the wrong location, nothing to do.
             # This can happen when installing a replica
             return None
-        entry.pop('krbpwdpolicyreference', None)  # don't copy virtual attr
-        newdn = DN(('krbprincipalname', principal), ('cn', 'services'), ('cn', 'accounts'), self.suffix)
-        hostdn = DN(('fqdn', self.fqdn), ('cn', 'computers'), ('cn', 'accounts'), self.suffix)
+        entry.pop("krbpwdpolicyreference", None)  # don't copy virtual attr
+        newdn = DN(
+            ("krbprincipalname", principal),
+            ("cn", "services"),
+            ("cn", "accounts"),
+            self.suffix,
+        )
+        hostdn = DN(
+            ("fqdn", self.fqdn), ("cn", "computers"), ("cn", "accounts"), self.suffix
+        )
         api.Backend.ldap2.delete_entry(entry)
         entry.dn = newdn
         classes = entry.get("objectclass")
         classes = classes + ["ipaobject", "ipaservice", "pkiuser"]
         entry["objectclass"] = list(set(classes))
-        entry["ipauniqueid"] = ['autogenerate']
+        entry["ipauniqueid"] = ["autogenerate"]
         entry["managedby"] = [hostdn]
         api.Backend.ldap2.add_entry(entry)
         return newdn
@@ -408,15 +421,27 @@ class Service:
 
         The principal needs to be fully-formed: service/host@REALM
         """
-        dn = DN(('krbprincipalname', principal), ('cn', 'services'), ('cn', 'accounts'), self.suffix)
-        hostdn = DN(('fqdn', self.fqdn), ('cn', 'computers'), ('cn', 'accounts'), self.suffix)
+        dn = DN(
+            ("krbprincipalname", principal),
+            ("cn", "services"),
+            ("cn", "accounts"),
+            self.suffix,
+        )
+        hostdn = DN(
+            ("fqdn", self.fqdn), ("cn", "computers"), ("cn", "accounts"), self.suffix
+        )
         entry = api.Backend.ldap2.make_entry(
             dn,
             objectclass=[
-                "krbprincipal", "krbprincipalaux", "krbticketpolicyaux",
-                "ipaobject", "ipaservice", "pkiuser"],
+                "krbprincipal",
+                "krbprincipalaux",
+                "krbticketpolicyaux",
+                "ipaobject",
+                "ipaservice",
+                "pkiuser",
+            ],
             krbprincipalname=[principal],
-            ipauniqueid=['autogenerate'],
+            ipauniqueid=["autogenerate"],
             managedby=[hostdn],
         )
         api.Backend.ldap2.add_entry(entry)
@@ -430,15 +455,22 @@ class Service:
         """
         if self.cert is None:
             raise ValueError("{} has no cert".format(self.service_name))
-        dn = DN(('krbprincipalname', self.principal), ('cn', 'services'),
-                ('cn', 'accounts'), self.suffix)
+        dn = DN(
+            ("krbprincipalname", self.principal),
+            ("cn", "services"),
+            ("cn", "accounts"),
+            self.suffix,
+        )
         entry = api.Backend.ldap2.get_entry(dn)
-        entry.setdefault('userCertificate', []).append(self.cert)
+        entry.setdefault("userCertificate", []).append(self.cert)
         try:
             api.Backend.ldap2.update_entry(entry)
         except Exception as e:
-            logger.critical("Could not add certificate to service %s entry: "
-                            "%s", self.principal, str(e))
+            logger.critical(
+                "Could not add certificate to service %s entry: " "%s",
+                self.principal,
+                str(e),
+            )
 
     def export_ca_certs_file(self, cafile, ca_is_configured, conn=None):
         """
@@ -454,11 +486,12 @@ class Service:
         ca_certs = None
         try:
             ca_certs = certstore.get_ca_certs(
-                conn, self.suffix, self.realm, ca_is_configured)
+                conn, self.suffix, self.realm, ca_is_configured
+            )
         except errors.NotFound:
             pass
         else:
-            with open(cafile, 'wb') as fd:
+            with open(cafile, "wb") as fd:
                 for cert, _unused1, _unused2, _unused3 in ca_certs:
                     fd.write(cert.public_bytes(x509.Encoding.PEM))
 
@@ -475,7 +508,8 @@ class Service:
 
         try:
             ca_certs = certstore.get_ca_certs_nss(
-                conn, self.suffix, self.realm, ca_is_configured)
+                conn, self.suffix, self.realm, ca_is_configured
+            )
         except errors.NotFound:
             pass
         else:
@@ -539,8 +573,9 @@ class Service:
     def step(self, message, method, run_after_failure=False):
         self.steps.append((message, method, run_after_failure))
 
-    def start_creation(self, start_message=None, end_message=None,
-                       show_service_name=True, runtime=None):
+    def start_creation(
+        self, start_message=None, end_message=None, show_service_name=True, runtime=None
+    ):
         """
         Starts creation of the service.
 
@@ -573,13 +608,16 @@ class Service:
             else:
                 if show_service_name:
                     end_message = "Done configuring %s (%s)." % (
-                        self.service_desc, self.service_name)
+                        self.service_desc,
+                        self.service_name,
+                    )
                 else:
                     end_message = "Done configuring %s." % self.service_desc
 
         if runtime is not None and runtime > 0:
-            self.print_msg('%s. Estimated time: %s' % (start_message,
-                                                      format_seconds(runtime)))
+            self.print_msg(
+                "%s. Estimated time: %s" % (start_message, format_seconds(runtime))
+            )
         else:
             self.print_msg(start_message)
 
@@ -591,23 +629,26 @@ class Service:
             name = method.__name__
             logger.debug(
                 "step duration: %s %s %.02f sec",
-                self.service_name, name, dur,
-                extra={'timing': ('step', self.service_name, name, dur)},
+                self.service_name,
+                name,
+                dur,
+                extra={"timing": ("step", self.service_name, name, dur)},
             )
 
         step = 0
         steps_iter = iter(self.steps)
         try:
             for message, method, run_after_failure in steps_iter:
-                full_msg = "  [%d/%d]: %s" % (step+1, len(self.steps), message)
+                full_msg = "  [%d/%d]: %s" % (step + 1, len(self.steps), message)
                 run_step(full_msg, method)
                 step += 1
         except BaseException as e:
-            if not (isinstance(e, SystemExit) and
-                    e.code == 0):  # pylint: disable=no-member
+            if not (
+                isinstance(e, SystemExit) and e.code == 0
+            ):  # pylint: disable=no-member
                 # show the traceback, so it's not lost if cleanup method fails
                 logger.debug("%s", traceback.format_exc())
-                self.print_msg('  [error] %s: %s' % (type(e).__name__, e))
+                self.print_msg("  [error] %s: %s" % (type(e).__name__, e))
 
                 # run through remaining methods marked run_after_failure
                 for message, method, run_after_failure in steps_iter:
@@ -620,24 +661,23 @@ class Service:
         dur = time.time() - creation_start
         logger.debug(
             "service duration: %s %.02f sec",
-            self.service_name, dur,
-            extra={'timing': ('service', self.service_name, None, dur)},
+            self.service_name,
+            dur,
+            extra={"timing": ("service", self.service_name, None, dur)},
         )
         self.steps = []
 
-    def ldap_enable(self, name, fqdn, dm_password=None, ldap_suffix='',
-                    config=()):
+    def ldap_enable(self, name, fqdn, dm_password=None, ldap_suffix="", config=()):
         """Legacy function, all services should use ldap_configure()
         """
         warnings.warn(
             "ldap_enable is deprecated, use ldap_configure instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         self._ldap_enable(ENABLED_SERVICE, name, fqdn, ldap_suffix, config)
 
-    def ldap_configure(self, name, fqdn, dm_password=None, ldap_suffix='',
-                       config=()):
+    def ldap_configure(self, name, fqdn, dm_password=None, ldap_suffix="", config=()):
         """Create or modify service entry in cn=masters,cn=ipa,cn=etc
 
         Contrary to ldap_enable(), the method only sets
@@ -650,13 +690,11 @@ class Service:
             ipaserver.install.service.enable_services(api.env.host)
             api.Command.dns_update_system_records()
         """
-        self._ldap_enable(
-            CONFIGURED_SERVICE, name, fqdn, ldap_suffix, config
-        )
+        self._ldap_enable(CONFIGURED_SERVICE, name, fqdn, ldap_suffix, config)
 
     def _ldap_enable(self, value, name, fqdn, ldap_suffix, config):
         extra_config_opts = [
-            u'startOrder {}'.format(SERVICE_LIST[name].startorder),
+            u"startOrder {}".format(SERVICE_LIST[name].startorder),
         ]
         extra_config_opts.extend(config)
 
@@ -667,21 +705,24 @@ class Service:
             fqdn,
             [value],
             ldap_suffix=ldap_suffix,
-            post_add_config=extra_config_opts)
+            post_add_config=extra_config_opts,
+        )
 
     def ldap_disable(self, name, fqdn, ldap_suffix):
         assert isinstance(ldap_suffix, DN)
 
-        entry_dn = DN(('cn', name), ('cn', fqdn), api.env.container_masters,
-                      ldap_suffix)
-        search_kw = {'ipaConfigString': ENABLED_SERVICE}
+        entry_dn = DN(
+            ("cn", name), ("cn", fqdn), api.env.container_masters, ldap_suffix
+        )
+        search_kw = {"ipaConfigString": ENABLED_SERVICE}
         filter = api.Backend.ldap2.make_filter(search_kw)
         try:
             entries, _truncated = api.Backend.ldap2.find_entries(
                 filter=filter,
-                attrs_list=['ipaConfigString'],
+                attrs_list=["ipaConfigString"],
                 base_dn=entry_dn,
-                scope=api.Backend.ldap2.SCOPE_BASE)
+                scope=api.Backend.ldap2.SCOPE_BASE,
+            )
         except errors.NotFound:
             logger.debug("service %s startup entry already disabled", name)
             return
@@ -690,9 +731,9 @@ class Service:
         entry = entries[0]
 
         # case insensitive
-        for value in entry.get('ipaConfigString', []):
+        for value in entry.get("ipaConfigString", []):
             if value.lower() == ENABLED_SERVICE.lower():
-                entry['ipaConfigString'].remove(value)
+                entry["ipaConfigString"].remove(value)
                 break
 
         try:
@@ -706,8 +747,9 @@ class Service:
         logger.debug("service %s startup entry disabled", name)
 
     def ldap_remove_service_container(self, name, fqdn, ldap_suffix):
-        entry_dn = DN(('cn', name), ('cn', fqdn),
-                      self.api.env.container_masters, ldap_suffix)
+        entry_dn = DN(
+            ("cn", name), ("cn", fqdn), self.api.env.container_masters, ldap_suffix
+        )
         try:
             api.Backend.ldap2.delete_entry(entry_dn)
         except errors.NotFound:
@@ -750,30 +792,25 @@ class Service:
             * self.dm_password is not none, then DM credentials are used to
               fetch keytab
         """
-        args = [paths.IPA_GETKEYTAB,
-                '-k', keytab,
-                '-p', principal,
-                '-H', ldap_uri]
+        args = [paths.IPA_GETKEYTAB, "-k", keytab, "-p", principal, "-H", ldap_uri]
         nolog = tuple()
 
         if ldap_uri.startswith("ldapi://") and os.geteuid() == 0:
             args.extend(["-Y", "EXTERNAL"])
         elif self.dm_password is not None and not self.promote:
-            args.extend(
-                ['-D', 'cn=Directory Manager',
-                 '-w', self.dm_password])
+            args.extend(["-D", "cn=Directory Manager", "-w", self.dm_password])
             nolog += (self.dm_password,)
 
         if retrieve:
-            args.extend(['-r'])
+            args.extend(["-r"])
 
         ipautil.run(args, nolog=nolog)
 
     def request_service_keytab(self):
         if any(attr is None for attr in (self.principal, self.keytab)):
             raise NotImplementedError(
-                "service must have defined principal "
-                "name and keytab")
+                "service must have defined principal " "name and keytab"
+            )
 
         self._add_service_principal()
         self.clean_previous_keytab()
@@ -782,8 +819,9 @@ class Service:
 
 
 class SimpleServiceInstance(Service):
-    def create_instance(self, gensvc_name=None, fqdn=None, ldap_suffix=None,
-                        realm=None):
+    def create_instance(
+        self, gensvc_name=None, fqdn=None, ldap_suffix=None, realm=None
+    ):
         self.gensvc_name = gensvc_name
         self.fqdn = fqdn
         self.suffix = ldap_suffix
@@ -793,7 +831,7 @@ class SimpleServiceInstance(Service):
         self.step("configuring %s to start on boot" % self.service_name, self.__enable)
         self.start_creation("Configuring %s" % self.service_name)
 
-    suffix = ipautil.dn_attribute_property('_ldap_suffix')
+    suffix = ipautil.dn_attribute_property("_ldap_suffix")
 
     def __start(self):
         self.backup_state("running", self.is_running())

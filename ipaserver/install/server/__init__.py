@@ -12,12 +12,14 @@ from ipaclient.install import client
 from ipalib import constants
 from ipalib.util import validate_domain_name
 from ipalib.install import service
-from ipalib.install.service import (enroll_only,
-                                    installs_master,
-                                    installs_replica,
-                                    master_install_only,
-                                    prepare_only,
-                                    replica_install_only)
+from ipalib.install.service import (
+    enroll_only,
+    installs_master,
+    installs_replica,
+    master_install_only,
+    prepare_only,
+    replica_install_only,
+)
 from ipapython.install import typing
 from ipapython.install.core import group, knob, extend_knob
 from ipapython.install.common import step
@@ -43,14 +45,14 @@ class ServerUninstallInterface(service.ServiceInstallInterface):
     ignore_topology_disconnect = knob(
         None,
         description="do not check whether server uninstall disconnects the "
-                    "topology (domain level 1+)",
+        "topology (domain level 1+)",
     )
     ignore_topology_disconnect = master_install_only(ignore_topology_disconnect)
 
     ignore_last_of_role = knob(
         None,
         description="do not check whether server uninstall removes last "
-                    "CA/DNS server or DNSSec master (domain level 1+)",
+        "CA/DNS server or DNSSec master (domain level 1+)",
     )
     ignore_last_of_role = master_install_only(ignore_last_of_role)
 
@@ -61,95 +63,109 @@ class ServerCertificateInstallInterface(service.ServiceInstallInterface):
 
     dirsrv_cert_files = knob(
         # pylint: disable=invalid-sequence-index
-        typing.List[str], None,
-        description=("File containing the Directory Server SSL certificate "
-                     "and private key"),
-        cli_names='--dirsrv-cert-file',
-        cli_deprecated_names='--dirsrv_pkcs12',
-        cli_metavar='FILE',
+        typing.List[str],
+        None,
+        description=(
+            "File containing the Directory Server SSL certificate " "and private key"
+        ),
+        cli_names="--dirsrv-cert-file",
+        cli_deprecated_names="--dirsrv_pkcs12",
+        cli_metavar="FILE",
     )
     dirsrv_cert_files = prepare_only(dirsrv_cert_files)
 
     http_cert_files = knob(
         # pylint: disable=invalid-sequence-index
-        typing.List[str], None,
-        description=("File containing the Apache Server SSL certificate and "
-                     "private key"),
-        cli_names='--http-cert-file',
-        cli_deprecated_names='--http_pkcs12',
-        cli_metavar='FILE',
+        typing.List[str],
+        None,
+        description=(
+            "File containing the Apache Server SSL certificate and " "private key"
+        ),
+        cli_names="--http-cert-file",
+        cli_deprecated_names="--http_pkcs12",
+        cli_metavar="FILE",
     )
     http_cert_files = prepare_only(http_cert_files)
 
     pkinit_cert_files = knob(
         # pylint: disable=invalid-sequence-index
-        typing.List[str], None,
-        description=("File containing the Kerberos KDC SSL certificate and "
-                     "private key"),
-        cli_names='--pkinit-cert-file',
-        cli_deprecated_names='--pkinit_pkcs12',
-        cli_metavar='FILE',
+        typing.List[str],
+        None,
+        description=(
+            "File containing the Kerberos KDC SSL certificate and " "private key"
+        ),
+        cli_names="--pkinit-cert-file",
+        cli_deprecated_names="--pkinit_pkcs12",
+        cli_metavar="FILE",
     )
     pkinit_cert_files = prepare_only(pkinit_cert_files)
 
     dirsrv_pin = knob(
-        str, None,
+        str,
+        None,
         sensitive=True,
         description="The password to unlock the Directory Server private key",
-        cli_deprecated_names='--dirsrv_pin',
-        cli_metavar='PIN',
+        cli_deprecated_names="--dirsrv_pin",
+        cli_metavar="PIN",
     )
     dirsrv_pin = prepare_only(dirsrv_pin)
 
     http_pin = knob(
-        str, None,
+        str,
+        None,
         sensitive=True,
         description="The password to unlock the Apache Server private key",
-        cli_deprecated_names='--http_pin',
-        cli_metavar='PIN',
+        cli_deprecated_names="--http_pin",
+        cli_metavar="PIN",
     )
     http_pin = prepare_only(http_pin)
 
     pkinit_pin = knob(
-        str, None,
+        str,
+        None,
         sensitive=True,
         description="The password to unlock the Kerberos KDC private key",
-        cli_deprecated_names='--pkinit_pin',
-        cli_metavar='PIN',
+        cli_deprecated_names="--pkinit_pin",
+        cli_metavar="PIN",
     )
     pkinit_pin = prepare_only(pkinit_pin)
 
     dirsrv_cert_name = knob(
-        str, None,
+        str,
+        None,
         description="Name of the Directory Server SSL certificate to install",
-        cli_metavar='NAME',
+        cli_metavar="NAME",
     )
     dirsrv_cert_name = prepare_only(dirsrv_cert_name)
 
     http_cert_name = knob(
-        str, None,
+        str,
+        None,
         description="Name of the Apache Server SSL certificate to install",
-        cli_metavar='NAME',
+        cli_metavar="NAME",
     )
     http_cert_name = prepare_only(http_cert_name)
 
     pkinit_cert_name = knob(
-        str, None,
+        str,
+        None,
         description="Name of the Kerberos KDC SSL certificate to install",
-        cli_metavar='NAME',
+        cli_metavar="NAME",
     )
     pkinit_cert_name = prepare_only(pkinit_cert_name)
 
 
 @group
-class ServerInstallInterface(ServerCertificateInstallInterface,
-                             client.ClientInstallInterface,
-                             ca.CAInstallInterface,
-                             kra.KRAInstallInterface,
-                             dns.DNSInstallInterface,
-                             adtrust.ADTrustInstallInterface,
-                             conncheck.ConnCheckInterface,
-                             ServerUninstallInterface):
+class ServerInstallInterface(
+    ServerCertificateInstallInterface,
+    client.ClientInstallInterface,
+    ca.CAInstallInterface,
+    kra.KRAInstallInterface,
+    dns.DNSInstallInterface,
+    adtrust.ADTrustInstallInterface,
+    conncheck.ConnCheckInterface,
+    ServerUninstallInterface,
+):
     """
     Interface of server installers
 
@@ -158,6 +174,7 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
     * ipa-replica-prepare
     * ipa-replica-install
     """
+
     description = "Server"
 
     kinit_attempts = 1
@@ -172,7 +189,7 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
     domain_name = extend_knob(
         domain_name,
         # pylint: disable=no-member
-        cli_names=list(domain_name.cli_names) + ['-n'],
+        cli_names=list(domain_name.cli_names) + ["-n"],
     )
 
     servers = extend_knob(
@@ -182,10 +199,7 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
     servers = enroll_only(servers)
 
     realm_name = client.ClientInstallInterface.realm_name
-    realm_name = extend_knob(
-        realm_name,
-        cli_names=list(realm_name.cli_names) + ['-r'],
-    )
+    realm_name = extend_knob(realm_name, cli_names=list(realm_name.cli_names) + ["-r"],)
 
     host_name = extend_knob(
         client.ClientInstallInterface.host_name,
@@ -195,8 +209,8 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
     ca_cert_files = extend_knob(
         client.ClientInstallInterface.ca_cert_files,
         description="File containing CA certificates for the service "
-                    "certificate files",
-        cli_deprecated_names='--root-ca-file',
+        "certificate files",
+        cli_deprecated_names="--root-ca-file",
     )
     ca_cert_files = prepare_only(ca_cert_files)
 
@@ -207,25 +221,22 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
 
     ip_addresses = extend_knob(
         client.ClientInstallInterface.ip_addresses,
-        description="Server IP Address. This option can be used multiple "
-                    "times",
+        description="Server IP Address. This option can be used multiple " "times",
     )
 
     principal = client.ClientInstallInterface.principal
     principal = extend_knob(
         principal,
-        description="User Principal allowed to promote replicas and join IPA "
-                    "realm",
-        cli_names=list(principal.cli_names) + ['-P'],
+        description="User Principal allowed to promote replicas and join IPA " "realm",
+        cli_names=list(principal.cli_names) + ["-P"],
     )
     principal = replica_install_only(principal)
 
-    admin_password = extend_knob(
-        client.ClientInstallInterface.admin_password,
-    )
+    admin_password = extend_knob(client.ClientInstallInterface.admin_password,)
 
     master_password = knob(
-        str, None,
+        str,
+        None,
         sensitive=True,
         deprecated=True,
         description="kerberos master password (normally autogenerated)",
@@ -233,14 +244,13 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
     master_password = master_install_only(master_password)
 
     hidden_replica = knob(
-        None,
-        cli_names='--hidden-replica',
-        description="Install a hidden replica",
+        None, cli_names="--hidden-replica", description="Install a hidden replica",
     )
     hidden_replica = replica_install_only(hidden_replica)
 
     domain_level = knob(
-        int, constants.MAX_DOMAIN_LEVEL,
+        int,
+        constants.MAX_DOMAIN_LEVEL,
         description="IPA domain level",
         deprecated=True,
     )
@@ -252,44 +262,36 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
         if value < constants.MIN_DOMAIN_LEVEL:
             raise ValueError(
                 "Domain Level cannot be lower than {0}".format(
-                    constants.MIN_DOMAIN_LEVEL))
+                    constants.MIN_DOMAIN_LEVEL
+                )
+            )
         elif value > constants.MAX_DOMAIN_LEVEL:
             raise ValueError(
                 "Domain Level cannot be higher than {0}".format(
-                    constants.MAX_DOMAIN_LEVEL))
+                    constants.MAX_DOMAIN_LEVEL
+                )
+            )
 
-    setup_adtrust = knob(
-        None,
-        description="configure AD trust capability"
-    )
-    setup_ca = knob(
-        None,
-        description="configure a dogtag CA",
-    )
+    setup_adtrust = knob(None, description="configure AD trust capability")
+    setup_ca = knob(None, description="configure a dogtag CA",)
     setup_ca = enroll_only(setup_ca)
 
-    setup_kra = knob(
-        None,
-        description="configure a dogtag KRA",
-    )
+    setup_kra = knob(None, description="configure a dogtag KRA",)
     setup_kra = enroll_only(setup_kra)
 
-    setup_dns = knob(
-        None,
-        description="configure bind with our zone",
-    )
+    setup_dns = knob(None, description="configure bind with our zone",)
     setup_dns = enroll_only(setup_dns)
 
     idstart = knob(
-        int, random.randint(1, 10000) * 200000,
+        int,
+        random.randint(1, 10000) * 200000,
         description="The starting value for the IDs range (default random)",
     )
     idstart = master_install_only(idstart)
 
     idmax = knob(
         int,
-        description=("The max value for the IDs range (default: "
-                     "idstart+199999)"),
+        description=("The max value for the IDs range (default: " "idstart+199999)"),
     )
     idmax = master_install_only(idmax)
 
@@ -300,28 +302,25 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
     no_hbac_allow = knob(
         None,
         description="Don't install allow_all HBAC rule",
-        cli_deprecated_names='--no_hbac_allow',
+        cli_deprecated_names="--no_hbac_allow",
     )
     no_hbac_allow = master_install_only(no_hbac_allow)
 
-    no_pkinit = knob(
-        None,
-        description="disables pkinit setup steps",
-    )
+    no_pkinit = knob(None, description="disables pkinit setup steps",)
     no_pkinit = prepare_only(no_pkinit)
 
     no_ui_redirect = knob(
-        None,
-        description="Do not automatically redirect to the Web UI",
+        None, description="Do not automatically redirect to the Web UI",
     )
     no_ui_redirect = enroll_only(no_ui_redirect)
 
     dirsrv_config_file = knob(
-        str, None,
+        str,
+        None,
         description="The path to LDIF file that will be used to modify "
-                    "configuration of dse.ldif during installation of the "
-                    "directory server instance",
-        cli_metavar='FILE',
+        "configuration of dse.ldif during installation of the "
+        "directory server instance",
+        cli_metavar="FILE",
     )
     dirsrv_config_file = enroll_only(dirsrv_config_file)
 
@@ -340,8 +339,7 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
             cert_file_req += cert_file_opt
         if self.no_pkinit and self.pkinit_cert_files:
             raise RuntimeError(
-                "--no-pkinit and --pkinit-cert-file cannot be specified "
-                "together"
+                "--no-pkinit and --pkinit-cert-file cannot be specified " "together"
             )
         if any(cert_file_req + cert_file_opt) and not all(cert_file_req):
             raise RuntimeError(
@@ -352,155 +350,184 @@ class ServerInstallInterface(ServerCertificateInstallInterface,
         if not self.interactive:
             if self.dirsrv_cert_files and self.dirsrv_pin is None:
                 raise RuntimeError(
-                    "You must specify --dirsrv-pin with --dirsrv-cert-file")
+                    "You must specify --dirsrv-pin with --dirsrv-cert-file"
+                )
             if self.http_cert_files and self.http_pin is None:
-                raise RuntimeError(
-                    "You must specify --http-pin with --http-cert-file")
+                raise RuntimeError("You must specify --http-pin with --http-cert-file")
             if self.pkinit_cert_files and self.pkinit_pin is None:
                 raise RuntimeError(
-                    "You must specify --pkinit-pin with --pkinit-cert-file")
+                    "You must specify --pkinit-pin with --pkinit-cert-file"
+                )
 
         if not self.setup_dns:
             if self.forwarders:
                 raise RuntimeError(
                     "You cannot specify a --forwarder option without the "
-                    "--setup-dns option")
+                    "--setup-dns option"
+                )
             if self.auto_forwarders:
                 raise RuntimeError(
                     "You cannot specify a --auto-forwarders option without "
-                    "the --setup-dns option")
+                    "the --setup-dns option"
+                )
             if self.no_forwarders:
                 raise RuntimeError(
                     "You cannot specify a --no-forwarders option without the "
-                    "--setup-dns option")
+                    "--setup-dns option"
+                )
             if self.forward_policy:
                 raise RuntimeError(
                     "You cannot specify a --forward-policy option without the "
-                    "--setup-dns option")
+                    "--setup-dns option"
+                )
             if self.reverse_zones:
                 raise RuntimeError(
                     "You cannot specify a --reverse-zone option without the "
-                    "--setup-dns option")
+                    "--setup-dns option"
+                )
             if self.auto_reverse:
                 raise RuntimeError(
                     "You cannot specify a --auto-reverse option without the "
-                    "--setup-dns option")
+                    "--setup-dns option"
+                )
             if self.no_reverse:
                 raise RuntimeError(
                     "You cannot specify a --no-reverse option without the "
-                    "--setup-dns option")
+                    "--setup-dns option"
+                )
             if self.no_dnssec_validation:
                 raise RuntimeError(
                     "You cannot specify a --no-dnssec-validation option "
-                    "without the --setup-dns option")
+                    "without the --setup-dns option"
+                )
         elif self.forwarders and self.no_forwarders:
             raise RuntimeError(
                 "You cannot specify a --forwarder option together with "
-                "--no-forwarders")
+                "--no-forwarders"
+            )
         elif self.auto_forwarders and self.no_forwarders:
             raise RuntimeError(
                 "You cannot specify a --auto-forwarders option together with "
-                "--no-forwarders")
+                "--no-forwarders"
+            )
         elif self.reverse_zones and self.no_reverse:
             raise RuntimeError(
                 "You cannot specify a --reverse-zone option together with "
-                "--no-reverse")
+                "--no-reverse"
+            )
         elif self.auto_reverse and self.no_reverse:
             raise RuntimeError(
                 "You cannot specify a --auto-reverse option together with "
-                "--no-reverse")
+                "--no-reverse"
+            )
 
         if not self.setup_adtrust:
             if self.add_agents:
                 raise RuntimeError(
                     "You cannot specify an --add-agents option without the "
-                    "--setup-adtrust option")
+                    "--setup-adtrust option"
+                )
 
             if self.enable_compat:
                 raise RuntimeError(
                     "You cannot specify an --enable-compat option without the "
-                    "--setup-adtrust option")
+                    "--setup-adtrust option"
+                )
 
             if self.netbios_name:
                 raise RuntimeError(
                     "You cannot specify a --netbios-name option without the "
-                    "--setup-adtrust option")
+                    "--setup-adtrust option"
+                )
 
             if self.no_msdcs:
                 raise RuntimeError(
                     "You cannot specify a --no-msdcs option without the "
-                    "--setup-adtrust option")
+                    "--setup-adtrust option"
+                )
 
-        if not hasattr(self, 'replica_install'):
+        if not hasattr(self, "replica_install"):
             if self.external_cert_files and self.dirsrv_cert_files:
                 raise RuntimeError(
                     "Service certificate file options cannot be used with the "
-                    "external CA options.")
+                    "external CA options."
+                )
 
             if self.external_ca_type and not self.external_ca:
                 raise RuntimeError(
-                    "You cannot specify --external-ca-type without "
-                    "--external-ca")
+                    "You cannot specify --external-ca-type without " "--external-ca"
+                )
 
             if self.external_ca_profile and not self.external_ca:
                 raise RuntimeError(
-                    "You cannot specify --external-ca-profile without "
-                    "--external-ca")
+                    "You cannot specify --external-ca-profile without " "--external-ca"
+                )
 
             if self.uninstalling:  # pylint: disable=using-constant-test
-                if (self.realm_name or self.admin_password or
-                        self.master_password):
+                if self.realm_name or self.admin_password or self.master_password:
                     raise RuntimeError(
-                        "In uninstall mode, -a, -r and -P options are not "
-                        "allowed")
+                        "In uninstall mode, -a, -r and -P options are not " "allowed"
+                    )
             elif not self.interactive:
-                if (not self.realm_name or not self.dm_password or
-                        not self.admin_password):
+                if (
+                    not self.realm_name
+                    or not self.dm_password
+                    or not self.admin_password
+                ):
                     raise RuntimeError(
                         "In unattended mode you need to provide at least -r, "
-                        "-p and -a options")
+                        "-p and -a options"
+                    )
                 if self.setup_dns:
-                    if (not self.forwarders and
-                            not self.no_forwarders and
-                            not self.auto_forwarders):
+                    if (
+                        not self.forwarders
+                        and not self.no_forwarders
+                        and not self.auto_forwarders
+                    ):
                         raise RuntimeError(
                             "You must specify at least one of --forwarder, "
-                            "--auto-forwarders, or --no-forwarders options")
+                            "--auto-forwarders, or --no-forwarders options"
+                        )
 
             any_ignore_option_true = any(
-                [self.ignore_topology_disconnect, self.ignore_last_of_role])
+                [self.ignore_topology_disconnect, self.ignore_last_of_role]
+            )
             if any_ignore_option_true and not self.uninstalling:
                 raise RuntimeError(
                     "'--ignore-topology-disconnect/--ignore-last-of-role' "
-                    "options can be used only during uninstallation")
+                    "options can be used only during uninstallation"
+                )
 
             min_idstart = get_min_idstart()
             if self.idstart < min_idstart:
                 raise RuntimeError(
                     "idstart (%i) must be larger than UID_MAX/GID_MAX (%i) "
-                    "setting in /etc/login.defs." % (
-                        self.idstart, min_idstart
-                    )
+                    "setting in /etc/login.defs." % (self.idstart, min_idstart)
                 )
 
             if self.idmax < self.idstart:
                 raise RuntimeError(
-                    "idmax (%s) cannot be smaller than idstart (%s)" %
-                    (self.idmax, self.idstart))
+                    "idmax (%s) cannot be smaller than idstart (%s)"
+                    % (self.idmax, self.idstart)
+                )
         else:
             # replica installers
             if self.servers and not self.domain_name:
                 raise RuntimeError(
                     "The --server option cannot be used without providing "
-                    "domain via the --domain option")
+                    "domain via the --domain option"
+                )
 
             if self.setup_dns:
-                if (not self.forwarders and
-                        not self.no_forwarders and
-                        not self.auto_forwarders):
+                if (
+                    not self.forwarders
+                    and not self.no_forwarders
+                    and not self.auto_forwarders
+                ):
                     raise RuntimeError(
                         "You must specify at least one of --forwarder, "
-                        "--auto-forwarders, or --no-forwarders options")
+                        "--auto-forwarders, or --no-forwarders options"
+                    )
 
 
 ServerMasterInstallInterface = installs_master(ServerInstallInterface)
@@ -518,9 +545,7 @@ class ServerMasterInstall(ServerMasterInstallInterface):
     keytab = None
     setup_ca = True
 
-    domain_name = extend_knob(
-        ServerMasterInstallInterface.domain_name,
-    )
+    domain_name = extend_knob(ServerMasterInstallInterface.domain_name,)
 
     @domain_name.validator
     def domain_name(self, value):
@@ -532,9 +557,7 @@ class ServerMasterInstall(ServerMasterInstallInterface):
         # At this point we only verify that value is a valid DNS syntax.
         validate_domain_name(value)
 
-    dm_password = extend_knob(
-        ServerMasterInstallInterface.dm_password,
-    )
+    dm_password = extend_knob(ServerMasterInstallInterface.dm_password,)
 
     @dm_password.validator
     def dm_password(self, value):

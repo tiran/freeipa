@@ -26,48 +26,41 @@ from ipatests.test_webui.ui_driver import screenshot
 from ipatests.test_webui.task_range import range_tasks
 import pytest
 
-ENTITY = 'trust'
-CONFIG_ENTITY = 'trustconfig'
+ENTITY = "trust"
+CONFIG_ENTITY = "trustconfig"
 
-CONFIG_DATA = {
-    'mod': [
-        ['combobox', 'ipantfallbackprimarygroup', 'admins'],
-    ]
-}
+CONFIG_DATA = {"mod": [["combobox", "ipantfallbackprimarygroup", "admins"],]}
 
-CONFIG_DATA2 = {
-    'mod': [
-        ['combobox', 'ipantfallbackprimarygroup', 'Default SMB Group']
-    ]
-}
+CONFIG_DATA2 = {"mod": [["combobox", "ipantfallbackprimarygroup", "Default SMB Group"]]}
 
 
 @pytest.mark.tier1
 class trust_tasks(UI_driver):
-
     @pytest.fixture(autouse=True)
     def trusttasks_setup(self, ui_driver_fsetup):
         pass
 
     def get_data(self, add_data=None):
 
-        domain = self.config.get('ad_domain')
+        domain = self.config.get("ad_domain")
 
         if not add_data:
             add_data = self.get_add_data()
 
         data = {
-            'pkey': domain,
-            'add': add_data,
-            'mod': [
-                ('multivalued', 'ipantsidblacklistincoming', [
-                    ('del', 'S-1-5-18'),
-                    ('add', 'S-1-5-21'),
-                ]),
-                ('multivalued', 'ipantsidblacklistoutgoing', [
-                    ('del', 'S-1-5-18'),
-                    ('add', 'S-1-5-21'),
-                ]),
+            "pkey": domain,
+            "add": add_data,
+            "mod": [
+                (
+                    "multivalued",
+                    "ipantsidblacklistincoming",
+                    [("del", "S-1-5-18"), ("add", "S-1-5-21"),],
+                ),
+                (
+                    "multivalued",
+                    "ipantsidblacklistoutgoing",
+                    [("del", "S-1-5-18"), ("add", "S-1-5-21"),],
+                ),
             ],
         }
 
@@ -75,28 +68,28 @@ class trust_tasks(UI_driver):
 
     def get_add_data(self, range_type=None, base_id=None, range_size=None):
 
-        domain = self.config.get('ad_domain')
-        admin = self.config.get('ad_admin')
-        psw = self.config.get('ad_password')
+        domain = self.config.get("ad_domain")
+        admin = self.config.get("ad_admin")
+        psw = self.config.get("ad_password")
 
         add = [
-            ('textbox', 'realm_server', domain),
-            ('textbox', 'realm_admin', admin),
-            ('password', 'realm_passwd', psw),
+            ("textbox", "realm_server", domain),
+            ("textbox", "realm_admin", admin),
+            ("password", "realm_passwd", psw),
         ]
 
         if range_type:
-            add.append(('radio', 'range_type', range_type))
+            add.append(("radio", "range_type", range_type))
         if base_id:
-            add.append(('textbox', 'base_id', base_id))
+            add.append(("textbox", "base_id", base_id))
         if range_size:
-            add.append(('textbox', 'range_size', range_size))
+            add.append(("textbox", "range_size", range_size))
 
         return add
 
     def get_range_name(self):
-        domain = self.config.get('ad_domain')
-        return domain.upper() + '_id_range'
+        domain = self.config.get("ad_domain")
+        return domain.upper() + "_id_range"
 
 
 @pytest.mark.tier1
@@ -107,7 +100,7 @@ class test_trust(trust_tasks):
     @pytest.fixture(autouse=True)
     def trust_setup(self, trusttasks_setup):
         if not self.has_trusts():
-            self.skip('Trusts not configured')
+            self.skip("Trusts not configured")
 
     @screenshot
     def test_crud(self):
@@ -118,10 +111,10 @@ class test_trust(trust_tasks):
         """
         self.init_app()
         data = self.get_data()
-        self.navigate_to_entity('idrange')
+        self.navigate_to_entity("idrange")
         self.delete_record(self.get_range_name())
         self.basic_crud(ENTITY, data)
-        self.navigate_to_entity('idrange')
+        self.navigate_to_entity("idrange")
         self.delete_record(self.get_range_name())
 
     @screenshot
@@ -133,27 +126,29 @@ class test_trust(trust_tasks):
         r_tasks.driver = self.driver
         r_tasks.config = self.config
         r_tasks.get_shifts()
-        range_form = r_tasks.get_add_form_data('')
+        range_form = r_tasks.get_add_form_data("")
         base_id = range_form.base_id
         range_size = range_form.size
         range_pkey = self.get_range_name()
-        column = 'iparangetype'
+        column = "iparangetype"
 
-        self.navigate_to_entity('idrange')
+        self.navigate_to_entity("idrange")
         self.delete_record(range_pkey)
 
-        add = self.get_add_data('ipa-ad-trust', base_id, range_size)
+        add = self.get_add_data("ipa-ad-trust", base_id, range_size)
         data = self.get_data(add_data=add)
         self.add_record(ENTITY, data, delete=True)
-        self.navigate_to_entity('idrange')
-        self.assert_record_value('Active Directory domain range', range_pkey, column)
+        self.navigate_to_entity("idrange")
+        self.assert_record_value("Active Directory domain range", range_pkey, column)
         self.delete_record(range_pkey)
 
-        add = self.get_add_data('ipa-ad-trust-posix', base_id, range_size)
+        add = self.get_add_data("ipa-ad-trust-posix", base_id, range_size)
         data = self.get_data(add_data=add)
         self.add_record(ENTITY, data, delete=True)
-        self.navigate_to_entity('idrange')
-        self.assert_record_value('Active Directory trust range with POSIX attributes', range_pkey, column)
+        self.navigate_to_entity("idrange")
+        self.assert_record_value(
+            "Active Directory trust range with POSIX attributes", range_pkey, column
+        )
         self.delete_record(range_pkey)
 
     @screenshot

@@ -14,21 +14,15 @@ def default_json(obj):
     """JSON encoder default handler
     """
     if isinstance(obj, (bytes, bytearray)):
-        return base64.b64encode(obj).decode('ascii')
-    raise TypeError(
-        "Object of type {} is not JSON serializable".format(type(obj))
-    )
+        return base64.b64encode(obj).decode("ascii")
+    raise TypeError("Object of type {} is not JSON serializable".format(type(obj)))
 
 
 def json_dump(data, exportfile):
     """Dump JSON to file
     """
     json.dump(
-        data,
-        exportfile,
-        default=default_json,
-        separators=(',', ':'),
-        sort_keys=True
+        data, exportfile, default=default_json, separators=(",", ":"), sort_keys=True
     )
 
 
@@ -43,17 +37,17 @@ def mkparser(supports_import=True, **kwargs):
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
-        '--export',
+        "--export",
         help='JSON export file ("-" for stdout)',
-        dest='exportfile',
-        type=argparse.FileType('w')
+        dest="exportfile",
+        type=argparse.FileType("w"),
     )
     if supports_import:
         group.add_argument(
-            '--import',
+            "--import",
             help='JSON import file ("-" for stdin)',
-            dest='importfile',
-            type=argparse.FileType('r')
+            dest="importfile",
+            type=argparse.FileType("r"),
         )
 
     return parser

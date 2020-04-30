@@ -38,6 +38,7 @@ class TestForcedClientReenrollment(IntegrationTest):
     Forced client re-enrollment
     http://www.freeipa.org/page/V3/Forced_client_re-enrollment#Test_Plan
     """
+
     num_replicas = 1
     num_clients = 1
 
@@ -46,23 +47,22 @@ class TestForcedClientReenrollment(IntegrationTest):
         super(TestForcedClientReenrollment, cls).install(mh)
         tasks.install_master(cls.master)
 
-        cls.client_dom = cls.clients[0].hostname.split('.', 1)[1]
+        cls.client_dom = cls.clients[0].hostname.split(".", 1)[1]
         if cls.client_dom != cls.master.domain.name:
             # In cases where client is managed by upstream DNS server we
             # overlap its zone so we can save DNS records (e.g. SSHFP) for
             # comparison.
             servers = [cls.master] + cls.replicas
-            tasks.add_dns_zone(cls.master, cls.client_dom,
-                               skip_overlap_check=True,
-                               dynamic_update=True,
-                               add_a_record_hosts=servers
-                               )
+            tasks.add_dns_zone(
+                cls.master,
+                cls.client_dom,
+                skip_overlap_check=True,
+                dynamic_update=True,
+                add_a_record_hosts=servers,
+            )
 
         tasks.install_replica(cls.master, cls.replicas[0], setup_ca=False)
-        cls.BACKUP_KEYTAB = os.path.join(
-            cls.master.config.test_dir,
-            'krb5.keytab'
-        )
+        cls.BACKUP_KEYTAB = os.path.join(cls.master.config.test_dir, "krb5.keytab")
 
     def test_reenroll_with_force_join(self, client):
         """
@@ -151,13 +151,10 @@ class TestForcedClientReenrollment(IntegrationTest):
         """
         Client re-enrollment using keytab, with incorrect keytab file
         """
-        EMPTY_KEYTAB = os.path.join(
-            self.clients[0].config.test_dir,
-            'empty.keytab'
-        )
+        EMPTY_KEYTAB = os.path.join(self.clients[0].config.test_dir, "empty.keytab")
         self.restore_client()
         self.check_client_host_entry()
-        self.clients[0].run_command(['touch', EMPTY_KEYTAB])
+        self.clients[0].run_command(["touch", EMPTY_KEYTAB])
         self.reenroll_client(keytab=EMPTY_KEYTAB, expect_fail=True)
 
     def test_try_to_reenroll_with_empty_keytab(self, client):
@@ -170,7 +167,7 @@ class TestForcedClientReenrollment(IntegrationTest):
             os.remove(CLIENT_KEYTAB)
         except OSError:
             pass
-        self.clients[0].run_command(['touch', CLIENT_KEYTAB])
+        self.clients[0].run_command(["touch", CLIENT_KEYTAB])
         self.reenroll_client(force_join=True)
 
     def uninstall_client(self, unshare=False):
@@ -180,13 +177,9 @@ class TestForcedClientReenrollment(IntegrationTest):
         """
         args = []
         if unshare:
-            args = ['unshare', '--net']
-        args.extend(['ipa-client-install', '--uninstall', '-U'])
-        self.clients[0].run_command(
-            args,
-            set_env=False,
-            raiseonerr=False
-        )
+            args = ["unshare", "--net"]
+        args.extend(["ipa-client-install", "--uninstall", "-U"])
+        self.clients[0].run_command(args, set_env=False, raiseonerr=False)
 
     def restore_client(self):
         # As machine-level backup and restore is difficult to automate for
@@ -204,93 +197,88 @@ class TestForcedClientReenrollment(IntegrationTest):
 
         self.uninstall_client(unshare=True)
 
-    def reenroll_client(self, keytab=None, to_replica=False, force_join=False,
-                        expect_fail=False):
+    def reenroll_client(
+        self, keytab=None, to_replica=False, force_join=False, expect_fail=False
+    ):
         server = self.replicas[0] if to_replica else self.master
         client = self.clients[0]
 
         self.fix_resolv_conf(client, server)
 
         args = [
-            'ipa-client-install', '-U',
-            '--server', server.hostname,
-            '--domain', server.domain.name
+            "ipa-client-install",
+            "-U",
+            "--server",
+            server.hostname,
+            "--domain",
+            server.domain.name,
         ]
         if force_join:
-            args.append('--force-join')
+            args.append("--force-join")
         if keytab:
-            args.extend(['--keytab', keytab])
+            args.extend(["--keytab", keytab])
         else:
-            args.extend([
-                '-p', client.config.admin_name,
-                '-w', client.config.admin_password
-            ])
+            args.extend(
+                ["-p", client.config.admin_name, "-w", client.config.admin_password]
+            )
 
-        result = client.run_command(
-            args,
-            set_env=False,
-            raiseonerr=not expect_fail
-        )
-        assert 'IPA Server: %s' % server.hostname in result.stderr_text
+        result = client.run_command(args, set_env=False, raiseonerr=not expect_fail)
+        assert "IPA Server: %s" % server.hostname in result.stderr_text
 
         if expect_fail:
             err_msg = "Kerberos authentication failed: "
             assert result.returncode == 1
             assert err_msg in result.stderr_text
         elif force_join and keytab:
-            warn_msg = ("Option 'force-join' has no additional effect "
-                        "when used with together with option 'keytab'.")
+            warn_msg = (
+                "Option 'force-join' has no additional effect "
+                "when used with together with option 'keytab'."
+            )
             assert warn_msg in result.stderr_text
 
     def check_client_host_entry(self, enabled=True, not_found=False):
         result = self.master.run_command(
-            ['ipa', 'host-show', self.clients[0].hostname],
-            raiseonerr=not not_found
+            ["ipa", "host-show", self.clients[0].hostname], raiseonerr=not not_found
         )
 
         if not_found:
             assert result.returncode == 2
-            assert 'host not found' in result.stderr_text
+            assert "host not found" in result.stderr_text
         elif enabled:
-            assert 'Certificate:' not in result.stdout_text
-            assert 'Keytab: True' in result.stdout_text
+            assert "Certificate:" not in result.stdout_text
+            assert "Keytab: True" in result.stdout_text
         else:
-            assert 'Certificate:' not in result.stdout_text
-            assert 'Keytab: False' in result.stdout_text
+            assert "Certificate:" not in result.stdout_text
+            assert "Keytab: False" in result.stdout_text
 
     def disable_client_host_entry(self):
-        self.master.run_command(
-            ['ipa', 'host-disable', self.clients[0].hostname]
-        )
+        self.master.run_command(["ipa", "host-disable", self.clients[0].hostname])
 
     @classmethod
     def delete_client_host_entry(cls):
         try:
-            cls.master.run_command(
-                ['ipa', 'host-del', cls.clients[0].hostname]
-            )
+            cls.master.run_command(["ipa", "host-del", cls.clients[0].hostname])
         except subprocess.CalledProcessError as e:
             if e.returncode != 2:
                 raise
 
     def get_sshfp_record(self):
-        sshfp_record = ''
-        client_host = self.clients[0].hostname.split('.')[0]
+        sshfp_record = ""
+        client_host = self.clients[0].hostname.split(".")[0]
 
         result = self.master.run_command(
-            ['ipa', 'dnsrecord-show', self.client_dom, client_host]
+            ["ipa", "dnsrecord-show", self.client_dom, client_host]
         )
 
         lines = result.stdout_text.splitlines()
         for line in lines:
-            if 'SSHFP record:' in line:
-                sshfp_record = line.replace('SSHFP record:', '').strip()
+            if "SSHFP record:" in line:
+                sshfp_record = line.replace("SSHFP record:", "").strip()
 
-        assert sshfp_record, 'SSHFP record not found'
+        assert sshfp_record, "SSHFP record not found"
 
-        sshfp_record = set(sshfp_record.split(', '))
-        logger.debug("SSHFP record for host %s: %s",
-                     client_host, str(sshfp_record))
+        sshfp_record = set(sshfp_record.split(", "))
+        logger.debug("SSHFP record for host %s: %s", client_host, str(sshfp_record))
 
         return sshfp_record
 
@@ -307,12 +295,11 @@ class TestForcedClientReenrollment(IntegrationTest):
         """
         Put server's ip address at the top of resolv.conf
         """
-        contents = client.get_file_contents(paths.RESOLV_CONF,
-                                            encoding='utf-8')
-        nameserver = 'nameserver %s\n' % server.ip
+        contents = client.get_file_contents(paths.RESOLV_CONF, encoding="utf-8")
+        nameserver = "nameserver %s\n" % server.ip
 
         if not contents.startswith(nameserver):
-            contents = nameserver + contents.replace(nameserver, '')
+            contents = nameserver + contents.replace(nameserver, "")
             client.put_file_contents(paths.RESOLV_CONF, contents)
 
 
@@ -326,4 +313,5 @@ def client(request):
     def teardown_client():
         tasks.uninstall_client(request.cls.clients[0])
         request.cls.delete_client_host_entry()
+
     request.addfinalizer(teardown_client)

@@ -28,21 +28,22 @@ from ipalib import Registry, api
 register = Registry()
 
 
-if 'in_server' in api.env and api.env.in_server is False:
+if "in_server" in api.env and api.env.in_server is False:
     from ipalib.rpc import xmlclient, jsonclient
+
     register()(xmlclient)
     register()(jsonclient)
 
     # FIXME: api.register only looks at the class name, so we need to create
     # trivial subclasses with the desired name.
-    if api.env.rpc_protocol == 'xmlrpc':
+    if api.env.rpc_protocol == "xmlrpc":
 
         class rpcclient(xmlclient):
             """xmlclient renamed to 'rpcclient'"""
 
         register()(rpcclient)
 
-    elif api.env.rpc_protocol == 'jsonrpc':
+    elif api.env.rpc_protocol == "jsonrpc":
 
         class rpcclient(jsonclient):
             """jsonclient renamed to 'rpcclient'"""
@@ -50,4 +51,4 @@ if 'in_server' in api.env and api.env.in_server is False:
         register()(rpcclient)
 
     else:
-        raise ValueError('unknown rpc_protocol: %s' % api.env.rpc_protocol)
+        raise ValueError("unknown rpc_protocol: %s" % api.env.rpc_protocol)

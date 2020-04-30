@@ -25,14 +25,12 @@ def main():
     keyname = "ca_wrapped/{}".format(args.keyname)
 
     service = constants.PKI_GSSAPI_SERVICE_NAME
-    client_keyfile = os.path.join(paths.PKI_TOMCAT, service + '.keys')
-    client_keytab = os.path.join(paths.PKI_TOMCAT, service + '.keytab')
+    client_keyfile = os.path.join(paths.PKI_TOMCAT, service + ".keys")
+    client_keytab = os.path.join(paths.PKI_TOMCAT, service + ".keytab")
 
     for filename in [client_keyfile, client_keytab]:
         if not os.access(filename, os.R_OK):
-            parser.error(
-                "File '{}' missing or not readable.\n".format(filename)
-            )
+            parser.error("File '{}' missing or not readable.\n".format(filename))
 
     # pylint: disable=no-member
     client = CustodiaClient(
@@ -50,7 +48,7 @@ def main():
         # Initially request a key wrapped using AES128-CBC.
         # This uses the recent ability to specify additional
         # parameters to a Custodia resource.
-        path = f'{keyname}/{OID_AES128_CBC}'  # aes128-cbc
+        path = f"{keyname}/{OID_AES128_CBC}"  # aes128-cbc
         resp = client.fetch_key(path, store=False)
     except HTTPError as e:
         if e.response.status_code == 404:
@@ -77,5 +75,5 @@ def main():
     print(resp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

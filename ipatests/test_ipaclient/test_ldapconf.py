@@ -11,6 +11,7 @@ import pytest
 from ipaplatform.paths import paths
 
 import ipatests.util
+
 ipatests.util.check_ipaclient_unittests()  # noqa: E402
 
 from ipaclient.install.client import configure_openldap_conf
@@ -41,8 +42,8 @@ URI\tldap://ldap.example.com ldap://ldap-master.example.com:666
 SASL_NOCANON    on
 """
 
-BASEDN = 'cn=ipa,cn=example'
-SERVER = 'ldap.ipa.example'
+BASEDN = "cn=ipa,cn=example"
+SERVER = "ldap.ipa.example"
 
 
 class DummyFStore:
@@ -53,9 +54,9 @@ class DummyFStore:
 def ldap_conf(content):
     # fixture tmp_path is pytest >= 3.9
     tmp_path = tempfile.mkdtemp()
-    cfgfile = os.path.join(tmp_path, 'ldap.conf')
+    cfgfile = os.path.join(tmp_path, "ldap.conf")
     if content is not None:
-        with open(cfgfile, 'w') as f:
+        with open(cfgfile, "w") as f:
             f.write(content)
     orig_ldap_conf = paths.OPENLDAP_LDAP_CONF
     try:
@@ -66,9 +67,9 @@ def ldap_conf(content):
             text = f.read()
 
         settings = {}
-        for line in text.split('\n'):
+        for line in text.split("\n"):
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
             k, v = line.split(None, 1)
             settings.setdefault(k, []).append(v)
@@ -80,35 +81,35 @@ def ldap_conf(content):
 
 def test_openldap_conf_empty():
     text, settings = ldap_conf("")
-    assert '# File modified by ipa-client-install' in text
+    assert "# File modified by ipa-client-install" in text
     assert settings == {
-        'BASE': [BASEDN],
-        'URI': ['ldaps://{}'.format(SERVER)],
-        'TLS_CACERT': ['/etc/ipa/ca.crt'],
-        'SASL_MECH': ['GSSAPI']
+        "BASE": [BASEDN],
+        "URI": ["ldaps://{}".format(SERVER)],
+        "TLS_CACERT": ["/etc/ipa/ca.crt"],
+        "SASL_MECH": ["GSSAPI"],
     }
 
 
 def test_openldap_conf_spaces():
     text, settings = ldap_conf(LDAP_CONF_1)
-    assert '# File modified by ipa-client-install' in text
+    assert "# File modified by ipa-client-install" in text
     assert settings == {
-        'BASE': ['dc=example,dc=com'],
-        'URI': ['ldap://ldap.example.com'],
-        'SASL_NOCANON': ['on'],
-        'TLS_CACERT': ['/etc/ipa/ca.crt'],
-        'SASL_MECH': ['GSSAPI']
+        "BASE": ["dc=example,dc=com"],
+        "URI": ["ldap://ldap.example.com"],
+        "SASL_NOCANON": ["on"],
+        "TLS_CACERT": ["/etc/ipa/ca.crt"],
+        "SASL_MECH": ["GSSAPI"],
     }
 
 
 @pytest.mark.xfail(reason="freeipa ticket 7838", strict=True)
 def test_openldap_conf_mixed():
     text, settings = ldap_conf(LDAP_CONF_2)
-    assert '# File modified by ipa-client-install' in text
+    assert "# File modified by ipa-client-install" in text
     assert settings == {
-        'BASE': ['dc=example,dc=com'],
-        'URI': ['ldap://ldap.example.com ldap://ldap-master.example.com:666'],
-        'SASL_NOCANON': ['on'],
-        'TLS_CACERT': ['/etc/ipa/ca.crt'],
-        'SASL_MECH': ['GSSAPI']
+        "BASE": ["dc=example,dc=com"],
+        "URI": ["ldap://ldap.example.com ldap://ldap-master.example.com:666"],
+        "SASL_NOCANON": ["on"],
+        "TLS_CACERT": ["/etc/ipa/ca.crt"],
+        "SASL_MECH": ["GSSAPI"],
     }

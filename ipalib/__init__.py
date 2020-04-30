@@ -883,6 +883,7 @@ freeIPA.org:
 '''
 from ipapython.version import VERSION as __version__
 
+
 def _enable_warnings(error=False):
     """Enable additional warnings during development
     """
@@ -891,28 +892,29 @@ def _enable_warnings(error=False):
 
     # get reference to Py_BytesWarningFlag from Python CAPI
     byteswarnings = ctypes.c_int.in_dll(  # pylint: disable=no-member
-        ctypes.pythonapi, 'Py_BytesWarningFlag')
+        ctypes.pythonapi, "Py_BytesWarningFlag"
+    )
 
     if byteswarnings.value >= 2:
         # bytes warnings flag already set to error
         return
 
     # default warning mode for all modules: warn once per location
-    warnings.simplefilter('default', BytesWarning)
+    warnings.simplefilter("default", BytesWarning)
     if error:
         byteswarnings.value = 2
-        action = 'error'
+        action = "error"
     else:
         byteswarnings.value = 1
-        action = 'default'
+        action = "default"
 
-    module = '(ipa.*|__main__)'
+    module = "(ipa.*|__main__)"
     warnings.filterwarnings(action, category=BytesWarning, module=module)
-    warnings.filterwarnings(action, category=DeprecationWarning,
-                            module=module)
+    warnings.filterwarnings(action, category=DeprecationWarning, module=module)
+
 
 # call this as early as possible
-if 'git' in __version__:
+if "git" in __version__:
     _enable_warnings(False)
 
 # noqa: E402
@@ -921,9 +923,27 @@ from ipalib.backend import Backend
 from ipalib.frontend import Command, LocalOrRemote, Updater
 from ipalib.frontend import Object, Method
 from ipalib.crud import Create, Retrieve, Update, Delete, Search
-from ipalib.parameters import DefaultFrom, Bool, Flag, Int, Decimal, Bytes, Str, IA5Str, Password, DNParam
-from ipalib.parameters import (BytesEnum, StrEnum, IntEnum, AccessTime, File,
-                        DateTime, DNSNameParam)
+from ipalib.parameters import (
+    DefaultFrom,
+    Bool,
+    Flag,
+    Int,
+    Decimal,
+    Bytes,
+    Str,
+    IA5Str,
+    Password,
+    DNParam,
+)
+from ipalib.parameters import (
+    BytesEnum,
+    StrEnum,
+    IntEnum,
+    AccessTime,
+    File,
+    DateTime,
+    DNSNameParam,
+)
 from ipalib.errors import SkipPluginModule
 from ipalib.text import _, ngettext, GettextFactory, NGettextFactory
 
@@ -938,28 +958,29 @@ class API(plugable.API):
         if self.env.in_server:
             # pylint: disable=import-error,ipa-forbidden-import
             import ipaserver.plugins
+
             # pylint: enable=import-error,ipa-forbidden-import
-            result = (
-                ipaserver.plugins,
-            )
+            result = (ipaserver.plugins,)
         else:
             import ipaclient.remote_plugins
             import ipaclient.plugins
+
             result = (
                 ipaclient.remote_plugins.get_package(self),
                 ipaclient.plugins,
             )
 
-        if self.env.context in ('installer', 'updates'):
+        if self.env.context in ("installer", "updates"):
             # pylint: disable=import-error,ipa-forbidden-import
             import ipaserver.install.plugins
+
             # pylint: enable=import-error,ipa-forbidden-import
             result += (ipaserver.install.plugins,)
 
         return result
 
 
-def create_api(mode='dummy'):
+def create_api(mode="dummy"):
     """
     Return standard `plugable.API` instance.
 
@@ -977,7 +998,8 @@ def create_api(mode='dummy'):
     api = API()
     if mode is not None:
         api.env.mode = mode
-    assert mode != 'production'
+    assert mode != "production"
     return api
+
 
 api = create_api(mode=None)

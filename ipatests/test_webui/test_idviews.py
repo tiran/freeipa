@@ -12,49 +12,41 @@ from ipatests.test_webui.test_host import host_tasks, ENTITY as HOST_ENTITY
 import pytest
 
 DATA_USER = {
-    'pkey': user.PKEY,
-    'add': [
-        ('combobox', 'ipaanchoruuid', user.PKEY),
-        ('textbox', 'uid', 'iduser'),
-        ('textbox', 'gecos', 'id user'),
-        ('textbox', 'uidnumber', 1),
-        ('textbox', 'gidnumber', 1),
-        ('textbox', 'loginshell', 'shell'),
-        ('textbox', 'homedirectory', 'home'),
-        ('textarea', 'description', 'desc'),
+    "pkey": user.PKEY,
+    "add": [
+        ("combobox", "ipaanchoruuid", user.PKEY),
+        ("textbox", "uid", "iduser"),
+        ("textbox", "gecos", "id user"),
+        ("textbox", "uidnumber", 1),
+        ("textbox", "gidnumber", 1),
+        ("textbox", "loginshell", "shell"),
+        ("textbox", "homedirectory", "home"),
+        ("textarea", "description", "desc"),
     ],
-    'mod': [
-        ('textbox', 'uid', 'moduser'),
-        ('textbox', 'uidnumber', 3),
-    ],
+    "mod": [("textbox", "uid", "moduser"), ("textbox", "uidnumber", 3),],
 }
 
 DATA_GROUP = {
-    'pkey': group.PKEY,
-    'add': [
-        ('combobox', 'ipaanchoruuid', group.PKEY),
-        ('textbox', 'cn', 'idgroup'),
-        ('textbox', 'gidnumber', 2),
-        ('textarea', 'description', 'desc'),
+    "pkey": group.PKEY,
+    "add": [
+        ("combobox", "ipaanchoruuid", group.PKEY),
+        ("textbox", "cn", "idgroup"),
+        ("textbox", "gidnumber", 2),
+        ("textarea", "description", "desc"),
     ],
-    'mod': [
-        ('textbox', 'cn', 'modgroup'),
-        ('textbox', 'gidnumber', 3),
-    ],
+    "mod": [("textbox", "cn", "modgroup"), ("textbox", "gidnumber", 3),],
 }
 
 
 @pytest.mark.tier1
 class test_idviews(UI_driver):
-
     @screenshot
     def test_crud(self):
         """
         Basic CRUD: ID view
         """
         self.init_app()
-        self.basic_crud(
-            idview.ENTITY, idview.DATA, default_facet=idview.USER_FACET)
+        self.basic_crud(idview.ENTITY, idview.DATA, default_facet=idview.USER_FACET)
 
     @screenshot
     def test_overrides(self):
@@ -68,7 +60,7 @@ class test_idviews(UI_driver):
         self.add_record(idview.ENTITY, idview.DATA)
 
         self.navigate_to_record(idview.PKEY)
-        parent_entity = 'idview'
+        parent_entity = "idview"
 
         # user override
         self.add_record(parent_entity, DATA_USER, facet=idview.USER_FACET)
@@ -111,16 +103,21 @@ class test_idviews(UI_driver):
 
         # apply to host
         self.add_associations(
-            [host.pkey], facet='appliedtohosts', facet_btn='idview_apply')
-        self.delete_record([host.pkey], facet_btn='idview_unapply')
+            [host.pkey], facet="appliedtohosts", facet_btn="idview_apply"
+        )
+        self.delete_record([host.pkey], facet_btn="idview_unapply")
 
         # apply to hostgroup
         self.add_associations(
-            [hostgroup.PKEY], facet_btn='idview_apply_hostgroups',
-            member_pkeys=[host.pkey])
+            [hostgroup.PKEY],
+            facet_btn="idview_apply_hostgroups",
+            member_pkeys=[host.pkey],
+        )
         self.delete_associations(
-            [hostgroup.PKEY], facet_btn='idview_unapply_hostgroups',
-            member_pkeys=[host.pkey])
+            [hostgroup.PKEY],
+            facet_btn="idview_unapply_hostgroups",
+            member_pkeys=[host.pkey],
+        )
 
         # cleanup
         self.delete(idview.ENTITY, [idview.DATA])

@@ -43,9 +43,10 @@ from ipalib.capabilities import client_has_capability
 if six.PY3:
     unicode = str
 
+
 def add_message(version, result, message):
-    if client_has_capability(version, 'messages'):
-        result.setdefault('messages', []).append(message.to_dict())
+    if client_has_capability(version, "messages"):
+        result.setdefault("messages", []).append(message.to_dict())
 
 
 def process_message_arguments(obj, format=None, message=None, **kw):
@@ -59,14 +60,13 @@ def process_message_arguments(obj, format=None, message=None, **kw):
     name = obj.__class__.__name__
     if obj.format is not None and format is not None:
         raise ValueError(
-            'non-generic %r needs format=None; got format=%r' % (
-                name, format)
+            "non-generic %r needs format=None; got format=%r" % (name, format)
         )
     if message is None:
         if obj.format is None:
             if format is None:
                 raise ValueError(
-                    '%s.format is None yet format=None, message=None' % name
+                    "%s.format is None yet format=None, message=None" % name
                 )
             obj.format = format
         obj.forwarded = False
@@ -75,33 +75,40 @@ def process_message_arguments(obj, format=None, message=None, **kw):
             obj.strerror = ugettext(obj.format) % kw
         else:
             obj.strerror = obj.format % kw
-        if 'instructions' in kw:
+        if "instructions" in kw:
+
             def convert_instructions(value):
                 if isinstance(value, list):
-                    result = u'\n'.join(unicode(line) for line in value)
+                    result = u"\n".join(unicode(line) for line in value)
                     return result
                 return value
-            instructions = u'\n'.join((unicode(_('Additional instructions:')),
-                                    convert_instructions(kw['instructions'])))
-            obj.strerror = u'\n'.join((obj.strerror, instructions))
+
+            instructions = u"\n".join(
+                (
+                    unicode(_("Additional instructions:")),
+                    convert_instructions(kw["instructions"]),
+                )
+            )
+            obj.strerror = u"\n".join((obj.strerror, instructions))
     else:
         if isinstance(message, (Gettext, NGettext)):
             message = unicode(message)
         elif type(message) is not unicode:
-            raise TypeError(
-                TYPE_ERROR % ('message', unicode, message, type(message))
-            )
+            raise TypeError(TYPE_ERROR % ("message", unicode, message, type(message)))
         obj.forwarded = True
         obj.msg = message
         obj.strerror = message
     for (key, value) in kw.items():
-        assert not hasattr(obj, key), 'conflicting kwarg %s.%s = %r' % (
-            name, key, value,
+        assert not hasattr(obj, key), "conflicting kwarg %s.%s = %r" % (
+            name,
+            key,
+            value,
         )
         setattr(obj, key, value)
 
 
 _texts = []
+
 
 def _(message):
     _texts.append(message)
@@ -112,6 +119,7 @@ class PublicMessage(UserWarning):
     """
     **10000** Base class for messages that can be forwarded in an RPC response.
     """
+
     def __init__(self, format=None, message=None, **kw):
         process_message_arguments(self, format, message, **kw)
         super(PublicMessage, self).__init__(self.msg)
@@ -142,9 +150,11 @@ class VersionMissing(PublicMessage):
     """
 
     errno = 13001
-    type = 'warning'
-    format = _("API Version number was not sent, forward compatibility not "
-        "guaranteed. Assuming server's API version, %(server_version)s")
+    type = "warning"
+    format = _(
+        "API Version number was not sent, forward compatibility not "
+        "guaranteed. Assuming server's API version, %(server_version)s"
+    )
 
 
 class ForwardersWarning(PublicMessage):
@@ -153,11 +163,12 @@ class ForwardersWarning(PublicMessage):
     """
 
     errno = 13002
-    type = 'warning'
-    format =  _(
+    type = "warning"
+    format = _(
         u"DNS forwarder semantics changed since IPA 4.0.\n"
         u"You may want to use forward zones (dnsforwardzone-*) instead.\n"
-        u"For more details read the docs.")
+        u"For more details read the docs."
+    )
 
 
 class DNSSECWarning(PublicMessage):
@@ -187,8 +198,7 @@ class OptionSemanticChangedWarning(PublicMessage):
 
     errno = 13005
     type = "warning"
-    format = _(u"Semantic of %(label)s was changed. %(current_behavior)s\n"
-               u"%(hint)s")
+    format = _(u"Semantic of %(label)s was changed. %(current_behavior)s\n" u"%(hint)s")
 
 
 class DNSServerValidationWarning(PublicMessage):
@@ -208,9 +218,11 @@ class DNSServerDoesNotSupportDNSSECWarning(PublicMessage):
 
     errno = 13007
     type = "warning"
-    format = _(u"DNS server %(server)s does not support DNSSEC: %(error)s.\n"
-               u"If DNSSEC validation is enabled on IPA server(s), "
-               u"please disable it.")
+    format = _(
+        u"DNS server %(server)s does not support DNSSEC: %(error)s.\n"
+        u"If DNSSEC validation is enabled on IPA server(s), "
+        u"please disable it."
+    )
 
 
 class ForwardzoneIsNotEffectiveWarning(PublicMessage):
@@ -221,10 +233,12 @@ class ForwardzoneIsNotEffectiveWarning(PublicMessage):
 
     errno = 13008
     type = "warning"
-    format = _(u"forward zone \"%(fwzone)s\" is not effective because of "
-               u"missing proper NS delegation in authoritative zone "
-               u"\"%(authzone)s\". Please add NS record "
-               u"\"%(ns_rec)s\" to parent zone \"%(authzone)s\".")
+    format = _(
+        u'forward zone "%(fwzone)s" is not effective because of '
+        u"missing proper NS delegation in authoritative zone "
+        u'"%(authzone)s". Please add NS record '
+        u'"%(ns_rec)s" to parent zone "%(authzone)s".'
+    )
 
 
 class DNSServerDoesNotSupportEDNS0Warning(PublicMessage):
@@ -235,10 +249,12 @@ class DNSServerDoesNotSupportEDNS0Warning(PublicMessage):
 
     errno = 13009
     type = "warning"
-    format = _(u"DNS server %(server)s does not support EDNS0 (RFC 6891): "
-               u"%(error)s.\n"
-               u"If DNSSEC validation is enabled on IPA server(s), "
-               u"please disable it.")
+    format = _(
+        u"DNS server %(server)s does not support EDNS0 (RFC 6891): "
+        u"%(error)s.\n"
+        u"If DNSSEC validation is enabled on IPA server(s), "
+        u"please disable it."
+    )
 
 
 class DNSSECValidationFailingWarning(PublicMessage):
@@ -248,9 +264,11 @@ class DNSSECValidationFailingWarning(PublicMessage):
 
     errno = 13010
     type = "warning"
-    format = _(u"DNSSEC validation failed: %(error)s.\n"
-               u"Please verify your DNSSEC configuration or disable DNSSEC "
-               u"validation on all IPA servers.")
+    format = _(
+        u"DNSSEC validation failed: %(error)s.\n"
+        u"Please verify your DNSSEC configuration or disable DNSSEC "
+        u"validation on all IPA servers."
+    )
 
 
 class KerberosTXTRecordCreationFailure(PublicMessage):
@@ -282,6 +300,7 @@ class KerberosTXTRecordDeletionFailure(PublicMessage):
         "(%(error)s).\nThis can happen if the zone is not managed by IPA. "
         "Please remove the record manually."
     )
+
 
 class DNSSECMasterNotInstalled(PublicMessage):
     """
@@ -350,14 +369,17 @@ class BrokenTrust(PublicMessage):
 
     errno = 13018
     type = "warning"
-    format = _("Your trust to %(domain)s is broken. Please re-create it by "
-               "running 'ipa trust-add' again.")
+    format = _(
+        "Your trust to %(domain)s is broken. Please re-create it by "
+        "running 'ipa trust-add' again."
+    )
 
 
 class ResultFormattingError(PublicMessage):
     """
     **13019** Unable to correctly format some part of the result
     """
+
     type = "warning"
     errno = 13019
 
@@ -369,8 +391,7 @@ class FailedToRemoveHostDNSRecords(PublicMessage):
 
     errno = 13020
     type = "warning"
-    format = _("DNS record(s) of host %(host)s could not be removed. "
-               "(%(reason)s)")
+    format = _("DNS record(s) of host %(host)s could not be removed. " "(%(reason)s)")
 
 
 class DNSForwardPolicyConflictWithEmptyZone(PublicMessage):
@@ -394,17 +415,17 @@ class DNSUpdateOfSystemRecordFailed(PublicMessage):
     """
     **13022** Update of a DNS system record failed
     """
+
     errno = 13022
     type = "warning"
-    format = _(
-        "Update of system record '%(record)s' failed with error: %(error)s"
-    )
+    format = _("Update of system record '%(record)s' failed with error: %(error)s")
 
 
 class DNSUpdateNotIPAManagedZone(PublicMessage):
     """
     **13023** Zone for system records is not managed by IPA
     """
+
     errno = 13023
     type = "warning"
     format = _(
@@ -417,6 +438,7 @@ class AutomaticDNSRecordsUpdateFailed(PublicMessage):
     """
     **13024** Automatic update of DNS records failed
     """
+
     errno = 13024
     type = "warning"
     format = _(
@@ -430,6 +452,7 @@ class ServiceRestartRequired(PublicMessage):
     """
     **13025** Service restart is required
     """
+
     errno = 13025
     type = "warning"
     format = _(
@@ -442,6 +465,7 @@ class LocationWithoutDNSServer(PublicMessage):
     """
     **13026** Location without DNS server
     """
+
     errno = 13026
     type = "warning"
     format = _(
@@ -454,6 +478,7 @@ class ServerRemovalInfo(PublicMessage):
     """
     **13027** Informative message printed during removal of IPA server
     """
+
     errno = 13027
     type = "info"
 
@@ -462,6 +487,7 @@ class ServerRemovalWarning(PublicMessage):
     """
     **13028** Warning raised during removal of IPA server
     """
+
     errno = 13028
     type = "warning"
 
@@ -470,10 +496,10 @@ class CertificateInvalid(PublicMessage):
     """
     **13029** Failed to parse a certificate
     """
+
     errno = 13029
     type = "error"
-    format = _("%(subject)s: Malformed certificate. "
-               "%(reason)s")
+    format = _("%(subject)s: Malformed certificate. " "%(reason)s")
 
 
 class FailedToAddHostDNSRecords(PublicMessage):
@@ -483,14 +509,14 @@ class FailedToAddHostDNSRecords(PublicMessage):
 
     errno = 13030
     type = "warning"
-    format = _("The host was added but the DNS update failed with: "
-               "%(reason)s")
+    format = _("The host was added but the DNS update failed with: " "%(reason)s")
 
 
 class LightweightCACertificateNotAvailable(PublicMessage):
     """
     **13031** Certificate is not available
     """
+
     errno = 13031
     type = "error"
     format = _("The certificate for %(ca)s is not available on this server.")
@@ -500,19 +526,22 @@ def iter_messages(variables, base):
     """Return a tuple with all subclasses
     """
     for (key, value) in variables.items():
-        if key.startswith('_') or not isclass(value):
+        if key.startswith("_") or not isclass(value):
             continue
         if issubclass(value, base):
             yield value
 
 
-public_messages = tuple(sorted(
-    iter_messages(globals(), PublicMessage), key=lambda E: E.errno))
+public_messages = tuple(
+    sorted(iter_messages(globals(), PublicMessage), key=lambda E: E.errno)
+)
+
 
 def print_report(label, classes):
     for cls in classes:
-        print('%d\t%s' % (cls.errno, cls.__name__))
-    print('(%d %s)' % (len(classes), label))
+        print("%d\t%s" % (cls.errno, cls.__name__))
+    print("(%d %s)" % (len(classes), label))
 
-if __name__ == '__main__':
-    print_report('public messages', public_messages)
+
+if __name__ == "__main__":
+    print_report("public messages", public_messages)

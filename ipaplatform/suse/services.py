@@ -13,9 +13,7 @@ from ipaplatform.paths import paths
 
 logger = logging.getLogger(__name__)
 
-suse_system_units = dict(
-    (x, "%s.service" % x) for x in base_services.wellknownservices
-)
+suse_system_units = dict((x, "%s.service" % x) for x in base_services.wellknownservices)
 suse_system_units["httpd"] = "apache2.service"
 
 suse_system_units["dirsrv"] = "dirsrv@.service"
@@ -47,14 +45,10 @@ class SuseService(base_services.SystemdService):
 
 class SuseDirectoryService(SuseService):
     def is_installed(self, instance_name):
-        file_path = "{}/{}-{}".format(
-            paths.ETC_DIRSRV, "slapd", instance_name
-        )
+        file_path = "{}/{}-{}".format(paths.ETC_DIRSRV, "slapd", instance_name)
         return os.path.exists(file_path)
 
-    def restart(
-        self, instance_name="", capture_output=True, wait=True, ldapi=False
-    ):
+    def restart(self, instance_name="", capture_output=True, wait=True, ldapi=False):
         # We need to explicitly enable instances to install proper symlinks as
         # dirsrv.target.wants/ dependencies. Standard systemd service class
         # does it on enable() method call. Unfortunately, ipa-server-install
@@ -68,16 +62,11 @@ class SuseDirectoryService(SuseService):
         if instance_name:
             elements = self.systemd_name.split("@")
 
-            srv_etc = os.path.join(
-                paths.ETC_SYSTEMD_SYSTEM_DIR, self.systemd_name
-            )
+            srv_etc = os.path.join(paths.ETC_SYSTEMD_SYSTEM_DIR, self.systemd_name)
             srv_tgt = os.path.join(
-                paths.ETC_SYSTEMD_SYSTEM_DIR,
-                self.SYSTEMD_SRV_TARGET % (elements[0]),
+                paths.ETC_SYSTEMD_SYSTEM_DIR, self.SYSTEMD_SRV_TARGET % (elements[0]),
             )
-            srv_lnk = os.path.join(
-                srv_tgt, self.service_instance(instance_name)
-            )
+            srv_lnk = os.path.join(srv_tgt, self.service_instance(instance_name))
 
             if not os.path.exists(srv_etc):
                 self.enable(instance_name)
@@ -86,17 +75,11 @@ class SuseDirectoryService(SuseService):
                 os.symlink(srv_etc, srv_lnk)
 
         with self._wait(instance_name, wait, ldapi) as wait:
-            super().restart(
-                instance_name, capture_output=capture_output, wait=wait
-            )
+            super().restart(instance_name, capture_output=capture_output, wait=wait)
 
-    def start(
-        self, instance_name="", capture_output=True, wait=True, ldapi=False
-    ):
+    def start(self, instance_name="", capture_output=True, wait=True, ldapi=False):
         with self._wait(instance_name, wait, ldapi) as wait:
-            super().start(
-                instance_name, capture_output=capture_output, wait=wait
-            )
+            super().start(instance_name, capture_output=capture_output, wait=wait)
 
     @contextlib.contextmanager
     def _wait(self, instance_name, wait, ldapi):
@@ -113,9 +96,7 @@ class SuseDirectoryService(SuseService):
         if ldapi:
             yield False
             socket_name = paths.SLAPD_INSTANCE_SOCKET_TEMPLATE % instance_name
-            ipautil.wait_for_open_socket(
-                socket_name, self.api.env.startup_timeout
-            )
+            ipautil.wait_for_open_socket(socket_name, self.api.env.startup_timeout)
         else:
             yield wait
 

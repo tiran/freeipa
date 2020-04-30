@@ -2,9 +2,9 @@
 # Copyright (C) 2015  FreeIPA Contributors see COPYING for license
 #
 
-'''
+"""
 This RHEL base platform module exports platform related constants.
-'''
+"""
 
 # Fallback to default constant definitions
 from __future__ import absolute_import
@@ -22,5 +22,6 @@ class RHELConstantsNamespace(RedHatConstantsNamespace):
     IPA_DNS_PACKAGE_NAME = "ipa-server-dns"
     if HAS_NFS_CONF:
         SECURE_NFS_VAR = None
+
 
 constants = RHELConstantsNamespace()

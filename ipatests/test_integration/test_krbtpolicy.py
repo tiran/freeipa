@@ -33,8 +33,8 @@ def maxlife_within_policy(input, maxlife, slush=5):
        11/19/2019 16:37:40  11/20/2019 16:37:39  krbtgt/...
     """
     data = input.split()
-    start = datetime.strptime(data[0] + ' ' + data[1], '%m/%d/%Y %H:%M:%S')
-    end = datetime.strptime(data[2] + ' ' + data[3], '%m/%d/%Y %H:%M:%S')
+    start = datetime.strptime(data[0] + " " + data[1], "%m/%d/%Y %H:%M:%S")
+    end = datetime.strptime(data[2] + " " + data[3], "%m/%d/%Y %H:%M:%S")
     diff = int((end - start).total_seconds())
 
     return maxlife >= diff >= maxlife - slush
@@ -43,14 +43,15 @@ def maxlife_within_policy(input, maxlife, slush=5):
 def reset_to_default_policy(host, user):
     """Reset default user authentication and user authentication type"""
     tasks.kinit_admin(host)
-    host.run_command(['ipa', 'user-mod', user, '--user-auth-type='])
-    host.run_command(['ipa', 'krbtpolicy-reset'])
-    host.run_command(['ipa', 'krbtpolicy-reset', user])
+    host.run_command(["ipa", "user-mod", user, "--user-auth-type="])
+    host.run_command(["ipa", "krbtpolicy-reset"])
+    host.run_command(["ipa", "krbtpolicy-reset", user])
 
 
 class TestPWPolicy(IntegrationTest):
     """Tests password custom and default password policies.
     """
+
     num_replicas = 0
 
     @classmethod
@@ -64,13 +65,11 @@ class TestPWPolicy(IntegrationTest):
         master = self.master
 
         tasks.kinit_admin(master)
-        master.run_command(['ipa', 'krbtpolicy-mod', USER1,
-                            '--maxlife', str(MAXLIFE)])
+        master.run_command(["ipa", "krbtpolicy-mod", USER1, "--maxlife", str(MAXLIFE)])
         tasks.kdestroy_all(master)
 
-        master.run_command(['kinit', USER1],
-                           stdin_text=PASSWORD + '\n')
-        result = master.run_command('klist | grep krbtgt')
+        master.run_command(["kinit", USER1], stdin_text=PASSWORD + "\n")
+        result = master.run_command("klist | grep krbtgt")
         assert maxlife_within_policy(result.stdout_text, MAXLIFE) is True
 
         tasks.kdestroy_all(master)
@@ -80,28 +79,42 @@ class TestPWPolicy(IntegrationTest):
         master = self.master
 
         tasks.kinit_admin(master)
-        master.run_command(['ipa', 'user-mod', USER1,
-                            '--user-auth-type', 'password',
-                            '--user-auth-type', 'hardened'])
-        master.run_command(['ipa', 'config-mod',
-                            '--user-auth-type', 'password',
-                            '--user-auth-type', 'hardened'])
-        master.run_command(['ipa', 'krbtpolicy-mod', USER1,
-                            '--hardened-maxlife', '600'])
+        master.run_command(
+            [
+                "ipa",
+                "user-mod",
+                USER1,
+                "--user-auth-type",
+                "password",
+                "--user-auth-type",
+                "hardened",
+            ]
+        )
+        master.run_command(
+            [
+                "ipa",
+                "config-mod",
+                "--user-auth-type",
+                "password",
+                "--user-auth-type",
+                "hardened",
+            ]
+        )
+        master.run_command(
+            ["ipa", "krbtpolicy-mod", USER1, "--hardened-maxlife", "600"]
+        )
 
         tasks.kdestroy_all(master)
 
-        master.run_command(['kinit', USER1],
-                           stdin_text=PASSWORD + '\n')
-        result = master.run_command('klist | grep krbtgt')
+        master.run_command(["kinit", USER1], stdin_text=PASSWORD + "\n")
+        result = master.run_command("klist | grep krbtgt")
         assert maxlife_within_policy(result.stdout_text, 600) is True
 
         tasks.kdestroy_all(master)
 
         # Verify that the short policy only applies to USER1
-        master.run_command(['kinit', USER2],
-                           stdin_text=PASSWORD + '\n')
-        result = master.run_command('klist | grep krbtgt')
+        master.run_command(["kinit", USER2], stdin_text=PASSWORD + "\n")
+        result = master.run_command("klist | grep krbtgt")
         assert maxlife_within_policy(result.stdout_text, MAXLIFE) is True
 
         tasks.kdestroy_all(master)
@@ -111,14 +124,12 @@ class TestPWPolicy(IntegrationTest):
         master = self.master
 
         tasks.kinit_admin(master)
-        master.run_command(['ipa', 'krbtpolicy-mod', USER2,
-                            '--maxlife', '1200'])
+        master.run_command(["ipa", "krbtpolicy-mod", USER2, "--maxlife", "1200"])
 
         tasks.kdestroy_all(master)
 
-        master.run_command(['kinit', USER2],
-                           stdin_text=PASSWORD + '\n')
-        result = master.run_command('klist | grep krbtgt')
+        master.run_command(["kinit", USER2], stdin_text=PASSWORD + "\n")
+        result = master.run_command("klist | grep krbtgt")
         assert maxlife_within_policy(result.stdout_text, 1200) is True
 
         tasks.kdestroy_all(master)
@@ -128,10 +139,9 @@ class TestPWPolicy(IntegrationTest):
         master = self.master
 
         tasks.kinit_admin(master)
-        master.run_command(['ipa', 'krbtpolicy-reset', USER2])
-        master.run_command(['kinit', USER2],
-                           stdin_text=PASSWORD + '\n')
-        result = master.run_command('klist | grep krbtgt')
+        master.run_command(["ipa", "krbtpolicy-reset", USER2])
+        master.run_command(["kinit", USER2], stdin_text=PASSWORD + "\n")
+        result = master.run_command("klist | grep krbtgt")
         assert maxlife_within_policy(result.stdout_text, MAXLIFE) is True
 
         tasks.kdestroy_all(master)
@@ -140,40 +150,38 @@ class TestPWPolicy(IntegrationTest):
         """Test otp ticket policy"""
         master = self.master
         tasks.kinit_admin(self.master)
-        master.run_command(['ipa', 'user-mod', USER1,
-                            '--user-auth-type', 'otp'])
-        master.run_command(['ipa', 'config-mod',
-                            '--user-auth-type', 'otp'])
-        master.run_command(['ipa', 'krbtpolicy-mod', USER1,
-                            '--otp-maxrenew=90', '--otp-maxlife=60'])
+        master.run_command(["ipa", "user-mod", USER1, "--user-auth-type", "otp"])
+        master.run_command(["ipa", "config-mod", "--user-auth-type", "otp"])
+        master.run_command(
+            ["ipa", "krbtpolicy-mod", USER1, "--otp-maxrenew=90", "--otp-maxlife=60"]
+        )
         armor = tasks.create_temp_file(self.master, create_file=False)
         otpuid, totp = add_otptoken(master, USER1, otptype="totp")
         otpvalue = totp.generate(int(time.time())).decode("ascii")
         try:
             tasks.kdestroy_all(master)
             # create armor for FAST
-            master.run_command(['kinit', '-n', '-c', armor])
+            master.run_command(["kinit", "-n", "-c", armor])
             # expect ticket expire in otp-maxlife=60 seconds
             master.run_command(
-                ['kinit', '-T', armor, USER1, '-r', '90'],
-                stdin_text='{0}{1}\n'.format(PASSWORD, otpvalue))
-            master.run_command(['ipa', 'user-find', USER1])
+                ["kinit", "-T", armor, USER1, "-r", "90"],
+                stdin_text="{0}{1}\n".format(PASSWORD, otpvalue),
+            )
+            master.run_command(["ipa", "user-find", USER1])
             time.sleep(30)
             # when user kerberos ticket expired but still within renew time,
             #  kinit -R should give user new life
-            master.run_command(['kinit', '-R', USER1])
-            master.run_command(['ipa', 'user-find', USER1])
+            master.run_command(["kinit", "-R", USER1])
+            master.run_command(["ipa", "user-find", USER1])
             time.sleep(60)
             # when renew time expires, kinit -R should fail
-            result1 = master.run_command(['kinit', '-R', USER1],
-                                         raiseonerr=False)
+            result1 = master.run_command(["kinit", "-R", USER1], raiseonerr=False)
             tasks.assert_error(
-                result1,
-                "kinit: Ticket expired while renewing credentials", 1)
-            master.run_command(['ipa', 'user-find', USER1],
-                               ok_returncode=1)
+                result1, "kinit: Ticket expired while renewing credentials", 1
+            )
+            master.run_command(["ipa", "user-find", USER1], ok_returncode=1)
         finally:
             del_otptoken(master, otpuid)
             reset_to_default_policy(master, USER1)
-            self.master.run_command(['rm', '-f', armor])
-            master.run_command(['ipa', 'config-mod', '--user-auth-type='])
+            self.master.run_command(["rm", "-f", armor])
+            master.run_command(["ipa", "config-mod", "--user-auth-type="])

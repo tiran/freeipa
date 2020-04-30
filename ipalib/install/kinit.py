@@ -29,22 +29,19 @@ def kinit_keytab(principal, keytab, ccache_name, config=None, attempts=1):
     The optional parameter 'attempts' specifies how many times the credential
     initialization should be attempted in case of non-responsive KDC.
     """
-    errors_to_retry = {KRB5KDC_ERR_SVC_UNAVAILABLE,
-                       KRB5_KDC_UNREACH}
-    logger.debug("Initializing principal %s using keytab %s",
-                 principal, keytab)
+    errors_to_retry = {KRB5KDC_ERR_SVC_UNAVAILABLE, KRB5_KDC_UNREACH}
+    logger.debug("Initializing principal %s using keytab %s", principal, keytab)
     logger.debug("using ccache %s", ccache_name)
     for attempt in range(1, attempts + 1):
-        old_config = os.environ.get('KRB5_CONFIG')
+        old_config = os.environ.get("KRB5_CONFIG")
         if config is not None:
-            os.environ['KRB5_CONFIG'] = config
+            os.environ["KRB5_CONFIG"] = config
         else:
-            os.environ.pop('KRB5_CONFIG', None)
+            os.environ.pop("KRB5_CONFIG", None)
         try:
             name = gssapi.Name(principal, gssapi.NameType.kerberos_principal)
-            store = {'ccache': ccache_name,
-                     'client_keytab': keytab}
-            cred = gssapi.Credentials(name=name, store=store, usage='initiate')
+            store = {"ccache": ccache_name, "client_keytab": keytab}
+            cred = gssapi.Credentials(name=name, store=store, usage="initiate")
             logger.debug("Attempt %d/%d: success", attempt, attempts)
             return cred
         except gssapi.exceptions.GSSError as e:
@@ -52,51 +49,56 @@ def kinit_keytab(principal, keytab, ccache_name, config=None, attempts=1):
                 raise
             logger.debug("Attempt %d/%d: failed: %s", attempt, attempts, e)
             if attempt == attempts:
-                logger.debug("Maximum number of attempts (%d) reached",
-                             attempts)
+                logger.debug("Maximum number of attempts (%d) reached", attempts)
                 raise
             logger.debug("Waiting 5 seconds before next retry")
             time.sleep(5)
         finally:
             if old_config is not None:
-                os.environ['KRB5_CONFIG'] = old_config
+                os.environ["KRB5_CONFIG"] = old_config
             else:
-                os.environ.pop('KRB5_CONFIG', None)
+                os.environ.pop("KRB5_CONFIG", None)
 
-def kinit_password(principal, password, ccache_name, config=None,
-                   armor_ccache_name=None, canonicalize=False,
-                   enterprise=False, lifetime=None):
+
+def kinit_password(
+    principal,
+    password,
+    ccache_name,
+    config=None,
+    armor_ccache_name=None,
+    canonicalize=False,
+    enterprise=False,
+    lifetime=None,
+):
     """
     perform interactive kinit as principal using password. If using FAST for
     web-based authentication, use armor_ccache_path to specify http service
     ccache.
     """
     logger.debug("Initializing principal %s using password", principal)
-    args = [paths.KINIT, principal, '-c', ccache_name]
+    args = [paths.KINIT, principal, "-c", ccache_name]
     if armor_ccache_name is not None:
-        logger.debug("Using armor ccache %s for FAST webauth",
-                     armor_ccache_name)
-        args.extend(['-T', armor_ccache_name])
+        logger.debug("Using armor ccache %s for FAST webauth", armor_ccache_name)
+        args.extend(["-T", armor_ccache_name])
 
     if lifetime:
-        args.extend(['-l', lifetime])
+        args.extend(["-l", lifetime])
 
     if canonicalize:
         logger.debug("Requesting principal canonicalization")
-        args.append('-C')
+        args.append("-C")
 
     if enterprise:
         logger.debug("Using enterprise principal")
-        args.append('-E')
+        args.append("-E")
 
-    env = {'LC_ALL': 'C'}
+    env = {"LC_ALL": "C"}
     if config is not None:
-        env['KRB5_CONFIG'] = config
+        env["KRB5_CONFIG"] = config
 
     # this workaround enables us to capture stderr and put it
     # into the raised exception in case of unsuccessful authentication
-    result = run(args, stdin=password, env=env, raiseonerr=False,
-                 capture_error=True)
+    result = run(args, stdin=password, env=env, raiseonerr=False, capture_error=True)
     if result.returncode:
         raise RuntimeError(result.error_output)
 
@@ -115,12 +117,12 @@ def kinit_armor(ccache_name, pkinit_anchors=None):
     """
     logger.debug("Initializing anonymous ccache")
 
-    env = {'LC_ALL': 'C'}
-    args = [paths.KINIT, '-n', '-c', ccache_name]
+    env = {"LC_ALL": "C"}
+    args = [paths.KINIT, "-n", "-c", ccache_name]
 
     if pkinit_anchors is not None:
         for pkinit_anchor in pkinit_anchors:
-            args.extend(['-X', 'X509_anchors=FILE:{}'.format(pkinit_anchor)])
+            args.extend(["-X", "X509_anchors=FILE:{}".format(pkinit_anchor)])
 
     # this workaround enables us to capture stderr and put it
     # into the raised exception in case of unsuccessful authentication

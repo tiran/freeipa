@@ -33,6 +33,7 @@ fedora_system_units = redhat_services.redhat_system_units.copy()
 
 # Service classes that implement Fedora-specific behaviour
 
+
 class FedoraService(redhat_services.RedHatService):
     system_units = fedora_system_units
 
@@ -40,11 +41,13 @@ class FedoraService(redhat_services.RedHatService):
 # Function that constructs proper Fedora-specific server classes for services
 # of specified name
 
+
 def fedora_service_class_factory(name, api=None):
     return redhat_services.redhat_service_class_factory(name, api)
 
 
 # Magicdict containing FedoraService instances.
+
 
 class FedoraServices(redhat_services.RedHatServices):
     def service_class_factory(self, name, api=None):

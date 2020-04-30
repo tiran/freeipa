@@ -39,19 +39,19 @@ class hbactest(CommandOverride):
         # to be printed as our execute() method will return None for corresponding
         # entries and None entries will be skipped.
         for o in self.output:
-            if o == 'value':
+            if o == "value":
                 continue
             outp = self.output[o]
-            if 'no_display' in outp.flags:
+            if "no_display" in outp.flags:
                 continue
             result = output[o]
             if isinstance(result, (list, tuple)):
-                textui.print_attribute(unicode(outp.doc), result, '%s: %s', 1, True)
+                textui.print_attribute(unicode(outp.doc), result, "%s: %s", 1, True)
             elif isinstance(result, unicode):
-                if o == 'summary':
+                if o == "summary":
                     textui.print_summary(result)
                 else:
                     textui.print_indented(result)
 
         # Propagate integer value for result. It will give proper command line result for scripts
-        return int(not output['value'])
+        return int(not output["value"])

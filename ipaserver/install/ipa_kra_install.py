@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 class KRAInstall(admintool.AdminTool):
 
-    command_name = 'ipa-kra-install'
+    command_name = "ipa-kra-install"
 
     usage = "%prog [options]"
 
@@ -56,29 +56,44 @@ class KRAInstall(admintool.AdminTool):
         super(KRAInstall, cls).add_options(parser, debug_option=True)
 
         parser.add_option(
-            "--no-host-dns", dest="no_host_dns", action="store_true",
+            "--no-host-dns",
+            dest="no_host_dns",
+            action="store_true",
             default=False,
-            help="Do not use DNS for hostname lookup during installation")
+            help="Do not use DNS for hostname lookup during installation",
+        )
 
         parser.add_option(
-            "-p", "--password",
-            dest="password", sensitive=True,
-            help="Directory Manager (existing master) password")
+            "-p",
+            "--password",
+            dest="password",
+            sensitive=True,
+            help="Directory Manager (existing master) password",
+        )
 
         parser.add_option(
-            "-U", "--unattended",
-            dest="unattended", action="store_true", default=False,
-            help="unattended installation never prompts the user")
+            "-U",
+            "--unattended",
+            dest="unattended",
+            action="store_true",
+            default=False,
+            help="unattended installation never prompts the user",
+        )
 
         parser.add_option(
             "--uninstall",
-            dest="uninstall", action="store_true", default=False,
-            help=SUPPRESS_HELP)
+            dest="uninstall",
+            action="store_true",
+            default=False,
+            help=SUPPRESS_HELP,
+        )
 
         parser.add_option(
-            "--pki-config-override", dest="pki_config_override",
+            "--pki-config-override",
+            dest="pki_config_override",
             default=None,
-            help="Path to ini file with config overrides.")
+            help="Path to ini file with config overrides.",
+        )
 
     def validate_options(self, needs_root=True):
         super(KRAInstall, self).validate_options(needs_root=True)
@@ -92,9 +107,10 @@ class KRAInstall(admintool.AdminTool):
     def get_command_class(cls, options, args):
         if options.uninstall:
             sys.exit(
-                'ERROR: Standalone KRA uninstallation was removed in '
-                'FreeIPA 4.5 as it had never worked properly and only caused '
-                'issues.')
+                "ERROR: Standalone KRA uninstallation was removed in "
+                "FreeIPA 4.5 as it had never worked properly and only caused "
+                "issues."
+            )
         else:
             return KRAInstaller
 
@@ -102,16 +118,16 @@ class KRAInstall(admintool.AdminTool):
 class KRAInstaller(KRAInstall):
     log_file_name = paths.IPASERVER_KRA_INSTALL_LOG
 
-    INSTALLER_START_MESSAGE = '''
+    INSTALLER_START_MESSAGE = """
         ===================================================================
         This program will setup Dogtag KRA for the FreeIPA Server.
 
-    '''
+    """
 
-    FAIL_MESSAGE = '''
+    FAIL_MESSAGE = """
         Your system may be partly configured.
         If you run into issues, you may have to re-install IPA on this server.
-    '''
+    """
 
     def validate_options(self, needs_root=True):
         super(KRAInstaller, self).validate_options(needs_root=True)
@@ -130,11 +146,10 @@ class KRAInstaller(KRAInstall):
 
         if not self.options.unattended and self.options.password is None:
             self.options.password = installutils.read_password(
-                "Directory Manager", confirm=False,
-                validate=False, retry=False)
+                "Directory Manager", confirm=False, validate=False, retry=False
+            )
             if self.options.password is None:
-                raise admintool.ScriptError(
-                    "Directory Manager password required")
+                raise admintool.ScriptError("Directory Manager password required")
 
     def run(self):
         super(KRAInstaller, self).run()
@@ -144,13 +159,14 @@ class KRAInstaller(KRAInstall):
         try:
             installutils.validate_dm_password_ldap(self.options.password)
         except ValueError:
-            raise admintool.ScriptError(
-                "Directory Manager password is invalid")
+            raise admintool.ScriptError("Directory Manager password is invalid")
 
         if not cainstance.is_ca_installed_locally():
-            raise RuntimeError("Dogtag CA is not installed. "
-                               "Please install a CA first with the "
-                               "`ipa-ca-install` command.")
+            raise RuntimeError(
+                "Dogtag CA is not installed. "
+                "Please install a CA first with the "
+                "`ipa-ca-install` command."
+            )
 
         # check if KRA is not already installed
         _kra = krainstance.KRAInstance(api)
@@ -163,8 +179,7 @@ class KRAInstaller(KRAInstall):
         if self.installing_replica:
             domain_level = dsinstance.get_domain_level(api)
             if domain_level < DOMAIN_LEVEL_1:
-                raise RuntimeError(
-                    "Unsupported domain level %d." % domain_level)
+                raise RuntimeError("Unsupported domain level %d." % domain_level)
 
         if self.args:
             raise RuntimeError("Too many parameters provided.")
@@ -190,19 +205,18 @@ class KRAInstaller(KRAInstall):
 
             if config.subject_base is None:
                 attrs = api.Backend.ldap2.get_ipa_config()
-                config.subject_base = attrs.get('ipacertificatesubjectbase')[0]
+                config.subject_base = attrs.get("ipacertificatesubjectbase")[0]
 
             if config.kra_host_name is None:
                 config.kra_host_name = find_providing_server(
-                    'KRA', api.Backend.ldap2, [api.env.ca_host]
+                    "KRA", api.Backend.ldap2, [api.env.ca_host]
                 )
                 if config.kra_host_name is None:
                     # all CA/KRA servers are down or unreachable.
-                    raise admintool.ScriptError(
-                        "Failed to find an active KRA server!"
-                    )
+                    raise admintool.ScriptError("Failed to find an active KRA server!")
             custodia = custodiainstance.get_custodia_instance(
-                config, custodiainstance.CustodiaModes.KRA_PEER)
+                config, custodiainstance.CustodiaModes.KRA_PEER
+            )
         else:
             config = None
             custodia = None
@@ -217,7 +231,7 @@ class KRAInstaller(KRAInstall):
         try:
             kra.install(api, config, self.options, custodia=custodia)
         except BaseException:
-            logger.error('%s', dedent(self.FAIL_MESSAGE))
+            logger.error("%s", dedent(self.FAIL_MESSAGE))
             raise
 
         # pki-spawn restarts 389-DS, reconnect

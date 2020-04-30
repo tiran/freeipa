@@ -38,22 +38,22 @@ class update_pacs(Updater):
         ldap = self.api.Backend.ldap2
 
         try:
-            dn = DN('cn=ipaConfig', 'cn=etc', self.api.env.basedn)
-            entry = ldap.get_entry(dn, ['ipakrbauthzdata'])
-            pacs = entry.get('ipakrbauthzdata', [])
+            dn = DN("cn=ipaConfig", "cn=etc", self.api.env.basedn)
+            entry = ldap.get_entry(dn, ["ipakrbauthzdata"])
+            pacs = entry.get("ipakrbauthzdata", [])
         except errors.NotFound:
-            logger.warning('Error retrieving: %s', str(dn))
+            logger.warning("Error retrieving: %s", str(dn))
             return False, []
 
-        nfs_pac_set = any(pac.startswith('nfs:') for pac in pacs)
+        nfs_pac_set = any(pac.startswith("nfs:") for pac in pacs)
 
         if not nfs_pac_set:
-            logger.debug('Adding nfs:NONE to default PAC types')
+            logger.debug("Adding nfs:NONE to default PAC types")
 
-            updated_pacs = pacs + [u'nfs:NONE']
-            entry['ipakrbauthzdata'] = updated_pacs
+            updated_pacs = pacs + [u"nfs:NONE"]
+            entry["ipakrbauthzdata"] = updated_pacs
             ldap.update_entry(entry)
         else:
-            logger.debug('PAC for nfs is already set, not adding nfs:NONE.')
+            logger.debug("PAC for nfs is already set, not adding nfs:NONE.")
 
         return False, []

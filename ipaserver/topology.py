@@ -11,13 +11,17 @@ from copy import deepcopy
 from ipalib import _
 from ipapython.graph import Graph
 
-CURR_TOPOLOGY_DISCONNECTED = _("""
+CURR_TOPOLOGY_DISCONNECTED = _(
+    """
 Replication topology in suffix '%(suffix)s' is disconnected:
-%(errors)s""")
+%(errors)s"""
+)
 
-REMOVAL_DISCONNECTS_TOPOLOGY = _("""
+REMOVAL_DISCONNECTS_TOPOLOGY = _(
+    """
 Removal of '%(hostname)s' leads to disconnected topology in suffix '%(suffix)s':
-%(errors)s""")
+%(errors)s"""
+)
 
 
 def create_topology_graph(masters, segments):
@@ -31,19 +35,19 @@ def create_topology_graph(masters, segments):
     graph = Graph()
 
     for m in masters:
-        graph.add_vertex(m['cn'][0])
+        graph.add_vertex(m["cn"][0])
 
     for s in segments:
-        direction = s['iparepltoposegmentdirection'][0]
-        left = s['iparepltoposegmentleftnode'][0]
-        right = s['iparepltoposegmentrightnode'][0]
+        direction = s["iparepltoposegmentdirection"][0]
+        left = s["iparepltoposegmentleftnode"][0]
+        right = s["iparepltoposegmentrightnode"][0]
         try:
-            if direction == u'both':
+            if direction == u"both":
                 graph.add_edge(left, right)
                 graph.add_edge(right, left)
-            elif direction == u'left-right':
+            elif direction == u"left-right":
                 graph.add_edge(left, right)
-            elif direction == u'right-left':
+            elif direction == u"right-left":
                 graph.add_edge(right, left)
         except ValueError:  # ignore segments with deleted master
             pass
@@ -72,7 +76,7 @@ def get_topology_connection_errors(graph):
 
 def map_masters_to_suffixes(masters):
     masters_to_suffix = {}
-    managed_suffix_attr = 'iparepltopomanagedsuffix_topologysuffix'
+    managed_suffix_attr = "iparepltopomanagedsuffix_topologysuffix"
 
     for master in masters:
         if managed_suffix_attr not in master:
@@ -97,8 +101,9 @@ def _create_topology_graphs(api_instance):
     Construct a topology graph for each topology suffix
     :param api_instance: instance of IPA API
     """
-    masters = api_instance.Command.server_find(
-        u'', sizelimit=0, no_members=False)['result']
+    masters = api_instance.Command.server_find(u"", sizelimit=0, no_members=False)[
+        "result"
+    ]
 
     suffix_to_masters = map_masters_to_suffixes(masters)
 
@@ -106,10 +111,12 @@ def _create_topology_graphs(api_instance):
 
     for suffix_name in suffix_to_masters:
         segments = api_instance.Command.topologysegment_find(
-            suffix_name, sizelimit=0).get('result')
+            suffix_name, sizelimit=0
+        ).get("result")
 
         topology_graphs[suffix_name] = create_topology_graph(
-            suffix_to_masters[suffix_name], segments)
+            suffix_to_masters[suffix_name], segments
+        )
 
     return topology_graphs
 
@@ -118,9 +125,8 @@ def _format_topology_errors(topo_errors):
     msg_lines = []
     for error in topo_errors:
         msg_lines.append(
-            _("Topology does not allow server %(server)s to replicate with "
-              "servers:")
-            % {'server': error[0]}
+            _("Topology does not allow server %(server)s to replicate with " "servers:")
+            % {"server": error[0]}
         )
         for srv in error[2]:
             msg_lines.append("    %s" % srv)
@@ -168,12 +174,13 @@ class TopologyConnectivity:
         for suffix in self.errors:
             errors = self.errors[suffix]
             if errors:
-                err_msg = "\n".join([
-                    err_msg,
-                    CURR_TOPOLOGY_DISCONNECTED % dict(
-                        suffix=suffix,
-                        errors=_format_topology_errors(errors)
-                    )])
+                err_msg = "\n".join(
+                    [
+                        err_msg,
+                        CURR_TOPOLOGY_DISCONNECTED
+                        % dict(suffix=suffix, errors=_format_topology_errors(errors)),
+                    ]
+                )
 
             if err_msg:
                 raise ValueError(err_msg)
@@ -185,14 +192,17 @@ class TopologyConnectivity:
         for suffix in errors_after_removal:
             errors = errors_after_removal[suffix]
             if errors:
-                err_msg = "\n".join([
-                    err_msg,
-                    REMOVAL_DISCONNECTS_TOPOLOGY % dict(
-                        hostname=master_cn,
-                        suffix=suffix,
-                        errors=_format_topology_errors(errors)
-                    )
-                ])
+                err_msg = "\n".join(
+                    [
+                        err_msg,
+                        REMOVAL_DISCONNECTS_TOPOLOGY
+                        % dict(
+                            hostname=master_cn,
+                            suffix=suffix,
+                            errors=_format_topology_errors(errors),
+                        ),
+                    ]
+                )
 
         if err_msg:
             raise ValueError(err_msg)

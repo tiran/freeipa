@@ -41,10 +41,10 @@ class sudorule_add_option(MethodOverride):
     def output_for_cli(self, textui, result, cn, **options):
         textui.print_dashed(
             _('Added option "%(option)s" to Sudo Rule "%(rule)s"')
-              % dict(option=options['ipasudoopt'], rule=cn))
+            % dict(option=options["ipasudoopt"], rule=cn)
+        )
 
-        super(sudorule_add_option, self).output_for_cli(textui, result, cn,
-                                                        **options)
+        super(sudorule_add_option, self).output_for_cli(textui, result, cn, **options)
 
 
 @register(override=True, no_fail=True)
@@ -52,6 +52,8 @@ class sudorule_remove_option(MethodOverride):
     def output_for_cli(self, textui, result, cn, **options):
         textui.print_dashed(
             _('Removed option "%(option)s" from Sudo Rule "%(rule)s"')
-              % dict(option=options['ipasudoopt'], rule=cn))
-        super(sudorule_remove_option, self).output_for_cli(textui, result, cn,
-                                                           **options)
+            % dict(option=options["ipasudoopt"], rule=cn)
+        )
+        super(sudorule_remove_option, self).output_for_cli(
+            textui, result, cn, **options
+        )

@@ -23,7 +23,6 @@ import pytest
 
 @pytest.mark.tier1
 class TestLoginScreen(UI_driver):
-
     @pytest.fixture(autouse=True)
     def loginscreen_setup(self, request, ui_driver_fsetup):
         self.init_app()
@@ -32,13 +31,14 @@ class TestLoginScreen(UI_driver):
 
         def fin():
             # log out first
-            if (self.logged_in()):
+            if self.logged_in():
                 self.logout()
             else:
                 self.load_url(self.get_base_url())
             # log in as administrator
             self.login()
             self.delete_test_user()
+
         request.addfinalizer(fin)
 
     def delete_test_user(self):
@@ -56,16 +56,16 @@ class TestLoginScreen(UI_driver):
         """
         # User is not logged in
         assert self.logged_in()
-        self.add_record(loginscreen.ENTITY, loginscreen.DATA_ITEST_USER,
-                        navigate=False)
+        self.add_record(loginscreen.ENTITY, loginscreen.DATA_ITEST_USER, navigate=False)
 
-    def assert_notification(self, type='success', assert_text=None,
-                            link_text=None, link_url=None):
+    def assert_notification(
+        self, type="success", assert_text=None, link_text=None, link_url=None
+    ):
         """
         Assert whether we have a notification of particular type
         """
 
-        notification_type = 'div.validation-summary .alert-{}'.format(type)
+        notification_type = "div.validation-summary .alert-{}".format(type)
         # wait for a half sec for notification to appear
         self.wait(0.5)
         is_present = self.find(notification_type, By.CSS_SELECTOR)
@@ -79,21 +79,19 @@ class TestLoginScreen(UI_driver):
             # Text on link placed on validation widget
             assert link_text == link.text
             # URL of link placed on validation widget
-            assert link_url == link.get_attribute('href')
+            assert link_url == link.get_attribute("href")
 
     def find_xelement(self, expression, parent, strict=True):
         """
         Find element by xpath related to a given parent
         """
-        return self.find(expression, By.XPATH, parent, many=False,
-                         strict=strict)
+        return self.find(expression, By.XPATH, parent, many=False, strict=strict)
 
     def find_xelements(self, expression, parent, strict=True):
         """
         Find elements by xpath related to the given parent
         """
-        return self.find(expression, By.XPATH, parent, many=True,
-                         strict=strict)
+        return self.find(expression, By.XPATH, parent, many=True, strict=strict)
 
     def button_click_on_login_screen(self, name):
         """
@@ -101,8 +99,7 @@ class TestLoginScreen(UI_driver):
         then click on
         """
         login_screen = self.get_login_screen()
-        button = self.find_xelement(".//button[@name='{}']".format(name),
-                                    login_screen)
+        button = self.find_xelement(".//button[@name='{}']".format(name), login_screen)
         assert button.is_displayed()
         button.click()
 
@@ -110,10 +107,7 @@ class TestLoginScreen(UI_driver):
         """
         Find a input field with the given name and parent
         """
-        return self.find_xelement(
-            ".//input[@name='{}']".format(name),
-            parent
-        )
+        return self.find_xelement(".//input[@name='{}']".format(name), parent)
 
     def load_url(self, url):
         """
@@ -121,9 +115,7 @@ class TestLoginScreen(UI_driver):
         """
         self.driver.get(url)
         runner = self
-        WebDriverWait(self.driver, 10).until(
-            lambda d: runner.files_loaded()
-        )
+        WebDriverWait(self.driver, 10).until(lambda d: runner.files_loaded())
         self.wait()
 
     def relogin_with_new_password(self):
@@ -131,7 +123,7 @@ class TestLoginScreen(UI_driver):
         Log out and then log in using a new password.
         It is need to check a new password
         """
-        if (self.logged_in()):
+        if self.logged_in():
             self.logout()
         else:
             self.load_url(self.get_base_url())
@@ -139,19 +131,24 @@ class TestLoginScreen(UI_driver):
         # User is not logged in
         assert self.logged_in()
 
-    def reset_password(self, username=None, current_password=None,
-                       new_password=None, link_text=None, link_url=None):
+    def reset_password(
+        self,
+        username=None,
+        current_password=None,
+        new_password=None,
+        link_text=None,
+        link_url=None,
+    ):
         """
         Reset password with the given one
         """
         login_screen = self.get_login_screen()
 
         if username is not None:
-            username_field = self.get_input_field('username', login_screen)
-        cur_pass_field = self.get_input_field('current_password', login_screen)
-        new_pass_field = self.get_input_field('new_password', login_screen)
-        verify_pass_field = self.get_input_field('verify_password',
-                                                 login_screen)
+            username_field = self.get_input_field("username", login_screen)
+        cur_pass_field = self.get_input_field("current_password", login_screen)
+        new_pass_field = self.get_input_field("new_password", login_screen)
+        verify_pass_field = self.get_input_field("verify_password", login_screen)
         if username is not None:
             username_field.send_keys(username)
         cur_pass_field.send_keys(current_password)
@@ -159,8 +156,11 @@ class TestLoginScreen(UI_driver):
         verify_pass_field.send_keys(new_password)
         verify_pass_field.send_keys(Keys.RETURN)
         self.wait(0.5)
-        self.assert_notification(assert_text='Password change complete',
-                                 link_text=link_text, link_url=link_url)
+        self.assert_notification(
+            assert_text="Password change complete",
+            link_text=link_text,
+            link_url=link_url,
+        )
 
     def get_data_from_form_row(self, form_row):
         """
@@ -169,10 +169,10 @@ class TestLoginScreen(UI_driver):
         result = []
         label = self.find_xelement(".//label", form_row)
         assert label.is_displayed()
-        result.append(label.get_attribute('name'))
+        result.append(label.get_attribute("name"))
         result.append(label.text)
         req = self.find_xelement("./../..", label)
-        result.append(self.has_class(req, 'required'))
+        result.append(self.has_class(req, "required"))
 
         field = self.find_xelement(".//input", form_row)
         # not editable field
@@ -182,13 +182,13 @@ class TestLoginScreen(UI_driver):
 
         result.append(editable)
         assert field.is_displayed()
-        result.append(field.get_attribute('type'))
-        result.append(field.get_attribute('name'))
+        result.append(field.get_attribute("type"))
+        result.append(field.get_attribute("name"))
         if not editable:
             result.append(field.text)
         else:
-            result.append(field.get_attribute('value'))
-        result.append(field.get_attribute('placeholder'))
+            result.append(field.get_attribute("value"))
+        result.append(field.get_attribute("placeholder"))
 
         return tuple(result)
 
@@ -197,8 +197,8 @@ class TestLoginScreen(UI_driver):
         Parse data from the button to a comparable structure
         """
         result = []
-        result.append(button.get_attribute('name'))
-        result.append(button.get_attribute('title'))
+        result.append(button.get_attribute("name"))
+        result.append(button.get_attribute("title"))
 
         return tuple(result)
 
@@ -232,39 +232,36 @@ class TestLoginScreen(UI_driver):
             assert (act_alert.text,) == exp_alert
 
     def has_validation(self, parent):
-        return self.find_xelement(".//div[@name='validation']", parent,
-                                  strict=False)
+        return self.find_xelement(".//div[@name='validation']", parent, strict=False)
 
     def check_elements_of_form(self, form_data):
 
         login_screen = self.get_login_screen()
-        form = self.find_xelement(".//div[@class='form-horizontal']",
-                                  login_screen)
+        form = self.find_xelement(".//div[@class='form-horizontal']", login_screen)
         # rows
-        form_rows = self.find_xelements(
-            ".//div[contains(@class, 'form-group')]", form
-        )
+        form_rows = self.find_xelements(".//div[contains(@class, 'form-group')]", form)
 
-        form_rows = [el for el in form_rows if el.is_displayed() and not
-                     self.has_validation(el)]
-        self.assert_form_equals(form_rows, form_data['rows'])
+        form_rows = [
+            el for el in form_rows if el.is_displayed() and not self.has_validation(el)
+        ]
+        self.assert_form_equals(form_rows, form_data["rows"])
 
         # buttons
         buttons = self.find_xelements(".//button", login_screen)
         buttons = [el for el in buttons if el.is_displayed()]
-        self.assert_buttons_equal(buttons, form_data['buttons'])
+        self.assert_buttons_equal(buttons, form_data["buttons"])
 
     def check_alerts(self, form_data):
         login_screen = self.get_login_screen()
 
         # Push the the most rigth button to see the Required fields
         # it should be either 'Reset' or 'Reset and Login' or 'Login' button
-        self.button_click_on_login_screen(form_data['buttons'][-1][0])
+        self.button_click_on_login_screen(form_data["buttons"][-1][0])
 
         alerts = self.find_xelements(
             ".//*[@data-name][contains(@class, 'alert-danger')]", login_screen
         )
-        required_msgs = form_data['required_msg']
+        required_msgs = form_data["required_msg"]
         self.assert_validations_equal(alerts, required_msgs)
 
     def load_reset_and_login_view(self):
@@ -275,30 +272,28 @@ class TestLoginScreen(UI_driver):
         current_password = loginscreen.PASSWD_ITEST_USER
 
         login_screen = self.get_login_screen()
-        username_field = self.get_input_field('username', login_screen)
-        cur_pass_field = self.get_input_field('password', login_screen)
+        username_field = self.get_input_field("username", login_screen)
+        cur_pass_field = self.get_input_field("password", login_screen)
         username_field.send_keys(username)
         cur_pass_field.send_keys(current_password)
         cur_pass_field.send_keys(Keys.RETURN)
         self.wait()
         self.assert_notification(
-            type='info',
-            assert_text=(
-                'Your password has expired. Please enter a new password.'
-            )
+            type="info",
+            assert_text=("Your password has expired. Please enter a new password."),
         )
 
     def check_cancel(self):
         """
         Check 'login' view after a cancel of password reset
         """
-        self.button_click_on_login_screen('cancel')
+        self.button_click_on_login_screen("cancel")
         self.check_elements_of_form(loginscreen.FILLED_LOGIN_FORM)
 
     @screenshot
     def test_reset_password_view(self):
 
-        self.load_url('/'.join((self.get_base_url(), 'reset_password.html')))
+        self.load_url("/".join((self.get_base_url(), "reset_password.html")))
         assert self.login_screen_visible()
 
         self.check_elements_of_form(loginscreen.RESET_PASSWORD_FORM)
@@ -314,8 +309,8 @@ class TestLoginScreen(UI_driver):
     def test_reset_password_view_with_redirect(self):
 
         redir_url = self.get_base_url().lower()
-        encoded_redir_url = urllib.parse.urlencode({'url': redir_url})
-        target_url = '/'.join((self.get_base_url(), 'reset_password.html?{}'))
+        encoded_redir_url = urllib.parse.urlencode({"url": redir_url})
+        target_url = "/".join((self.get_base_url(), "reset_password.html?{}"))
         self.load_url(target_url.format(encoded_redir_url))
         assert self.login_screen_visible()
 
@@ -325,20 +320,21 @@ class TestLoginScreen(UI_driver):
         username = loginscreen.PKEY
         current_password = loginscreen.PASSWD_ITEST_USER
         new_password = loginscreen.PASSWD_ITEST_USER_NEW
-        self.reset_password(username, current_password, new_password,
-                            link_text='Continue to next page',
-                            link_url=redir_url,
-                            )
+        self.reset_password(
+            username,
+            current_password,
+            new_password,
+            link_text="Continue to next page",
+            link_url=redir_url,
+        )
         self.relogin_with_new_password()
 
     @screenshot
     def test_reset_password_view_with_delayed_redirect(self):
 
-        redir_url = self.get_base_url().lower() + '/'
-        encoded_redir_url = urllib.parse.urlencode(
-            {'url': redir_url, 'delay': 5}
-        )
-        target_url = '/'.join((self.get_base_url(), 'reset_password.html?{}'))
+        redir_url = self.get_base_url().lower() + "/"
+        encoded_redir_url = urllib.parse.urlencode({"url": redir_url, "delay": 5})
+        target_url = "/".join((self.get_base_url(), "reset_password.html?{}"))
         self.load_url(target_url.format(encoded_redir_url))
         assert self.login_screen_visible()
 
@@ -347,12 +343,14 @@ class TestLoginScreen(UI_driver):
         username = loginscreen.PKEY
         current_password = loginscreen.PASSWD_ITEST_USER
         new_password = loginscreen.PASSWD_ITEST_USER_NEW
-        self.reset_password(username, current_password, new_password,
-                            link_text='Continue to next page',
-                            link_url=redir_url,
-                            )
-        self.assert_notification(type='info',
-                                 assert_text='You will be redirected in ')
+        self.reset_password(
+            username,
+            current_password,
+            new_password,
+            link_text="Continue to next page",
+            link_url=redir_url,
+        )
+        self.assert_notification(type="info", assert_text="You will be redirected in ")
         self.wait(3)
         # check url after start delay timer, but before end
         assert self.driver.current_url != redir_url
@@ -369,7 +367,7 @@ class TestLoginScreen(UI_driver):
 
         # check click on 'Cancel' button
         self.check_cancel()
-        self.button_click_on_login_screen('login')
+        self.button_click_on_login_screen("login")
         self.wait_for_request()
 
         # check if user is not logged
@@ -377,8 +375,9 @@ class TestLoginScreen(UI_driver):
         current_password = loginscreen.PASSWD_ITEST_USER
         new_password = loginscreen.PASSWD_ITEST_USER_NEW
         # username is already here, do not fill up
-        self.reset_password(current_password=current_password,
-                            new_password=new_password)
+        self.reset_password(
+            current_password=current_password, new_password=new_password
+        )
         # waiting for auto login process
         self.wait(5)
         assert self.logged_in()
@@ -396,7 +395,7 @@ class TestLoginScreen(UI_driver):
 
         # check non empty 'login' view
         login_screen = self.get_login_screen()
-        username_field = self.get_input_field('username', login_screen)
+        username_field = self.get_input_field("username", login_screen)
         username_field.send_keys(loginscreen.PKEY)
         self.wait(0.5)
         self.check_elements_of_form(loginscreen.LOGIN_FORM)

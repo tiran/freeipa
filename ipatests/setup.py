@@ -22,7 +22,7 @@ FreeIPA is a server for identity, policy, and audit.
 from os.path import abspath, dirname
 import sys
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # include ../ for ipasetup.py
     sys.path.append(dirname(dirname(abspath(__file__))))
     from ipasetup import ipasetup  # noqa: E402
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     ipasetup(
         name="ipatests",
         doc=__doc__,
-        package_dir={'ipatests': ''},
+        package_dir={"ipatests": ""},
         packages=[
             "ipatests",
             "ipatests.pytest_ipa",
@@ -47,18 +47,18 @@ if __name__ == '__main__':
             "ipatests.test_ipatests_plugins",
             "ipatests.test_webui",
             "ipatests.test_xmlrpc",
-            "ipatests.test_xmlrpc.tracker"
+            "ipatests.test_xmlrpc.tracker",
         ],
-        scripts=['ipa-run-tests', 'ipa-test-config', 'ipa-test-task'],
+        scripts=["ipa-run-tests", "ipa-test-config", "ipa-test-task"],
         package_data={
-            'ipatests': ['prci_definitions/*'],
-            'ipatests.test_install': ['*.update'],
-            'ipatests.test_integration': ['scripts/*'],
-            'ipatests.test_ipaclient': ['data/*/*/*'],
-            'ipatests.test_ipalib': ['data/*'],
-            'ipatests.test_ipaplatform': ['data/*'],
-            "ipatests.test_ipaserver": ['data/*'],
-            'ipatests.test_xmlrpc': ['data/*'],
+            "ipatests": ["prci_definitions/*"],
+            "ipatests.test_install": ["*.update"],
+            "ipatests.test_integration": ["scripts/*"],
+            "ipatests.test_ipaclient": ["data/*/*/*"],
+            "ipatests.test_ipalib": ["data/*"],
+            "ipatests.test_ipaplatform": ["data/*"],
+            "ipatests.test_ipaserver": ["data/*"],
+            "ipatests.test_xmlrpc": ["data/*"],
         },
         install_requires=[
             "cryptography",
@@ -80,5 +80,5 @@ if __name__ == '__main__':
             "webui": ["selenium", "pyyaml", "ipaserver"],
             "xmlrpc": ["ipaserver"],
             ":python_version<'3'": ["mock"],
-        }
+        },
     )

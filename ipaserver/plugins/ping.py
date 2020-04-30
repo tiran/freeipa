@@ -23,7 +23,8 @@ from ipalib import _
 from ipalib.plugable import Registry
 from ipapython.version import VERSION, API_VERSION
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Ping the remote IPA server to ensure it is running.
 
 The ping command sends an echo request to an IPA server. The server
@@ -49,22 +50,23 @@ EXAMPLES:
    -----------------------------------------------------
    IPA server version 2.1.9. API version 2.20
    -----------------------------------------------------
-""")
+"""
+)
 
 register = Registry()
 
 
 @register()
 class ping(Command):
-    __doc__ = _('Ping a remote server.')
+    __doc__ = _("Ping a remote server.")
 
-    has_output = (
-        output.summary,
-    )
+    has_output = (output.summary,)
 
     def execute(self, **options):
         """
         A possible enhancement would be to take an argument and echo it
         back but a fixed value works for now.
         """
-        return dict(summary=u'IPA server version %s. API version %s' % (VERSION, API_VERSION))
+        return dict(
+            summary=u"IPA server version %s. API version %s" % (VERSION, API_VERSION)
+        )

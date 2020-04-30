@@ -39,7 +39,7 @@ if six.PY3:
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TRUST_VIEW_NAME = u'Default Trust View'
+DEFAULT_TRUST_VIEW_NAME = u"Default Trust View"
 
 
 class WinsyncMigrate(admintool.AdminTool):
@@ -47,7 +47,7 @@ class WinsyncMigrate(admintool.AdminTool):
     Tool to migrate winsync users.
     """
 
-    command_name = 'ipa-winsync-migrate'
+    command_name = "ipa-winsync-migrate"
     usage = "ipa-winsync-migrate"
     description = (
         "This tool creates user ID overrides for all the users "
@@ -56,7 +56,7 @@ class WinsyncMigrate(admintool.AdminTool):
         "with the AD forest has already been established and "
         "the users in question are resolvable using SSSD. "
         "For more information, see `man ipa-winsync-migrate`."
-        )
+    )
 
     @classmethod
     def add_options(cls, parser):
@@ -66,19 +66,21 @@ class WinsyncMigrate(admintool.AdminTool):
         super(WinsyncMigrate, cls).add_options(parser)
 
         parser.add_option(
-            "--realm",
-            dest="realm",
-            help="The AD realm the winsynced users belong to")
+            "--realm", dest="realm", help="The AD realm the winsynced users belong to"
+        )
         parser.add_option(
             "--server",
             dest="server",
-            help="The AD DC the winsync agreement is established with")
+            help="The AD DC the winsync agreement is established with",
+        )
         parser.add_option(
-            "-U", "--unattended",
+            "-U",
+            "--unattended",
             dest="interactive",
             action="store_false",
             default=True,
-            help="Never prompt for user input")
+            help="Never prompt for user input",
+        )
 
     def validate_options(self):
         """
@@ -91,48 +93,53 @@ class WinsyncMigrate(admintool.AdminTool):
 
         if self.options.realm is None:
             raise admintool.ScriptError(
-                "AD realm the winsynced users belong to needs to be "
-                "specified.")
+                "AD realm the winsynced users belong to needs to be " "specified."
+            )
         else:
             try:
-                api.Command['trust_show'](unicode(self.options.realm))
+                api.Command["trust_show"](unicode(self.options.realm))
             except errors.NotFound:
                 raise admintool.ScriptError(
                     "Trust with the given realm %s could not be found. "
                     "Please establish the trust prior to migration."
-                    % self.options.realm)
+                    % self.options.realm
+                )
             except Exception as e:
                 raise admintool.ScriptError(
                     "An error occured during detection of the established "
-                    "trust with %s: %s" % (self.options.realm, str(e)))
+                    "trust with %s: %s" % (self.options.realm, str(e))
+                )
 
         if self.options.server is None:
             raise admintool.ScriptError(
                 "The AD DC the winsync agreement is established with "
-                "needs to be specified.")
+                "needs to be specified."
+            )
         else:
             # Validate the replication agreement between given host and localhost
             try:
                 manager = replication.ReplicationManager(
-                    api.env.realm,
-                    api.env.host,
-                    None)  # Use GSSAPI instead of raw directory manager access
+                    api.env.realm, api.env.host, None
+                )  # Use GSSAPI instead of raw directory manager access
 
                 replica_type = manager.get_agreement_type(self.options.server)
             except errors.ACIError as e:
                 raise admintool.ScriptError(
                     "Used Kerberos account does not have privileges to access "
-                    "the replication agreement info: %s" % str(e))
+                    "the replication agreement info: %s" % str(e)
+                )
             except errors.NotFound as e:
                 raise admintool.ScriptError(
                     "The replication agreement between %s and %s could not "
-                    "be detected" % (api.env.host, self.options.server))
+                    "be detected" % (api.env.host, self.options.server)
+                )
 
             # Check that the replication agreement is indeed WINSYNC
             if replica_type != replication.WINSYNC:
                 raise admintool.ScriptError(
                     "Replication agreement between %s and %s is not winsync."
-                    % (api.env.host, self.options.server))
+                    % (api.env.host, self.options.server)
+                )
 
             # Save the reference to the replication manager in the object
             self.manager = manager
@@ -147,13 +154,14 @@ class WinsyncMigrate(admintool.AdminTool):
             self.manager.delete_agreement(self.options.server)
             self.manager.delete_referral(self.options.server)
 
-            dn = DN(('cn', self.options.server),
-                    ('cn', 'replicas'),
-                    ('cn', 'ipa'),
-                    ('cn', 'etc'),
-                    realm_to_suffix(api.env.realm))
-            entries = self.manager.conn.get_entries(dn,
-                                                    self.ldap.SCOPE_SUBTREE)
+            dn = DN(
+                ("cn", self.options.server),
+                ("cn", "replicas"),
+                ("cn", "ipa"),
+                ("cn", "etc"),
+                realm_to_suffix(api.env.realm),
+            )
+            entries = self.manager.conn.get_entries(dn, self.ldap.SCOPE_SUBTREE)
             if entries:
                 entries.sort(key=len, reverse=True)
                 for entry in entries:
@@ -161,33 +169,30 @@ class WinsyncMigrate(admintool.AdminTool):
 
         except Exception as e:
             raise admintool.ScriptError(
-                "Deletion of the winsync agreement failed: %s" % str(e))
-
+                "Deletion of the winsync agreement failed: %s" % str(e)
+            )
 
     def create_id_user_override(self, entry):
         """
         Creates ID override corresponding to this user entry.
         """
 
-        user_identifier = u"%s@%s" % (entry['uid'][0], self.options.realm)
+        user_identifier = u"%s@%s" % (entry["uid"][0], self.options.realm)
 
         kwargs = {
-            'uid': entry['uid'][0],
-            'uidnumber': entry['uidnumber'][0],
-            'gidnumber': entry['gidnumber'][0],
-            'gecos': entry['gecos'][0],
-            'loginshell': entry['loginshell'][0]
+            "uid": entry["uid"][0],
+            "uidnumber": entry["uidnumber"][0],
+            "gidnumber": entry["gidnumber"][0],
+            "gecos": entry["gecos"][0],
+            "loginshell": entry["loginshell"][0],
         }
 
         try:
-            api.Command['idoverrideuser_add'](
-                DEFAULT_TRUST_VIEW_NAME,
-                user_identifier,
-                **kwargs
+            api.Command["idoverrideuser_add"](
+                DEFAULT_TRUST_VIEW_NAME, user_identifier, **kwargs
             )
         except Exception as e:
-            logger.warning("Migration failed: %s (%s)",
-                           user_identifier, str(e))
+            logger.warning("Migration failed: %s (%s)", user_identifier, str(e))
         else:
             logger.debug("Migrated: %s", user_identifier)
 
@@ -199,21 +204,24 @@ class WinsyncMigrate(admintool.AdminTool):
         user_filter = "(&(objectclass=ntuser)(ntUserDomainId=*))"
         user_base = DN(api.env.container_user, api.env.basedn)
         entries, _truncated = self.ldap.find_entries(
-            filter=user_filter,
-            base_dn=user_base,
-            paged_search=True)
+            filter=user_filter, base_dn=user_base, paged_search=True
+        )
 
         for entry in entries:
             logger.debug("Discovered entry: %s", entry)
 
         return entries
 
-    def migrate_memberships(self, user_entry, winsync_group_prefix,
-                            object_membership_command,
-                            object_info_command,
-                            user_dn_attribute,
-                            object_group_membership_key,
-                            object_container_dn):
+    def migrate_memberships(
+        self,
+        user_entry,
+        winsync_group_prefix,
+        object_membership_command,
+        object_info_command,
+        user_dn_attribute,
+        object_group_membership_key,
+        object_container_dn,
+    ):
         """
         Migrates user memberships to theier external identities.
 
@@ -237,8 +245,7 @@ class WinsyncMigrate(admintool.AdminTool):
             """
 
             return u"{0}_{1}_winsync_external".format(
-                winsync_group_prefix,
-                posixify(object_entry['cn'][0])
+                winsync_group_prefix, posixify(object_entry["cn"][0])
             )
 
         def create_winsync_group(object_entry, suffix=0):
@@ -254,22 +261,25 @@ class WinsyncMigrate(admintool.AdminTool):
                 name += str(suffix)
 
             try:
-                api.Command['group_add'](name, external=True)
+                api.Command["group_add"](name, external=True)
             except errors.DuplicateEntry:
                 # If there is a collision, let's try again with a higher suffix
-                create_winsync_group(object_entry, suffix=suffix+1)
+                create_winsync_group(object_entry, suffix=suffix + 1)
             else:
                 # In case of no collision, add the membership
-                api.Command[object_membership_command](object_entry['cn'][0], group=[name])
+                api.Command[object_membership_command](
+                    object_entry["cn"][0], group=[name]
+                )
 
         # Search for all objects containing the given user as a direct member
-        member_filter = self.ldap.make_filter_from_attr(user_dn_attribute,
-                                                        user_entry.dn)
+        member_filter = self.ldap.make_filter_from_attr(
+            user_dn_attribute, user_entry.dn
+        )
 
         try:
             objects, _truncated = self.ldap.find_entries(
-                member_filter,
-                base_dn=object_container_dn)
+                member_filter, base_dn=object_container_dn
+            )
         except errors.EmptyResult:
             # If there's nothing to migrate, then let's get out of here
             return
@@ -282,7 +292,7 @@ class WinsyncMigrate(admintool.AdminTool):
         for obj in objects:
             # Check for existence of winsync external group
             name = winsync_group_name(obj)
-            info = api.Command[object_info_command](obj['cn'][0])['result']
+            info = api.Command[object_info_command](obj["cn"][0])["result"]
 
             # If it was not created yet, do it now
             if name not in info.get(object_group_membership_key, []):
@@ -290,11 +300,12 @@ class WinsyncMigrate(admintool.AdminTool):
 
             # Add the user to the external group. Membership is migrated
             # at this point.
-            user_identifier = u"%s@%s" % (user_entry['uid'][0], self.options.realm)
-            api.Command['group_add_member'](name, ipaexternalmember=[user_identifier])
+            user_identifier = u"%s@%s" % (user_entry["uid"][0], self.options.realm)
+            api.Command["group_add_member"](name, ipaexternalmember=[user_identifier])
 
     def migrate_group_memberships(self, user_entry):
-        return self.migrate_memberships(user_entry,
+        return self.migrate_memberships(
+            user_entry,
             winsync_group_prefix="group",
             user_dn_attribute="member",
             object_membership_command="group_add_member",
@@ -304,7 +315,8 @@ class WinsyncMigrate(admintool.AdminTool):
         )
 
     def migrate_role_memberships(self, user_entry):
-        return self.migrate_memberships(user_entry,
+        return self.migrate_memberships(
+            user_entry,
             winsync_group_prefix="role",
             user_dn_attribute="member",
             object_membership_command="role_add_member",
@@ -314,7 +326,8 @@ class WinsyncMigrate(admintool.AdminTool):
         )
 
     def migrate_hbac_memberships(self, user_entry):
-        return self.migrate_memberships(user_entry,
+        return self.migrate_memberships(
+            user_entry,
             winsync_group_prefix="hbacrule",
             user_dn_attribute="memberuser",
             object_membership_command="hbacrule_add_user",
@@ -324,7 +337,8 @@ class WinsyncMigrate(admintool.AdminTool):
         )
 
     def migrate_selinux_memberships(self, user_entry):
-        return self.migrate_memberships(user_entry,
+        return self.migrate_memberships(
+            user_entry,
             winsync_group_prefix="selinux",
             user_dn_attribute="memberuser",
             object_membership_command="selinuxusermap_add_user",
@@ -334,11 +348,13 @@ class WinsyncMigrate(admintool.AdminTool):
         )
 
     def warn_passsync(self):
-        logger.warning("Migration completed. Please note that if PassSync "
-                       "was configured on the given Active Directory server, "
-                       "it needs to be manually removed, otherwise it may try "
-                       "to reset password for accounts that are no longer "
-                       "existent.")
+        logger.warning(
+            "Migration completed. Please note that if PassSync "
+            "was configured on the given Active Directory server, "
+            "it needs to be manually removed, otherwise it may try "
+            "to reset password for accounts that are no longer "
+            "existent."
+        )
 
     @classmethod
     def main(cls, argv):
@@ -354,7 +370,7 @@ class WinsyncMigrate(admintool.AdminTool):
             sys.exit(e)
 
         # Finalize API
-        api.bootstrap(in_server=True, context='server', confdir=paths.ETC_IPA)
+        api.bootstrap(in_server=True, context="server", confdir=paths.ETC_IPA)
         api.finalize()
 
         # Setup LDAP connection
@@ -362,11 +378,17 @@ class WinsyncMigrate(admintool.AdminTool):
             api.Backend.ldap2.connect()
             cls.ldap = api.Backend.ldap2
         except gssapi.exceptions.GSSError as e:
-            sys.exit("Must have Kerberos credentials to migrate Winsync users. Error: %s" % e)
+            sys.exit(
+                "Must have Kerberos credentials to migrate Winsync users. Error: %s" % e
+            )
         except errors.ACIError as e:
-            sys.exit("Outdated Kerberos credentials. Use kdestroy and kinit to update your ticket.")
+            sys.exit(
+                "Outdated Kerberos credentials. Use kdestroy and kinit to update your ticket."
+            )
         except errors.DatabaseError as e:
-            sys.exit("Cannot connect to the LDAP database. Please check if IPA is running.")
+            sys.exit(
+                "Cannot connect to the LDAP database. Please check if IPA is running."
+            )
 
         super(WinsyncMigrate, cls).main(argv)
 

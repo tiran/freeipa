@@ -25,20 +25,29 @@ import six
 # The Python re module doesn't do nested parenthesis
 
 # Break the ACI into 3 pieces: target, name, permissions/bind_rules
-ACIPat = re.compile(r'\(version\s+3.0\s*;\s*ac[li]\s+\"([^\"]*)\"\s*;'
-                    r'\s*(.*);\s*\)', re.UNICODE)
+ACIPat = re.compile(
+    r"\(version\s+3.0\s*;\s*ac[li]\s+\"([^\"]*)\"\s*;" r"\s*(.*);\s*\)", re.UNICODE
+)
 
 # Break the permissions/bind_rules out
-PermPat = re.compile(r'(\w+)\s*\(([^()]*)\)\s*(.*)', re.UNICODE)
+PermPat = re.compile(r"(\w+)\s*\(([^()]*)\)\s*(.*)", re.UNICODE)
 
 # Break the bind rule out
-BindPat = re.compile(r'\(?([a-zA-Z0-9;\.]+)\s*(\!?=)\s*\"(.*)\"\)?',
-                     re.UNICODE)
+BindPat = re.compile(r"\(?([a-zA-Z0-9;\.]+)\s*(\!?=)\s*\"(.*)\"\)?", re.UNICODE)
 
 ACTIONS = ["allow", "deny"]
 
-PERMISSIONS = ["read", "write", "add", "delete", "search", "compare",
-               "selfwrite", "proxy", "all"]
+PERMISSIONS = [
+    "read",
+    "write",
+    "add",
+    "delete",
+    "search",
+    "compare",
+    "selfwrite",
+    "proxy",
+    "all",
+]
 
 
 class ACI:
@@ -47,9 +56,10 @@ class ACI:
     entry in LDAP.  Has methods to parse an ACI string and export to an
     ACI String.
     """
+
     __hash__ = None
 
-    def __init__(self,acistr=None):
+    def __init__(self, acistr=None):
         self.name = None
         self.source_group = None
         self.dest_group = None
@@ -61,7 +71,7 @@ class ACI:
         if acistr is not None:
             self._parse_acistr(acistr)
 
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         """Fake getting attributes by key for sorting"""
         if key == 0:
             return self.name
@@ -80,16 +90,28 @@ class ACI:
         self.validate()
         aci = ""
         for t, v in sorted(self.target.items()):
-            op = v['operator']
-            if type(v['expression']) in (tuple, list):
+            op = v["operator"]
+            if type(v["expression"]) in (tuple, list):
                 target = ""
-                for l in v['expression']:
+                for l in v["expression"]:
                     target = target + l + " || "
                 target = target[:-4]
-                aci = aci + "(%s %s \"%s\")" % (t, op, target)
+                aci = aci + '(%s %s "%s")' % (t, op, target)
             else:
-                aci = aci + "(%s %s \"%s\")" % (t, op, v['expression'])
-        aci = aci + "(version 3.0;acl \"%s\";%s (%s) %s %s \"%s\"" % (self.name, self.action, ",".join(self.permissions), self.bindrule['keyword'], self.bindrule['operator'], self.bindrule['expression']) + ";)"
+                aci = aci + '(%s %s "%s")' % (t, op, v["expression"])
+        aci = (
+            aci
+            + '(version 3.0;acl "%s";%s (%s) %s %s "%s"'
+            % (
+                self.name,
+                self.action,
+                ",".join(self.permissions),
+                self.bindrule["keyword"],
+                self.bindrule["operator"],
+                self.bindrule["expression"],
+            )
+            + ";)"
+        )
         return aci
 
     def _remove_quotes(self, s):
@@ -102,7 +124,7 @@ class ACI:
 
     def _parse_target(self, aci):
         if six.PY2:
-            aci = aci.encode('utf-8')
+            aci = aci.encode("utf-8")
         lexer = shlex.shlex(aci)
         lexer.wordchars = lexer.wordchars + "."
 
@@ -123,33 +145,35 @@ class ACI:
                 val = self._remove_quotes(val)
                 end = next(lexer)
                 if end != ")":
-                    raise SyntaxError('No end parenthesis in target, got %s' % end)
+                    raise SyntaxError("No end parenthesis in target, got %s" % end)
 
-            if var == 'targetattr':
+            if var == "targetattr":
                 # Make a string of the form attr || attr || ... into a list
-                t = re.split(r'[^a-zA-Z0-9;\*]+', val)
+                t = re.split(r"[^a-zA-Z0-9;\*]+", val)
                 self.target[var] = {}
-                self.target[var]['operator'] = op
-                self.target[var]['expression'] = t
+                self.target[var]["operator"] = op
+                self.target[var]["expression"] = t
             else:
                 self.target[var] = {}
-                self.target[var]['operator'] = op
-                self.target[var]['expression'] = val
+                self.target[var]["operator"] = op
+                self.target[var]["expression"] = val
 
     def _parse_acistr(self, acistr):
-        vstart = acistr.find('version 3.0')
+        vstart = acistr.find("version 3.0")
         if vstart < 0:
             raise SyntaxError("malformed ACI, unable to find version %s" % acistr)
-        acimatch = ACIPat.match(acistr[vstart-1:])
+        acimatch = ACIPat.match(acistr[vstart - 1 :])
         if not acimatch or len(acimatch.groups()) < 2:
-            raise SyntaxError("malformed ACI, match for version and bind rule failed %s" % acistr)
-        self._parse_target(acistr[:vstart-1])
+            raise SyntaxError(
+                "malformed ACI, match for version and bind rule failed %s" % acistr
+            )
+        self._parse_target(acistr[: vstart - 1])
         self.name = acimatch.group(1)
         bindperms = PermPat.match(acimatch.group(2))
         if not bindperms or len(bindperms.groups()) < 3:
             raise SyntaxError("malformed ACI, permissions match failed %s" % acistr)
         self.action = bindperms.group(1)
-        self.permissions = bindperms.group(2).replace(' ','').split(',')
+        self.permissions = bindperms.group(2).replace(" ", "").split(",")
         self.set_bindrule(bindperms.group(3))
 
     def validate(self):
@@ -171,36 +195,40 @@ class ACI:
             raise SyntaxError("target must be a non-empty dictionary")
         if not isinstance(self.bindrule, dict):
             raise SyntaxError("bindrule must be a dictionary")
-        if not self.bindrule.get('operator') or not self.bindrule.get('keyword') or not self.bindrule.get('expression'):
+        if (
+            not self.bindrule.get("operator")
+            or not self.bindrule.get("keyword")
+            or not self.bindrule.get("expression")
+        ):
             raise SyntaxError("bindrule is missing a component")
         return True
 
     def set_target_filter(self, filter, operator="="):
-        self.target['targetfilter'] = {}
+        self.target["targetfilter"] = {}
         if not filter.startswith("("):
             filter = "(" + filter + ")"
-        self.target['targetfilter']['expression'] = filter
-        self.target['targetfilter']['operator'] = operator
+        self.target["targetfilter"]["expression"] = filter
+        self.target["targetfilter"]["operator"] = operator
 
     def set_target_attr(self, attr, operator="="):
         if not attr:
-            if 'targetattr' in self.target:
-                del self.target['targetattr']
+            if "targetattr" in self.target:
+                del self.target["targetattr"]
             return
         if type(attr) not in (tuple, list):
             attr = [attr]
-        self.target['targetattr'] = {}
-        self.target['targetattr']['expression'] = attr
-        self.target['targetattr']['operator'] = operator
+        self.target["targetattr"] = {}
+        self.target["targetattr"]["expression"] = attr
+        self.target["targetattr"]["operator"] = operator
 
     def set_target(self, target, operator="="):
         assert target.startswith("ldap:///")
-        self.target['target'] = {}
-        self.target['target']['expression'] = target
-        self.target['target']['operator'] = operator
+        self.target["target"] = {}
+        self.target["target"]["expression"] = target
+        self.target["target"]["operator"] = operator
 
     def set_bindrule(self, bindrule):
-        if bindrule.startswith('(') != bindrule.endswith(')'):
+        if bindrule.startswith("(") != bindrule.endswith(")"):
             raise SyntaxError("non-matching parentheses in bindrule")
 
         match = BindPat.match(bindrule)
@@ -208,16 +236,16 @@ class ACI:
             raise SyntaxError("malformed bind rule")
         self.set_bindrule_keyword(match.group(1))
         self.set_bindrule_operator(match.group(2))
-        self.set_bindrule_expression(match.group(3).replace('"',''))
+        self.set_bindrule_expression(match.group(3).replace('"', ""))
 
     def set_bindrule_keyword(self, keyword):
-        self.bindrule['keyword'] = keyword
+        self.bindrule["keyword"] = keyword
 
     def set_bindrule_operator(self, operator):
-        self.bindrule['operator'] = operator
+        self.bindrule["operator"] = operator
 
     def set_bindrule_expression(self, expression):
-        self.bindrule['expression'] = expression
+        self.bindrule["expression"] = expression
 
     def isequal(self, b):
         """
@@ -234,26 +262,38 @@ class ACI:
             if set(self.permissions) != set(b.permissions):
                 return False
 
-            if self.bindrule.get('keyword') != b.bindrule.get('keyword'):
+            if self.bindrule.get("keyword") != b.bindrule.get("keyword"):
                 return False
-            if self.bindrule.get('operator') != b.bindrule.get('operator'):
+            if self.bindrule.get("operator") != b.bindrule.get("operator"):
                 return False
-            if self.bindrule.get('expression') != b.bindrule.get('expression'):
-                return False
-
-            if self.target.get('targetfilter',{}).get('expression') != b.target.get('targetfilter',{}).get('expression'):
-                return False
-            if self.target.get('targetfilter',{}).get('operator') != b.target.get('targetfilter',{}).get('operator'):
+            if self.bindrule.get("expression") != b.bindrule.get("expression"):
                 return False
 
-            if set(self.target.get('targetattr', {}).get('expression', ())) != set(b.target.get('targetattr',{}).get('expression', ())):
+            if self.target.get("targetfilter", {}).get("expression") != b.target.get(
+                "targetfilter", {}
+            ).get("expression"):
                 return False
-            if self.target.get('targetattr',{}).get('operator') != b.target.get('targetattr',{}).get('operator'):
+            if self.target.get("targetfilter", {}).get("operator") != b.target.get(
+                "targetfilter", {}
+            ).get("operator"):
                 return False
 
-            if self.target.get('target',{}).get('expression') != b.target.get('target',{}).get('expression'):
+            if set(self.target.get("targetattr", {}).get("expression", ())) != set(
+                b.target.get("targetattr", {}).get("expression", ())
+            ):
                 return False
-            if self.target.get('target',{}).get('operator') != b.target.get('target',{}).get('operator'):
+            if self.target.get("targetattr", {}).get("operator") != b.target.get(
+                "targetattr", {}
+            ).get("operator"):
+                return False
+
+            if self.target.get("target", {}).get("expression") != b.target.get(
+                "target", {}
+            ).get("expression"):
+                return False
+            if self.target.get("target", {}).get("operator") != b.target.get(
+                "target", {}
+            ).get("operator"):
                 return False
 
         except Exception:

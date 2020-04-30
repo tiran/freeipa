@@ -45,13 +45,13 @@ logger = logging.getLogger(__name__)
 IPA_KRA_RECORD = "ipa-kra"
 
 ADMIN_GROUPS = [
-    'Enterprise CA Administrators',
-    'Enterprise KRA Administrators',
-    'Security Domain Administrators'
+    "Enterprise CA Administrators",
+    "Enterprise KRA Administrators",
+    "Security Domain Administrators",
 ]
 
-KRA_BASEDN = DN(('o', 'kra'), ('o', 'ipaca'))
-KRA_AGENT_DN = DN(('uid', 'ipakra'), ('ou', 'people'), KRA_BASEDN)
+KRA_BASEDN = DN(("o", "kra"), ("o", "ipaca"))
+KRA_AGENT_DN = DN(("uid", "ipakra"), ("ou", "people"), KRA_BASEDN)
 
 
 class KRAInstance(DogtagInstance):
@@ -67,9 +67,9 @@ class KRAInstance(DogtagInstance):
     # use for that certificate.  'configure_renewal()' reads this
     # dict.  The profile MUST be specified.
     tracking_reqs = {
-        'auditSigningCert cert-pki-kra': 'caInternalAuthAuditSigningCert',
-        'transportCert cert-pki-kra': 'caInternalAuthTransportCert',
-        'storageCert cert-pki-kra': 'caInternalAuthDRMstorageCert',
+        "auditSigningCert cert-pki-kra": "caInternalAuthAuditSigningCert",
+        "transportCert cert-pki-kra": "caInternalAuthTransportCert",
+        "storageCert cert-pki-kra": "caInternalAuthDRMstorageCert",
     }
 
     def __init__(self, realm):
@@ -80,10 +80,19 @@ class KRAInstance(DogtagInstance):
             config=paths.KRA_CS_CFG_PATH,
         )
 
-    def configure_instance(self, realm_name, host_name, dm_password,
-                           admin_password, pkcs12_info=None, master_host=None,
-                           subject_base=None, ca_subject=None,
-                           promote=False, pki_config_override=None):
+    def configure_instance(
+        self,
+        realm_name,
+        host_name,
+        dm_password,
+        admin_password,
+        pkcs12_info=None,
+        master_host=None,
+        subject_base=None,
+        ca_subject=None,
+        promote=False,
+        pki_config_override=None,
+    ):
         """Create a KRA instance.
 
            To create a clone, pass in pkcs12_info.
@@ -98,8 +107,9 @@ class KRAInstance(DogtagInstance):
         self.master_host = master_host
         self.pki_config_override = pki_config_override
 
-        self.subject_base = \
-            subject_base or installutils.default_subject_base(realm_name)
+        self.subject_base = subject_base or installutils.default_subject_base(
+            realm_name
+        )
 
         # eagerly convert to DN to ensure validity
         self.ca_subject = DN(ca_subject)
@@ -109,29 +119,28 @@ class KRAInstance(DogtagInstance):
 
         # Confirm that a KRA does not already exist
         if self.is_installed():
-            raise RuntimeError(
-                "KRA already installed.")
+            raise RuntimeError("KRA already installed.")
         # Confirm that a Dogtag 10 CA instance already exists
         ca = cainstance.CAInstance(self.realm)
         if not ca.is_installed():
             raise RuntimeError(
-                "KRA configuration failed.  "
-                "A Dogtag CA must be installed first")
+                "KRA configuration failed.  " "A Dogtag CA must be installed first"
+            )
 
         if promote:
             self.step("creating ACIs for admin", self.add_ipaca_aci)
             self.step("creating installation admin user", self.setup_admin)
         self.step("configuring KRA instance", self.__spawn_instance)
         if not self.clone:
-            self.step("create KRA agent",
-                      self.__create_kra_agent)
+            self.step("create KRA agent", self.__create_kra_agent)
         if promote:
-            self.step("destroying installation admin user",
-                      self.teardown_admin)
+            self.step("destroying installation admin user", self.teardown_admin)
         self.step("enabling ephemeral requests", self.enable_ephemeral)
         self.step("restarting KRA", self.restart_instance)
-        self.step("configure certmonger for renewals",
-                  self.configure_certmonger_renewal_helpers)
+        self.step(
+            "configure certmonger for renewals",
+            self.configure_certmonger_renewal_helpers,
+        )
         self.step("configure certificate renewals", self.configure_renewal)
         if not self.clone:
             self.step("add vault container", self.__add_vault_container)
@@ -151,8 +160,7 @@ class KRAInstance(DogtagInstance):
         parameters and passes it to the base class to call pkispawn
         """
 
-        self.tmp_agent_db = tempfile.mkdtemp(
-                prefix="tmp-", dir=paths.VAR_LIB_IPA)
+        self.tmp_agent_db = tempfile.mkdtemp(prefix="tmp-", dir=paths.VAR_LIB_IPA)
         tmp_agent_pwd = ipautil.ipa_generate_password()
 
         # Create a temporary file for the admin PKCS #12 file
@@ -161,7 +169,8 @@ class KRAInstance(DogtagInstance):
 
         cfg = dict(
             pki_issuing_ca_uri="https://{}".format(
-                ipautil.format_netloc(self.fqdn, 443)),
+                ipautil.format_netloc(self.fqdn, 443)
+            ),
             # Client security database
             pki_client_database_dir=self.tmp_agent_db,
             pki_client_database_password=tmp_agent_pwd,
@@ -171,11 +180,13 @@ class KRAInstance(DogtagInstance):
             pki_client_admin_cert_p12=admin_p12_file,
         )
 
-        if not (os.path.isdir(paths.PKI_TOMCAT_ALIAS_DIR) and
-                os.path.isfile(paths.PKI_TOMCAT_PASSWORD_CONF)):
+        if not (
+            os.path.isdir(paths.PKI_TOMCAT_ALIAS_DIR)
+            and os.path.isfile(paths.PKI_TOMCAT_PASSWORD_CONF)
+        ):
             # generate pin which we know can be used for FIPS NSS database
             pki_pin = ipautil.ipa_generate_password()
-            cfg['pki_server_database_password'] = pki_pin
+            cfg["pki_server_database_password"] = pki_pin
         else:
             pki_pin = None
 
@@ -192,9 +203,7 @@ class KRAInstance(DogtagInstance):
                 security_domain_hostname=self.fqdn,
                 clone_pkcs12_path=p12_tmpfile_name,
             )
-            cfg.update(
-                pki_clone_setup_replication=False,
-            )
+            cfg.update(pki_clone_setup_replication=False,)
         else:
             # the admin cert file is needed for the first instance of KRA
             cert = self.get_admin_cert()
@@ -203,27 +212,20 @@ class KRAInstance(DogtagInstance):
             if not os.path.exists(parentdir):
                 os.makedirs(parentdir)
             with open(paths.ADMIN_CERT_PATH, "wb") as admin_path:
-                admin_path.write(
-                    base64.b64encode(cert.public_bytes(x509.Encoding.DER))
-                )
+                admin_path.write(base64.b64encode(cert.public_bytes(x509.Encoding.DER)))
 
         # Generate configuration file
         pent = pwd.getpwnam(self.service_user)
         config = self._create_spawn_config(cfg)
-        with tempfile.NamedTemporaryFile('w', delete=False) as f:
+        with tempfile.NamedTemporaryFile("w", delete=False) as f:
             config.write(f)
             os.fchown(f.fileno(), pent.pw_uid, pent.pw_gid)
             cfg_file = f.name
 
-        nolog_list = [
-            self.dm_password, self.admin_password, pki_pin, tmp_agent_pwd
-        ]
+        nolog_list = [self.dm_password, self.admin_password, pki_pin, tmp_agent_pwd]
 
         try:
-            DogtagInstance.spawn_instance(
-                self, cfg_file,
-                nolog_list=nolog_list
-            )
+            DogtagInstance.spawn_instance(self, cfg_file, nolog_list=nolog_list)
         finally:
             os.remove(p12_tmpfile_name)
             os.remove(cfg_file)
@@ -248,50 +250,61 @@ class KRAInstance(DogtagInstance):
         # create ipakra user with RA agent certificate
         entry = conn.make_entry(
             KRA_AGENT_DN,
-            objectClass=['top', 'person', 'organizationalPerson',
-                         'inetOrgPerson', 'cmsuser'],
+            objectClass=[
+                "top",
+                "person",
+                "organizationalPerson",
+                "inetOrgPerson",
+                "cmsuser",
+            ],
             uid=["ipakra"],
             sn=["IPA KRA User"],
             cn=["IPA KRA User"],
             usertype=["undefined"],
             userCertificate=[cert],
-            description=['2;%s;%s;%s' % (
-                cert.serial_number,
-                self.ca_subject,
-                DN(('CN', 'IPA RA'), self.subject_base))])
+            description=[
+                "2;%s;%s;%s"
+                % (
+                    cert.serial_number,
+                    self.ca_subject,
+                    DN(("CN", "IPA RA"), self.subject_base),
+                )
+            ],
+        )
         conn.add_entry(entry)
 
         # add ipakra user to Data Recovery Manager Agents group
         group_dn = DN(
-            ('cn', 'Data Recovery Manager Agents'), ('ou', 'groups'),
-            KRA_BASEDN)
-        conn.add_entry_to_group(KRA_AGENT_DN, group_dn, 'uniqueMember')
+            ("cn", "Data Recovery Manager Agents"), ("ou", "groups"), KRA_BASEDN
+        )
+        conn.add_entry_to_group(KRA_AGENT_DN, group_dn, "uniqueMember")
 
         conn.disconnect()
 
     def __add_vault_container(self):
-        self._ldap_mod(
-            'vault.ldif', {'SUFFIX': self.suffix}, raise_on_err=True)
+        self._ldap_mod("vault.ldif", {"SUFFIX": self.suffix}, raise_on_err=True)
 
     def __apply_updates(self):
         sub_dict = {
-            'SUFFIX': self.suffix,
+            "SUFFIX": self.suffix,
         }
 
-        ld = ldapupdate.LDAPUpdate(dm_password=self.dm_password,
-                                   sub_dict=sub_dict)
-        ld.update([os.path.join(paths.UPDATES_DIR, '40-vault.update')])
+        ld = ldapupdate.LDAPUpdate(dm_password=self.dm_password, sub_dict=sub_dict)
+        ld.update([os.path.join(paths.UPDATES_DIR, "40-vault.update")])
 
     def enable_ephemeral(self):
         """
         Enable ephemeral KRA requests to reduce the number of LDAP
         write operations.
         """
-        with installutils.stopped_service('pki-tomcatd', 'pki-tomcat'):
+        with installutils.stopped_service("pki-tomcatd", "pki-tomcat"):
             directivesetter.set_directive(
                 self.config,
-                'kra.ephemeralRequests',
-                'true', quotes=False, separator='=')
+                "kra.ephemeralRequests",
+                "true",
+                quotes=False,
+                separator="=",
+            )
 
         # A restart is required
 
@@ -306,15 +319,15 @@ class KRAInstance(DogtagInstance):
 
         # The cert directive to update per nickname
         directives = {
-            'auditSigningCert cert-pki-kra': 'kra.audit_signing.cert',
-            'storageCert cert-pki-kra': 'kra.storage.cert',
-            'transportCert cert-pki-kra': 'kra.transport.cert',
-            'subsystemCert cert-pki-kra': 'kra.subsystem.cert',
-            'Server-Cert cert-pki-ca': 'kra.sslserver.cert'}
+            "auditSigningCert cert-pki-kra": "kra.audit_signing.cert",
+            "storageCert cert-pki-kra": "kra.storage.cert",
+            "transportCert cert-pki-kra": "kra.transport.cert",
+            "subsystemCert cert-pki-kra": "kra.subsystem.cert",
+            "Server-Cert cert-pki-ca": "kra.sslserver.cert",
+        }
 
         if nickname in directives:
-            super(KRAInstance, self).update_cert_cs_cfg(
-                directives[nickname], cert)
+            super(KRAInstance, self).update_cert_cs_cfg(directives[nickname], cert)
 
     def __enable_instance(self):
-        self.ldap_configure('KRA', self.fqdn, None, self.suffix)
+        self.ldap_configure("KRA", self.fqdn, None, self.suffix)

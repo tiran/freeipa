@@ -24,7 +24,7 @@ from calendar import timegm
 from urllib.parse import urlparse
 
 
-'''
+"""
 Core Python has two cookie libraries, Cookie.py targeted to server
 side and cookielib.py targeted to client side. So why this module and
 not use the standard libraries?
@@ -59,13 +59,13 @@ The cookie RFC is silent on any escaping requirements for cookie
 contents as such this module does not provide any automated support
 escaping and unescapin.
 
-'''
+"""
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 
 class Cookie:
-    '''
+    """
     A Cookie object has the following attributes:
 
         key
@@ -118,7 +118,7 @@ class Cookie:
 
     cookies = Cookie.parse(response.getheader('Set-Cookie'), request_url)
 
-    '''
+    """
 
     class Expired(ValueError):
         pass
@@ -127,38 +127,43 @@ class Cookie:
         pass
 
     # regexp to split fields at a semi-colon
-    field_re = re.compile(r';\s*')
+    field_re = re.compile(r";\s*")
 
     # regexp to locate a key/value pair
-    kv_pair_re = re.compile(r'^\s*([a-zA-Z0-9\!\#\$\%\&\'\*\+\-\.\^\_\`\|\~]+)\s*=\s*(.*?)\s*$', re.IGNORECASE)
+    kv_pair_re = re.compile(
+        r"^\s*([a-zA-Z0-9\!\#\$\%\&\'\*\+\-\.\^\_\`\|\~]+)\s*=\s*(.*?)\s*$",
+        re.IGNORECASE,
+    )
 
     # Reserved attribute names, maps from lower case protocol name to
     # object attribute name
-    attrs = {'domain'   : 'domain',
-             'path'     : 'path',
-             'max-age'  : 'max_age',
-             'expires'  : 'expires',
-             'secure'   : 'secure',
-             'httponly' : 'httponly'}
+    attrs = {
+        "domain": "domain",
+        "path": "path",
+        "max-age": "max_age",
+        "expires": "expires",
+        "secure": "secure",
+        "httponly": "httponly",
+    }
 
     @classmethod
     def datetime_to_time(cls, dt):
-        '''
+        """
         Timestamps (timestamp & expires) are stored as datetime
         objects in UTC.  It's non-obvious how to convert a naive UTC
         datetime into a unix time value (seconds since the epoch
         UTC). That functionality is oddly missing from the datetime
         and time modules. This utility provides that missing
         functionality.
-        '''
+        """
         # Use timegm from the calendar module
         return timegm(dt.utctimetuple())
 
     @classmethod
     def datetime_to_string(cls, dt=None):
-        '''
+        """
         Given a datetime object in UTC generate RFC 1123 date string.
-        '''
+        """
 
         # Try to verify dt is specified as UTC. If utcoffset is not
         # available we'll just have to assume the caller is using the
@@ -174,9 +179,9 @@ class Cookie:
 
     @classmethod
     def parse_datetime(cls, s):
-        '''
+        """
         Parse a RFC 822, RFC 1123 date string, return a datetime naive object in UTC.
-        '''
+        """
 
         s = s.strip()
 
@@ -192,7 +197,7 @@ class Cookie:
 
     @classmethod
     def normalize_url_path(cls, url_path):
-        '''
+        """
         Given a URL path, possibly empty, return a path consisting
         only of directory components. The URL path must end with a
         trailing slash for the last path element to be considered a
@@ -209,29 +214,28 @@ class Cookie:
         '/foo/'     -> '/foo'
         '/foo/bar'  -> '/foo'
         '/foo/bar/' -> '/foo/bar'
-        '''
+        """
         url_path = url_path.lower()
 
         if not url_path:
-            return '/'
+            return "/"
 
-        if not url_path.startswith('/'):
-            return '/'
+        if not url_path.startswith("/"):
+            return "/"
 
-        if url_path.count('/') <= 1:
-            return'/'
+        if url_path.count("/") <= 1:
+            return "/"
 
-        return url_path[:url_path.rindex('/')]
-
+        return url_path[: url_path.rindex("/")]
 
     @classmethod
     def parse(cls, cookie_string, request_url=None):
-        '''
+        """
         Given a string containing one or more cookies (the
         HTTP_COOKIES environment variable typically contains multiple
         cookies) parse the string and return a list of Cookie objects
         found in the string.
-        '''
+        """
 
         # Our list of returned cookies
         cookies = []
@@ -280,7 +284,7 @@ class Cookie:
                 kv_pair = True
             else:
                 key = field
-                value = True        # True because bare keys are boolean flags
+                value = True  # True because bare keys are boolean flags
                 kv_pair = False
 
             is_attribute = key.lower() in Cookie.attrs
@@ -318,9 +322,10 @@ class Cookie:
         return cookies
 
     @classmethod
-    def get_named_cookie_from_string(cls, cookie_string, cookie_name,
-                                     request_url=None, timestamp=None):
-        '''
+    def get_named_cookie_from_string(
+        cls, cookie_string, cookie_name, request_url=None, timestamp=None
+    ):
+        """
         A cookie string may contain multiple cookies, parse the cookie
         string and return the last cookie in the string matching the
         cookie name or None if not found.
@@ -332,7 +337,7 @@ class Cookie:
         When cookie_name appears more than once the last instance is
         returned rather than the first because the ordering sequence
         makes the last instance the current value.
-        '''
+        """
 
         target_cookie = None
 
@@ -347,9 +352,18 @@ class Cookie:
             target_cookie.normalize(request_url)
         return target_cookie
 
-
-    def __init__(self, key, value, domain=None, path=None, max_age=None, expires=None,
-                 secure=None, httponly=None, timestamp=None):
+    def __init__(
+        self,
+        key,
+        value,
+        domain=None,
+        path=None,
+        max_age=None,
+        expires=None,
+        secure=None,
+        httponly=None,
+        timestamp=None,
+    ):
         self.key = key
         self.value = value
         self.domain = domain
@@ -362,7 +376,7 @@ class Cookie:
 
     @property
     def timestamp(self):
-        '''
+        """
         The UTC moment at which cookie was received for purposes of
         computing the expiration given a Max-Age offset. The
         expiration will be timestamp + max_age. The timestamp value
@@ -380,7 +394,7 @@ class Cookie:
         UNIX timestamp (seconds since the epoch UTC) or a formatted time
         sting, in all cases the value will be converted to a datetime
         object.
-        '''
+        """
         return self._timestamp
 
     @timestamp.setter
@@ -394,19 +408,21 @@ class Cookie:
         elif isinstance(value, str):
             self._timestamp = Cookie.parse_datetime(value)
         else:
-            raise TypeError('value must be datetime, int, long, float, basestring or None, not %s' % \
-                            value.__class__.__name__)
+            raise TypeError(
+                "value must be datetime, int, long, float, basestring or None, not %s"
+                % value.__class__.__name__
+            )
 
     @property
     def expires(self):
-        '''
+        """
         The expiration timestamp (in UTC) as a datetime object for the
         cookie, or None if not set.
 
         You may assign a value of None, a datetime object, a numeric
         UNIX timestamp (seconds since the epoch UTC) or formatted time
         string (the latter two will be converted to a datetime object.
-        '''
+        """
         return self._expires
 
     @expires.setter
@@ -420,15 +436,17 @@ class Cookie:
         elif isinstance(value, str):
             self._expires = Cookie.parse_datetime(value)
         else:
-            raise TypeError('value must be datetime, int, long, float, basestring or None, not %s' % \
-                            value.__class__.__name__)
+            raise TypeError(
+                "value must be datetime, int, long, float, basestring or None, not %s"
+                % value.__class__.__name__
+            )
 
     @property
     def max_age(self):
-        '''
+        """
         The lifetime duration of the cookie. Computed as an offset
         from the cookie's timestamp.
-        '''
+        """
         return self._max_age
 
     @max_age.setter
@@ -439,12 +457,14 @@ class Cookie:
             try:
                 self._max_age = int(value)
             except Exception:
-                raise ValueError("Max-Age value '%s' not convertable to integer" % value)
+                raise ValueError(
+                    "Max-Age value '%s' not convertable to integer" % value
+                )
 
     def __set_attr(self, name, value):
-        '''
+        """
         Sets one of the predefined cookie attributes.
-        '''
+        """
         attr_name = Cookie.attrs.get(name.lower(), None)
         if attr_name is None:
             raise ValueError("unknown cookie attribute '%s'" % name)
@@ -473,10 +493,10 @@ class Cookie:
         if self.httponly:
             components.append("HttpOnly")
 
-        return '; '.join(components)
+        return "; ".join(components)
 
     def get_expiration(self):
-        '''
+        """
         Return the effective expiration of the cookie as a datetime
         object or None if no expiration is defined. Expiration may be
         defined either by the "Expires" timestamp attribute or the
@@ -503,7 +523,7 @@ class Cookie:
         timestamp specified as the "Expires" value.
 
         If neither is set None is returned.
-        '''
+        """
 
         if self.max_age is not None:
             return self.timestamp + datetime.timedelta(seconds=self.max_age)
@@ -514,7 +534,7 @@ class Cookie:
         return None
 
     def normalize_expiration(self):
-        '''
+        """
         An expiration may be specified either with an explicit
         timestamp in the "Expires" attribute or via an offset
         specified witht the "Max-Age" attribute. The "Max-Age"
@@ -525,18 +545,18 @@ class Cookie:
         only a "Expires" attribute remains after consideration of the
         "Max-Age" attribute. This is useful when storing the cookie
         for future reference.
-        '''
+        """
 
         self.expires = self.get_expiration()
         self.max_age = None
         return self.expires
 
     def set_defaults_from_url(self, url):
-        '''
+        """
         If cookie domain and path attributes are not specified then
         they assume defaults from the request url the cookie was
         received from.
-        '''
+        """
 
         _scheme, domain, path, _params, _query, _fragment = urlparse(url)
 
@@ -546,25 +566,24 @@ class Cookie:
         if self.path is None:
             self.path = self.normalize_url_path(path)
 
-
     def normalize(self, url):
-        '''
+        """
         Missing cookie attributes will receive default values derived
         from the request URL. The expiration value is normalized.
-        '''
+        """
 
         self.set_defaults_from_url(url)
         self.normalize_expiration()
 
     def http_cookie(self):
-        '''
+        """
         Return a string with just the key and value (no attributes).
         This is appropriate for including in a HTTP Cookie header.
-        '''
-        return '%s=%s;' % (self.key, self.value)
+        """
+        return "%s=%s;" % (self.key, self.value)
 
     def http_return_ok(self, url):
-        '''
+        """
         Tests to see if a cookie should be returned when a request is
         sent to a specific URL.
 
@@ -582,18 +601,19 @@ class Cookie:
         If the test fails Cookie.Expired or Cookie.URLMismatch will be raised,
         otherwise True is returned.
 
-        '''
+        """
 
         def domain_valid(url_domain, cookie_domain):
-            '''
+            """
             Compute domain component and perform test per
             RFC 6265, Section 5.1.3. "Domain Matching"
-            '''
+            """
             # FIXME: At the moment we can't import from ipalib at the
             # module level because of a dependency loop (cycle) in the
             # import. Our module layout needs to be refactored.
             # pylint: disable=ipa-forbidden-import
             from ipalib.util import validate_domain_name
+
             # pylint: enable=ipa-forbidden-import
             try:
                 validate_domain_name(url_domain)
@@ -610,16 +630,16 @@ class Cookie:
                 return True
 
             if url_domain.endswith(cookie_domain):
-                if cookie_domain.startswith('.'):
+                if cookie_domain.startswith("."):
                     return True
 
             return False
 
         def path_valid(url_path, cookie_path):
-            '''
+            """
             Compute path component and perform test per
             RFC 6265, Section 5.1.4. "Paths and Path-Match"
-            '''
+            """
 
             if cookie_path is None:
                 return True
@@ -631,11 +651,11 @@ class Cookie:
                 return True
 
             if cookie_path and request_path.startswith(cookie_path):
-                if cookie_path.endswith('/'):
+                if cookie_path.endswith("/"):
                     return True
 
-                tail = request_path[len(cookie_path):]
-                if tail.startswith('/'):
+                tail = request_path[len(cookie_path) :]
+                if tail.startswith("/"):
                     return True
 
             return False
@@ -643,37 +663,49 @@ class Cookie:
         cookie_name = self.key
 
         (
-            url_scheme, url_domain, url_path,
-            _url_params, _url_query, _url_fragment
+            url_scheme,
+            url_domain,
+            url_path,
+            _url_params,
+            _url_query,
+            _url_fragment,
         ) = urlparse(url)
 
         cookie_expiration = self.get_expiration()
         if cookie_expiration is not None:
             now = datetime.datetime.utcnow()
             if cookie_expiration < now:
-                raise Cookie.Expired("cookie named '%s'; expired at %s'" % \
-                                     (cookie_name,
-                                      self.datetime_to_string(cookie_expiration)))
+                raise Cookie.Expired(
+                    "cookie named '%s'; expired at %s'"
+                    % (cookie_name, self.datetime_to_string(cookie_expiration))
+                )
 
         if not domain_valid(url_domain, self.domain):
-            raise Cookie.URLMismatch("cookie named '%s'; it's domain '%s' does not match URL domain '%s'" % \
-                                  (cookie_name, self.domain, url_domain))
+            raise Cookie.URLMismatch(
+                "cookie named '%s'; it's domain '%s' does not match URL domain '%s'"
+                % (cookie_name, self.domain, url_domain)
+            )
 
         if not path_valid(url_path, self.path):
-            raise Cookie.URLMismatch("cookie named '%s'; it's path '%s' does not contain the URL path '%s'" % \
-                                  (cookie_name, self.path, url_path))
+            raise Cookie.URLMismatch(
+                "cookie named '%s'; it's path '%s' does not contain the URL path '%s'"
+                % (cookie_name, self.path, url_path)
+            )
 
         url_scheme = url_scheme.lower()
 
         if self.httponly:
-            if url_scheme not in ('http', 'https'):
-                raise Cookie.URLMismatch("cookie named '%s'; is restricted to HTTP but it's URL scheme is '%s'" % \
-                                         (cookie_name, url_scheme))
+            if url_scheme not in ("http", "https"):
+                raise Cookie.URLMismatch(
+                    "cookie named '%s'; is restricted to HTTP but it's URL scheme is '%s'"
+                    % (cookie_name, url_scheme)
+                )
 
         if self.secure:
-            if url_scheme not in ('https',):
-                raise Cookie.URLMismatch("cookie named '%s'; is restricted to secure transport but it's URL scheme is '%s'" % \
-                                         (cookie_name, url_scheme))
-
+            if url_scheme not in ("https",):
+                raise Cookie.URLMismatch(
+                    "cookie named '%s'; is restricted to secure transport but it's URL scheme is '%s'"
+                    % (cookie_name, url_scheme)
+                )
 
         return True

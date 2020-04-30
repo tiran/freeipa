@@ -13,8 +13,8 @@ from ipapython.ipautil import escape_seq, unescape_seq
 if six.PY3:
     unicode = str
 
-REALM_SPLIT_RE = re.compile(r'(?<!\\)@')
-COMPONENT_SPLIT_RE = re.compile(r'(?<!\\)/')
+REALM_SPLIT_RE = re.compile(r"(?<!\\)@")
+COMPONENT_SPLIT_RE = re.compile(r"(?<!\\)/")
 
 
 def parse_princ_name_and_realm(principal, realm=None):
@@ -29,8 +29,7 @@ def parse_princ_name_and_realm(principal, realm=None):
     """
     realm_and_name = REALM_SPLIT_RE.split(principal)
     if len(realm_and_name) > 2:
-        raise ValueError(
-            "Principal is not in <name>@<realm> format")
+        raise ValueError("Principal is not in <name>@<realm> format")
 
     principal_name = realm_and_name[0]
 
@@ -65,16 +64,15 @@ class Principal:
     """
     Container for the principal name and realm according to RFC 1510
     """
+
     def __init__(self, components, realm=None):
         if isinstance(components, bytes):
             raise TypeError(
-                "Cannot create a principal object from bytes: {!r}".format(
-                    components)
+                "Cannot create a principal object from bytes: {!r}".format(components)
             )
         elif isinstance(components, str):
             # parse principal components from realm
-            self.components, self.realm = self._parse_from_text(
-                components, realm)
+            self.components, self.realm = self._parse_from_text(components, realm)
 
         elif isinstance(components, Principal):
             self.components = components.components
@@ -87,8 +85,7 @@ class Principal:
         if not isinstance(other, Principal):
             return False
 
-        return (self.components == other.components and
-                self.realm == other.realm)
+        return self.components == other.components and self.realm == other.realm
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -123,15 +120,16 @@ class Principal:
         :returns: tuple containing the principal name components and realm
         """
         principal_name, parsed_realm = parse_princ_name_and_realm(
-            principal, realm=realm)
+            principal, realm=realm
+        )
 
-        (principal_name,) = unescape_seq(u'@', principal_name)
+        (principal_name,) = unescape_seq(u"@", principal_name)
 
         if parsed_realm is not None:
-            (parsed_realm,) = unescape_seq(u'@', parsed_realm)
+            (parsed_realm,) = unescape_seq(u"@", parsed_realm)
 
         name_components = split_principal_name(principal_name)
-        name_components = unescape_seq(u'/', *name_components)
+        name_components = unescape_seq(u"/", *name_components)
 
         return name_components, parsed_realm
 
@@ -141,7 +139,7 @@ class Principal:
 
     @property
     def is_enterprise(self):
-        return self.is_user and u'@' in self.components[0]
+        return self.is_user and u"@" in self.components[0]
 
     @property
     def is_service(self):
@@ -149,8 +147,11 @@ class Principal:
 
     @property
     def is_host(self):
-        return (self.is_service and len(self.components) == 2 and
-                self.components[0] == u'host')
+        return (
+            self.is_service
+            and len(self.components) == 2
+            and self.components[0] == u"host"
+        )
 
     @property
     def username(self):
@@ -158,29 +159,28 @@ class Principal:
             return self.components[0]
         else:
             raise ValueError(
-                "User name is defined only for user and enterprise principals")
+                "User name is defined only for user and enterprise principals"
+            )
 
     @property
     def upn_suffix(self):
         if not self.is_enterprise:
             raise ValueError("Only enterprise principals have UPN suffix")
 
-        return self.components[0].split(u'@')[1]
+        return self.components[0].split(u"@")[1]
 
     @property
     def hostname(self):
         if not (self.is_host or self.is_service):
-            raise ValueError(
-                "hostname is defined for host and service principals")
+            raise ValueError("hostname is defined for host and service principals")
         return self.components[-1]
 
     @property
     def service_name(self):
         if not self.is_service:
-            raise ValueError(
-                "Only service principals have meaningful service name")
+            raise ValueError("Only service principals have meaningful service name")
 
-        return u'/'.join(c for c in escape_seq('/', *self.components[:-1]))
+        return u"/".join(c for c in escape_seq("/", *self.components[:-1]))
 
     def __str__(self):
         """
@@ -188,17 +188,16 @@ class Principal:
 
         works in reverse of the `from_text` class method
         """
-        name_components = escape_seq(u'/', *self.components)
-        name_components = escape_seq(u'@', *name_components)
+        name_components = escape_seq(u"/", *self.components)
+        name_components = escape_seq(u"@", *name_components)
 
-        principal_string = u'/'.join(name_components)
+        principal_string = u"/".join(name_components)
 
         if self.realm is not None:
-            (realm,) = escape_seq(u'@', self.realm)
-            principal_string = u'@'.join([principal_string, realm])
+            (realm,) = escape_seq(u"@", self.realm)
+            principal_string = u"@".join([principal_string, realm])
 
         return principal_string
 
     def __repr__(self):
-        return "{0.__module__}.{0.__name__}('{1}')".format(
-            self.__class__, self)
+        return "{0.__module__}.{0.__name__}('{1}')".format(self.__class__, self)

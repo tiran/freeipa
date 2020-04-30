@@ -21,9 +21,11 @@ from ipalib import _
 from ipalib.misc import env, plugins
 from ipalib.plugable import Registry
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Misc plug-ins
-""")
+"""
+)
 
 
 register = Registry()

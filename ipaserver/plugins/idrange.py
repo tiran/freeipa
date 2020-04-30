@@ -20,8 +20,14 @@
 import six
 
 from ipalib.plugable import Registry
-from .baseldap import (LDAPObject, LDAPCreate, LDAPDelete,
-                                     LDAPRetrieve, LDAPSearch, LDAPUpdate)
+from .baseldap import (
+    LDAPObject,
+    LDAPCreate,
+    LDAPDelete,
+    LDAPRetrieve,
+    LDAPSearch,
+    LDAPUpdate,
+)
 from ipalib import api, Int, Str, StrEnum, _, ngettext, messages
 from ipalib import errors
 from ipaplatform import services
@@ -30,9 +36,10 @@ from ipapython.dn import DN
 if six.PY3:
     unicode = str
 
-if api.env.in_server and api.env.context in ['lite', 'server']:
+if api.env.in_server and api.env.context in ["lite", "server"]:
     try:
         import ipaserver.dcerpc
+
         _dcerpc_bindings_installed = True
     except ImportError:
         _dcerpc_bindings_installed = False
@@ -40,7 +47,8 @@ else:
     _dcerpc_bindings_installed = False
 
 
-ID_RANGE_VS_DNA_WARNING = _("""=======
+ID_RANGE_VS_DNA_WARNING = _(
+    """=======
 WARNING:
 
 DNA plugin in 389-ds will allocate IDs based on the ranges configured for the
@@ -52,9 +60,12 @@ the new local range. Specifically, The dnaNextRange attribute of 'cn=Posix
 IDs,cn=Distributed Numeric Assignment Plugin,cn=plugins,cn=config' has to be
 modified to match the new range.
 =======
-""")
+"""
+)
 
-__doc__ = _("""
+__doc__ = (
+    _(
+        """
 ID ranges
 
 Manage ID ranges  used to map Posix IDs to SIDs and back.
@@ -162,9 +173,13 @@ this domain has the SID S-1-5-21-123-456-789-1010 then 1010 is the RID of the
 user. RIDs are unique in a domain, 32bit values and are used for users and
 groups.
 
-""") + ID_RANGE_VS_DNA_WARNING
+"""
+    )
+    + ID_RANGE_VS_DNA_WARNING
+)
 
 register = Registry()
+
 
 @register()
 class idrange(LDAPObject):
@@ -172,104 +187,112 @@ class idrange(LDAPObject):
     Range object.
     """
 
-    range_type = ('domain', 'ad', 'ipa')
+    range_type = ("domain", "ad", "ipa")
     container_dn = api.env.container_ranges
-    object_name = ('range')
-    object_name_plural = ('ranges')
-    object_class = ['ipaIDrange']
-    permission_filter_objectclasses = ['ipaidrange']
-    possible_objectclasses = ['ipadomainidrange', 'ipatrustedaddomainrange']
-    default_attributes = ['cn', 'ipabaseid', 'ipaidrangesize', 'ipabaserid',
-                          'ipasecondarybaserid', 'ipanttrusteddomainsid',
-                          'iparangetype']
+    object_name = "range"
+    object_name_plural = "ranges"
+    object_class = ["ipaIDrange"]
+    permission_filter_objectclasses = ["ipaidrange"]
+    possible_objectclasses = ["ipadomainidrange", "ipatrustedaddomainrange"]
+    default_attributes = [
+        "cn",
+        "ipabaseid",
+        "ipaidrangesize",
+        "ipabaserid",
+        "ipasecondarybaserid",
+        "ipanttrusteddomainsid",
+        "iparangetype",
+    ]
     managed_permissions = {
-        'System: Read ID Ranges': {
-            'replaces_global_anonymous_aci': True,
-            'ipapermbindruletype': 'all',
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'cn', 'objectclass',
-                'ipabaseid', 'ipaidrangesize', 'iparangetype',
-                'ipabaserid', 'ipasecondarybaserid', 'ipanttrusteddomainsid',
+        "System: Read ID Ranges": {
+            "replaces_global_anonymous_aci": True,
+            "ipapermbindruletype": "all",
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {
+                "cn",
+                "objectclass",
+                "ipabaseid",
+                "ipaidrangesize",
+                "iparangetype",
+                "ipabaserid",
+                "ipasecondarybaserid",
+                "ipanttrusteddomainsid",
             },
         },
     }
 
-    label = _('ID Ranges')
-    label_singular = _('ID Range')
+    label = _("ID Ranges")
+    label_singular = _("ID Range")
 
     # The commented range types are planned but not yet supported
     range_types = {
-        u'ipa-local': unicode(_('local domain range')),
+        u"ipa-local": unicode(_("local domain range")),
         # u'ipa-ad-winsync': unicode(_('Active Directory winsync range')),
-        u'ipa-ad-trust': unicode(_('Active Directory domain range')),
-        u'ipa-ad-trust-posix': unicode(_('Active Directory trust range with '
-                                        'POSIX attributes')),
+        u"ipa-ad-trust": unicode(_("Active Directory domain range")),
+        u"ipa-ad-trust-posix": unicode(
+            _("Active Directory trust range with " "POSIX attributes")
+        ),
         # u'ipa-ipa-trust': unicode(_('IPA trust range')),
-                  }
+    }
 
     takes_params = (
-        Str('cn',
-            cli_name='name',
-            label=_('Range name'),
-            primary_key=True,
-        ),
-        Int('ipabaseid',
-            cli_name='base_id',
-            label=_("First Posix ID of the range"),
-        ),
-        Int('ipaidrangesize',
-            cli_name='range_size',
+        Str("cn", cli_name="name", label=_("Range name"), primary_key=True,),
+        Int("ipabaseid", cli_name="base_id", label=_("First Posix ID of the range"),),
+        Int(
+            "ipaidrangesize",
+            cli_name="range_size",
             label=_("Number of IDs in the range"),
         ),
-        Int('ipabaserid?',
-            cli_name='rid_base',
-            label=_('First RID of the corresponding RID range'),
+        Int(
+            "ipabaserid?",
+            cli_name="rid_base",
+            label=_("First RID of the corresponding RID range"),
         ),
-        Int('ipasecondarybaserid?',
-            cli_name='secondary_rid_base',
-            label=_('First RID of the secondary RID range'),
+        Int(
+            "ipasecondarybaserid?",
+            cli_name="secondary_rid_base",
+            label=_("First RID of the secondary RID range"),
         ),
-        Str('ipanttrusteddomainsid?',
-            cli_name='dom_sid',
-            flags=('no_update',),
-            label=_('Domain SID of the trusted domain'),
+        Str(
+            "ipanttrusteddomainsid?",
+            cli_name="dom_sid",
+            flags=("no_update",),
+            label=_("Domain SID of the trusted domain"),
         ),
-        Str('ipanttrusteddomainname?',
-            cli_name='dom_name',
-            flags=('no_search', 'virtual_attribute', 'no_update'),
-            label=_('Name of the trusted domain'),
-            ),
-        StrEnum('iparangetype?',
-                label=_('Range type'),
-                cli_name='type',
-                doc=_('ID range type, one of allowed values'),
-                values=sorted(range_types),
-                flags=['no_update'],
-                )
+        Str(
+            "ipanttrusteddomainname?",
+            cli_name="dom_name",
+            flags=("no_search", "virtual_attribute", "no_update"),
+            label=_("Name of the trusted domain"),
+        ),
+        StrEnum(
+            "iparangetype?",
+            label=_("Range type"),
+            cli_name="type",
+            doc=_("ID range type, one of allowed values"),
+            values=sorted(range_types),
+            flags=["no_update"],
+        ),
     )
 
-    def handle_iparangetype(self, entry_attrs, options,
-                            keep_objectclass=False):
-        if not any((options.get('pkey_only', False),
-                    options.get('raw', False))):
-            range_type = entry_attrs['iparangetype'][0]
-            entry_attrs['iparangetyperaw'] = [range_type]
-            entry_attrs['iparangetype'] = [self.range_types.get(range_type, None)]
+    def handle_iparangetype(self, entry_attrs, options, keep_objectclass=False):
+        if not any((options.get("pkey_only", False), options.get("raw", False))):
+            range_type = entry_attrs["iparangetype"][0]
+            entry_attrs["iparangetyperaw"] = [range_type]
+            entry_attrs["iparangetype"] = [self.range_types.get(range_type, None)]
 
         # Remove the objectclass
         if not keep_objectclass:
-            if not options.get('all', False) or options.get('pkey_only', False):
-                entry_attrs.pop('objectclass', None)
+            if not options.get("all", False) or options.get("pkey_only", False):
+                entry_attrs.pop("objectclass", None)
 
     def handle_ipabaserid(self, entry_attrs, options):
-        if any((options.get('pkey_only', False), options.get('raw', False))):
+        if any((options.get("pkey_only", False), options.get("raw", False))):
             return
-        if entry_attrs['iparangetype'][0] == u'ipa-ad-trust-posix':
-            entry_attrs.pop('ipabaserid', None)
+        if entry_attrs["iparangetype"][0] == u"ipa-ad-trust-posix":
+            entry_attrs.pop("ipabaserid", None)
 
-    def check_ids_in_modified_range(self, old_base, old_size, new_base,
-                                    new_size):
+    def check_ids_in_modified_range(self, old_base, old_size, new_base, new_size):
         if new_base is None and new_size is None:
             # nothing to check
             return
@@ -282,57 +305,82 @@ class idrange(LDAPObject):
         checked_intervals = []
         low_diff = new_interval[0] - old_interval[0]
         if low_diff > 0:
-            checked_intervals.append((old_interval[0],
-                                    min(old_interval[1], new_interval[0] - 1)))
+            checked_intervals.append(
+                (old_interval[0], min(old_interval[1], new_interval[0] - 1))
+            )
         high_diff = old_interval[1] - new_interval[1]
         if high_diff > 0:
-            checked_intervals.append((max(old_interval[0], new_interval[1] + 1),
-                                     old_interval[1]))
+            checked_intervals.append(
+                (max(old_interval[0], new_interval[1] + 1), old_interval[1])
+            )
 
         if not checked_intervals:
             # range is equal or covers the entire old range, nothing to check
             return
 
         ldap = self.backend
-        id_filter_base = ["(objectclass=posixAccount)",
-                          "(objectclass=posixGroup)",
-                          "(objectclass=ipaIDObject)"]
+        id_filter_base = [
+            "(objectclass=posixAccount)",
+            "(objectclass=posixGroup)",
+            "(objectclass=ipaIDObject)",
+        ]
         id_filter_ids = []
 
         for id_low, id_high in checked_intervals:
-            id_filter_ids.append("(&(uidNumber>=%(low)d)(uidNumber<=%(high)d))"
-                                 % dict(low=id_low, high=id_high))
-            id_filter_ids.append("(&(gidNumber>=%(low)d)(gidNumber<=%(high)d))"
-                                 % dict(low=id_low, high=id_high))
+            id_filter_ids.append(
+                "(&(uidNumber>=%(low)d)(uidNumber<=%(high)d))"
+                % dict(low=id_low, high=id_high)
+            )
+            id_filter_ids.append(
+                "(&(gidNumber>=%(low)d)(gidNumber<=%(high)d))"
+                % dict(low=id_low, high=id_high)
+            )
         id_filter = ldap.combine_filters(
-                        [ldap.combine_filters(id_filter_base, "|"),
-                          ldap.combine_filters(id_filter_ids, "|")],
-                        "&")
+            [
+                ldap.combine_filters(id_filter_base, "|"),
+                ldap.combine_filters(id_filter_ids, "|"),
+            ],
+            "&",
+        )
 
         try:
-            ldap.find_entries(filter=id_filter,
-                    attrs_list=['uid', 'cn'],
-                    base_dn=DN(api.env.container_accounts, api.env.basedn))
+            ldap.find_entries(
+                filter=id_filter,
+                attrs_list=["uid", "cn"],
+                base_dn=DN(api.env.container_accounts, api.env.basedn),
+            )
         except errors.NotFound:
             # no objects in this range found, allow the command
             pass
         else:
-            raise errors.ValidationError(name="ipabaseid,ipaidrangesize",
-                    error=_('range modification leaving objects with ID out '
-                            'of the defined range is not allowed'))
+            raise errors.ValidationError(
+                name="ipabaseid,ipaidrangesize",
+                error=_(
+                    "range modification leaving objects with ID out "
+                    "of the defined range is not allowed"
+                ),
+            )
 
     def get_domain_validator(self):
         if not _dcerpc_bindings_installed:
-            raise errors.NotFound(reason=_('Cannot perform SID validation '
-                'without Samba 4 support installed. Make sure you have '
-                'installed server-trust-ad sub-package of IPA on the server'))
+            raise errors.NotFound(
+                reason=_(
+                    "Cannot perform SID validation "
+                    "without Samba 4 support installed. Make sure you have "
+                    "installed server-trust-ad sub-package of IPA on the server"
+                )
+            )
 
         domain_validator = ipaserver.dcerpc.DomainValidator(self.api)
 
         if not domain_validator.is_configured():
-            raise errors.NotFound(reason=_('Cross-realm trusts are not '
-                'configured. Make sure you have run ipa-adtrust-install '
-                'on the IPA server first'))
+            raise errors.NotFound(
+                reason=_(
+                    "Cross-realm trusts are not "
+                    "configured. Make sure you have run ipa-adtrust-install "
+                    "on the IPA server first"
+                )
+            )
 
         return domain_validator
 
@@ -341,9 +389,10 @@ class idrange(LDAPObject):
         domain_validator = self.get_domain_validator()
 
         if not domain_validator.is_trusted_domain_sid_valid(sid):
-            raise errors.ValidationError(name='domain SID',
-                  error=_('SID is not recognized as a valid SID for a '
-                          'trusted domain'))
+            raise errors.ValidationError(
+                name="domain SID",
+                error=_("SID is not recognized as a valid SID for a " "trusted domain"),
+            )
 
     def get_trusted_domain_sid_from_name(self, name):
         """ Returns unicode string representation for given trusted domain name
@@ -379,7 +428,9 @@ class idrange(LDAPObject):
 
 @register()
 class idrange_add(LDAPCreate):
-    __doc__ = _("""
+    __doc__ = (
+        _(
+            """
     Add new ID range.
 
     To add a new ID range you always have to specify
@@ -399,7 +450,10 @@ class idrange_add(LDAPCreate):
 
     must be given to add a new range for a trusted AD domain.
 
-""") + ID_RANGE_VS_DNA_WARNING
+"""
+        )
+        + ID_RANGE_VS_DNA_WARNING
+    )
 
     msg_summary = _('Added ID range "%(value)s"')
 
@@ -410,151 +464,178 @@ class idrange_add(LDAPCreate):
 
         # This needs to stay in options since there is no
         # ipanttrusteddomainname attribute in LDAP
-        if options.get('ipanttrusteddomainname'):
-            if is_set('ipanttrusteddomainsid'):
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('Options dom-sid and dom-name '
-                            'cannot be used together'))
+        if options.get("ipanttrusteddomainname"):
+            if is_set("ipanttrusteddomainsid"):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_("Options dom-sid and dom-name " "cannot be used together"),
+                )
 
             sid = self.obj.get_trusted_domain_sid_from_name(
-                options['ipanttrusteddomainname'])
+                options["ipanttrusteddomainname"]
+            )
 
             if sid is not None:
-                entry_attrs['ipanttrusteddomainsid'] = sid
+                entry_attrs["ipanttrusteddomainsid"] = sid
             else:
                 raise errors.ValidationError(
-                    name='ID Range setup',
-                    error=_('Specified trusted domain name could not be '
-                            'found.'))
+                    name="ID Range setup",
+                    error=_("Specified trusted domain name could not be " "found."),
+                )
 
         # ipaNTTrustedDomainSID attribute set, this is AD Trusted domain range
-        if is_set('ipanttrusteddomainsid'):
-            entry_attrs['objectclass'].append('ipatrustedaddomainrange')
+        if is_set("ipanttrusteddomainsid"):
+            entry_attrs["objectclass"].append("ipatrustedaddomainrange")
 
             # Default to ipa-ad-trust if no type set
-            if not is_set('iparangetype'):
-                entry_attrs['iparangetype'] = u'ipa-ad-trust'
+            if not is_set("iparangetype"):
+                entry_attrs["iparangetype"] = u"ipa-ad-trust"
 
-            if entry_attrs['iparangetype'] == u'ipa-ad-trust':
-                if not is_set('ipabaserid'):
+            if entry_attrs["iparangetype"] == u"ipa-ad-trust":
+                if not is_set("ipabaserid"):
                     raise errors.ValidationError(
-                        name='ID Range setup',
-                        error=_('Options dom-sid/dom-name and rid-base must '
-                                'be used together')
+                        name="ID Range setup",
+                        error=_(
+                            "Options dom-sid/dom-name and rid-base must "
+                            "be used together"
+                        ),
                     )
-            elif entry_attrs['iparangetype'] == u'ipa-ad-trust-posix':
-                if is_set('ipabaserid') and entry_attrs['ipabaserid'] != 0:
+            elif entry_attrs["iparangetype"] == u"ipa-ad-trust-posix":
+                if is_set("ipabaserid") and entry_attrs["ipabaserid"] != 0:
                     raise errors.ValidationError(
-                        name='ID Range setup',
-                        error=_('Option rid-base must not be used when IPA '
-                                'range type is ipa-ad-trust-posix')
+                        name="ID Range setup",
+                        error=_(
+                            "Option rid-base must not be used when IPA "
+                            "range type is ipa-ad-trust-posix"
+                        ),
                     )
                 else:
-                    entry_attrs['ipabaserid'] = 0
+                    entry_attrs["ipabaserid"] = 0
             else:
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('IPA Range type must be one of ipa-ad-trust '
-                            'or ipa-ad-trust-posix when SID of the trusted '
-                            'domain is specified'))
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "IPA Range type must be one of ipa-ad-trust "
+                        "or ipa-ad-trust-posix when SID of the trusted "
+                        "domain is specified"
+                    ),
+                )
 
-            if is_set('ipasecondarybaserid'):
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('Options dom-sid/dom-name and secondary-rid-base '
-                            'cannot be used together'))
+            if is_set("ipasecondarybaserid"):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "Options dom-sid/dom-name and secondary-rid-base "
+                        "cannot be used together"
+                    ),
+                )
 
             # Validate SID as the one of trusted domains
-            self.obj.validate_trusted_domain_sid(
-                                        entry_attrs['ipanttrusteddomainsid'])
+            self.obj.validate_trusted_domain_sid(entry_attrs["ipanttrusteddomainsid"])
 
         # ipaNTTrustedDomainSID attribute not set, this is local domain range
         else:
-            entry_attrs['objectclass'].append('ipadomainidrange')
+            entry_attrs["objectclass"].append("ipadomainidrange")
 
             # Default to ipa-local if no type set
-            if 'iparangetype' not in entry_attrs:
-                entry_attrs['iparangetype'] = 'ipa-local'
+            if "iparangetype" not in entry_attrs:
+                entry_attrs["iparangetype"] = "ipa-local"
 
             # TODO: can also be ipa-ad-winsync here?
-            if entry_attrs['iparangetype'] in (u'ipa-ad-trust',
-                                               u'ipa-ad-trust-posix'):
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('IPA Range type must not be one of ipa-ad-trust '
-                            'or ipa-ad-trust-posix when SID of the trusted '
-                            'domain is not specified.'))
+            if entry_attrs["iparangetype"] in (u"ipa-ad-trust", u"ipa-ad-trust-posix"):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "IPA Range type must not be one of ipa-ad-trust "
+                        "or ipa-ad-trust-posix when SID of the trusted "
+                        "domain is not specified."
+                    ),
+                )
 
             # secondary base rid must be set if and only if base rid is set
-            if is_set('ipasecondarybaserid') != is_set('ipabaserid'):
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('Options secondary-rid-base and rid-base must '
-                            'be used together'))
+            if is_set("ipasecondarybaserid") != is_set("ipabaserid"):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "Options secondary-rid-base and rid-base must "
+                        "be used together"
+                    ),
+                )
 
             # and they must not overlap
-            if is_set('ipabaserid') and is_set('ipasecondarybaserid'):
+            if is_set("ipabaserid") and is_set("ipasecondarybaserid"):
                 if self.obj.are_rid_ranges_overlapping(
-                    entry_attrs['ipabaserid'],
-                    entry_attrs['ipasecondarybaserid'],
-                    entry_attrs['ipaidrangesize']):
-                        raise errors.ValidationError(name='ID Range setup',
-                            error=_("Primary RID range and secondary RID range"
-                                    " cannot overlap"))
+                    entry_attrs["ipabaserid"],
+                    entry_attrs["ipasecondarybaserid"],
+                    entry_attrs["ipaidrangesize"],
+                ):
+                    raise errors.ValidationError(
+                        name="ID Range setup",
+                        error=_(
+                            "Primary RID range and secondary RID range"
+                            " cannot overlap"
+                        ),
+                    )
 
             # rid-base and secondary-rid-base must be set if
             # ipa-adtrust-install has been run on the system
-            adtrust_is_enabled = api.Command['adtrust_is_enabled']()['result']
+            adtrust_is_enabled = api.Command["adtrust_is_enabled"]()["result"]
 
             if adtrust_is_enabled and not (
-                    is_set('ipabaserid') and is_set('ipasecondarybaserid')):
+                is_set("ipabaserid") and is_set("ipasecondarybaserid")
+            ):
                 raise errors.ValidationError(
-                    name='ID Range setup',
+                    name="ID Range setup",
                     error=_(
-                        'You must specify both rid-base and '
-                        'secondary-rid-base options, because '
-                        'ipa-adtrust-install has already been run.'
-                    )
+                        "You must specify both rid-base and "
+                        "secondary-rid-base options, because "
+                        "ipa-adtrust-install has already been run."
+                    ),
                 )
         return dn
 
     def post_callback(self, ldap, dn, entry_attrs, *keys, **options):
         assert isinstance(dn, DN)
         self.obj.handle_ipabaserid(entry_attrs, options)
-        self.obj.handle_iparangetype(entry_attrs, options,
-                                     keep_objectclass=True)
+        self.obj.handle_iparangetype(entry_attrs, options, keep_objectclass=True)
         return dn
 
 
 @register()
 class idrange_del(LDAPDelete):
-    __doc__ = _('Delete an ID range.')
+    __doc__ = _("Delete an ID range.")
 
     msg_summary = _('Deleted ID range "%(value)s"')
 
     def pre_callback(self, ldap, dn, *keys, **options):
         try:
-            old_attrs = ldap.get_entry(dn, ['ipabaseid',
-                                            'ipaidrangesize',
-                                            'ipanttrusteddomainsid'])
+            old_attrs = ldap.get_entry(
+                dn, ["ipabaseid", "ipaidrangesize", "ipanttrusteddomainsid"]
+            )
         except errors.NotFound:
             raise self.obj.handle_not_found(*keys)
 
         # Check whether we leave any object with id in deleted range
-        old_base_id = int(old_attrs.get('ipabaseid', [0])[0])
-        old_range_size = int(old_attrs.get('ipaidrangesize', [0])[0])
-        self.obj.check_ids_in_modified_range(
-                old_base_id, old_range_size, 0, 0)
+        old_base_id = int(old_attrs.get("ipabaseid", [0])[0])
+        old_range_size = int(old_attrs.get("ipaidrangesize", [0])[0])
+        self.obj.check_ids_in_modified_range(old_base_id, old_range_size, 0, 0)
 
         # Check whether the range does not belong to the active trust
-        range_sid = old_attrs.get('ipanttrusteddomainsid')
+        range_sid = old_attrs.get("ipanttrusteddomainsid")
 
         if range_sid is not None:
             # Search for trusted domain with SID specified in the ID range entry
             range_sid = range_sid[0]
-            domain_filter=('(&(objectclass=ipaNTTrustedDomain)'
-                           '(ipanttrusteddomainsid=%s))' % range_sid)
+            domain_filter = (
+                "(&(objectclass=ipaNTTrustedDomain)"
+                "(ipanttrusteddomainsid=%s))" % range_sid
+            )
 
             try:
                 trust_domains, _truncated = ldap.find_entries(
                     base_dn=DN(api.env.container_trusts, api.env.basedn),
-                    filter=domain_filter)
+                    filter=domain_filter,
+                )
             except errors.NotFound:
                 pass
             else:
@@ -562,28 +643,25 @@ class idrange_del(LDAPDelete):
                 # of a trust that this range belongs to, so raise a
                 # DependentEntry error
                 raise errors.DependentEntry(
-                    label='Active Trust domain',
+                    label="Active Trust domain",
                     key=keys[0],
-                    dependent=trust_domains[0].dn[0].value)
-
+                    dependent=trust_domains[0].dn[0].value,
+                )
 
         return dn
 
 
 @register()
 class idrange_find(LDAPSearch):
-    __doc__ = _('Search for ranges.')
+    __doc__ = _("Search for ranges.")
 
-    msg_summary = ngettext(
-        '%(count)d range matched', '%(count)d ranges matched', 0
-    )
+    msg_summary = ngettext("%(count)d range matched", "%(count)d ranges matched", 0)
 
     # Since all range types are stored within separate containers under
     # 'cn=ranges,cn=etc' search can be done on a one-level scope
-    def pre_callback(self, ldap, filters, attrs_list, base_dn, scope, *args,
-                     **options):
+    def pre_callback(self, ldap, filters, attrs_list, base_dn, scope, *args, **options):
         assert isinstance(base_dn, DN)
-        attrs_list.append('objectclass')
+        attrs_list.append("objectclass")
         return (filters, base_dn, ldap.SCOPE_ONELEVEL)
 
     def post_callback(self, ldap, entries, truncated, *args, **options):
@@ -595,11 +673,11 @@ class idrange_find(LDAPSearch):
 
 @register()
 class idrange_show(LDAPRetrieve):
-    __doc__ = _('Display information about a range.')
+    __doc__ = _("Display information about a range.")
 
     def pre_callback(self, ldap, dn, attrs_list, *keys, **options):
         assert isinstance(dn, DN)
-        attrs_list.append('objectclass')
+        attrs_list.append("objectclass")
         return dn
 
     def post_callback(self, ldap, dn, entry_attrs, *keys, **options):
@@ -611,122 +689,151 @@ class idrange_show(LDAPRetrieve):
 
 @register()
 class idrange_mod(LDAPUpdate):
-    __doc__ = _("""Modify ID range.
+    __doc__ = (
+        _(
+            """Modify ID range.
 
-""") + ID_RANGE_VS_DNA_WARNING
+"""
+        )
+        + ID_RANGE_VS_DNA_WARNING
+    )
 
     msg_summary = _('Modified ID range "%(value)s"')
 
     takes_options = LDAPUpdate.takes_options + (
         Str(
-            'ipanttrusteddomainsid?',
+            "ipanttrusteddomainsid?",
             deprecated=True,
-            cli_name='dom_sid',
-            flags=('no_update', 'no_option'),
-            label=_('Domain SID of the trusted domain'),
+            cli_name="dom_sid",
+            flags=("no_update", "no_option"),
+            label=_("Domain SID of the trusted domain"),
             autofill=False,
         ),
         Str(
-            'ipanttrusteddomainname?',
+            "ipanttrusteddomainname?",
             deprecated=True,
-            cli_name='dom_name',
-            flags=('no_search', 'virtual_attribute', 'no_update', 'no_option'),
-            label=_('Name of the trusted domain'),
+            cli_name="dom_name",
+            flags=("no_search", "virtual_attribute", "no_update", "no_option"),
+            label=_("Name of the trusted domain"),
             autofill=False,
         ),
     )
 
     def pre_callback(self, ldap, dn, entry_attrs, attrs_list, *keys, **options):
         assert isinstance(dn, DN)
-        attrs_list.append('objectclass')
+        attrs_list.append("objectclass")
 
         try:
-            old_attrs = ldap.get_entry(dn, ['*'])
+            old_attrs = ldap.get_entry(dn, ["*"])
         except errors.NotFound:
             raise self.obj.handle_not_found(*keys)
 
-        if old_attrs['iparangetype'][0] == 'ipa-local':
+        if old_attrs["iparangetype"][0] == "ipa-local":
             raise errors.ExecutionError(
-                message=_('This command can not be used to change ID '
-                          'allocation for local IPA domain. Run '
-                          '`ipa help idrange` for more information')
+                message=_(
+                    "This command can not be used to change ID "
+                    "allocation for local IPA domain. Run "
+                    "`ipa help idrange` for more information"
+                )
             )
 
         is_set = lambda x: (x in entry_attrs) and (entry_attrs[x] is not None)
-        in_updated_attrs = lambda x:\
-            (x in entry_attrs and entry_attrs[x] is not None) or\
-            (x not in entry_attrs and x in old_attrs
-                and old_attrs[x] is not None)
+        in_updated_attrs = lambda x: (
+            x in entry_attrs and entry_attrs[x] is not None
+        ) or (x not in entry_attrs and x in old_attrs and old_attrs[x] is not None)
 
         # This needs to stay in options since there is no
         # ipanttrusteddomainname attribute in LDAP
-        if 'ipanttrusteddomainname' in options:
-            if is_set('ipanttrusteddomainsid'):
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('Options dom-sid and dom-name '
-                            'cannot be used together'))
+        if "ipanttrusteddomainname" in options:
+            if is_set("ipanttrusteddomainsid"):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_("Options dom-sid and dom-name " "cannot be used together"),
+                )
 
             sid = self.obj.get_trusted_domain_sid_from_name(
-                options['ipanttrusteddomainname'])
+                options["ipanttrusteddomainname"]
+            )
 
             # we translate the name into sid so further validation can rely
             # on ipanttrusteddomainsid attribute only
             if sid is not None:
-                entry_attrs['ipanttrusteddomainsid'] = sid
+                entry_attrs["ipanttrusteddomainsid"] = sid
             else:
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('SID for the specified trusted domain name could '
-                            'not be found. Please specify the SID directly '
-                            'using dom-sid option.'))
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "SID for the specified trusted domain name could "
+                        "not be found. Please specify the SID directly "
+                        "using dom-sid option."
+                    ),
+                )
 
-        if in_updated_attrs('ipanttrusteddomainsid'):
-            if in_updated_attrs('ipasecondarybaserid'):
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('Options dom-sid and secondary-rid-base cannot '
-                            'be used together'))
-            range_type = old_attrs['iparangetype'][0]
-            if range_type == u'ipa-ad-trust':
-                if not in_updated_attrs('ipabaserid'):
+        if in_updated_attrs("ipanttrusteddomainsid"):
+            if in_updated_attrs("ipasecondarybaserid"):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "Options dom-sid and secondary-rid-base cannot "
+                        "be used together"
+                    ),
+                )
+            range_type = old_attrs["iparangetype"][0]
+            if range_type == u"ipa-ad-trust":
+                if not in_updated_attrs("ipabaserid"):
                     raise errors.ValidationError(
-                        name='ID Range setup',
-                        error=_('Options dom-sid and rid-base must '
-                                'be used together'))
-            elif (range_type == u'ipa-ad-trust-posix' and
-                  'ipabaserid' in entry_attrs):
-                if entry_attrs['ipabaserid'] is None:
-                    entry_attrs['ipabaserid'] = 0
-                elif entry_attrs['ipabaserid'] != 0:
+                        name="ID Range setup",
+                        error=_(
+                            "Options dom-sid and rid-base must " "be used together"
+                        ),
+                    )
+            elif range_type == u"ipa-ad-trust-posix" and "ipabaserid" in entry_attrs:
+                if entry_attrs["ipabaserid"] is None:
+                    entry_attrs["ipabaserid"] = 0
+                elif entry_attrs["ipabaserid"] != 0:
                     raise errors.ValidationError(
-                        name='ID Range setup',
-                        error=_('Option rid-base must not be used when IPA '
-                                'range type is ipa-ad-trust-posix')
+                        name="ID Range setup",
+                        error=_(
+                            "Option rid-base must not be used when IPA "
+                            "range type is ipa-ad-trust-posix"
+                        ),
                     )
 
-            if is_set('ipanttrusteddomainsid'):
+            if is_set("ipanttrusteddomainsid"):
                 # Validate SID as the one of trusted domains
                 # perform this check only if the attribute was changed
                 self.obj.validate_trusted_domain_sid(
-                    entry_attrs['ipanttrusteddomainsid'])
+                    entry_attrs["ipanttrusteddomainsid"]
+                )
 
             # Add trusted AD domain range object class, if it wasn't there
-            if 'ipatrustedaddomainrange' not in old_attrs['objectclass']:
-                entry_attrs['objectclass'].append('ipatrustedaddomainrange')
+            if "ipatrustedaddomainrange" not in old_attrs["objectclass"]:
+                entry_attrs["objectclass"].append("ipatrustedaddomainrange")
 
         else:
             # secondary base rid must be set if and only if base rid is set
-            if in_updated_attrs('ipasecondarybaserid') !=\
-                in_updated_attrs('ipabaserid'):
-                raise errors.ValidationError(name='ID Range setup',
-                    error=_('Options secondary-rid-base and rid-base must '
-                            'be used together'))
+            if in_updated_attrs("ipasecondarybaserid") != in_updated_attrs(
+                "ipabaserid"
+            ):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "Options secondary-rid-base and rid-base must "
+                        "be used together"
+                    ),
+                )
 
         # ensure that primary and secondary rid ranges do not overlap
-        if all(in_updated_attrs(base)
-               for base in ('ipabaserid', 'ipasecondarybaserid')):
+        if all(
+            in_updated_attrs(base) for base in ("ipabaserid", "ipasecondarybaserid")
+        ):
 
             # make sure we are working with updated attributes
-            rid_range_attributes = ('ipabaserid', 'ipasecondarybaserid',
-                                    'ipaidrangesize')
+            rid_range_attributes = (
+                "ipabaserid",
+                "ipasecondarybaserid",
+                "ipaidrangesize",
+            )
             updated_values = dict()
 
             for attr in rid_range_attributes:
@@ -736,28 +843,33 @@ class idrange_mod(LDAPUpdate):
                     updated_values[attr] = int(old_attrs[attr][0])
 
             if self.obj.are_rid_ranges_overlapping(
-                updated_values['ipabaserid'],
-                updated_values['ipasecondarybaserid'],
-                updated_values['ipaidrangesize']):
-                    raise errors.ValidationError(name='ID Range setup',
-                            error=_("Primary RID range and secondary RID range"
-                                 " cannot overlap"))
+                updated_values["ipabaserid"],
+                updated_values["ipasecondarybaserid"],
+                updated_values["ipaidrangesize"],
+            ):
+                raise errors.ValidationError(
+                    name="ID Range setup",
+                    error=_(
+                        "Primary RID range and secondary RID range" " cannot overlap"
+                    ),
+                )
 
         # check whether ids are in modified range
-        old_base_id = int(old_attrs.get('ipabaseid', [0])[0])
-        old_range_size = int(old_attrs.get('ipaidrangesize', [0])[0])
-        new_base_id = entry_attrs.get('ipabaseid')
+        old_base_id = int(old_attrs.get("ipabaseid", [0])[0])
+        old_range_size = int(old_attrs.get("ipaidrangesize", [0])[0])
+        new_base_id = entry_attrs.get("ipabaseid")
 
         if new_base_id is not None:
             new_base_id = int(new_base_id)
 
-        new_range_size = entry_attrs.get('ipaidrangesize')
+        new_range_size = entry_attrs.get("ipaidrangesize")
 
         if new_range_size is not None:
             new_range_size = int(new_range_size)
 
-        self.obj.check_ids_in_modified_range(old_base_id, old_range_size,
-                                             new_base_id, new_range_size)
+        self.obj.check_ids_in_modified_range(
+            old_base_id, old_range_size, new_base_id, new_range_size
+        )
 
         return dn
 
@@ -767,8 +879,7 @@ class idrange_mod(LDAPUpdate):
         self.obj.handle_iparangetype(entry_attrs, options)
         self.add_message(
             messages.ServiceRestartRequired(
-                service=services.knownservices['sssd'].systemd_name,
-                server=keys[0]
+                service=services.knownservices["sssd"].systemd_name, server=keys[0]
             )
         )
         return dn

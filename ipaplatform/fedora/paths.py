@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
+"""
 This Fedora base platform module exports default filesystem paths as common
 in Fedora-based systems.
-'''
+"""
 
 # Fallback to default path definitions
 from __future__ import absolute_import
@@ -30,12 +30,10 @@ from ipaplatform.fedora.constants import HAS_NFS_CONF
 
 
 class FedoraPathNamespace(RedHatPathNamespace):
-    HTTPD_IPA_WSGI_MODULES_CONF = (
-        "/etc/httpd/conf.modules.d/02-ipa-wsgi.conf"
-    )
+    HTTPD_IPA_WSGI_MODULES_CONF = "/etc/httpd/conf.modules.d/02-ipa-wsgi.conf"
     NAMED_CRYPTO_POLICY_FILE = "/etc/crypto-policies/back-ends/bind.config"
     if HAS_NFS_CONF:
-        SYSCONFIG_NFS = '/etc/nfs.conf'
+        SYSCONFIG_NFS = "/etc/nfs.conf"
 
 
 paths = FedoraPathNamespace()

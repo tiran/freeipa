@@ -39,8 +39,10 @@ class TestCACustomSubjectDN(IntegrationTest):
             cls.master,
             setup_kra=True,
             extra_args=[
-                '--subject-base', str(create_custom_subject_base()),
-                '--ca-subject', str(create_custom_ca_subject()),
+                "--subject-base",
+                str(create_custom_subject_base()),
+                "--ca-subject",
+                str(create_custom_ca_subject()),
             ],
         )
 
@@ -50,18 +52,22 @@ class TestCACustomSubjectDN(IntegrationTest):
         https://pagure.io/freeipa/issue/8084.
 
         """
-        self.master.run_command([
-            'ipa', 'vault-add', "test1",
-            '--password', 'Secret.123', '--type', 'symmetric',
-        ])
+        self.master.run_command(
+            [
+                "ipa",
+                "vault-add",
+                "test1",
+                "--password",
+                "Secret.123",
+                "--type",
+                "symmetric",
+            ]
+        )
 
 
 def create_custom_ca_subject():
-    return DN(
-        ('CN', 'IPA CA'),
-        ('O', 'Corporation {}, Inc.'.format(int(time.time()))),
-    )
+    return DN(("CN", "IPA CA"), ("O", "Corporation {}, Inc.".format(int(time.time()))),)
 
 
 def create_custom_subject_base():
-    return DN(('O', 'Red Hat, Inc.'))
+    return DN(("O", "Red Hat, Inc."))

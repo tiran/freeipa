@@ -24,9 +24,7 @@ import logging
 
 import six
 
-from ipalib.messages import (
-    add_message,
-    BrokenTrust)
+from ipalib.messages import add_message, BrokenTrust
 from ipalib.plugable import Registry
 from ipalib.request import context
 from .baseldap import (
@@ -38,7 +36,8 @@ from .baseldap import (
     LDAPSearch,
     LDAPRetrieve,
     LDAPObject,
-    LDAPQuery)
+    LDAPQuery,
+)
 from .dns import dns_container_exists
 from ipapython.dn import DN
 from ipapython.ipautil import realm_to_suffix
@@ -49,13 +48,15 @@ from ipalib import messages
 from ipalib import output
 from ldap import SCOPE_SUBTREE
 from time import sleep
-from ipaserver.dcerpc_common import (TRUST_ONEWAY,
-                                     TRUST_BIDIRECTIONAL,
-                                     TRUST_JOIN_EXTERNAL,
-                                     LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE,
-                                     trust_type_string,
-                                     trust_direction_string,
-                                     trust_status_string)
+from ipaserver.dcerpc_common import (
+    TRUST_ONEWAY,
+    TRUST_BIDIRECTIONAL,
+    TRUST_JOIN_EXTERNAL,
+    LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE,
+    trust_type_string,
+    trust_direction_string,
+    trust_status_string,
+)
 from ipaserver.plugins.privilege import principal_has_privilege
 
 if six.PY3:
@@ -63,24 +64,28 @@ if six.PY3:
 
 try:
     import pysss_murmur
+
     _murmur_installed = True
 except Exception as e:
     _murmur_installed = False
 
 try:
     import pysss_nss_idmap
+
     _nss_idmap_installed = True
 except Exception as e:
     _nss_idmap_installed = False
 
-if api.env.in_server and api.env.context in ['lite', 'server']:
+if api.env.in_server and api.env.context in ["lite", "server"]:
     try:
         import ipaserver.dcerpc
+
         _bindings_installed = True
     except ImportError:
         _bindings_installed = False
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Cross-realm trusts
 
 Manage trust relationship between IPA and Active Directory domains.
@@ -166,24 +171,25 @@ particular type.
    posixGroup object class is allowed):
 
    ipa trustconfig-mod --type ad --fallback-primary-group "Default SMB Group"
-""")
+"""
+)
 
 logger = logging.getLogger(__name__)
 
 register = Registry()
 
 _trust_type_option = StrEnum(
-         'trust_type',
-         cli_name='type',
-         label=_('Trust type (ad for Active Directory, default)'),
-         values=(u'ad',),
-         default=u'ad',
-         autofill=True,
-        )
+    "trust_type",
+    cli_name="type",
+    label=_("Trust type (ad for Active Directory, default)"),
+    values=(u"ad",),
+    default=u"ad",
+    autofill=True,
+)
 
 DEFAULT_RANGE_SIZE = 200000
 
-DBUS_IFACE_TRUST = 'com.redhat.idm.trust'
+DBUS_IFACE_TRUST = "com.redhat.idm.trust"
 
 CRED_STYLE_SAMBA = 1
 CRED_STYLE_KERBEROS = 2
@@ -192,7 +198,7 @@ CRED_STYLE_KERBEROS = 2
 def make_trust_dn(env, trust_type, dn):
     assert isinstance(dn, DN)
     if trust_type:
-        container_dn = DN(('cn', trust_type), env.container_trusts, env.basedn)
+        container_dn = DN(("cn", trust_type), env.container_trusts, env.basedn)
         return DN(dn, container_dn)
     return dn
 
@@ -204,8 +210,7 @@ def find_adtrust_masters(ldap, api):
 
     try:
         entries, _truncated = ldap.find_entries(
-                "cn=ADTRUST",
-                base_dn=api.env.container_masters + api.env.basedn
+            "cn=ADTRUST", base_dn=api.env.container_masters + api.env.basedn
         )
     except errors.NotFound:
         entries = []
@@ -220,12 +225,12 @@ def verify_samba_component_presence(ldap, api):
     capable of running the commands.
     """
 
-    adtrust_present = api.Command['adtrust_is_enabled']()['result']
+    adtrust_present = api.Command["adtrust_is_enabled"]()["result"]
 
     hint = _(
-        ' Alternatively, following servers are capable of running this '
-        'command: %(masters)s'
-        )
+        " Alternatively, following servers are capable of running this "
+        "command: %(masters)s"
+    )
 
     def raise_missing_component_error(message):
         masters_with_adtrust = find_adtrust_masters(ldap, api)
@@ -233,11 +238,10 @@ def verify_samba_component_presence(ldap, api):
         # If there are any masters capable of running Samba requiring commands
         # let's advertise them directly
         if masters_with_adtrust:
-            message += hint % dict(masters=', '.join(masters_with_adtrust))
+            message += hint % dict(masters=", ".join(masters_with_adtrust))
 
         raise errors.NotFound(
-            name=_('AD Trust setup'),
-            reason=message,
+            name=_("AD Trust setup"), reason=message,
         )
 
     # We're ok in this case, bail out
@@ -247,9 +251,9 @@ def verify_samba_component_presence(ldap, api):
     # First check for packages missing
     elif not _bindings_installed:
         error_message = _(
-            'Cannot perform the selected command without Samba 4 support '
-            'installed. Make sure you have installed server-trust-ad '
-            'sub-package of IPA.'
+            "Cannot perform the selected command without Samba 4 support "
+            "installed. Make sure you have installed server-trust-ad "
+            "sub-package of IPA."
         )
 
         raise_missing_component_error(error_message)
@@ -257,9 +261,9 @@ def verify_samba_component_presence(ldap, api):
     # Packages present, but ADTRUST instance is not configured
     elif not adtrust_present:
         error_message = _(
-            'Cannot perform the selected command without Samba 4 instance '
-            'configured on this machine. Make sure you have run '
-            'ipa-adtrust-install on this server.'
+            "Cannot perform the selected command without Samba 4 instance "
+            "configured on this machine. Make sure you have run "
+            "ipa-adtrust-install on this server."
         )
 
         raise_missing_component_error(error_message)
@@ -281,28 +285,25 @@ def generate_creds(trustinstance, style, **options):
        None is returned if realm_passwd key returns nothing from options
     """
     creds = None
-    password = options.get('realm_passwd', None)
+    password = options.get("realm_passwd", None)
     if password:
-        admin_name = options.get('realm_admin')
+        admin_name = options.get("realm_admin")
         sp = []
-        sep = '@'
+        sep = "@"
         if style == CRED_STYLE_SAMBA:
             sep = "\\"
             sp = admin_name.split(sep)
             if len(sp) == 1:
-                sp.insert(0, trustinstance.remote_domain.info['name'])
+                sp.insert(0, trustinstance.remote_domain.info["name"])
         elif style == CRED_STYLE_KERBEROS:
-            sp = admin_name.split('\\')
+            sp = admin_name.split("\\")
             if len(sp) > 1:
                 sp = [sp[1]]
             else:
                 sp = admin_name.split(sep)
             if len(sp) == 1:
-                sp.append(
-                    trustinstance.remote_domain.info['dns_domain'].upper()
-                )
-        creds = u"{name}%{password}".format(name=sep.join(sp),
-                                            password=password)
+                sp.append(trustinstance.remote_domain.info["dns_domain"].upper())
+        creds = u"{name}%{password}".format(name=sep.join(sp), password=password)
     return creds
 
 
@@ -326,7 +327,7 @@ def add_range(myapi, trustinstance, range_name, dom_sid, *keys, **options):
     # However, we skip this step if other than ipa-ad-trust-posix
     # range type is enforced
 
-    if options.get('range_type', None) in (None, u'ipa-ad-trust-posix'):
+    if options.get("range_type", None) in (None, u"ipa-ad-trust-posix"):
 
         # Get the base dn
         domain = keys[-1]
@@ -334,41 +335,39 @@ def add_range(myapi, trustinstance, range_name, dom_sid, *keys, **options):
 
         # Search for information contained in
         # CN=ypservers,CN=ypServ30,CN=RpcServices,CN=System
-        info_filter = '(objectClass=msSFU30DomainInfo)'
-        info_dn = DN('CN=ypservers,CN=ypServ30,CN=RpcServices,CN=System')\
-            + basedn
+        info_filter = "(objectClass=msSFU30DomainInfo)"
+        info_dn = DN("CN=ypservers,CN=ypServ30,CN=RpcServices,CN=System") + basedn
 
         # Get the domain validator
         domain_validator = ipaserver.dcerpc.DomainValidator(myapi)
         if not domain_validator.is_configured():
             raise errors.NotFound(
-                reason=_('Cannot search in trusted domains without own '
-                         'domain configured. Make sure you have run '
-                         'ipa-adtrust-install on the IPA server first'))
+                reason=_(
+                    "Cannot search in trusted domains without own "
+                    "domain configured. Make sure you have run "
+                    "ipa-adtrust-install on the IPA server first"
+                )
+            )
 
         creds = None
         if trustinstance:
             # Re-use AD administrator credentials if they were provided
-            creds = generate_creds(trustinstance,
-                                   style=CRED_STYLE_KERBEROS, **options)
+            creds = generate_creds(trustinstance, style=CRED_STYLE_KERBEROS, **options)
             if creds:
                 domain_validator._admin_creds = creds
         # KDC might not get refreshed data at the first time,
         # retry several times
         for _retry in range(10):
-            info_list = domain_validator.search_in_dc(domain,
-                                                      info_filter,
-                                                      None,
-                                                      SCOPE_SUBTREE,
-                                                      basedn=info_dn,
-                                                      quiet=True)
+            info_list = domain_validator.search_in_dc(
+                domain, info_filter, None, SCOPE_SUBTREE, basedn=info_dn, quiet=True
+            )
 
             if info_list:
                 info = info_list[0]
                 break
             sleep(2)
 
-        required_msSFU_attrs = ['msSFU30MaxUidNumber', 'msSFU30OrderNumber']
+        required_msSFU_attrs = ["msSFU30MaxUidNumber", "msSFU30OrderNumber"]
 
         if not info_list:
             # We were unable to gain UNIX specific info from the AD
@@ -376,45 +375,47 @@ def add_range(myapi, trustinstance, range_name, dom_sid, *keys, **options):
         else:
             if all(attr in info for attr in required_msSFU_attrs):
                 logger.debug("Able to gain POSIX info from the AD")
-                range_type = u'ipa-ad-trust-posix'
+                range_type = u"ipa-ad-trust-posix"
 
-                max_uid = info.get('msSFU30MaxUidNumber')
-                max_gid = info.get('msSFU30MaxGidNumber', None)
+                max_uid = info.get("msSFU30MaxUidNumber")
+                max_gid = info.get("msSFU30MaxGidNumber", None)
                 max_id = int(max(max_uid, max_gid)[0])
 
-                base_id = int(info.get('msSFU30OrderNumber')[0])
-                range_size = (1 + (max_id - base_id) // DEFAULT_RANGE_SIZE)\
-                    * DEFAULT_RANGE_SIZE
+                base_id = int(info.get("msSFU30OrderNumber")[0])
+                range_size = (
+                    1 + (max_id - base_id) // DEFAULT_RANGE_SIZE
+                ) * DEFAULT_RANGE_SIZE
 
     # Second, options given via the CLI options take precedence to discovery
-    if options.get('range_type', None):
-        range_type = options.get('range_type', None)
+    if options.get("range_type", None):
+        range_type = options.get("range_type", None)
     elif not range_type:
-        range_type = u'ipa-ad-trust'
+        range_type = u"ipa-ad-trust"
 
-    if options.get('range_size', None):
-        range_size = options.get('range_size', None)
+    if options.get("range_size", None):
+        range_size = options.get("range_size", None)
     elif not range_size:
         range_size = DEFAULT_RANGE_SIZE
 
-    if options.get('base_id', None):
-        base_id = options.get('base_id', None)
+    if options.get("base_id", None):
+        base_id = options.get("base_id", None)
     elif not base_id:
         # Generate random base_id if not discovered nor given via CLI
-        base_id = DEFAULT_RANGE_SIZE + (
-            pysss_murmur.murmurhash3(
-                dom_sid,
-                len(dom_sid), 0xdeadbeef
-            ) % 10000
-        ) * DEFAULT_RANGE_SIZE
+        base_id = (
+            DEFAULT_RANGE_SIZE
+            + (pysss_murmur.murmurhash3(dom_sid, len(dom_sid), 0xDEADBEEF) % 10000)
+            * DEFAULT_RANGE_SIZE
+        )
 
     # Finally, add new ID range
-    myapi.Command['idrange_add'](range_name,
-                                 ipabaseid=base_id,
-                                 ipaidrangesize=range_size,
-                                 ipabaserid=0,
-                                 iparangetype=range_type,
-                                 ipanttrusteddomainsid=dom_sid)
+    myapi.Command["idrange_add"](
+        range_name,
+        ipabaseid=base_id,
+        ipaidrangesize=range_size,
+        ipabaserid=0,
+        iparangetype=range_type,
+        ipanttrusteddomainsid=dom_sid,
+    )
 
     # Return the values that were generated inside this function
     return range_type, range_size, base_id
@@ -426,12 +427,12 @@ def fetch_trusted_domains_over_dbus(myapi, *keys, **options):
 
     forest_name = keys[0]
     method_options = []
-    if options.get('realm_server', None):
-        method_options.extend(['--server', options['realm_server']])
-    if options.get('realm_admin', None):
-        method_options.extend(['--admin', options['realm_admin']])
-    if options.get('realm_passwd', None):
-        method_options.extend(['--password', options['realm_passwd']])
+    if options.get("realm_server", None):
+        method_options.extend(["--server", options["realm_server"]])
+    if options.get("realm_admin", None):
+        method_options.extend(["--admin", options["realm_admin"]])
+    if options.get("realm_passwd", None):
+        method_options.extend(["--password", options["realm_passwd"]])
 
     # Calling oddjobd-activated service via DBus has some quirks:
     # - Oddjobd registers multiple canonical names on the same address
@@ -440,14 +441,13 @@ def fetch_trusted_domains_over_dbus(myapi, *keys, **options):
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     try:
         _ret = 0
-        _stdout = ''
-        _stderr = ''
+        _stdout = ""
+        _stderr = ""
         bus = dbus.SystemBus()
-        intf = bus.get_object(DBUS_IFACE_TRUST, "/",
-                              follow_name_owner_changes=True)
+        intf = bus.get_object(DBUS_IFACE_TRUST, "/", follow_name_owner_changes=True)
         fetch_domains_method = intf.get_dbus_method(
-                'fetch_domains',
-                dbus_interface=DBUS_IFACE_TRUST)
+            "fetch_domains", dbus_interface=DBUS_IFACE_TRUST
+        )
         # Oddjobd D-BUS method definition only accepts fixed number
         # of arguments on the command line. Thus, we need to pass
         # remaining ones as ''. There are 30 slots to allow for extension
@@ -455,24 +455,32 @@ def fetch_trusted_domains_over_dbus(myapi, *keys, **options):
         # install/oddjob/etc/oddjobd.conf.d/oddjobd-ipa-trust.conf
         method_arguments = [forest_name]
         method_arguments.extend(method_options)
-        method_arguments.extend([''] * (30 - len(method_arguments)))
+        method_arguments.extend([""] * (30 - len(method_arguments)))
         (_ret, _stdout, _stderr) = fetch_domains_method(*method_arguments)
     except dbus.DBusException as e:
-        logger.error('Failed to call %s.fetch_domains helper.'
-                     'DBus exception is %s.', DBUS_IFACE_TRUST, str(e))
+        logger.error(
+            "Failed to call %s.fetch_domains helper." "DBus exception is %s.",
+            DBUS_IFACE_TRUST,
+            str(e),
+        )
         _ret = 2
-        _stdout = '<not available>'
-        _stderr = '<not available>'
+        _stdout = "<not available>"
+        _stderr = "<not available>"
 
     if _ret != 0:
-        logger.error('Helper fetch_domains was called for forest %s, '
-                     'return code is %d', forest_name, _ret)
-        logger.error('Standard output from the helper:\n%s---\n', _stdout)
-        logger.error('Error output from the helper:\n%s--\n', _stderr)
+        logger.error(
+            "Helper fetch_domains was called for forest %s, " "return code is %d",
+            forest_name,
+            _ret,
+        )
+        logger.error("Standard output from the helper:\n%s---\n", _stdout)
+        logger.error("Error output from the helper:\n%s--\n", _stderr)
         raise errors.ServerCommandError(
             server=myapi.env.host,
-            error=_('Fetching domains from trusted forest failed. '
-                    'See details in the error_log')
+            error=_(
+                "Fetching domains from trusted forest failed. "
+                "See details in the error_log"
+            ),
         )
     return
 
@@ -482,92 +490,113 @@ class trust(LDAPObject):
     """
     Trust object.
     """
-    trust_types = ('ad', 'ipa')
+
+    trust_types = ("ad", "ipa")
     container_dn = api.env.container_trusts
-    object_name = _('trust')
-    object_name_plural = _('trusts')
-    object_class = ['ipaNTTrustedDomain', 'ipaIDObject']
-    default_attributes = ['cn', 'ipantflatname', 'ipanttrusteddomainsid',
-                          'ipanttrusttype', 'ipanttrustattributes',
-                          'ipanttrustdirection', 'ipanttrustpartner',
-                          'ipanttrustforesttrustinfo',
-                          'ipanttrustposixoffset',
-                          'ipantsupportedencryptiontypes',
-                          'ipantadditionalsuffixes']
-    search_display_attributes = ['cn', 'ipantflatname',
-                                 'ipanttrusteddomainsid', 'ipanttrusttype',
-                                 'ipanttrustattributes',
-                                 'ipantadditionalsuffixes']
+    object_name = _("trust")
+    object_name_plural = _("trusts")
+    object_class = ["ipaNTTrustedDomain", "ipaIDObject"]
+    default_attributes = [
+        "cn",
+        "ipantflatname",
+        "ipanttrusteddomainsid",
+        "ipanttrusttype",
+        "ipanttrustattributes",
+        "ipanttrustdirection",
+        "ipanttrustpartner",
+        "ipanttrustforesttrustinfo",
+        "ipanttrustposixoffset",
+        "ipantsupportedencryptiontypes",
+        "ipantadditionalsuffixes",
+    ]
+    search_display_attributes = [
+        "cn",
+        "ipantflatname",
+        "ipanttrusteddomainsid",
+        "ipanttrusttype",
+        "ipanttrustattributes",
+        "ipantadditionalsuffixes",
+    ]
     managed_permissions = {
-        'System: Read Trust Information': {
+        "System: Read Trust Information": {
             # Allow reading of attributes needed for SSSD subdomains support
-            'non_object': True,
-            'ipapermlocation': DN(container_dn, api.env.basedn),
-            'replaces_global_anonymous_aci': True,
-            'ipapermbindruletype': 'all',
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'cn', 'objectclass',
-                'ipantflatname', 'ipantsecurityidentifier',
-                'ipanttrusteddomainsid', 'ipanttrustpartner',
-                'ipantsidblacklistincoming', 'ipantsidblacklistoutgoing',
-                'ipanttrustdirection', 'ipantadditionalsuffixes',
+            "non_object": True,
+            "ipapermlocation": DN(container_dn, api.env.basedn),
+            "replaces_global_anonymous_aci": True,
+            "ipapermbindruletype": "all",
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {
+                "cn",
+                "objectclass",
+                "ipantflatname",
+                "ipantsecurityidentifier",
+                "ipanttrusteddomainsid",
+                "ipanttrustpartner",
+                "ipantsidblacklistincoming",
+                "ipantsidblacklistoutgoing",
+                "ipanttrustdirection",
+                "ipantadditionalsuffixes",
             },
         },
-
-        'System: Read system trust accounts': {
-            'non_object': True,
-            'ipapermlocation': DN(container_dn, api.env.basedn),
-            'replaces_global_anonymous_aci': True,
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'uidnumber', 'gidnumber', 'krbprincipalname'
-            },
-            'default_privileges': {'ADTrust Agents'},
+        "System: Read system trust accounts": {
+            "non_object": True,
+            "ipapermlocation": DN(container_dn, api.env.basedn),
+            "replaces_global_anonymous_aci": True,
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {"uidnumber", "gidnumber", "krbprincipalname"},
+            "default_privileges": {"ADTrust Agents"},
         },
     }
 
-    label = _('Trusts')
-    label_singular = _('Trust')
+    label = _("Trusts")
+    label_singular = _("Trust")
 
     takes_params = (
-        Str('cn',
-            cli_name='realm',
-            label=_('Realm name'),
-            primary_key=True,
+        Str("cn", cli_name="realm", label=_("Realm name"), primary_key=True,),
+        Str(
+            "ipantflatname",
+            cli_name="flat_name",
+            label=_("Domain NetBIOS name"),
+            flags=["no_create", "no_update"],
         ),
-        Str('ipantflatname',
-            cli_name='flat_name',
-            label=_('Domain NetBIOS name'),
-            flags=['no_create', 'no_update']),
-        Str('ipanttrusteddomainsid',
-            cli_name='sid',
-            label=_('Domain Security Identifier'),
-            flags=['no_create', 'no_update']),
-        Str('ipantsidblacklistincoming*',
-            cli_name='sid_blacklist_incoming',
-            label=_('SID blacklist incoming'),
-            flags=['no_create']),
-        Str('ipantsidblacklistoutgoing*',
-            cli_name='sid_blacklist_outgoing',
-            label=_('SID blacklist outgoing'),
-            flags=['no_create']),
-        Str('trustdirection',
-            label=_('Trust direction'),
-            flags={'virtual_attribute', 'no_create', 'no_update', 'no_search'},
+        Str(
+            "ipanttrusteddomainsid",
+            cli_name="sid",
+            label=_("Domain Security Identifier"),
+            flags=["no_create", "no_update"],
         ),
-        Str('trusttype',
-            label=_('Trust type'),
-            flags={'virtual_attribute', 'no_create', 'no_update', 'no_search'},
+        Str(
+            "ipantsidblacklistincoming*",
+            cli_name="sid_blacklist_incoming",
+            label=_("SID blacklist incoming"),
+            flags=["no_create"],
         ),
-        Str('truststatus',
-            label=_('Trust status'),
-            flags={'virtual_attribute', 'no_create', 'no_update', 'no_search'},
+        Str(
+            "ipantsidblacklistoutgoing*",
+            cli_name="sid_blacklist_outgoing",
+            label=_("SID blacklist outgoing"),
+            flags=["no_create"],
         ),
-        Str('ipantadditionalsuffixes*',
-            cli_name='upn_suffixes',
-            label=_('UPN suffixes'),
-            flags={'no_create', 'no_search'},
+        Str(
+            "trustdirection",
+            label=_("Trust direction"),
+            flags={"virtual_attribute", "no_create", "no_update", "no_search"},
+        ),
+        Str(
+            "trusttype",
+            label=_("Trust type"),
+            flags={"virtual_attribute", "no_create", "no_update", "no_search"},
+        ),
+        Str(
+            "truststatus",
+            label=_("Trust status"),
+            flags={"virtual_attribute", "no_create", "no_update", "no_search"},
+        ),
+        Str(
+            "ipantadditionalsuffixes*",
+            cli_name="upn_suffixes",
+            label=_("UPN suffixes"),
+            flags={"no_create", "no_search"},
         ),
     )
 
@@ -577,7 +606,7 @@ class trust(LDAPObject):
             # Even if invalid SID gets in the trust entry, it won't crash
             # the validation process as it is translated to SID S-0-0
             return
-        for attr in ('ipantsidblacklistincoming', 'ipantsidblacklistoutgoing'):
+        for attr in ("ipantsidblacklistincoming", "ipantsidblacklistoutgoing"):
             values = entry_attrs.get(attr)
             if not values:
                 continue
@@ -587,37 +616,40 @@ class trust(LDAPObject):
                     raise errors.ValidationError(name=attr, error=err)
 
     def get_dn(self, *keys, **kwargs):
-        trust_type = kwargs.get('trust_type')
+        trust_type = kwargs.get("trust_type")
 
-        sdn = [('cn', x) for x in keys]
+        sdn = [("cn", x) for x in keys]
         sdn.reverse()
 
         if trust_type is None:
             ldap = self.backend
-            trustfilter = ldap.make_filter({
-                'objectclass': ['ipaNTTrustedDomain', 'ipaIDObject'],
-                'cn': [keys[-1]]},
-                rules=ldap.MATCH_ALL
+            trustfilter = ldap.make_filter(
+                {
+                    "objectclass": ["ipaNTTrustedDomain", "ipaIDObject"],
+                    "cn": [keys[-1]],
+                },
+                rules=ldap.MATCH_ALL,
             )
 
             # more type of objects can be located in subtree (for example
             # cross-realm principals). we need this attr do detect trust
             # entries
             trustfilter = ldap.combine_filters(
-                (trustfilter, "ipaNTTrustPartner=*"),
-                rules=ldap.MATCH_ALL
+                (trustfilter, "ipaNTTrustPartner=*"), rules=ldap.MATCH_ALL
             )
 
             try:
                 result = ldap.get_entries(
                     DN(self.container_dn, self.env.basedn),
-                    ldap.SCOPE_SUBTREE, trustfilter, ['']
+                    ldap.SCOPE_SUBTREE,
+                    trustfilter,
+                    [""],
                 )
             except errors.NotFound:
                 raise self.handle_not_found(keys[-1])
 
             if len(result) > 1:
-                raise errors.OnlyOneValueAllowed(attr='trust domain')
+                raise errors.OnlyOneValueAllowed(attr="trust domain")
 
             return result[0].dn
 
@@ -631,27 +663,26 @@ class trust(LDAPObject):
 
         try:
             entries, _truncated = ldap.find_entries(
-                base_dn=DN(self.api.env.container_adtrusts,
-                           self.api.env.basedn),
+                base_dn=DN(self.api.env.container_adtrusts, self.api.env.basedn),
                 scope=ldap.SCOPE_ONELEVEL,
-                attrs_list=['cn'],
-                filter='(&(ipaNTTrustPartner=*)'
-                       '(!(ipaNTSecurityIdentifier=*)))',
+                attrs_list=["cn"],
+                filter="(&(ipaNTTrustPartner=*)" "(!(ipaNTSecurityIdentifier=*)))",
             )
         except errors.NotFound:
             pass
         else:
             for entry in entries:
                 add_message(
-                    options['version'],
+                    options["version"],
                     result,
-                    BrokenTrust(domain=entry.single_value['cn'])
+                    BrokenTrust(domain=entry.single_value["cn"]),
                 )
 
 
 @register()
 class trust_add(LDAPCreate):
-    __doc__ = _('''
+    __doc__ = _(
+        """
 Add new trust to use.
 
 This command establishes trust relationship to another domain
@@ -668,65 +699,79 @@ Note that if the command was previously run with a specific range type,
 or with automatic detection of the range type, and you want to configure a
 different range type, you may need to delete first the ID range using
 ipa idrange-del before retrying the command with the desired range type.
-    ''')
+    """
+    )
 
     range_types = {
-        u'ipa-ad-trust': unicode(_('Active Directory domain range')),
-        u'ipa-ad-trust-posix': unicode(_('Active Directory trust range with '
-                                         'POSIX attributes')),
-                  }
+        u"ipa-ad-trust": unicode(_("Active Directory domain range")),
+        u"ipa-ad-trust-posix": unicode(
+            _("Active Directory trust range with " "POSIX attributes")
+        ),
+    }
 
     takes_options = LDAPCreate.takes_options + (
         _trust_type_option,
-        Str('realm_admin?',
-            cli_name='admin',
+        Str(
+            "realm_admin?",
+            cli_name="admin",
             label=_("Active Directory domain administrator"),
+        ),
+        Password(
+            "realm_passwd?",
+            cli_name="password",
+            label=_("Active Directory domain administrator's password"),
+            confirm=False,
+        ),
+        Str(
+            "realm_server?",
+            cli_name="server",
+            label=_("Domain controller for the Active Directory domain " "(optional)"),
+        ),
+        Password(
+            "trust_secret?",
+            cli_name="trust_secret",
+            label=_("Shared secret for the trust"),
+            confirm=False,
+        ),
+        Int(
+            "base_id?",
+            cli_name="base_id",
+            label=_("First Posix ID of the range reserved for the " "trusted domain"),
+        ),
+        Int(
+            "range_size?",
+            cli_name="range_size",
+            label=_("Size of the ID range reserved for the trusted domain"),
+        ),
+        StrEnum(
+            "range_type?",
+            label=_("Range type"),
+            cli_name="range_type",
+            doc=_("Type of trusted domain ID range, one of allowed " + "values"),
+            values=sorted(range_types),
+        ),
+        Bool(
+            "bidirectional?",
+            label=_("Two-way trust"),
+            cli_name="two_way",
+            doc=(
+                _(
+                    "Establish bi-directional trust. By default trust is "
+                    "inbound one-way only."
+                )
             ),
-        Password('realm_passwd?',
-                 cli_name='password',
-                 label=_("Active Directory domain administrator's password"),
-                 confirm=False,
-                 ),
-        Str('realm_server?',
-            cli_name='server',
-            label=_('Domain controller for the Active Directory domain '
-                    '(optional)'),
+            default=False,
+        ),
+        Bool(
+            "external?",
+            label=_("External trust"),
+            cli_name="external",
+            doc=_(
+                "Establish external trust to a domain in another forest. "
+                "The trust is not transitive beyond the domain."
             ),
-        Password('trust_secret?',
-                 cli_name='trust_secret',
-                 label=_('Shared secret for the trust'),
-                 confirm=False,
-                 ),
-        Int('base_id?',
-            cli_name='base_id',
-            label=_('First Posix ID of the range reserved for the '
-                    'trusted domain'),
-            ),
-        Int('range_size?',
-            cli_name='range_size',
-            label=_('Size of the ID range reserved for the trusted domain')
-            ),
-        StrEnum('range_type?',
-                label=_('Range type'),
-                cli_name='range_type',
-                doc=_('Type of trusted domain ID range, one of allowed ' +
-                      'values'),
-                values=sorted(range_types),
-                ),
-        Bool('bidirectional?',
-             label=_('Two-way trust'),
-             cli_name='two_way',
-             doc=(_('Establish bi-directional trust. By default trust is '
-                    'inbound one-way only.')),
-             default=False,
-             ),
-        Bool('external?',
-             label=_('External trust'),
-             cli_name='external',
-             doc=_('Establish external trust to a domain in another forest. '
-                   'The trust is not transitive beyond the domain.'),
-             default=False,
-             ),
+            default=False,
+        ),
     )
 
     msg_summary = _('Added Active Directory trust for realm "%(value)s"')
@@ -735,21 +780,22 @@ ipa idrange-del before retrying the command with the desired range type.
     def _format_trust_attrs(self, result, **options):
 
         # Format the output into human-readable values
-        attributes = int(result['result'].get('ipanttrustattributes', [0])[0])
+        attributes = int(result["result"].get("ipanttrustattributes", [0])[0])
 
-        if not options.get('raw', False):
-            result['result']['trusttype'] = [trust_type_string(
-                result['result']['ipanttrusttype'][0], attributes)]
-            result['result']['trustdirection'] = [trust_direction_string(
-                result['result']['ipanttrustdirection'][0])]
-            result['result']['truststatus'] = [trust_status_string(
-                result['verified'])]
+        if not options.get("raw", False):
+            result["result"]["trusttype"] = [
+                trust_type_string(result["result"]["ipanttrusttype"][0], attributes)
+            ]
+            result["result"]["trustdirection"] = [
+                trust_direction_string(result["result"]["ipanttrustdirection"][0])
+            ]
+            result["result"]["truststatus"] = [trust_status_string(result["verified"])]
 
         if attributes:
-            result['result'].pop('ipanttrustattributes', None)
+            result["result"].pop("ipanttrustattributes", None)
 
-        result['result'].pop('ipanttrustauthoutgoing', None)
-        result['result'].pop('ipanttrustauthincoming', None)
+        result["result"].pop("ipanttrustauthoutgoing", None)
+        result["result"].pop("ipanttrustauthincoming", None)
 
     def execute(self, *keys, **options):
         ldap = self.obj.backend
@@ -765,38 +811,35 @@ ipa idrange-del before retrying the command with the desired range type.
             # ranges for the subdomains should be added, POSIX attributes
             # provide a global mapping across all subdomains
             add_range(
-                self.api, self.trustinstance, range_name, dom_sid,
-                *keys, **options
+                self.api, self.trustinstance, range_name, dom_sid, *keys, **options
             )
 
         attrs_list = self.obj.default_attributes
-        if options.get('all', False):
-            attrs_list.append('*')
+        if options.get("all", False):
+            attrs_list.append("*")
 
-        trust_filter = "cn=%s" % result['value']
+        trust_filter = "cn=%s" % result["value"]
         trusts, _truncated = ldap.find_entries(
             base_dn=DN(self.api.env.container_trusts, self.api.env.basedn),
             filter=trust_filter,
-            attrs_list=attrs_list
+            attrs_list=attrs_list,
         )
 
-        result['result'] = entry_to_dict(trusts[0], **options)
+        result["result"] = entry_to_dict(trusts[0], **options)
 
         # Fetch topology of the trust forest -- we need always to do it
         # for AD trusts, regardless of the type of idranges associated with it
         # Note that add_new_domains_from_trust will add needed ranges for
         # the algorithmic ID mapping case.
-        if (options.get('trust_type') == u'ad' and
-                options.get('trust_secret') is None):
+        if options.get("trust_type") == u"ad" and options.get("trust_secret") is None:
 
-            if options.get('bidirectional'):
+            if options.get("bidirectional"):
                 # Bidirectional trust allows us to use cross-realm TGT,
                 # so we can run the call under original user's credentials
-                res = fetch_domains_from_trust(self.api, self.trustinstance,
-                                               **options)
+                res = fetch_domains_from_trust(self.api, self.trustinstance, **options)
                 add_new_domains_from_trust(
-                    self.api, self.trustinstance, result['result'], res,
-                    **options)
+                    self.api, self.trustinstance, result["result"], res, **options
+                )
             else:
                 # One-way trust is more complex. We don't have cross-realm TGT
                 # and cannot use IPA principals to authenticate against AD.
@@ -811,112 +854,116 @@ ipa idrange-del before retrying the command with the desired range type.
                 # to reach the specified Active Directory domain controller
                 # No need to pass through admin credentials as we have TDO
                 # credentials at this point already
-                fetch_trusted_domains_over_dbus(self.api, result['value'],
-                                                realm_server=options.get(
-                                                    'realm_server', None))
+                fetch_trusted_domains_over_dbus(
+                    self.api,
+                    result["value"],
+                    realm_server=options.get("realm_server", None),
+                )
 
         # Format the output into human-readable values unless `--raw` is given
         self._format_trust_attrs(result, **options)
-        del result['verified']
+        del result["verified"]
 
         return result
 
     def validate_options(self, *keys, **options):
         trusted_realm_domain = keys[-1]
 
-        if not _murmur_installed and 'base_id' not in options:
+        if not _murmur_installed and "base_id" not in options:
             raise errors.ValidationError(
-                name=_('missing base_id'),
+                name=_("missing base_id"),
                 error=_(
-                    'pysss_murmur is not available on the server '
-                    'and no base-id is given.'
-                )
+                    "pysss_murmur is not available on the server "
+                    "and no base-id is given."
+                ),
             )
 
-        if 'trust_type' not in options:
-            raise errors.RequirementError(name='trust_type')
+        if "trust_type" not in options:
+            raise errors.RequirementError(name="trust_type")
 
-        if options['trust_type'] != u'ad':
+        if options["trust_type"] != u"ad":
             raise errors.ValidationError(
-                name=_('trust type'),
-                error=_('only "ad" is supported')
+                name=_("trust type"), error=_('only "ad" is supported')
             )
 
         # Detect IPA-AD domain clash
         if self.api.env.domain.lower() == trusted_realm_domain.lower():
             raise errors.ValidationError(
-                name=_('domain'),
-                error=_('Cannot establish a trust to AD deployed in the same '
-                        'domain as IPA. Such setup is not supported.')
-                )
+                name=_("domain"),
+                error=_(
+                    "Cannot establish a trust to AD deployed in the same "
+                    "domain as IPA. Such setup is not supported."
+                ),
+            )
 
         # If domain name and realm does not match, IPA server is not be able
         # to establish trust with Active Directory.
 
-        realm_not_matching_domain = (
-            self.api.env.domain.upper() != self.api.env.realm
-        )
+        realm_not_matching_domain = self.api.env.domain.upper() != self.api.env.realm
 
-        if options['trust_type'] == u'ad' and realm_not_matching_domain:
+        if options["trust_type"] == u"ad" and realm_not_matching_domain:
             raise errors.ValidationError(
-                name=_('Realm-domain mismatch'),
-                error=_('To establish trust with Active Directory, the '
-                        'domain name and the realm name of the IPA server '
-                        'must match')
-                )
+                name=_("Realm-domain mismatch"),
+                error=_(
+                    "To establish trust with Active Directory, the "
+                    "domain name and the realm name of the IPA server "
+                    "must match"
+                ),
+            )
 
         self.trustinstance = ipaserver.dcerpc.TrustDomainJoins(self.api)
         if not self.trustinstance.configured:
             raise errors.NotFound(
-                name=_('AD Trust setup'),
+                name=_("AD Trust setup"),
                 reason=_(
-                    'Cannot perform join operation without own domain '
-                    'configured. Make sure you have run ipa-adtrust-install '
-                    'on the IPA server first'
-                )
+                    "Cannot perform join operation without own domain "
+                    "configured. Make sure you have run ipa-adtrust-install "
+                    "on the IPA server first"
+                ),
             )
 
         # Obtain a list of IPA realm domains
-        result = self.api.Command.realmdomains_show()['result']
-        realm_domains = result['associateddomain']
+        result = self.api.Command.realmdomains_show()["result"]
+        realm_domains = result["associateddomain"]
 
         # Do not allow the AD's trusted realm domain in the list
         # of our realm domains
         if trusted_realm_domain.lower() in realm_domains:
             raise errors.ValidationError(
-                name=_('AD Trust setup'),
+                name=_("AD Trust setup"),
                 error=_(
-                    'Trusted domain %(domain)s is included among '
-                    'IPA realm domains. It needs to be removed '
-                    'prior to establishing the trust. See the '
+                    "Trusted domain %(domain)s is included among "
+                    "IPA realm domains. It needs to be removed "
+                    "prior to establishing the trust. See the "
                     '"ipa realmdomains-mod --del-domain" command.'
-                ) % dict(domain=trusted_realm_domain)
+                )
+                % dict(domain=trusted_realm_domain),
             )
 
-        self.realm_server = options.get('realm_server')
-        self.realm_admin = options.get('realm_admin')
-        self.realm_passwd = options.get('realm_passwd')
+        self.realm_server = options.get("realm_server")
+        self.realm_admin = options.get("realm_admin")
+        self.realm_passwd = options.get("realm_passwd")
 
         if self.realm_admin:
-            names = self.realm_admin.split('@')
+            names = self.realm_admin.split("@")
 
             if len(names) > 1:
                 # realm admin name is in UPN format, user@realm, check that
                 # realm is the same as the one that we are attempting to trust
                 if trusted_realm_domain.lower() != names[-1].lower():
                     raise errors.ValidationError(
-                        name=_('AD Trust setup'),
+                        name=_("AD Trust setup"),
                         error=_(
-                            'Trusted domain and administrator account use '
-                            'different realms'
-                        )
+                            "Trusted domain and administrator account use "
+                            "different realms"
+                        ),
                     )
                 self.realm_admin = names[0]
 
             if not self.realm_passwd:
                 raise errors.ValidationError(
-                    name=_('AD Trust setup'),
-                    error=_('Realm administrator password should be specified')
+                    name=_("AD Trust setup"),
+                    error=_("Realm administrator password should be specified"),
                 )
             return True
 
@@ -925,69 +972,72 @@ ipa idrange-del before retrying the command with the desired range type.
     def validate_range(self, *keys, **options):
         # If a range for this trusted domain already exists,
         # '--base-id' or '--range-size' options should not be specified
-        range_name = keys[-1].upper() + '_id_range'
-        range_type = options.get('range_type')
+        range_name = keys[-1].upper() + "_id_range"
+        range_type = options.get("range_type")
 
         try:
-            old_range = self.api.Command['idrange_show'](range_name, raw=True)
+            old_range = self.api.Command["idrange_show"](range_name, raw=True)
         except errors.NotFound:
             old_range = None
 
-        if options.get('trust_type') == u'ad':
-            if range_type and range_type not in (u'ipa-ad-trust',
-                                                 u'ipa-ad-trust-posix'):
+        if options.get("trust_type") == u"ad":
+            if range_type and range_type not in (
+                u"ipa-ad-trust",
+                u"ipa-ad-trust-posix",
+            ):
                 raise errors.ValidationError(
-                    name=_('id range type'),
+                    name=_("id range type"),
                     error=_(
-                        'Only the ipa-ad-trust and ipa-ad-trust-posix are '
-                        'allowed values for --range-type when adding an AD '
-                        'trust.'
-                    ))
+                        "Only the ipa-ad-trust and ipa-ad-trust-posix are "
+                        "allowed values for --range-type when adding an AD "
+                        "trust."
+                    ),
+                )
 
-        base_id = options.get('base_id')
-        range_size = options.get('range_size')
+        base_id = options.get("base_id")
+        range_size = options.get("range_size")
 
         if old_range and (base_id or range_size):
             raise errors.ValidationError(
-                name=_('id range'),
+                name=_("id range"),
                 error=_(
-                    'An id range already exists for this trust. '
-                    'You should either delete the old range, or '
-                    'exclude --base-id/--range-size options from the command.'
-                )
+                    "An id range already exists for this trust. "
+                    "You should either delete the old range, or "
+                    "exclude --base-id/--range-size options from the command."
+                ),
             )
 
         # If a range for this trusted domain already exists,
         # domain SID must also match
         self.trustinstance.populate_remote_domain(
-            keys[-1],
-            self.realm_server,
-            self.realm_admin,
-            self.realm_passwd
+            keys[-1], self.realm_server, self.realm_admin, self.realm_passwd
         )
-        dom_sid = self.trustinstance.remote_domain.info['sid']
+        dom_sid = self.trustinstance.remote_domain.info["sid"]
 
         if old_range:
-            old_dom_sid = old_range['result']['ipanttrusteddomainsid'][0]
-            old_range_type = old_range['result']['iparangetype'][0]
+            old_dom_sid = old_range["result"]["ipanttrusteddomainsid"][0]
+            old_range_type = old_range["result"]["iparangetype"][0]
 
             if old_dom_sid != dom_sid:
                 raise errors.ValidationError(
-                    name=_('range exists'),
+                    name=_("range exists"),
                     error=_(
-                        'ID range with the same name but different domain SID '
-                        'already exists. The ID range for the new trusted '
-                        'domain must be created manually.'
-                    )
+                        "ID range with the same name but different domain SID "
+                        "already exists. The ID range for the new trusted "
+                        "domain must be created manually."
+                    ),
                 )
 
             if range_type and range_type != old_range_type:
                 raise errors.ValidationError(
-                    name=_('range type change'),
-                    error=_('ID range for the trusted domain already '
-                            'exists, but it has a different type. Please '
-                            'remove the old range manually, or do not '
-                            'enforce type via --range-type option.'))
+                    name=_("range type change"),
+                    error=_(
+                        "ID range for the trusted domain already "
+                        "exists, but it has a different type. Please "
+                        "remove the old range manually, or do not "
+                        "enforce type via --range-type option."
+                    ),
+                )
 
         return old_range, range_name, dom_sid
 
@@ -1003,11 +1053,11 @@ ipa idrange-del before retrying the command with the desired range type.
             dn = None
 
         trust_type = TRUST_ONEWAY
-        if options.get('bidirectional', False):
+        if options.get("bidirectional", False):
             trust_type = TRUST_BIDIRECTIONAL
 
         # If we are forced to establish external trust, allow it
-        if options.get('external', False):
+        if options.get("external", False):
             self.trustinstance.allow_behavior(TRUST_JOIN_EXTERNAL)
 
         # 1. Full access to the remote domain. Use admin credentials and
@@ -1019,26 +1069,28 @@ ipa idrange-del before retrying the command with the desired range type.
                     self.realm_server,
                     self.realm_admin,
                     self.realm_passwd,
-                    trust_type
+                    trust_type,
                 )
             except errors.NotFound:
-                error_message = _("Unable to resolve domain controller for "
-                                  "{domain} domain. "
-                                  ).format(domain=keys[-1])
+                error_message = _(
+                    "Unable to resolve domain controller for " "{domain} domain. "
+                ).format(domain=keys[-1])
                 instructions = []
 
                 if dns_container_exists(self.obj.backend):
                     try:
-                        dns_zone = self.api.Command.dnszone_show(
-                            keys[-1])['result']
+                        dns_zone = self.api.Command.dnszone_show(keys[-1])["result"]
 
-                        if (('idnsforwardpolicy' in dns_zone) and
-                                dns_zone['idnsforwardpolicy'][0] == u'only'):
+                        if ("idnsforwardpolicy" in dns_zone) and dns_zone[
+                            "idnsforwardpolicy"
+                        ][0] == u"only":
 
                             instructions.append(
-                                _("Forward policy is defined for it in "
-                                  "IPA DNS, perhaps forwarder points to "
-                                  "incorrect host?")
+                                _(
+                                    "Forward policy is defined for it in "
+                                    "IPA DNS, perhaps forwarder points to "
+                                    "incorrect host?"
+                                )
                             )
                     except (errors.NotFound, KeyError):
                         _instruction = _(
@@ -1049,83 +1101,76 @@ ipa idrange-del before retrying the command with the desired range type.
                             "with CLI commands or the Web UI can be "
                             "found in the documentation. "
                         )
-                        instructions.append(
-                            _instruction.format(domain=keys[-1])
-                        )
+                        instructions.append(_instruction.format(domain=keys[-1]))
                 else:
                     _instruction = _(
                         "Since IPA does not manage DNS records, ensure "
                         "DNS is configured to resolve '{domain}' "
                         "domain from IPA hosts and back."
                     )
-                    instructions.append(
-                        _instruction.format(domain=keys[-1])
-                    )
-                raise errors.NotFound(
-                    reason=error_message,
-                    instructions=instructions
-                )
+                    instructions.append(_instruction.format(domain=keys[-1]))
+                raise errors.NotFound(reason=error_message, instructions=instructions)
 
             if result is None:
                 raise errors.ValidationError(
-                    name=_('AD Trust setup'),
-                    error=_('Unable to verify write permissions to the AD')
+                    name=_("AD Trust setup"),
+                    error=_("Unable to verify write permissions to the AD"),
                 )
 
             ret = dict(
                 value=pkey_to_value(
-                    self.trustinstance.remote_domain.info['dns_domain'],
-                    options),
-                verified=result['verified']
+                    self.trustinstance.remote_domain.info["dns_domain"], options
+                ),
+                verified=result["verified"],
             )
             if dn:
-                ret['summary'] = self.msg_summary_existing % ret
+                ret["summary"] = self.msg_summary_existing % ret
             return ret
 
         # 2. We don't have access to the remote domain and trustdom password
         # is provided. Do the work on our side and inform what to do on remote
         # side.
-        if options.get('trust_secret'):
+        if options.get("trust_secret"):
             result = self.trustinstance.join_ad_ipa_half(
-                keys[-1],
-                self.realm_server,
-                options['trust_secret'],
-                trust_type
+                keys[-1], self.realm_server, options["trust_secret"], trust_type
             )
             ret = dict(
                 value=pkey_to_value(
-                    self.trustinstance.remote_domain.info['dns_domain'],
-                    options),
-                verified=result['verified']
+                    self.trustinstance.remote_domain.info["dns_domain"], options
+                ),
+                verified=result["verified"],
             )
             if dn:
-                ret['summary'] = self.msg_summary_existing % ret
+                ret["summary"] = self.msg_summary_existing % ret
             return ret
         else:
             raise errors.ValidationError(
-                name=_('AD Trust setup'),
-                error=_('Not enough arguments specified to perform trust '
-                        'setup'))
+                name=_("AD Trust setup"),
+                error=_("Not enough arguments specified to perform trust " "setup"),
+            )
 
 
 @register()
 class trust_del(LDAPDelete):
-    __doc__ = _('Delete a trust.')
+    __doc__ = _("Delete a trust.")
 
     msg_summary = _('Deleted trust "%(value)s"')
 
 
 @register()
 class trust_mod(LDAPUpdate):
-    __doc__ = _("""
+    __doc__ = _(
+        """
     Modify a trust (for future use).
 
     Currently only the default option to modify the LDAP attributes is
     available. More specific options will be added in coming releases.
-    """)
+    """
+    )
 
-    msg_summary = _('Modified trust "%(value)s" '
-                    '(change will be effective in 60 seconds)')
+    msg_summary = _(
+        'Modified trust "%(value)s" ' "(change will be effective in 60 seconds)"
+    )
 
     def pre_callback(self, ldap, dn, e_attrs, attrs_list, *keys, **options):
         assert isinstance(dn, DN)
@@ -1137,18 +1182,17 @@ class trust_mod(LDAPUpdate):
 
 @register()
 class trust_find(LDAPSearch):
-    __doc__ = _('Search for trusts.')
-    has_output_params = (LDAPSearch.has_output_params +
-                         (Str('ipanttrusttype'), Str('ipanttrustattributes')))
-
-    msg_summary = ngettext(
-        '%(count)d trust matched', '%(count)d trusts matched', 0
+    __doc__ = _("Search for trusts.")
+    has_output_params = LDAPSearch.has_output_params + (
+        Str("ipanttrusttype"),
+        Str("ipanttrustattributes"),
     )
+
+    msg_summary = ngettext("%(count)d trust matched", "%(count)d trusts matched", 0)
 
     # Since all trusts types are stored within separate containers
     # under 'cn=trusts', search needs to be done on a sub-tree scope
-    def pre_callback(self, ldap, filters, attrs_list,
-                     base_dn, scope, *args, **options):
+    def pre_callback(self, ldap, filters, attrs_list, base_dn, scope, *args, **options):
         # list only trust, not trust domains
         return (filters, base_dn, ldap.SCOPE_SUBTREE)
 
@@ -1160,31 +1204,30 @@ class trust_find(LDAPSearch):
         return result
 
     def post_callback(self, ldap, entries, truncated, *args, **options):
-        if options.get('pkey_only', False):
+        if options.get("pkey_only", False):
             return truncated
 
         for attrs in entries:
             # Translate ipanttrusttype to trusttype if --raw not used
-            trust_type = attrs.single_value.get('ipanttrusttype', None)
-            attributes = attrs.single_value.get('ipanttrustattributes', 0)
-            if not options.get('raw', False) and trust_type is not None:
-                attrs['trusttype'] = [
-                    trust_type_string(trust_type, attributes)
-                ]
-                del attrs['ipanttrusttype']
+            trust_type = attrs.single_value.get("ipanttrusttype", None)
+            attributes = attrs.single_value.get("ipanttrustattributes", 0)
+            if not options.get("raw", False) and trust_type is not None:
+                attrs["trusttype"] = [trust_type_string(trust_type, attributes)]
+                del attrs["ipanttrusttype"]
                 if attributes:
-                    del attrs['ipanttrustattributes']
+                    del attrs["ipanttrustattributes"]
 
         return truncated
 
 
 @register()
 class trust_show(LDAPRetrieve):
-    __doc__ = _('Display information about a trust.')
-    has_output_params = (LDAPRetrieve.has_output_params +
-                         (Str('ipanttrusttype'),
-                          Str('ipanttrustdirection'),
-                          Str('ipanttrustattributes')))
+    __doc__ = _("Display information about a trust.")
+    has_output_params = LDAPRetrieve.has_output_params + (
+        Str("ipanttrusttype"),
+        Str("ipanttrustdirection"),
+        Str("ipanttrustattributes"),
+    )
 
     def execute(self, *keys, **options):
         result = super(trust_show, self).execute(*keys, **options)
@@ -1200,29 +1243,26 @@ class trust_show(LDAPRetrieve):
         # and ipanttrustdirection to trustdirection
         # if --raw not used
 
-        if not options.get('raw', False):
-            trust_type = e_attrs.single_value.get('ipanttrusttype', None)
-            attributes = e_attrs.single_value.get('ipanttrustattributes', 0)
+        if not options.get("raw", False):
+            trust_type = e_attrs.single_value.get("ipanttrusttype", None)
+            attributes = e_attrs.single_value.get("ipanttrustattributes", 0)
             if trust_type is not None:
-                e_attrs['trusttype'] = [
-                    trust_type_string(trust_type, attributes)
-                ]
-                del e_attrs['ipanttrusttype']
+                e_attrs["trusttype"] = [trust_type_string(trust_type, attributes)]
+                del e_attrs["ipanttrusttype"]
 
-            dir_str = e_attrs.single_value.get('ipanttrustdirection', None)
+            dir_str = e_attrs.single_value.get("ipanttrustdirection", None)
             if dir_str is not None:
-                e_attrs['trustdirection'] = [trust_direction_string(dir_str)]
-                del e_attrs['ipanttrustdirection']
+                e_attrs["trustdirection"] = [trust_direction_string(dir_str)]
+                del e_attrs["ipanttrustdirection"]
 
             if attributes:
-                del e_attrs['ipanttrustattributes']
+                del e_attrs["ipanttrustattributes"]
 
         return dn
 
 
 _trustconfig_dn = {
-    u'ad': DN(('cn', api.env.domain),
-              api.env.container_cifsdomains, api.env.basedn),
+    u"ad": DN(("cn", api.env.domain), api.env.container_cifsdomains, api.env.basedn),
 }
 
 
@@ -1231,70 +1271,66 @@ class trustconfig(LDAPObject):
     """
     Trusts global configuration object
     """
-    object_name = _('trust configuration')
+
+    object_name = _("trust configuration")
     default_attributes = [
-        'cn', 'ipantsecurityidentifier', 'ipantflatname', 'ipantdomainguid',
-        'ipantfallbackprimarygroup',
+        "cn",
+        "ipantsecurityidentifier",
+        "ipantflatname",
+        "ipantdomainguid",
+        "ipantfallbackprimarygroup",
     ]
 
-    label = _('Global Trust Configuration')
-    label_singular = _('Global Trust Configuration')
+    label = _("Global Trust Configuration")
+    label_singular = _("Global Trust Configuration")
 
     takes_params = (
-        Str('cn',
-            label=_('Domain'),
-            flags=['no_update'],
+        Str("cn", label=_("Domain"), flags=["no_update"],),
+        Str(
+            "ipantsecurityidentifier",
+            label=_("Security Identifier"),
+            flags=["no_update"],
         ),
-        Str('ipantsecurityidentifier',
-            label=_('Security Identifier'),
-            flags=['no_update'],
-        ),
-        Str('ipantflatname',
-            label=_('NetBIOS name'),
-            flags=['no_update'],
-        ),
-        Str('ipantdomainguid',
-            label=_('Domain GUID'),
-            flags=['no_update'],
-        ),
-        Str('ipantfallbackprimarygroup',
-            cli_name='fallback_primary_group',
-            label=_('Fallback primary group'),
+        Str("ipantflatname", label=_("NetBIOS name"), flags=["no_update"],),
+        Str("ipantdomainguid", label=_("Domain GUID"), flags=["no_update"],),
+        Str(
+            "ipantfallbackprimarygroup",
+            cli_name="fallback_primary_group",
+            label=_("Fallback primary group"),
         ),
         Str(
-            'ad_trust_agent_server*',
-            label=_('IPA AD trust agents'),
-            doc=_('IPA servers configured as AD trust agents'),
-            flags={'virtual_attribute', 'no_create', 'no_update'}
+            "ad_trust_agent_server*",
+            label=_("IPA AD trust agents"),
+            doc=_("IPA servers configured as AD trust agents"),
+            flags={"virtual_attribute", "no_create", "no_update"},
         ),
         Str(
-            'ad_trust_controller_server*',
-            label=_('IPA AD trust controllers'),
-            doc=_('IPA servers configured as AD trust controllers'),
-            flags={'virtual_attribute', 'no_create', 'no_update'}
+            "ad_trust_controller_server*",
+            label=_("IPA AD trust controllers"),
+            doc=_("IPA servers configured as AD trust controllers"),
+            flags={"virtual_attribute", "no_create", "no_update"},
         ),
     )
 
     def get_dn(self, *keys, **kwargs):
-        trust_type = kwargs.get('trust_type')
+        trust_type = kwargs.get("trust_type")
         if trust_type is None:
-            raise errors.RequirementError(name='trust_type')
+            raise errors.RequirementError(name="trust_type")
         try:
-            return _trustconfig_dn[kwargs['trust_type']]
+            return _trustconfig_dn[kwargs["trust_type"]]
         except KeyError:
             raise errors.ValidationError(
-                name='trust_type',
-                error=_("unsupported trust type")
+                name="trust_type", error=_("unsupported trust type")
             )
 
     def _normalize_groupdn(self, entry_attrs):
         """
         Checks that group with given name/DN exists and updates the entry_attrs
         """
-        if 'ipantfallbackprimarygroup' not in entry_attrs:
+        if "ipantfallbackprimarygroup" not in entry_attrs:
             return
 
-        group = entry_attrs['ipantfallbackprimarygroup']
+        group = entry_attrs["ipantfallbackprimarygroup"]
         if isinstance(group, (list, tuple)):
             group = group[0]
 
@@ -1307,7 +1343,7 @@ class trustconfig(LDAPObject):
             try:
                 self.backend.get_entry(dn)
             except errors.NotFound:
-                raise self.api.Object['group'].handle_not_found(group)
+                raise self.api.Object["group"].handle_not_found(group)
             # DN is valid, we can just return
             return
         except ValueError:
@@ -1316,26 +1352,27 @@ class trustconfig(LDAPObject):
             # "Default SMB Group" which does not have this objectclass.
             try:
                 group_entry = self.backend.find_entry_by_attr(
-                    self.api.Object['group'].primary_key.name,
+                    self.api.Object["group"].primary_key.name,
                     group,
-                    ['posixgroup'],
-                    [''],
-                    DN(self.api.env.container_group, self.api.env.basedn))
+                    ["posixgroup"],
+                    [""],
+                    DN(self.api.env.container_group, self.api.env.basedn),
+                )
             except errors.NotFound:
-                raise self.api.Object['group'].handle_not_found(group)
+                raise self.api.Object["group"].handle_not_found(group)
             else:
-                entry_attrs['ipantfallbackprimarygroup'] = [group_entry.dn]
+                entry_attrs["ipantfallbackprimarygroup"] = [group_entry.dn]
 
     def _convert_groupdn(self, entry_attrs, options):
         """
         Convert an group dn into a name. As we use CN as user RDN, its value
         can be extracted from the DN without further LDAP queries.
         """
-        if options.get('raw', False):
+        if options.get("raw", False):
             return
 
         try:
-            groupdn = entry_attrs['ipantfallbackprimarygroup'][0]
+            groupdn = entry_attrs["ipantfallbackprimarygroup"][0]
         except (IndexError, KeyError):
             groupdn = None
 
@@ -1343,12 +1380,12 @@ class trustconfig(LDAPObject):
             return
         assert isinstance(groupdn, DN)
 
-        entry_attrs['ipantfallbackprimarygroup'] = [groupdn[0][0].value]
+        entry_attrs["ipantfallbackprimarygroup"] = [groupdn[0][0].value]
 
 
 @register()
 class trustconfig_mod(LDAPUpdate):
-    __doc__ = _('Modify global trust configuration.')
+    __doc__ = _("Modify global trust configuration.")
 
     takes_options = LDAPUpdate.takes_options + (_trust_type_option,)
     msg_summary = _('Modified "%(value)s" trust configuration')
@@ -1360,68 +1397,65 @@ class trustconfig_mod(LDAPUpdate):
 
     def execute(self, *keys, **options):
         result = super(trustconfig_mod, self).execute(*keys, **options)
-        result['value'] = pkey_to_value(options['trust_type'], options)
+        result["value"] = pkey_to_value(options["trust_type"], options)
         return result
 
     def post_callback(self, ldap, dn, e_attrs, *keys, **options):
         self.obj._convert_groupdn(e_attrs, options)
         self.api.Object.config.show_servroles_attributes(
-            e_attrs, "AD trust agent", "AD trust controller", **options)
+            e_attrs, "AD trust agent", "AD trust controller", **options
+        )
         return dn
 
 
 @register()
 class trustconfig_show(LDAPRetrieve):
-    __doc__ = _('Show global trust configuration.')
+    __doc__ = _("Show global trust configuration.")
 
     takes_options = LDAPRetrieve.takes_options + (_trust_type_option,)
     has_output = output.simple_entry
 
     def execute(self, *keys, **options):
         result = super(trustconfig_show, self).execute(*keys, **options)
-        result['value'] = pkey_to_value(options['trust_type'], options)
+        result["value"] = pkey_to_value(options["trust_type"], options)
         return result
 
     def post_callback(self, ldap, dn, entry_attrs, *keys, **options):
         self.obj._convert_groupdn(entry_attrs, options)
         self.api.Object.config.show_servroles_attributes(
-            entry_attrs, "AD trust agent", "AD trust controller", **options)
+            entry_attrs, "AD trust agent", "AD trust controller", **options
+        )
 
         return dn
 
 
 if _nss_idmap_installed:
     _idmap_type_dict = {
-        pysss_nss_idmap.ID_USER: 'user',
-        pysss_nss_idmap.ID_GROUP: 'group',
-        pysss_nss_idmap.ID_BOTH: 'both',
+        pysss_nss_idmap.ID_USER: "user",
+        pysss_nss_idmap.ID_GROUP: "group",
+        pysss_nss_idmap.ID_BOTH: "both",
     }
 
     def idmap_type_string(level):
-        string = _idmap_type_dict.get(int(level), 'unknown')
+        string = _idmap_type_dict.get(int(level), "unknown")
         return unicode(string)
 
 
 @register()
 class trust_resolve(Command):
     NO_CLI = True
-    __doc__ = _('Resolve security identifiers of users and groups '
-                'in trusted domains')
-
-    takes_options = (
-        Str('sids+',
-            label = _('Security Identifiers (SIDs)'),
-        ),
+    __doc__ = _(
+        "Resolve security identifiers of users and groups " "in trusted domains"
     )
+
+    takes_options = (Str("sids+", label=_("Security Identifiers (SIDs)"),),)
 
     has_output_params = (
-        Str('name', label=_('Name')),
-        Str('sid', label=_('SID')),
+        Str("name", label=_("Name")),
+        Str("sid", label=_("SID")),
     )
 
-    has_output = (
-        output.ListOfEntries('result'),
-    )
+    has_output = (output.ListOfEntries("result"),)
 
     def execute(self, *keys, **options):
         result = list()
@@ -1430,13 +1464,13 @@ class trust_resolve(Command):
         try:
             NAME_KEY = pysss_nss_idmap.NAME_KEY
             TYPE_KEY = pysss_nss_idmap.TYPE_KEY
-            sids = [str(x) for x in options['sids']]
+            sids = [str(x) for x in options["sids"]]
             xlate = pysss_nss_idmap.getnamebysid(sids)
             for sid in xlate:
                 entry = dict()
-                entry['sid'] = [unicode(sid)]
-                entry['name'] = [unicode(xlate[sid][NAME_KEY])]
-                entry['type'] = [idmap_type_string(xlate[sid][TYPE_KEY])]
+                entry["sid"] = [unicode(sid)]
+                entry["name"] = [unicode(xlate[sid][NAME_KEY])]
+                entry["type"] = [idmap_type_string(xlate[sid][TYPE_KEY])]
                 result.append(entry)
         except ValueError:
             pass
@@ -1448,18 +1482,17 @@ class trust_resolve(Command):
 class adtrust_is_enabled(Command):
     NO_CLI = True
 
-    __doc__ = _('Determine whether ipa-adtrust-install has been run on this '
-                'system')
+    __doc__ = _("Determine whether ipa-adtrust-install has been run on this " "system")
 
     def execute(self, *keys, **options):
         ldap = self.api.Backend.ldap2
         adtrust_dn = DN(
-            ('cn', 'ADTRUST'),
-            ('cn', self.api.env.host),
-            ('cn', 'masters'),
-            ('cn', 'ipa'),
-            ('cn', 'etc'),
-            self.api.env.basedn
+            ("cn", "ADTRUST"),
+            ("cn", self.api.env.host),
+            ("cn", "masters"),
+            ("cn", "ipa"),
+            ("cn", "etc"),
+            self.api.env.basedn,
         )
 
         try:
@@ -1474,22 +1507,24 @@ class adtrust_is_enabled(Command):
 class compat_is_enabled(Command):
     NO_CLI = True
 
-    __doc__ = _('Determine whether Schema Compatibility plugin is configured '
-                'to serve trusted domain users and groups')
+    __doc__ = _(
+        "Determine whether Schema Compatibility plugin is configured "
+        "to serve trusted domain users and groups"
+    )
 
     def execute(self, *keys, **options):
         ldap = self.api.Backend.ldap2
         users_dn = DN(
-            ('cn', 'users'),
-            ('cn', 'Schema Compatibility'),
-            ('cn', 'plugins'),
-            ('cn', 'config')
+            ("cn", "users"),
+            ("cn", "Schema Compatibility"),
+            ("cn", "plugins"),
+            ("cn", "config"),
         )
         groups_dn = DN(
-            ('cn', 'groups'),
-            ('cn', 'Schema Compatibility'),
-            ('cn', 'plugins'),
-            ('cn', 'config')
+            ("cn", "groups"),
+            ("cn", "Schema Compatibility"),
+            ("cn", "plugins"),
+            ("cn", "config"),
         )
 
         try:
@@ -1497,8 +1532,8 @@ class compat_is_enabled(Command):
         except errors.NotFound:
             return dict(result=False)
 
-        attr = users_entry.get('schema-compat-lookup-nsswitch')
-        if not attr or 'user' not in attr:
+        attr = users_entry.get("schema-compat-lookup-nsswitch")
+        if not attr or "user" not in attr:
             return dict(result=False)
 
         try:
@@ -1506,8 +1541,8 @@ class compat_is_enabled(Command):
         except errors.NotFound:
             return dict(result=False)
 
-        attr = groups_entry.get('schema-compat-lookup-nsswitch')
-        if not attr or 'group' not in attr:
+        attr = groups_entry.get("schema-compat-lookup-nsswitch")
+        if not attr or "group" not in attr:
             return dict(result=False)
 
         return dict(result=True)
@@ -1524,32 +1559,31 @@ class sidgen_was_run(Command):
     Since this command relies on the existence of the "editors" group, it will
     fail loudly in case this group does not exist.
     """
+
     NO_CLI = True
 
-    __doc__ = _('Determine whether ipa-adtrust-install has been run with '
-                'sidgen task')
+    __doc__ = _(
+        "Determine whether ipa-adtrust-install has been run with " "sidgen task"
+    )
 
     def execute(self, *keys, **options):
         ldap = self.api.Backend.ldap2
         editors_dn = DN(
-            ('cn', 'editors'),
-            ('cn', 'groups'),
-            ('cn', 'accounts'),
-            api.env.basedn
+            ("cn", "editors"), ("cn", "groups"), ("cn", "accounts"), api.env.basedn
         )
 
         try:
             editors_entry = ldap.get_entry(editors_dn)
         except errors.NotFound:
             raise errors.NotFound(
-                name=_('sidgen_was_run'),
+                name=_("sidgen_was_run"),
                 reason=_(
                     'This command relies on the existence of the "editors" '
-                    'group, but this group was not found.'
-                )
+                    "group, but this group was not found."
+                ),
             )
 
-        attr = editors_entry.get('ipaNTSecurityIdentifier')
+        attr = editors_entry.get("ipaNTSecurityIdentifier")
         if not attr:
             return dict(result=False)
 
@@ -1561,46 +1595,53 @@ class trustdomain(LDAPObject):
     """
     Object representing a domain of the AD trust.
     """
-    parent_object = 'trust'
-    trust_type_idx = {'2': u'ad'}
-    object_name = _('trust domain')
-    object_name_plural = _('trust domains')
-    object_class = ['ipaNTTrustedDomain']
-    default_attributes = ['cn', 'ipantflatname', 'ipanttrusteddomainsid',
-                          'ipanttrustpartner', 'ipantadditionalsuffixes']
-    search_display_attributes = ['cn', 'ipantflatname',
-                                 'ipanttrusteddomainsid',
-                                 'ipantadditionalsuffixes']
 
-    label = _('Trusted domains')
-    label_singular = _('Trusted domain')
+    parent_object = "trust"
+    trust_type_idx = {"2": u"ad"}
+    object_name = _("trust domain")
+    object_name_plural = _("trust domains")
+    object_class = ["ipaNTTrustedDomain"]
+    default_attributes = [
+        "cn",
+        "ipantflatname",
+        "ipanttrusteddomainsid",
+        "ipanttrustpartner",
+        "ipantadditionalsuffixes",
+    ]
+    search_display_attributes = [
+        "cn",
+        "ipantflatname",
+        "ipanttrusteddomainsid",
+        "ipantadditionalsuffixes",
+    ]
+
+    label = _("Trusted domains")
+    label_singular = _("Trusted domain")
 
     takes_params = (
-        Str('cn',
-            label=_('Domain name'),
-            cli_name='domain',
-            primary_key=True),
-        Str('ipantflatname?',
-            cli_name='flat_name',
-            label=_('Domain NetBIOS name')),
-        Str('ipanttrusteddomainsid?',
-            cli_name='sid',
-            label=_('Domain Security Identifier')),
-        Flag('domain_enabled',
-             label=_('Domain enabled'),
-             flags={'virtual_attribute',
-                    'no_create', 'no_update', 'no_search'}),
+        Str("cn", label=_("Domain name"), cli_name="domain", primary_key=True),
+        Str("ipantflatname?", cli_name="flat_name", label=_("Domain NetBIOS name")),
+        Str(
+            "ipanttrusteddomainsid?",
+            cli_name="sid",
+            label=_("Domain Security Identifier"),
+        ),
+        Flag(
+            "domain_enabled",
+            label=_("Domain enabled"),
+            flags={"virtual_attribute", "no_create", "no_update", "no_search"},
+        ),
     )
 
     # LDAPObject.get_dn() only passes all but last element of keys and no
     # kwargs to the parent object's get_dn() no matter what you pass to it.
     # Make own get_dn() as we really need all elements to construct proper dn.
     def get_dn(self, *keys, **kwargs):
-        sdn = [('cn', x) for x in keys]
+        sdn = [("cn", x) for x in keys]
         sdn.reverse()
-        trust_type = kwargs.get('trust_type')
+        trust_type = kwargs.get("trust_type")
         if not trust_type:
-            trust_type = u'ad'
+            trust_type = u"ad"
 
         dn = make_trust_dn(self.env, trust_type, DN(*sdn))
         return dn
@@ -1608,33 +1649,32 @@ class trustdomain(LDAPObject):
 
 @register()
 class trustdomain_find(LDAPSearch):
-    __doc__ = _('Search domains of the trust')
+    __doc__ = _("Search domains of the trust")
 
-    def pre_callback(self, ldap, filters, attrs_list, base_dn,
-                     scope, *args, **options):
+    def pre_callback(self, ldap, filters, attrs_list, base_dn, scope, *args, **options):
         return (filters, base_dn, ldap.SCOPE_SUBTREE)
 
     def post_callback(self, ldap, entries, truncated, *args, **options):
-        if options.get('pkey_only', False):
+        if options.get("pkey_only", False):
             return truncated
-        trust_dn = self.obj.get_dn(args[0], trust_type=u'ad')
+        trust_dn = self.obj.get_dn(args[0], trust_type=u"ad")
         trust_entry = ldap.get_entry(trust_dn)
-        blacklist = trust_entry.get('ipantsidblacklistincoming')
+        blacklist = trust_entry.get("ipantsidblacklistincoming")
         for entry in entries:
-            sid = entry.get('ipanttrusteddomainsid', [None])[0]
+            sid = entry.get("ipanttrusteddomainsid", [None])[0]
             if sid is None:
                 continue
 
             if sid in blacklist:
-                entry['domain_enabled'] = [False]
+                entry["domain_enabled"] = [False]
             else:
-                entry['domain_enabled'] = [True]
+                entry["domain_enabled"] = [True]
         return truncated
 
 
 @register()
 class trustdomain_mod(LDAPUpdate):
-    __doc__ = _('Modify trustdomain of the trust')
+    __doc__ = _("Modify trustdomain of the trust")
 
     NO_CLI = True
     takes_options = LDAPUpdate.takes_options + (_trust_type_option,)
@@ -1642,7 +1682,7 @@ class trustdomain_mod(LDAPUpdate):
 
 @register()
 class trustdomain_add(LDAPCreate):
-    __doc__ = _('Allow access from the trusted domain')
+    __doc__ = _("Allow access from the trusted domain")
     NO_CLI = True
 
     takes_options = LDAPCreate.takes_options + (_trust_type_option,)
@@ -1650,17 +1690,15 @@ class trustdomain_add(LDAPCreate):
     def pre_callback(self, ldap, dn, e_attrs, attrs_list, *keys, **options):
         # ipaNTTrustPartner must always be set to the name of the trusted
         # domain. See MS-ADTS 6.1.6.7.13
-        e_attrs['ipanttrustpartner'] = [dn[0]['cn']]
+        e_attrs["ipanttrustpartner"] = [dn[0]["cn"]]
         return dn
 
 
 @register()
 class trustdomain_del(LDAPDelete):
-    __doc__ = _('Remove information about the domain associated '
-                'with the trust.')
+    __doc__ = _("Remove information about the domain associated " "with the trust.")
 
-    msg_summary = _('Removed information about the trusted domain '
-                    '"%(value)s"')
+    msg_summary = _("Removed information about the trusted domain " '"%(value)s"')
 
     def execute(self, *keys, **options):
         ldap = self.api.Backend.ldap2
@@ -1672,13 +1710,16 @@ class trustdomain_del(LDAPDelete):
 
         for domain in keys[1]:
             try:
-                self.obj.get_dn_if_exists(keys[0], domain, trust_type=u'ad')
+                self.obj.get_dn_if_exists(keys[0], domain, trust_type=u"ad")
             except errors.NotFound:
                 if keys[0].lower() == domain:
                     raise errors.ValidationError(
-                        name='domain',
-                        error=_("cannot delete root domain of the trust, "
-                                "use trust-del to delete the trust itself"))
+                        name="domain",
+                        error=_(
+                            "cannot delete root domain of the trust, "
+                            "use trust-del to delete the trust itself"
+                        ),
+                    )
                 raise self.obj.handle_not_found(keys[0], domain)
 
             try:
@@ -1687,7 +1728,7 @@ class trustdomain_del(LDAPDelete):
                 pass
 
         result = super(trustdomain_del, self).execute(*keys, **options)
-        result['value'] = pkey_to_value(keys[1], options)
+        result["value"] = pkey_to_value(keys[1], options)
         return result
 
 
@@ -1704,7 +1745,7 @@ def fetch_domains_from_trust(myapi, trustinstance, **options):
         suffixes (if any)
     """
 
-    forest_root_name = trustinstance.remote_domain.info['dns_forest']
+    forest_root_name = trustinstance.remote_domain.info["dns_forest"]
 
     # We want to use Kerberos if we have admin credentials even with SMB calls
     # as eventually use of NTLMSSP will be deprecated for trusted domain
@@ -1712,71 +1753,83 @@ def fetch_domains_from_trust(myapi, trustinstance, **options):
     # fetch_domains will use HTTP/ipa.master@IPA.REALM principal, e.g. Kerberos
     # authentication as well.
     creds = generate_creds(trustinstance, style=CRED_STYLE_KERBEROS, **options)
-    server = options.get('realm_server', None)
+    server = options.get("realm_server", None)
     domains = ipaserver.dcerpc.fetch_domains(
-        myapi, trustinstance.local_flatname, forest_root_name, creds=creds,
-        server=server)
+        myapi,
+        trustinstance.local_flatname,
+        forest_root_name,
+        creds=creds,
+        server=server,
+    )
 
     return domains
 
 
-def add_new_domains_from_trust(myapi, trustinstance, trust_entry,
-                               domains, **options):
+def add_new_domains_from_trust(myapi, trustinstance, trust_entry, domains, **options):
     result = []
     if not domains:
         return result
 
-    trust_name = trust_entry['cn'][0]
+    trust_name = trust_entry["cn"][0]
     # trust range must exist by the time add_new_domains_from_trust is called
-    range_name = trust_name.upper() + '_id_range'
-    old_range = myapi.Command.idrange_show(range_name, raw=True)['result']
-    idrange_type = old_range['iparangetype'][0]
+    range_name = trust_name.upper() + "_id_range"
+    old_range = myapi.Command.idrange_show(range_name, raw=True)["result"]
+    idrange_type = old_range["iparangetype"][0]
 
     suffixes = list()
-    suffixes.extend(y['cn']
-                    for x, y in six.iteritems(domains['suffixes'])
-                    if x not in domains['domains'])
+    suffixes.extend(
+        y["cn"]
+        for x, y in six.iteritems(domains["suffixes"])
+        if x not in domains["domains"]
+    )
 
     try:
-        dn = myapi.Object.trust.get_dn(trust_name, trust_type=u'ad')
+        dn = myapi.Object.trust.get_dn(trust_name, trust_type=u"ad")
         ldap = myapi.Backend.ldap2
         entry = ldap.get_entry(dn)
-        tlns = entry.get('ipantadditionalsuffixes', [])
+        tlns = entry.get("ipantadditionalsuffixes", [])
         tlns.extend(x for x in suffixes if x not in tlns)
-        entry['ipantadditionalsuffixes'] = tlns
+        entry["ipantadditionalsuffixes"] = tlns
         ldap.update_entry(entry)
     except errors.EmptyModlist:
         pass
 
-    is_nontransitive = int(trust_entry.get('ipanttrustattributes',
-                           [0])[0]) & LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE
+    is_nontransitive = (
+        int(trust_entry.get("ipanttrustattributes", [0])[0])
+        & LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE
+    )
 
     if is_nontransitive:
         return result
 
-    for dom in six.itervalues(domains['domains']):
-        dom['trust_type'] = u'ad'
+    for dom in six.itervalues(domains["domains"]):
+        dom["trust_type"] = u"ad"
         try:
-            name = dom['cn']
-            del dom['cn']
-            if 'all' in options:
-                dom['all'] = options['all']
-            if 'raw' in options:
-                dom['raw'] = options['raw']
+            name = dom["cn"]
+            del dom["cn"]
+            if "all" in options:
+                dom["all"] = options["all"]
+            if "raw" in options:
+                dom["raw"] = options["raw"]
 
             try:
                 res = myapi.Command.trustdomain_add(trust_name, name, **dom)
-                result.append(res['result'])
+                result.append(res["result"])
             except errors.DuplicateEntry:
                 # Ignore updating duplicate entries
                 pass
 
-            if idrange_type != u'ipa-ad-trust-posix':
-                range_name = name.upper() + '_id_range'
-                dom['range_type'] = u'ipa-ad-trust'
-                add_range(myapi, trustinstance,
-                          range_name, dom['ipanttrusteddomainsid'],
-                          name, **dom)
+            if idrange_type != u"ipa-ad-trust-posix":
+                range_name = name.upper() + "_id_range"
+                dom["range_type"] = u"ipa-ad-trust"
+                add_range(
+                    myapi,
+                    trustinstance,
+                    range_name,
+                    dom["ipanttrusteddomainsid"],
+                    name,
+                    **dom
+                )
         except errors.DuplicateEntry:
             # Ignore updating duplicate entries
             pass
@@ -1786,24 +1839,26 @@ def add_new_domains_from_trust(myapi, trustinstance, trust_entry,
 
 @register()
 class trust_fetch_domains(LDAPRetrieve):
-    __doc__ = _('Refresh list of the domains associated with the trust')
+    __doc__ = _("Refresh list of the domains associated with the trust")
 
     has_output = output.standard_list_of_entries
     takes_options = LDAPRetrieve.takes_options + (
-        Str('realm_admin?',
-            cli_name='admin',
+        Str(
+            "realm_admin?",
+            cli_name="admin",
             label=_("Active Directory domain administrator"),
-            ),
-        Password('realm_passwd?',
-                 cli_name='password',
-                 label=_("Active Directory domain administrator's password"),
-                 confirm=False,
-                 ),
-        Str('realm_server?',
-            cli_name='server',
-            label=_('Domain controller for the Active Directory domain '
-                    '(optional)'),
-            ),
+        ),
+        Password(
+            "realm_passwd?",
+            cli_name="password",
+            label=_("Active Directory domain administrator's password"),
+            confirm=False,
+        ),
+        Str(
+            "realm_server?",
+            cli_name="server",
+            label=_("Domain controller for the Active Directory domain " "(optional)"),
+        ),
     )
 
     def execute(self, *keys, **options):
@@ -1815,9 +1870,9 @@ class trust_fetch_domains(LDAPRetrieve):
         self.obj.warning_if_ad_trust_dom_have_missing_SID(result, **options)
 
         result = dict()
-        result['result'] = []
-        result['count'] = 0
-        result['truncated'] = False
+        result["result"] = []
+        result["count"] = 0
+        result["truncated"] = False
 
         # For one-way trust and external trust fetch over DBus.
         # We don't get the list in this case.
@@ -1825,9 +1880,13 @@ class trust_fetch_domains(LDAPRetrieve):
         # HTTP/ principal because we have no access to its key material.
         # Thus, we'll use DBus call out to oddjobd helper in all cases
         fetch_trusted_domains_over_dbus(self.api, *keys, **options)
-        result['summary'] = unicode(_('List of trust domains successfully '
-                                      'refreshed. Use trustdomain-find '
-                                      'command to list them.'))
+        result["summary"] = unicode(
+            _(
+                "List of trust domains successfully "
+                "refreshed. Use trustdomain-find "
+                "command to list them."
+            )
+        )
         return result
 
 
@@ -1840,17 +1899,19 @@ class trust_enable_agent(Command):
     has_output = output.standard_value
     takes_args = (
         Str(
-            'remote_cn',
-            cli_name='remote_name',
-            label=_('Remote server name'),
-            doc=_('Remote IPA server hostname'),
+            "remote_cn",
+            cli_name="remote_name",
+            label=_("Remote server name"),
+            doc=_("Remote IPA server hostname"),
         ),
     )
 
     takes_options = (
-        Flag('enable_compat',
-             doc=_('Enable support for trusted domains for old clients'),
-             default=False),
+        Flag(
+            "enable_compat",
+            doc=_("Enable support for trusted domains for old clients"),
+            default=False,
+        ),
     )
 
     def execute(self, *keys, **options):
@@ -1859,17 +1920,17 @@ class trust_enable_agent(Command):
         # to a master different from the one specified
         if keys[0] != api.env.host:
             raise errors.ValidationError(
-                name='cn', error=_("must be \"%s\"") % api.env.host)
+                name="cn", error=_('must be "%s"') % api.env.host
+            )
 
         # the user must have the Replication Administrators privilege
-        privilege = u'Replication Administrators'
+        privilege = u"Replication Administrators"
         if not principal_has_privilege(self.api, context.principal, privilege):
-            raise errors.ACIError(
-                info=_("not allowed to remotely add agent"))
+            raise errors.ACIError(info=_("not allowed to remotely add agent"))
 
         # Trust must be configured
 
-        if options[u'enable_compat']:
+        if options[u"enable_compat"]:
             method_arguments = "--enable-compat"
         else:
             method_arguments = ""
@@ -1877,28 +1938,24 @@ class trust_enable_agent(Command):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
         bus = dbus.SystemBus()
-        obj = bus.get_object('org.freeipa.server', '/',
-                             follow_name_owner_changes=True)
-        server = dbus.Interface(obj, 'org.freeipa.server')
+        obj = bus.get_object("org.freeipa.server", "/", follow_name_owner_changes=True)
+        server = dbus.Interface(obj, "org.freeipa.server")
 
         ret, stdout, stderr = server.trust_enable_agent(method_arguments)
 
-        result = dict(
-            result=(ret == 0),
-            value=keys[0],
-        )
+        result = dict(result=(ret == 0), value=keys[0],)
 
         for line in stdout.splitlines() + stderr.splitlines():
-            messages.add_message(options['version'],
-                                 result,
-                                 messages.ExternalCommandOutput(line=line))
+            messages.add_message(
+                options["version"], result, messages.ExternalCommandOutput(line=line)
+            )
 
         return result
 
 
 @register()
 class trustdomain_enable(LDAPQuery):
-    __doc__ = _('Allow use of IPA resources by the domain of the trust')
+    __doc__ = _("Allow use of IPA resources by the domain of the trust")
 
     has_output = output.standard_value
     msg_summary = _('Enabled trust domain "%(value)s"')
@@ -1909,38 +1966,36 @@ class trustdomain_enable(LDAPQuery):
 
         if keys[0].lower() == keys[1].lower():
             raise errors.ValidationError(
-                name='domain',
-                error=_("Root domain of the trust is always enabled "
-                        "for the existing trust")
+                name="domain",
+                error=_(
+                    "Root domain of the trust is always enabled "
+                    "for the existing trust"
+                ),
             )
         try:
-            trust_dn = self.obj.get_dn(keys[0], trust_type=u'ad')
+            trust_dn = self.obj.get_dn(keys[0], trust_type=u"ad")
             trust_entry = ldap.get_entry(trust_dn)
         except errors.NotFound:
-            raise self.api.Object[self.obj.parent_object].handle_not_found(
-                keys[0])
+            raise self.api.Object[self.obj.parent_object].handle_not_found(keys[0])
 
-        dn = self.obj.get_dn(keys[0], keys[1], trust_type=u'ad')
+        dn = self.obj.get_dn(keys[0], keys[1], trust_type=u"ad")
         try:
             entry = ldap.get_entry(dn)
-            sid = entry.single_value.get('ipanttrusteddomainsid', None)
-            if sid in trust_entry['ipantsidblacklistincoming']:
-                trust_entry['ipantsidblacklistincoming'].remove(sid)
+            sid = entry.single_value.get("ipanttrusteddomainsid", None)
+            if sid in trust_entry["ipantsidblacklistincoming"]:
+                trust_entry["ipantsidblacklistincoming"].remove(sid)
                 ldap.update_entry(trust_entry)
             else:
                 raise errors.AlreadyActive()
         except errors.NotFound:
             raise self.obj.handle_not_found(*keys)
 
-        return dict(
-            result=True,
-            value=pkey_to_value(keys[1], options),
-        )
+        return dict(result=True, value=pkey_to_value(keys[1], options),)
 
 
 @register()
 class trustdomain_disable(LDAPQuery):
-    __doc__ = _('Disable use of IPA resources by the domain of the trust')
+    __doc__ = _("Disable use of IPA resources by the domain of the trust")
 
     has_output = output.standard_value
     msg_summary = _('Disabled trust domain "%(value)s"')
@@ -1951,30 +2006,28 @@ class trustdomain_disable(LDAPQuery):
 
         if keys[0].lower() == keys[1].lower():
             raise errors.ValidationError(
-                name='domain',
-                error=_("cannot disable root domain of the trust, "
-                        "use trust-del to delete the trust itself")
+                name="domain",
+                error=_(
+                    "cannot disable root domain of the trust, "
+                    "use trust-del to delete the trust itself"
+                ),
             )
         try:
-            trust_dn = self.obj.get_dn(keys[0], trust_type=u'ad')
+            trust_dn = self.obj.get_dn(keys[0], trust_type=u"ad")
             trust_entry = ldap.get_entry(trust_dn)
         except errors.NotFound:
-            raise self.api.Object[self.obj.parent_object].handle_not_found(
-                keys[0])
+            raise self.api.Object[self.obj.parent_object].handle_not_found(keys[0])
 
-        dn = self.obj.get_dn(keys[0], keys[1], trust_type=u'ad')
+        dn = self.obj.get_dn(keys[0], keys[1], trust_type=u"ad")
         try:
             entry = ldap.get_entry(dn)
-            sid = entry.single_value.get('ipanttrusteddomainsid', None)
-            if sid not in trust_entry['ipantsidblacklistincoming']:
-                trust_entry['ipantsidblacklistincoming'].append(sid)
+            sid = entry.single_value.get("ipanttrusteddomainsid", None)
+            if sid not in trust_entry["ipantsidblacklistincoming"]:
+                trust_entry["ipantsidblacklistincoming"].append(sid)
                 ldap.update_entry(trust_entry)
             else:
                 raise errors.AlreadyInactive()
         except errors.NotFound:
             raise self.obj.handle_not_found(*keys)
 
-        return dict(
-            result=True,
-            value=pkey_to_value(keys[1], options),
-        )
+        return dict(result=True, value=pkey_to_value(keys[1], options),)

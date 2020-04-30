@@ -44,16 +44,12 @@ std_compound = (binary_bytes, utf8_bytes, unicode_str)
 
 
 def dump_n_load(value):
-    param, _method = loads(
-        dumps((value,), allow_none=True)
-    )
+    param, _method = loads(dumps((value,), allow_none=True))
     return param[0]
 
 
 def round_trip(value):
-    return rpc.xml_unwrap(
-        dump_n_load(rpc.xml_wrap(value, API_VERSION))
-    )
+    return rpc.xml_unwrap(dump_n_load(rpc.xml_wrap(value, API_VERSION)))
 
 
 def test_round_trip():
@@ -75,10 +71,10 @@ def test_round_trip():
     assert_equal(dump_n_load(unicode_str), unicode_str)
     assert_equal(dump_n_load(Binary(binary_bytes)).data, binary_bytes)
     assert isinstance(dump_n_load(Binary(binary_bytes)), Binary)
-    assert type(dump_n_load(b'hello')) is output_binary_type
-    assert type(dump_n_load(u'hello')) is str
-    assert_equal(dump_n_load(b''), output_binary_type(b''))
-    assert_equal(dump_n_load(u''), str())
+    assert type(dump_n_load(b"hello")) is output_binary_type
+    assert type(dump_n_load(u"hello")) is str
+    assert_equal(dump_n_load(b""), output_binary_type(b""))
+    assert_equal(dump_n_load(u""), str())
     assert dump_n_load(None) is None
 
     # Now we test our wrap and unwrap methods in combination with dumps, loads:
@@ -89,13 +85,17 @@ def test_round_trip():
     assert_equal(round_trip(utf8_bytes), utf8_bytes)
     assert_equal(round_trip(unicode_str), unicode_str)
     assert_equal(round_trip(binary_bytes), binary_bytes)
-    assert type(round_trip(b'hello')) is bytes
-    assert type(round_trip(u'hello')) is unicode
-    assert_equal(round_trip(b''), b'')
-    assert_equal(round_trip(u''), u'')
+    assert type(round_trip(b"hello")) is bytes
+    assert type(round_trip(u"hello")) is unicode
+    assert_equal(round_trip(b""), b"")
+    assert_equal(round_trip(u""), u"")
     assert round_trip(None) is None
-    compound = [utf8_bytes, None, binary_bytes, (None, unicode_str),
-        dict(utf8=utf8_bytes, chars=unicode_str, data=binary_bytes)
+    compound = [
+        utf8_bytes,
+        None,
+        binary_bytes,
+        (None, unicode_str),
+        dict(utf8=utf8_bytes, chars=unicode_str, data=binary_bytes),
     ]
     assert round_trip(compound) == tuple(compound)
 
@@ -107,13 +107,13 @@ def test_xml_wrap():
     f = rpc.xml_wrap
     assert f([], API_VERSION) == tuple()
     assert f({}, API_VERSION) == dict()
-    b = f(b'hello', API_VERSION)
+    b = f(b"hello", API_VERSION)
     assert isinstance(b, Binary)
-    assert b.data == b'hello'
-    u = f(u'hello', API_VERSION)
+    assert b.data == b"hello"
+    u = f(u"hello", API_VERSION)
     assert type(u) is unicode
-    assert u == u'hello'
-    f([dict(one=False, two=u'hello'), None, b'hello'], API_VERSION)
+    assert u == u"hello"
+    f([dict(one=False, two=u"hello"), None, b"hello"], API_VERSION)
 
 
 def test_xml_unwrap():
@@ -128,10 +128,10 @@ def test_xml_unwrap():
     assert value == utf8_bytes
     assert f(utf8_bytes) == unicode_str
     assert f(unicode_str) == unicode_str
-    value = f([True, Binary(b'hello'), dict(one=1, two=utf8_bytes, three=None)])
-    assert value == (True, b'hello', dict(one=1, two=unicode_str, three=None))
+    value = f([True, Binary(b"hello"), dict(one=1, two=utf8_bytes, three=None)])
+    assert value == (True, b"hello", dict(one=1, two=unicode_str, three=None))
     assert type(value[1]) is bytes
-    assert type(value[2]['two']) is unicode
+    assert type(value[2]["two"]) is unicode
 
 
 def test_xml_dumps():
@@ -142,9 +142,9 @@ def test_xml_dumps():
     params = (binary_bytes, utf8_bytes, unicode_str, None)
 
     # Test serializing an RPC request:
-    data = f(params, API_VERSION, 'the_method')
+    data = f(params, API_VERSION, "the_method")
     (p, m) = loads(data)
-    assert_equal(m, u'the_method')
+    assert_equal(m, u"the_method")
     assert type(p) is tuple
     assert rpc.xml_unwrap(p) == params
 
@@ -173,9 +173,9 @@ def test_xml_loads():
     wrapped = rpc.xml_wrap(params, API_VERSION)
 
     # Test un-serializing an RPC request:
-    data = dumps(wrapped, 'the_method', allow_none=True)
+    data = dumps(wrapped, "the_method", allow_none=True)
     (p, m) = f(data)
-    assert_equal(m, u'the_method')
+    assert_equal(m, u"the_method")
     assert_equal(p, params)
 
     # Test un-serializing an RPC response:
@@ -187,9 +187,9 @@ def test_xml_loads():
     assert_equal(tup[0], params)
 
     # Test un-serializing an RPC response containing a Fault:
-    for error in (unicode_str, u'hello'):
+    for error in (unicode_str, u"hello"):
         fault = Fault(69, error)
-        data = dumps(fault, methodresponse=True, allow_none=True, encoding='UTF-8')
+        data = dumps(fault, methodresponse=True, allow_none=True, encoding="UTF-8")
         e = raises(Fault, f, data)
         assert e.faultCode == 69
         assert_equal(e.faultString, error)
@@ -200,40 +200,41 @@ class test_xmlclient(PluginTester):
     """
     Test the `ipalib.rpc.xmlclient` plugin.
     """
+
     _plugin = rpc.xmlclient
 
     def test_forward(self):
         """
         Test the `ipalib.rpc.xmlclient.forward` method.
         """
+
         class user_add(Command):
             pass
 
-        o, _api, _home = self.instance('Backend', user_add, in_server=False)
+        o, _api, _home = self.instance("Backend", user_add, in_server=False)
         args = (binary_bytes, utf8_bytes, unicode_str)
         kw = dict(one=binary_bytes, two=utf8_bytes, three=unicode_str)
         params = [args, kw]
         result = (unicode_str, binary_bytes, utf8_bytes)
         conn = DummyClass(
             (
-                'user_add',
+                "user_add",
                 rpc.xml_wrap(params, API_VERSION),
                 {},
                 rpc.xml_wrap(result, API_VERSION),
             ),
             (
-                'user_add',
+                "user_add",
                 rpc.xml_wrap(params, API_VERSION),
                 {},
                 Fault(3007, u"'four' is required"),  # RequirementError
             ),
             (
-                'user_add',
+                "user_add",
                 rpc.xml_wrap(params, API_VERSION),
                 {},
-                Fault(700, u'no such error'),  # There is no error 700
+                Fault(700, u"no such error"),  # There is no error 700
             ),
-
         )
 
         # Create connection for the current thread
@@ -241,16 +242,16 @@ class test_xmlclient(PluginTester):
         context.xmlclient = Connection(conn, lambda: None)
 
         # Test with a successful return value:
-        assert o.forward('user_add', *args, **kw) == result
+        assert o.forward("user_add", *args, **kw) == result
 
         # Test with an errno the client knows:
-        e = raises(errors.RequirementError, o.forward, 'user_add', *args, **kw)
+        e = raises(errors.RequirementError, o.forward, "user_add", *args, **kw)
         assert_equal(e.args[0], u"'four' is required")
 
         # Test with an errno the client doesn't know
-        e = raises(errors.UnknownError, o.forward, 'user_add', *args, **kw)
+        e = raises(errors.UnknownError, o.forward, "user_add", *args, **kw)
         assert_equal(e.code, 700)
-        assert_equal(e.error, u'no such error')
+        assert_equal(e.error, u"no such error")
 
         assert context.xmlclient.conn._calledall() is True
 
@@ -263,41 +264,39 @@ class test_xml_introspection:
         try:
             api.Backend.xmlclient.connect()
         except (errors.NetworkError, IOError):
-            pytest.skip('%r: Server not available: %r' %
-                        (__name__, api.env.xmlrpc_uri))
+            pytest.skip("%r: Server not available: %r" % (__name__, api.env.xmlrpc_uri))
 
         def fin():
             ipa_request.destroy_context()
+
         request.addfinalizer(fin)
 
     def test_list_methods(self):
         result = api.Backend.xmlclient.conn.system.listMethods()
         assert len(result)
-        assert 'ping' in result
-        assert 'user_add' in result
-        assert 'system.listMethods' in result
-        assert 'system.methodSignature' in result
-        assert 'system.methodHelp' in result
+        assert "ping" in result
+        assert "user_add" in result
+        assert "system.listMethods" in result
+        assert "system.methodSignature" in result
+        assert "system.methodHelp" in result
 
     def test_list_methods_many_params(self):
         try:
-            api.Backend.xmlclient.conn.system.listMethods('foo')
+            api.Backend.xmlclient.conn.system.listMethods("foo")
         except Fault as f:
             print(f)
             assert f.faultCode == 3003
-            assert f.faultString == (
-                "command 'system.listMethods' takes no arguments")
+            assert f.faultString == ("command 'system.listMethods' takes no arguments")
         else:
-            raise AssertionError('did not raise')
+            raise AssertionError("did not raise")
 
     def test_ping_signature(self):
-        result = api.Backend.xmlclient.conn.system.methodSignature('ping')
-        assert result == [['struct', 'array', 'struct']]
-
+        result = api.Backend.xmlclient.conn.system.methodSignature("ping")
+        assert result == [["struct", "array", "struct"]]
 
     def test_ping_help(self):
-        result = api.Backend.xmlclient.conn.system.methodHelp('ping')
-        assert result == 'Ping a remote server.'
+        result = api.Backend.xmlclient.conn.system.methodHelp("ping")
+        assert result == "Ping a remote server."
 
     def test_signature_no_params(self):
         try:
@@ -307,18 +306,19 @@ class test_xml_introspection:
             assert f.faultCode == 3007
             assert f.faultString == "'method name' is required"
         else:
-            raise AssertionError('did not raise')
+            raise AssertionError("did not raise")
 
     def test_signature_many_params(self):
         try:
-            api.Backend.xmlclient.conn.system.methodSignature('a', 'b')
+            api.Backend.xmlclient.conn.system.methodSignature("a", "b")
         except Fault as f:
             print(f)
             assert f.faultCode == 3004
             assert f.faultString == (
-                "command 'system.methodSignature' takes at most 1 argument")
+                "command 'system.methodSignature' takes at most 1 argument"
+            )
         else:
-            raise AssertionError('did not raise')
+            raise AssertionError("did not raise")
 
     def test_help_no_params(self):
         try:
@@ -328,18 +328,19 @@ class test_xml_introspection:
             assert f.faultCode == 3007
             assert f.faultString == "'method name' is required"
         else:
-            raise AssertionError('did not raise')
+            raise AssertionError("did not raise")
 
     def test_help_many_params(self):
         try:
-            api.Backend.xmlclient.conn.system.methodHelp('a', 'b')
+            api.Backend.xmlclient.conn.system.methodHelp("a", "b")
         except Fault as f:
             print(f)
             assert f.faultCode == 3004
             assert f.faultString == (
-                "command 'system.methodHelp' takes at most 1 argument")
+                "command 'system.methodHelp' takes at most 1 argument"
+            )
         else:
-            raise AssertionError('did not raise')
+            raise AssertionError("did not raise")
 
 
 @pytest.mark.skip_ipaclient_unittest
@@ -348,49 +349,49 @@ class test_rpcclient_context(PluginTester):
     """
     Test the context in `ipalib.rpc.rpcclient` plugin.
     """
+
     @pytest.fixture(autouse=True)
     def rpcclient_context_fsetup(self, request):
         try:
-            api.Backend.rpcclient.connect(ca_certfile='foo')
+            api.Backend.rpcclient.connect(ca_certfile="foo")
         except (errors.NetworkError, IOError):
-            pytest.skip('%r: Server not available: %r' %
-                        (__name__, api.env.xmlrpc_uri))
+            pytest.skip("%r: Server not available: %r" % (__name__, api.env.xmlrpc_uri))
 
         def fin():
             if api.Backend.rpcclient.isconnected():
                 api.Backend.rpcclient.disconnect()
+
         request.addfinalizer(fin)
 
     def test_context_cafile(self):
         """
         Test that ca_certfile is set in `ipalib.rpc.rpcclient.connect`
         """
-        ca_certfile = getattr(context, 'ca_certfile', None)
-        assert_equal(ca_certfile, 'foo')
+        ca_certfile = getattr(context, "ca_certfile", None)
+        assert_equal(ca_certfile, "foo")
 
     def test_context_principal(self):
         """
         Test that principal is set in `ipalib.rpc.rpcclient.connect`
         """
-        principal = getattr(context, 'principal', None)
-        assert_equal(principal, 'admin@%s' % api.env.realm)
+        principal = getattr(context, "principal", None)
+        assert_equal(principal, "admin@%s" % api.env.realm)
 
     def test_context_request_url(self):
         """
         Test that request_url is set in `ipalib.rpc.rpcclient.connect`
         """
-        request_url = getattr(context, 'request_url', None)
-        assert_equal(request_url, 'https://%s/ipa/session/json' % api.env.host)
+        request_url = getattr(context, "request_url", None)
+        assert_equal(request_url, "https://%s/ipa/session/json" % api.env.host)
 
     def test_context_session_cookie(self):
         """
         Test that session_cookie is set in `ipalib.rpc.rpcclient.connect`
         """
-        fuzzy_cookie = Fuzzy(
-            r'^ipa_session=MagBearerToken=[A-Za-z0-9+\/]+=*;$')
+        fuzzy_cookie = Fuzzy(r"^ipa_session=MagBearerToken=[A-Za-z0-9+\/]+=*;$")
 
-        session_cookie = getattr(context, 'session_cookie', None)
+        session_cookie = getattr(context, "session_cookie", None)
         # pylint-2 is incorrectly spewing Too many positional arguments
         # pylint: disable=E1121
         unquoted = urllib.parse.unquote(session_cookie)
-        assert(unquoted == fuzzy_cookie)
+        assert unquoted == fuzzy_cookie

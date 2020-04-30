@@ -33,6 +33,7 @@ rhel_system_units = redhat_services.redhat_system_units.copy()
 
 # Service classes that implement RHEL-specific behaviour
 
+
 class RHELService(redhat_services.RedHatService):
     system_units = rhel_system_units
 
@@ -40,11 +41,13 @@ class RHELService(redhat_services.RedHatService):
 # Function that constructs proper RHEL-specific server classes for services
 # of specified name
 
+
 def rhel_service_class_factory(name, api=None):
     return redhat_services.redhat_service_class_factory(name, api)
 
 
 # Magicdict containing RHELService instances.
+
 
 class RHELServices(redhat_services.RedHatServices):
     def service_class_factory(self, name, api=None):

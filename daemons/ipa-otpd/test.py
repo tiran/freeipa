@@ -43,9 +43,9 @@ ATTRIBUTE	NAS-Identifier	32	string
 def main():
     dct = Dictionary(StringIO(DICTIONARY))
 
-    proc = subprocess.Popen(["./ipa-otpd", sys.argv[1]],
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE)
+    proc = subprocess.Popen(
+        ["./ipa-otpd", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+    )
 
     pkt = packet.AuthPacket(secret="", dict=dct)
     pkt["User-Name"] = sys.argv[2]
@@ -62,5 +62,6 @@ def main():
     proc.terminate()  # pylint: disable=E1101
     proc.wait()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

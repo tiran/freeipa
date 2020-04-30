@@ -46,11 +46,7 @@ class TestInstallFIPS(IntegrationTest):
         tasks.install_master(cls.master, setup_dns=True, setup_kra=True)
         # replica with CA, KRA, DNS
         tasks.install_replica(
-            cls.master,
-            cls.replicas[0],
-            setup_dns=True,
-            setup_ca=True,
-            setup_kra=True,
+            cls.master, cls.replicas[0], setup_dns=True, setup_ca=True, setup_kra=True,
         )
         tasks.install_clients([cls.master] + cls.replicas, cls.clients)
 
@@ -63,9 +59,9 @@ class TestInstallFIPS(IntegrationTest):
         dnssec_install_master(self.master)
         # DNSSEC zone
         dnszone_add_dnssec(self.master, test_zone)
-        assert wait_until_record_is_signed(
-            self.master.ip, test_zone, timeout=100
-        ), ("Zone %s is not signed (master)" % test_zone)
+        assert wait_until_record_is_signed(self.master.ip, test_zone, timeout=100), (
+            "Zone %s is not signed (master)" % test_zone
+        )
 
         # test replica
         assert wait_until_record_is_signed(
@@ -102,13 +98,7 @@ class TestInstallFIPS(IntegrationTest):
             ]
         )
         self.master.run_command(
-            [
-                "ipa",
-                "vault-retrieve",
-                vault_name,
-                "--password",
-                vault_password,
-            ]
+            ["ipa", "vault-retrieve", vault_name, "--password", vault_password,]
         )
 
     def test_krb_enctypes(self):

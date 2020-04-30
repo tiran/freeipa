@@ -31,37 +31,38 @@ class test_passwd(XMLRPC_test):
     """
     Test the `passwd` plugin.
     """
-    uid = u'pwexample'
-    givenname = u'Jim'
-    sn = u'Example'
-    home = u'/home/%s' % uid
-    principalname = u'%s@%s' % (uid, api.env.realm)
-    kw = {'givenname': givenname, 'sn': sn, 'uid': uid, 'homedirectory': home}
+
+    uid = u"pwexample"
+    givenname = u"Jim"
+    sn = u"Example"
+    home = u"/home/%s" % uid
+    principalname = u"%s@%s" % (uid, api.env.realm)
+    kw = {"givenname": givenname, "sn": sn, "uid": uid, "homedirectory": home}
 
     def test_1_user_add(self):
         """
         Create a test user
         """
-        entry = api.Command['user_add'](**self.kw)['result']
-        assert_attr_equal(entry, 'givenname', self.givenname)
-        assert_attr_equal(entry, 'sn', self.sn)
-        assert_attr_equal(entry, 'uid', self.uid)
-        assert_attr_equal(entry, 'homedirectory', self.home)
-        assert_attr_equal(entry, 'objectclass', 'ipaobject')
+        entry = api.Command["user_add"](**self.kw)["result"]
+        assert_attr_equal(entry, "givenname", self.givenname)
+        assert_attr_equal(entry, "sn", self.sn)
+        assert_attr_equal(entry, "uid", self.uid)
+        assert_attr_equal(entry, "homedirectory", self.home)
+        assert_attr_equal(entry, "objectclass", "ipaobject")
 
     def test_2_set_passwd(self):
         """
         Test the `xmlrpc.passwd` method.
         """
-        out = api.Command['passwd'](self.uid, password=u'password1')
-        assert out['result'] is True
+        out = api.Command["passwd"](self.uid, password=u"password1")
+        assert out["result"] is True
 
     def test_3_user_del(self):
         """
         Remove the test user
         """
-        api.Command['user_del'](self.uid)
+        api.Command["user_del"](self.uid)
 
         # Verify that it is gone
         with pytest.raises(errors.NotFound):
-            api.Command['user_show'](self.uid)
+            api.Command["user_show"](self.uid)

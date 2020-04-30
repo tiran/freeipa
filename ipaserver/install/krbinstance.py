@@ -52,7 +52,7 @@ from ipaplatform.paths import paths
 
 logger = logging.getLogger(__name__)
 
-PKINIT_ENABLED = 'pkinitEnabled'
+PKINIT_ENABLED = "pkinitEnabled"
 
 
 def get_pkinit_request_ca():
@@ -60,13 +60,12 @@ def get_pkinit_request_ca():
     Return the certmonger CA name which is serving the PKINIT certificate
     request. If the certificate is not tracked by Certmonger, return None
     """
-    pkinit_request_id = certmonger.get_request_id(
-        {'cert-file': paths.KDC_CERT})
+    pkinit_request_id = certmonger.get_request_id({"cert-file": paths.KDC_CERT})
 
     if pkinit_request_id is None:
         return None
 
-    return certmonger.get_request_value(pkinit_request_id, 'ca-name')
+    return certmonger.get_request_value(pkinit_request_id, "ca-name")
 
 
 def is_pkinit_enabled():
@@ -88,12 +87,11 @@ class KpasswdInstance(service.SimpleServiceInstance):
     def __init__(self):
         service.SimpleServiceInstance.__init__(self, "kadmin")
 
+
 class KrbInstance(service.Service):
     def __init__(self, fstore=None):
         super(KrbInstance, self).__init__(
-            "krb5kdc",
-            service_desc="Kerberos KDC",
-            fstore=fstore
+            "krb5kdc", service_desc="Kerberos KDC", fstore=fstore
         )
         self.fqdn = None
         self.realm = None
@@ -109,11 +107,10 @@ class KrbInstance(service.Service):
         self.master_fqdn = None
         self.config_pkinit = None
 
-    suffix = ipautil.dn_attribute_property('_suffix')
-    subject_base = ipautil.dn_attribute_property('_subject_base')
+    suffix = ipautil.dn_attribute_property("_suffix")
+    subject_base = ipautil.dn_attribute_property("_subject_base")
 
-    def init_info(self, realm_name, host_name, setup_pkinit=False,
-                  subject_base=None):
+    def init_info(self, realm_name, host_name, setup_pkinit=False, subject_base=None):
         self.fqdn = host_name
         self.realm = realm_name
         self.suffix = ipautil.realm_to_suffix(realm_name)
@@ -121,7 +118,7 @@ class KrbInstance(service.Service):
         self.config_pkinit = setup_pkinit
 
     def get_realm_suffix(self):
-        return DN(('cn', self.realm), ('cn', 'kerberos'), self.suffix)
+        return DN(("cn", self.realm), ("cn", "kerberos"), self.suffix)
 
     def move_service_to_host(self, principal):
         """
@@ -129,48 +126,56 @@ class KrbInstance(service.Service):
         cn=kerberos to reside under the host entry.
         """
 
-        service_dn = DN(('krbprincipalname', principal), self.get_realm_suffix())
+        service_dn = DN(("krbprincipalname", principal), self.get_realm_suffix())
         service_entry = api.Backend.ldap2.get_entry(service_dn)
         api.Backend.ldap2.delete_entry(service_entry)
 
         # Create a host entry for this master
         host_dn = DN(
-            ('fqdn', self.fqdn), ('cn', 'computers'), ('cn', 'accounts'),
-            self.suffix)
+            ("fqdn", self.fqdn), ("cn", "computers"), ("cn", "accounts"), self.suffix
+        )
         host_entry = api.Backend.ldap2.make_entry(
             host_dn,
             objectclass=[
-               'top', 'ipaobject', 'nshost', 'ipahost', 'ipaservice',
-               'pkiuser', 'krbprincipalaux', 'krbprincipal',
-               'krbticketpolicyaux', 'ipasshhost'],
-            krbextradata=service_entry['krbextradata'],
-            krblastpwdchange=service_entry['krblastpwdchange'],
-            krbprincipalname=service_entry['krbprincipalname'],
-            krbcanonicalname=service_entry['krbcanonicalname'],
-            krbprincipalkey=service_entry['krbprincipalkey'],
-            serverhostname=[self.fqdn.split('.',1)[0]],
+                "top",
+                "ipaobject",
+                "nshost",
+                "ipahost",
+                "ipaservice",
+                "pkiuser",
+                "krbprincipalaux",
+                "krbprincipal",
+                "krbticketpolicyaux",
+                "ipasshhost",
+            ],
+            krbextradata=service_entry["krbextradata"],
+            krblastpwdchange=service_entry["krblastpwdchange"],
+            krbprincipalname=service_entry["krbprincipalname"],
+            krbcanonicalname=service_entry["krbcanonicalname"],
+            krbprincipalkey=service_entry["krbprincipalkey"],
+            serverhostname=[self.fqdn.split(".", 1)[0]],
             cn=[self.fqdn],
             fqdn=[self.fqdn],
-            ipauniqueid=['autogenerate'],
+            ipauniqueid=["autogenerate"],
             managedby=[host_dn],
         )
-        if 'krbpasswordexpiration' in service_entry:
-            host_entry['krbpasswordexpiration'] = service_entry[
-                'krbpasswordexpiration']
-        if 'krbticketflags' in service_entry:
-            host_entry['krbticketflags'] = service_entry['krbticketflags']
+        if "krbpasswordexpiration" in service_entry:
+            host_entry["krbpasswordexpiration"] = service_entry["krbpasswordexpiration"]
+        if "krbticketflags" in service_entry:
+            host_entry["krbticketflags"] = service_entry["krbticketflags"]
         api.Backend.ldap2.add_entry(host_entry)
 
         # Add the host to the ipaserver host group
         ld = ldapupdate.LDAPUpdate(ldapi=True)
-        ld.update([os.path.join(paths.UPDATES_DIR,
-                                '20-ipaservers_hostgroup.update')])
+        ld.update([os.path.join(paths.UPDATES_DIR, "20-ipaservers_hostgroup.update")])
 
     def __common_setup(self, realm_name, host_name, domain_name, admin_password):
         self.fqdn = host_name
         self.realm = realm_name.upper()
         self.host = host_name.split(".")[0]
-        self.ip = socket.getaddrinfo(host_name, None, socket.AF_UNSPEC, socket.SOCK_STREAM)[0][4][0]
+        self.ip = socket.getaddrinfo(
+            host_name, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+        )[0][4][0]
         self.domain = domain_name
         self.suffix = ipautil.realm_to_suffix(self.realm)
         self.kdc_password = ipautil.ipa_generate_password()
@@ -191,7 +196,17 @@ class KrbInstance(service.Service):
         self.step("starting the KDC", self.__start_instance)
         self.step("configuring KDC to start on boot", self.__enable)
 
-    def create_instance(self, realm_name, host_name, domain_name, admin_password, master_password, setup_pkinit=False, pkcs12_info=None, subject_base=None):
+    def create_instance(
+        self,
+        realm_name,
+        host_name,
+        domain_name,
+        admin_password,
+        master_password,
+        setup_pkinit=False,
+        pkcs12_info=None,
+        subject_base=None,
+    ):
         self.master_password = master_password
         self.pkcs12_info = pkcs12_info
         self.subject_base = subject_base
@@ -199,27 +214,39 @@ class KrbInstance(service.Service):
 
         self.__common_setup(realm_name, host_name, domain_name, admin_password)
 
-        self.step("adding kerberos container to the directory", self.__add_krb_container)
+        self.step(
+            "adding kerberos container to the directory", self.__add_krb_container
+        )
         self.step("configuring KDC", self.__configure_instance)
         self.step("initialize kerberos container", self.__init_ipa_kdb)
         self.step("adding default ACIs", self.__add_default_acis)
         self.step("creating a keytab for the directory", self.__create_ds_keytab)
         self.step("creating a keytab for the machine", self.__create_host_keytab)
-        self.step("adding the password extension to the directory", self.__add_pwd_extop_module)
+        self.step(
+            "adding the password extension to the directory",
+            self.__add_pwd_extop_module,
+        )
 
         self.__common_post_setup()
 
         self.start_creation()
 
         self.kpasswd = KpasswdInstance()
-        self.kpasswd.create_instance('KPASSWD', self.fqdn, self.suffix,
-                                     realm=self.realm)
+        self.kpasswd.create_instance(
+            "KPASSWD", self.fqdn, self.suffix, realm=self.realm
+        )
 
-    def create_replica(self, realm_name,
-                       master_fqdn, host_name,
-                       domain_name, admin_password,
-                       setup_pkinit=False, pkcs12_info=None,
-                       subject_base=None):
+    def create_replica(
+        self,
+        realm_name,
+        master_fqdn,
+        host_name,
+        domain_name,
+        admin_password,
+        setup_pkinit=False,
+        pkcs12_info=None,
+        subject_base=None,
+    ):
         self.pkcs12_info = pkcs12_info
         self.subject_base = subject_base
         self.master_fqdn = master_fqdn
@@ -228,22 +255,24 @@ class KrbInstance(service.Service):
         self.__common_setup(realm_name, host_name, domain_name, admin_password)
 
         self.step("configuring KDC", self.__configure_instance)
-        self.step("adding the password extension to the directory", self.__add_pwd_extop_module)
+        self.step(
+            "adding the password extension to the directory",
+            self.__add_pwd_extop_module,
+        )
 
         self.__common_post_setup()
 
         self.start_creation()
 
         self.kpasswd = KpasswdInstance()
-        self.kpasswd.create_instance('KPASSWD', self.fqdn, self.suffix)
-
+        self.kpasswd.create_instance("KPASSWD", self.fqdn, self.suffix)
 
     def __enable(self):
         self.backup_state("enabled", self.is_enabled())
         # We do not let the system start IPA components on its own,
         # Instead we reply on the IPA init script to start only enabled
         # components as found in our LDAP configuration tree
-        self.ldap_configure('KDC', self.fqdn, None, self.suffix)
+        self.ldap_configure("KDC", self.fqdn, None, self.suffix)
 
     def __start_instance(self):
         try:
@@ -253,57 +282,63 @@ class KrbInstance(service.Service):
 
     def __setup_sub_dict(self):
         if os.path.exists(paths.COMMON_KRB5_CONF_DIR):
-            includes = 'includedir {}'.format(paths.COMMON_KRB5_CONF_DIR)
+            includes = "includedir {}".format(paths.COMMON_KRB5_CONF_DIR)
         else:
-            includes = ''
+            includes = ""
 
-        self.sub_dict = dict(FQDN=self.fqdn,
-                             IP=self.ip,
-                             PASSWORD=self.kdc_password,
-                             SUFFIX=self.suffix,
-                             DOMAIN=self.domain,
-                             HOST=self.host,
-                             SERVER_ID=ipaldap.realm_to_serverid(self.realm),
-                             REALM=self.realm,
-                             KRB5KDC_KADM5_ACL=paths.KRB5KDC_KADM5_ACL,
-                             DICT_WORDS=paths.DICT_WORDS,
-                             KRB5KDC_KADM5_KEYTAB=paths.KRB5KDC_KADM5_KEYTAB,
-                             KDC_CERT=paths.KDC_CERT,
-                             KDC_KEY=paths.KDC_KEY,
-                             CACERT_PEM=paths.CACERT_PEM,
-                             KDC_CA_BUNDLE_PEM=paths.KDC_CA_BUNDLE_PEM,
-                             CA_BUNDLE_PEM=paths.CA_BUNDLE_PEM,
-                             INCLUDES=includes,
-                             FIPS='#' if tasks.is_fips_enabled() else '')
+        self.sub_dict = dict(
+            FQDN=self.fqdn,
+            IP=self.ip,
+            PASSWORD=self.kdc_password,
+            SUFFIX=self.suffix,
+            DOMAIN=self.domain,
+            HOST=self.host,
+            SERVER_ID=ipaldap.realm_to_serverid(self.realm),
+            REALM=self.realm,
+            KRB5KDC_KADM5_ACL=paths.KRB5KDC_KADM5_ACL,
+            DICT_WORDS=paths.DICT_WORDS,
+            KRB5KDC_KADM5_KEYTAB=paths.KRB5KDC_KADM5_KEYTAB,
+            KDC_CERT=paths.KDC_CERT,
+            KDC_KEY=paths.KDC_KEY,
+            CACERT_PEM=paths.CACERT_PEM,
+            KDC_CA_BUNDLE_PEM=paths.KDC_CA_BUNDLE_PEM,
+            CA_BUNDLE_PEM=paths.CA_BUNDLE_PEM,
+            INCLUDES=includes,
+            FIPS="#" if tasks.is_fips_enabled() else "",
+        )
 
         # IPA server/KDC is not a subdomain of default domain
         # Proper domain-realm mapping needs to be specified
         domain = dns.name.from_text(self.domain)
         fqdn = dns.name.from_text(self.fqdn)
         if not fqdn.is_subdomain(domain):
-            logger.debug("IPA FQDN '%s' is not located in default domain '%s'",
-                         fqdn, domain)
+            logger.debug(
+                "IPA FQDN '%s' is not located in default domain '%s'", fqdn, domain
+            )
             server_domain = fqdn.parent().to_unicode(omit_final_dot=True)
-            logger.debug("Domain '%s' needs additional mapping in krb5.conf",
-                         server_domain)
-            dr_map = " .%(domain)s = %(realm)s\n %(domain)s = %(realm)s\n" \
-                        % dict(domain=server_domain, realm=self.realm)
+            logger.debug(
+                "Domain '%s' needs additional mapping in krb5.conf", server_domain
+            )
+            dr_map = " .%(domain)s = %(realm)s\n %(domain)s = %(realm)s\n" % dict(
+                domain=server_domain, realm=self.realm
+            )
         else:
             dr_map = ""
-        self.sub_dict['OTHER_DOMAIN_REALM_MAPS'] = dr_map
+        self.sub_dict["OTHER_DOMAIN_REALM_MAPS"] = dr_map
 
         # Configure KEYRING CCACHE if supported
         if kernel_keyring.is_persistent_keyring_supported():
             logger.debug("Enabling persistent keyring CCACHE")
-            self.sub_dict['OTHER_LIBDEFAULTS'] = \
-                " default_ccache_name = KEYRING:persistent:%{uid}\n"
+            self.sub_dict[
+                "OTHER_LIBDEFAULTS"
+            ] = " default_ccache_name = KEYRING:persistent:%{uid}\n"
         else:
             logger.debug("Persistent keyring CCACHE is not enabled")
-            self.sub_dict['OTHER_LIBDEFAULTS'] = ''
+            self.sub_dict["OTHER_LIBDEFAULTS"] = ""
 
         # Create kadm5.acl if it doesn't exist
         if not os.path.exists(paths.KRB5KDC_KADM5_ACL):
-            open(paths.KRB5KDC_KADM5_ACL, 'a').close()
+            open(paths.KRB5KDC_KADM5_ACL, "a").close()
             os.chmod(paths.KRB5KDC_KADM5_ACL, 0o600)
 
     def __add_krb_container(self):
@@ -317,11 +352,10 @@ class KrbInstance(service.Service):
             sharedir = paths.USR_SHARE_IPA_CLIENT_DIR
         else:
             sharedir = paths.USR_SHARE_IPA_DIR
-        template = os.path.join(
-            sharedir, os.path.basename(path) + ".template")
+        template = os.path.join(sharedir, os.path.basename(path) + ".template")
         conf = ipautil.template_file(template, self.sub_dict)
         self.fstore.backup_file(path)
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             if chmod is not None:
                 os.fchmod(f.fileno(), chmod)
             f.write(conf)
@@ -330,18 +364,24 @@ class KrbInstance(service.Service):
         # kdb5_util may take a very long time when entropy is low
         installutils.check_entropy()
 
-        #populate the directory with the realm structure
-        args = ["kdb5_util", "create", "-s",
-                                       "-r", self.realm,
-                                       "-x", "ipa-setup-override-restrictions"]
+        # populate the directory with the realm structure
+        args = [
+            "kdb5_util",
+            "create",
+            "-s",
+            "-r",
+            self.realm,
+            "-x",
+            "ipa-setup-override-restrictions",
+        ]
         dialogue = (
             # Enter KDC database master key:
-            self.master_password + '\n',
+            self.master_password + "\n",
             # Re-enter KDC database master key to verify:
-            self.master_password + '\n',
+            self.master_password + "\n",
         )
         try:
-            ipautil.run(args, nolog=(self.master_password,), stdin=''.join(dialogue))
+            ipautil.run(args, nolog=(self.master_password,), stdin="".join(dialogue))
         except ipautil.CalledProcessError as error:
             logger.debug("kdb5_util failed with %s", error)
             raise RuntimeError("Failed to initialize kerberos container")
@@ -356,10 +396,9 @@ class KrbInstance(service.Service):
         self.__template_file(paths.HTML_KRBREALM_CON)
 
         MIN_KRB5KDC_WITH_WORKERS = "1.9"
-        cpus = os.sysconf('SC_NPROCESSORS_ONLN')
+        cpus = os.sysconf("SC_NPROCESSORS_ONLN")
         workers = False
-        result = ipautil.run([paths.KLIST, '-V'],
-                             raiseonerr=False, capture_output=True)
+        result = ipautil.run([paths.KLIST, "-V"], raiseonerr=False, capture_output=True)
         if result.returncode == 0:
             verstr = result.output.split()[-1]
             ver = tasks.parse_ipa_version(verstr)
@@ -368,16 +407,19 @@ class KrbInstance(service.Service):
                 workers = True
         # Write down config file
         # We write realm and also number of workers (for multi-CPU systems)
-        replacevars = {'KRB5REALM':self.realm}
+        replacevars = {"KRB5REALM": self.realm}
         appendvars = {}
         if workers and cpus > 1:
-            appendvars = {'KRB5KDC_ARGS': "'-w %s'" % str(cpus)}
-        ipautil.backup_config_and_replace_variables(self.fstore, paths.SYSCONFIG_KRB5KDC_DIR,
-                                                    replacevars=replacevars,
-                                                    appendvars=appendvars)
+            appendvars = {"KRB5KDC_ARGS": "'-w %s'" % str(cpus)}
+        ipautil.backup_config_and_replace_variables(
+            self.fstore,
+            paths.SYSCONFIG_KRB5KDC_DIR,
+            replacevars=replacevars,
+            appendvars=appendvars,
+        )
         tasks.restore_context(paths.SYSCONFIG_KRB5KDC_DIR)
 
-    #add the password extop module
+    # add the password extop module
     def __add_pwd_extop_module(self):
         self._ldap_mod("pwd-extop-conf.ldif", self.sub_dict)
 
@@ -406,20 +448,18 @@ class KrbInstance(service.Service):
 
     def _wait_for_replica_kdc_entry(self):
         master_dn = self.api.Object.server.get_dn(self.fqdn)
-        kdc_dn = DN(('cn', 'KDC'), master_dn)
+        kdc_dn = DN(("cn", "KDC"), master_dn)
         ldap_uri = ipaldap.get_ldap_uri(self.master_fqdn)
         with ipaldap.LDAPClient(
-                ldap_uri, cacert=paths.IPA_CA_CRT, start_tls=True
+            ldap_uri, cacert=paths.IPA_CA_CRT, start_tls=True
         ) as remote_ldap:
             remote_ldap.gssapi_bind()
             replication.wait_for_entry(
-                remote_ldap,
-                kdc_dn,
-                timeout=api.env.replication_wait_timeout
+                remote_ldap, kdc_dn, timeout=api.env.replication_wait_timeout
             )
 
-    def _call_certmonger(self, certmonger_ca='IPA'):
-        subject = str(DN(('cn', self.fqdn), self.subject_base))
+    def _call_certmonger(self, certmonger_ca="IPA"):
+        subject = str(DN(("cn", self.fqdn), self.subject_base))
         krbtgt = "krbtgt/" + self.realm + "@" + self.realm
         certpath = (paths.KDC_CERT, paths.KDC_KEY)
 
@@ -428,27 +468,33 @@ class KrbInstance(service.Service):
             # on the first CA-ful master without '--no-pkinit', we issue the
             # certificate by contacting Dogtag directly
             ca_instances = find_providing_servers(
-                'CA', conn=self.api.Backend.ldap2, api=self.api)
+                "CA", conn=self.api.Backend.ldap2, api=self.api
+            )
 
             use_dogtag_submit = all(
-                [self.master_fqdn is None,
-                 self.pkcs12_info is None,
-                 self.config_pkinit,
-                 len(ca_instances) == 0])
+                [
+                    self.master_fqdn is None,
+                    self.pkcs12_info is None,
+                    self.config_pkinit,
+                    len(ca_instances) == 0,
+                ]
+            )
 
             if use_dogtag_submit:
                 ca_args = [
                     paths.CERTMONGER_DOGTAG_SUBMIT,
-                    '--ee-url', 'https://%s:8443/ca/ee/ca' % self.fqdn,
-                    '--certfile', paths.RA_AGENT_PEM,
-                    '--keyfile', paths.RA_AGENT_KEY,
-                    '--cafile', paths.IPA_CA_CRT,
-                    '--agent-submit'
+                    "--ee-url",
+                    "https://%s:8443/ca/ee/ca" % self.fqdn,
+                    "--certfile",
+                    paths.RA_AGENT_PEM,
+                    "--keyfile",
+                    paths.RA_AGENT_KEY,
+                    "--cafile",
+                    paths.IPA_CA_CRT,
+                    "--agent-submit",
                 ]
                 helper = " ".join(ca_args)
-                prev_helper = certmonger.modify_ca_helper(
-                    certmonger_ca, helper
-                )
+                prev_helper = certmonger.modify_ca_helper(certmonger_ca, helper)
 
             certmonger.request_and_wait_for_cert(
                 certpath=certpath,
@@ -456,16 +502,16 @@ class KrbInstance(service.Service):
                 principal=krbtgt,
                 ca=certmonger_ca,
                 dns=self.fqdn,
-                storage='FILE',
+                storage="FILE",
                 profile=KDC_PROFILE,
-                post_command='renew_kdc_cert',
+                post_command="renew_kdc_cert",
                 perms=(0o644, 0o600),
-                resubmit_timeout=api.env.certmonger_wait_timeout
+                resubmit_timeout=api.env.certmonger_wait_timeout,
             )
         except dbus.DBusException as e:
             # if the certificate is already tracked, ignore the error
             name = e.get_dbus_name()
-            if name != 'org.fedorahosted.certmonger.duplicate':
+            if name != "org.fedorahosted.certmonger.duplicate":
                 logger.error("Failed to initiate the request: %s", e)
             return
         finally:
@@ -477,22 +523,23 @@ class KrbInstance(service.Service):
         advertise enabled PKINIT feature in master's KDC entry in LDAP
         """
         service.set_service_entry_config(
-            'KDC', self.fqdn, [PKINIT_ENABLED], self.suffix)
+            "KDC", self.fqdn, [PKINIT_ENABLED], self.suffix
+        )
 
     def pkinit_disable(self):
         """
         unadvertise enabled PKINIT feature in master's KDC entry in LDAP
         """
         ldap = api.Backend.ldap2
-        dn = DN(('cn', 'KDC'), ('cn', self.fqdn), api.env.container_masters,
-                self.suffix)
+        dn = DN(
+            ("cn", "KDC"), ("cn", self.fqdn), api.env.container_masters, self.suffix
+        )
 
-        entry = ldap.get_entry(dn, ['ipaConfigString'])
+        entry = ldap.get_entry(dn, ["ipaConfigString"])
 
-        config = entry.setdefault('ipaConfigString', [])
-        config = [value for value in config
-                  if value.lower() != PKINIT_ENABLED.lower()]
-        entry['ipaConfigString'][:] = config
+        config = entry.setdefault("ipaConfigString", [])
+        config = [value for value in config if value.lower() != PKINIT_ENABLED.lower()]
+        entry["ipaConfigString"][:] = config
 
         try:
             ldap.update_entry(entry)
@@ -500,16 +547,15 @@ class KrbInstance(service.Service):
             pass
 
     def _install_pkinit_ca_bundle(self):
-        ca_certs = certstore.get_ca_certs(self.api.Backend.ldap2,
-                                          self.api.env.basedn,
-                                          self.api.env.realm,
-                                          False)
+        ca_certs = certstore.get_ca_certs(
+            self.api.Backend.ldap2, self.api.env.basedn, self.api.env.realm, False
+        )
         ca_certs = [c for c, _n, t, _u in ca_certs if t is not False]
         x509.write_certificate_list(ca_certs, paths.CACERT_PEM, mode=0o644)
 
     def issue_selfsigned_pkinit_certs(self):
         self._call_certmonger(certmonger_ca="SelfSign")
-        with open(paths.CACERT_PEM, 'w'):
+        with open(paths.CACERT_PEM, "w"):
             pass
 
     def issue_ipa_ca_signed_pkinit_certs(self):
@@ -524,21 +570,23 @@ class KrbInstance(service.Service):
             self.print_msg("Full PKINIT configuration did not succeed")
             self.print_msg(
                 "The setup will only install bits "
-                "essential to the server functionality")
+                "essential to the server functionality"
+            )
             self.print_msg(
                 "You can enable PKINIT after the "
-                "setup completed using 'ipa-pkinit-manage'")
+                "setup completed using 'ipa-pkinit-manage'"
+            )
 
             self.stop_tracking_certs()
             self.issue_selfsigned_pkinit_certs()
 
     def install_external_pkinit_certs(self):
-        certs.install_pem_from_p12(self.pkcs12_info[0],
-                                   self.pkcs12_info[1],
-                                   paths.KDC_CERT)
-        certs.install_key_from_p12(self.pkcs12_info[0],
-                                   self.pkcs12_info[1],
-                                   paths.KDC_KEY)
+        certs.install_pem_from_p12(
+            self.pkcs12_info[0], self.pkcs12_info[1], paths.KDC_CERT
+        )
+        certs.install_key_from_p12(
+            self.pkcs12_info[0], self.pkcs12_info[1], paths.KDC_KEY
+        )
         self._install_pkinit_ca_bundle()
         self.pkinit_enable()
 
@@ -560,8 +608,7 @@ class KrbInstance(service.Service):
 
         if self.config_pkinit:
             self.steps = []
-            self.step("installing X509 Certificate for PKINIT",
-                      self.setup_pkinit)
+            self.step("installing X509 Certificate for PKINIT", self.setup_pkinit)
             self.start_creation()
         else:
             self.issue_selfsigned_pkinit_certs()
@@ -578,7 +625,7 @@ class KrbInstance(service.Service):
     def add_anonymous_principal(self):
         # Create the special anonymous principal
         princ_realm = self.get_anonymous_principal_name()
-        dn = DN(('krbprincipalname', princ_realm), self.get_realm_suffix())
+        dn = DN(("krbprincipalname", princ_realm), self.get_realm_suffix())
         try:
             self.api.Backend.ldap2.get_entry(dn)
         except errors.NotFound:
@@ -591,12 +638,12 @@ class KrbInstance(service.Service):
             pass
 
     def __convert_to_gssapi_replication(self):
-        repl = replication.ReplicationManager(self.realm,
-                                              self.fqdn,
-                                              self.dm_password)
-        repl.convert_to_gssapi_replication(self.master_fqdn,
-                                           r_binddn=DN(('cn', 'Directory Manager')),
-                                           r_bindpw=self.dm_password)
+        repl = replication.ReplicationManager(self.realm, self.fqdn, self.dm_password)
+        repl.convert_to_gssapi_replication(
+            self.master_fqdn,
+            r_binddn=DN(("cn", "Directory Manager")),
+            r_bindpw=self.dm_password,
+        )
 
     def stop_tracking_certs(self):
         certmonger.stop_tracking(certfile=paths.KDC_CERT)

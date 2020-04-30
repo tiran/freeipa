@@ -12,7 +12,8 @@ from .idviews import DEFAULT_TRUST_VIEW_NAME
 if six.PY3:
     unicode = str
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Return information about currently authenticated identity
 
 Who am I command returns information on how to get
@@ -67,28 +68,28 @@ EXAMPLES:
    command: service_show/1
    arguments: HTTP/ipa.example.com
    ------------------------------------------
-""")
+"""
+)
 
 register = Registry()
 
 
 @register()
 class whoami(Command):
-    __doc__ = _('Describe currently authenticated identity.')
+    __doc__ = _("Describe currently authenticated identity.")
 
     NO_CLI = True
 
     output_params = (
-        Str('object', label=_('Object class name')),
-        Str('command', label= _('Function to get details')),
-        Str('arguments*', label=_('Arguments to details function')),
+        Str("object", label=_("Object class name")),
+        Str("command", label=_("Function to get details")),
+        Str("arguments*", label=_("Arguments to details function")),
     )
 
     has_output = (
-        output.Output('object', unicode, _('Object class name')),
-        output.Output('command', unicode, _('Function to get details')),
-        output.Output('arguments', (list, tuple),
-                      _('Arguments to details function')),
+        output.Output("object", unicode, _("Object class name")),
+        output.Output("command", unicode, _("Function to get details")),
+        output.Output("arguments", (list, tuple), _("Arguments to details function")),
     )
 
     def execute(self, **options):
@@ -98,26 +99,28 @@ class whoami(Command):
         details about this object.
         """
         exceptions = {
-                'idoverrideuser': (DN("cn={0}".format(DEFAULT_TRUST_VIEW_NAME)),
-                                   DEFAULT_TRUST_VIEW_NAME, 'ipaOriginalUid'),
+            "idoverrideuser": (
+                DN("cn={0}".format(DEFAULT_TRUST_VIEW_NAME)),
+                DEFAULT_TRUST_VIEW_NAME,
+                "ipaOriginalUid",
+            ),
         }
         ldap = api.Backend.ldap2
 
         # whoami_s() call returns a string 'dn: <actual DN value>'
         # We also reject ldapi-as-root connections as DM is a virtual object
         dn = DN(ldap.conn.whoami_s()[4:])
-        if dn == DN('cn=Directory Manager'):
-            raise errors.NotFound(
-                    reason=_('Cannot query Directory Manager with API'))
+        if dn == DN("cn=Directory Manager"):
+            raise errors.NotFound(reason=_("Cannot query Directory Manager with API"))
 
         entry = ldap.get_entry(dn)
         o_name = None
         o_func = None
         o_args = []
         for o in api.Object():
-            if not getattr(o, 'bindable', None):
+            if not getattr(o, "bindable", None):
                 continue
-            container = getattr(o, 'container_dn', None)
+            container = getattr(o, "container_dn", None)
             if container is None:
                 continue
             # Adjust container for exception two-level objects
@@ -129,9 +132,10 @@ class whoami(Command):
                 o_args = [unicode(entry.single_value.get(o.primary_key.name))]
                 o_func = unicode(o.methods.show.full_name)
                 if o.name in exceptions:
-                    o_args = [unicode(exceptions[o.name][1]),
-                              unicode(entry.single_value.get(
-                                      exceptions[o.name][2]))]
+                    o_args = [
+                        unicode(exceptions[o.name][1]),
+                        unicode(entry.single_value.get(exceptions[o.name][2])),
+                    ]
                 break
 
-        return {'object': o_name, 'command': o_func, 'arguments': o_args}
+        return {"object": o_name, "command": o_func, "arguments": o_args}

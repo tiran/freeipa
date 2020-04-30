@@ -45,33 +45,32 @@ from contextlib import contextmanager
 def use_keytab(principal, keytab):
     with private_ccache() as ccache_file:
         try:
-            old_principal = getattr(context, 'principal', None)
+            old_principal = getattr(context, "principal", None)
             name = gssapi.Name(principal, gssapi.NameType.kerberos_principal)
-            store = {'ccache': ccache_file,
-                     'client_keytab': keytab}
-            gssapi.Credentials(name=name, usage='initiate', store=store)
+            store = {"ccache": ccache_file, "client_keytab": keytab}
+            gssapi.Credentials(name=name, usage="initiate", store=store)
             conn = ldap2(api)
-            conn.connect(ccache=ccache_file,
-                         autobind=ipaldap.AUTOBIND_DISABLED)
+            conn.connect(ccache=ccache_file, autobind=ipaldap.AUTOBIND_DISABLED)
             yield conn
             conn.disconnect()
         except gssapi.exceptions.GSSError as e:
-            raise Exception('Unable to bind to LDAP. Error initializing '
-                            'principal %s in %s: %s' % (principal, keytab,
-                                                        str(e)))
+            raise Exception(
+                "Unable to bind to LDAP. Error initializing "
+                "principal %s in %s: %s" % (principal, keytab, str(e))
+            )
         finally:
-            setattr(context, 'principal', old_principal)
+            setattr(context, "principal", old_principal)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def test_host(request):
-    host_tracker = host_plugin.HostTracker(u'test-host')
+    host_tracker = host_plugin.HostTracker(u"test-host")
     return host_tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def test_service(request, test_host, keytab_retrieval_setup):
-    service_tracker = service_plugin.ServiceTracker(u'srv', test_host.name)
+    service_tracker = service_plugin.ServiceTracker(u"srv", test_host.name)
     test_host.ensure_exists()
     return service_tracker.make_fixture(request)
 
@@ -81,6 +80,7 @@ class KeytabRetrievalTest(cmdline_test):
     """
     Base class for keytab retrieval tests
     """
+
     command = "ipa-getkeytab"
     keytabname = None
 
@@ -102,29 +102,28 @@ class KeytabRetrievalTest(cmdline_test):
 
         request.addfinalizer(fin)
 
-    def run_ipagetkeytab(self, service_principal, args=tuple(),
-                         raiseonerr=False, stdin=None):
-        new_args = [self.command,
-                    "-p", service_principal,
-                    "-k", self.keytabname]
+    def run_ipagetkeytab(
+        self, service_principal, args=tuple(), raiseonerr=False, stdin=None
+    ):
+        new_args = [self.command, "-p", service_principal, "-k", self.keytabname]
 
         if not args:
-            new_args.extend(['-s', api.env.host])
+            new_args.extend(["-s", api.env.host])
         else:
             new_args.extend(list(args))
 
         return ipautil.run(
-            new_args,
-            stdin=stdin,
-            raiseonerr=raiseonerr,
-            capture_error=True)
+            new_args, stdin=stdin, raiseonerr=raiseonerr, capture_error=True
+        )
 
     def assert_success(self, *args, **kwargs):
         result = self.run_ipagetkeytab(*args, **kwargs)
-        expected = 'Keytab successfully retrieved and stored in: %s\n' % (
-            self.keytabname)
+        expected = "Keytab successfully retrieved and stored in: %s\n" % (
+            self.keytabname
+        )
         assert expected in result.error_output, (
-            'Success message not in output:\n%s' % result.error_output)
+            "Success message not in output:\n%s" % result.error_output
+        )
 
     def assert_failure(self, retcode, message, *args, **kwargs):
         result = self.run_ipagetkeytab(*args, **kwargs)
@@ -140,6 +139,7 @@ class test_ipagetkeytab(KeytabRetrievalTest):
     """
     Test `ipa-getkeytab`.
     """
+
     command = "ipa-getkeytab"
     keytabname = None
 
@@ -151,7 +151,7 @@ class test_ipagetkeytab(KeytabRetrievalTest):
         result = self.run_ipagetkeytab(test_service.name)
         err = result.error_output
 
-        assert 'Failed to parse result: PrincipalName not found.\n' in err, err
+        assert "Failed to parse result: PrincipalName not found.\n" in err, err
         rc = result.returncode
         assert rc > 0, rc
 
@@ -168,8 +168,8 @@ class test_ipagetkeytab(KeytabRetrievalTest):
         Try to use the service keytab.
         """
         with use_keytab(test_service.name, self.keytabname) as conn:
-            assert conn.can_read(test_service.dn, 'objectclass') is True
-            assert getattr(context, 'principal') == test_service.name
+            assert conn.can_read(test_service.dn, "objectclass") is True
+            assert getattr(context, "principal") == test_service.name
 
     def test_4_disable(self, test_service):
         """
@@ -178,7 +178,7 @@ class test_ipagetkeytab(KeytabRetrievalTest):
         retrieve_cmd = test_service.make_retrieve_command()
         result = retrieve_cmd()
         # Verify that it has a principal key
-        assert result[u'result'][u'has_keytab']
+        assert result[u"result"][u"has_keytab"]
 
         # Disable it
         disable_cmd = test_service.make_disable_command()
@@ -186,7 +186,7 @@ class test_ipagetkeytab(KeytabRetrievalTest):
 
         # Verify that it looks disabled
         result = retrieve_cmd()
-        assert not result[u'result'][u'has_keytab']
+        assert not result[u"result"][u"has_keytab"]
 
     def test_5_use_disabled(self, test_service):
         """
@@ -194,10 +194,10 @@ class test_ipagetkeytab(KeytabRetrievalTest):
         """
         try:
             with use_keytab(test_service.name, self.keytabname) as conn:
-                assert conn.can_read(test_service.dn, 'objectclass') is True
-                assert getattr(context, 'principal') == test_service.name
+                assert conn.can_read(test_service.dn, "objectclass") is True
+                assert getattr(context, "principal") == test_service.name
         except Exception as errmsg:
-            assert('Unable to bind to LDAP. Error initializing principal' in str(errmsg))
+            assert "Unable to bind to LDAP. Error initializing principal" in str(errmsg)
 
     def test_6_quiet_mode(self, test_service):
         """
@@ -207,8 +207,9 @@ class test_ipagetkeytab(KeytabRetrievalTest):
         # getkeytab without quiet mode option enabled
         result = self.run_ipagetkeytab(test_service.name)
         err = result.error_output.split("\n")[0]
-        assert err == f"Keytab successfully retrieved and stored in:" \
-                      f" {self.keytabname}"
+        assert (
+            err == f"Keytab successfully retrieved and stored in:" f" {self.keytabname}"
+        )
         assert result.returncode == 0
 
         # getkeytab with quiet mode option enabled
@@ -230,9 +231,7 @@ class test_ipagetkeytab(KeytabRetrievalTest):
             "aes256-cts-hmac-sha1-96",
             "aes128-cts-hmac-sha256-128",
         ]
-        self.assert_success(
-            test_service.name, args=["-e", ",".join(encryptes_list)]
-        )
+        self.assert_success(test_service.name, args=["-e", ",".join(encryptes_list)])
 
     def test_dangling_symlink(self, test_service):
         # see https://pagure.io/freeipa/issue/4607
@@ -253,13 +252,14 @@ class test_ipagetkeytab(KeytabRetrievalTest):
 
 
 def retrieve_dm_password():
-    dmpw_file = os.path.join(api.env.dot_ipa, '.dmpw')
+    dmpw_file = os.path.join(api.env.dot_ipa, ".dmpw")
 
     if not os.path.isfile(dmpw_file):
-        raise errors.NotFound(reason='{} file required '
-                              'for this test'.format(dmpw_file))
+        raise errors.NotFound(
+            reason="{} file required " "for this test".format(dmpw_file)
+        )
 
-    with open(dmpw_file, 'r') as f:
+    with open(dmpw_file, "r") as f:
         dm_password = f.read().strip()
 
     return dm_password
@@ -294,10 +294,11 @@ class TestBindMethods(KeytabRetrievalTest):
                 os.unlink(cls.ca_cert)
             except OSError:
                 pass
+
         request.addfinalizer(fin)
 
     def check_ldapi(self):
-        if not api.env.ldap_uri.startswith('ldapi://'):
+        if not api.env.ldap_uri.startswith("ldapi://"):
             pytest.skip("LDAP URI not pointing to LDAPI socket")
 
     def test_retrieval_with_dm_creds(self, test_service):
@@ -306,44 +307,42 @@ class TestBindMethods(KeytabRetrievalTest):
         self.assert_success(
             test_service.name,
             args=[
-                '-D', "cn=Directory Manager",
-                '-w', self.dm_password,
-                '-s', api.env.host])
+                "-D",
+                "cn=Directory Manager",
+                "-w",
+                self.dm_password,
+                "-s",
+                api.env.host,
+            ],
+        )
 
     def test_retrieval_using_plain_ldap(self, test_service):
         test_service.ensure_exists()
-        ldap_uri = 'ldap://{}'.format(api.env.host)
+        ldap_uri = "ldap://{}".format(api.env.host)
 
         self.assert_success(
             test_service.name,
-            args=[
-                '-D', "cn=Directory Manager",
-                '-w', self.dm_password,
-                '-H', ldap_uri])
+            args=["-D", "cn=Directory Manager", "-w", self.dm_password, "-H", ldap_uri],
+        )
 
-    @pytest.mark.skipif(os.geteuid() != 0,
-                        reason="Must have root privileges to run this test")
+    @pytest.mark.skipif(
+        os.geteuid() != 0, reason="Must have root privileges to run this test"
+    )
     def test_retrieval_using_ldapi_external(self, test_service):
         test_service.ensure_exists()
         self.check_ldapi()
 
         self.assert_success(
-            test_service.name,
-            args=[
-                '-Y',
-                'EXTERNAL',
-                '-H', api.env.ldap_uri])
+            test_service.name, args=["-Y", "EXTERNAL", "-H", api.env.ldap_uri]
+        )
 
     def test_retrieval_using_ldap_gssapi(self, test_service):
         test_service.ensure_exists()
         self.check_ldapi()
 
         self.assert_success(
-            test_service.name,
-            args=[
-                '-Y',
-                'GSSAPI',
-                '-H', api.env.ldap_uri])
+            test_service.name, args=["-Y", "GSSAPI", "-H", api.env.ldap_uri]
+        )
 
     def test_retrieval_using_ldaps_ca_cert(self, test_service):
         test_service.ensure_exists()
@@ -351,10 +350,16 @@ class TestBindMethods(KeytabRetrievalTest):
         self.assert_success(
             test_service.name,
             args=[
-                '-D', "cn=Directory Manager",
-                '-w', self.dm_password,
-                '-H', 'ldaps://{}'.format(api.env.host),
-                '--cacert', self.ca_cert])
+                "-D",
+                "cn=Directory Manager",
+                "-w",
+                self.dm_password,
+                "-H",
+                "ldaps://{}".format(api.env.host),
+                "--cacert",
+                self.ca_cert,
+            ],
+        )
 
     def test_ldap_uri_server_raises_error(self, test_service):
         test_service.ensure_exists()
@@ -363,10 +368,9 @@ class TestBindMethods(KeytabRetrievalTest):
             2,
             "Cannot specify server and LDAP uri simultaneously",
             test_service.name,
-            args=[
-                '-H', 'ldaps://{}'.format(api.env.host),
-                '-s', api.env.host],
-            raiseonerr=False)
+            args=["-H", "ldaps://{}".format(api.env.host), "-s", api.env.host],
+            raiseonerr=False,
+        )
 
     def test_invalid_mech_raises_error(self, test_service):
         test_service.ensure_exists()
@@ -375,10 +379,9 @@ class TestBindMethods(KeytabRetrievalTest):
             2,
             "Invalid SASL bind mechanism",
             test_service.name,
-            args=[
-                '-H', 'ldaps://{}'.format(api.env.host),
-                '-Y', 'BOGUS'],
-            raiseonerr=False)
+            args=["-H", "ldaps://{}".format(api.env.host), "-Y", "BOGUS"],
+            raiseonerr=False,
+        )
 
     def test_mech_bind_dn_raises_error(self, test_service):
         test_service.ensure_exists()
@@ -388,44 +391,55 @@ class TestBindMethods(KeytabRetrievalTest):
             "Cannot specify both SASL mechanism and bind DN simultaneously",
             test_service.name,
             args=[
-                '-D', "cn=Directory Manager",
-                '-w', self.dm_password,
-                '-H', 'ldaps://{}'.format(api.env.host),
-                '-Y', 'EXTERNAL'],
-            raiseonerr=False)
+                "-D",
+                "cn=Directory Manager",
+                "-w",
+                self.dm_password,
+                "-H",
+                "ldaps://{}".format(api.env.host),
+                "-Y",
+                "EXTERNAL",
+            ],
+            raiseonerr=False,
+        )
 
 
 class SMBServiceTracker(service_plugin.ServiceTracker):
     def __init__(self, name, host_fqdn, options=None):
-        super(SMBServiceTracker, self).__init__(name, host_fqdn,
-                                                options=options)
+        super(SMBServiceTracker, self).__init__(name, host_fqdn, options=options)
         # Create SMB service principal that has POSIX attributes to allow
         # generating SID and adding proper objectclasses
-        self.create_keys |= {u'uidnumber', u'gidnumber'}
-        self.options[u'addattr'] = [
-            u'objectclass=ipaIDObject', u'uidNumber=-1', u'gidNumber=-1']
+        self.create_keys |= {u"uidnumber", u"gidnumber"}
+        self.options[u"addattr"] = [
+            u"objectclass=ipaIDObject",
+            u"uidNumber=-1",
+            u"gidNumber=-1",
+        ]
 
     def track_create(self, **options):
         super(SMBServiceTracker, self).track_create(**options)
-        self.attrs[u'uidnumber'] = [fuzzy_digits]
-        self.attrs[u'gidnumber'] = [fuzzy_digits]
-        self.attrs[u'objectclass'].append(u'ipaIDObject')
+        self.attrs[u"uidnumber"] = [fuzzy_digits]
+        self.attrs[u"gidnumber"] = [fuzzy_digits]
+        self.attrs[u"objectclass"].append(u"ipaIDObject")
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def test_smb_svc(request, test_host, smb_service_setup):
-    service_tracker = SMBServiceTracker(u'cifs', test_host.name)
+    service_tracker = SMBServiceTracker(u"cifs", test_host.name)
     test_host.ensure_exists()
     return service_tracker.make_fixture(request)
 
 
 @pytest.mark.tier0
-@pytest.mark.skipif(u'ipantuserattrs' not in add_oc([], u'ipantuserattrs'),
-                    reason="Must have trust support enabled for this test")
+@pytest.mark.skipif(
+    u"ipantuserattrs" not in add_oc([], u"ipantuserattrs"),
+    reason="Must have trust support enabled for this test",
+)
 class test_smb_service(KeytabRetrievalTest):
     """
     Test `ipa-getkeytab` for retrieving explicit enctypes
     """
+
     command = "ipa-getkeytab"
     dm_password = None
     keytabname = None
@@ -445,9 +459,12 @@ class test_smb_service(KeytabRetrievalTest):
         test_smb_svc.ensure_exists()
 
         # Request a keytab with explicit encryption types
-        enctypes = ['aes128-cts-hmac-sha1-96',
-                    'aes256-cts-hmac-sha1-96', 'arcfour-hmac']
-        args = ['-e', ','.join(enctypes), '-s', api.env.host]
+        enctypes = [
+            "aes128-cts-hmac-sha1-96",
+            "aes256-cts-hmac-sha1-96",
+            "arcfour-hmac",
+        ]
+        args = ["-e", ",".join(enctypes), "-s", api.env.host]
         self.assert_success(test_smb_svc.name, args=args, raiseonerr=True)
 
     def test_use(self, test_smb_svc):
@@ -457,26 +474,27 @@ class test_smb_service(KeytabRetrievalTest):
         # Step 1. Extend objectclass to allow ipaNTHash attribute
         # We cannot verify write access to objectclass
         with use_keytab(test_smb_svc.name, self.keytabname) as conn:
-            entry = conn.get_entry(test_smb_svc.dn, ['objectclass'])
-            entry['objectclass'].extend(['ipaNTUserAttrs'])
+            entry = conn.get_entry(test_smb_svc.dn, ["objectclass"])
+            entry["objectclass"].extend(["ipaNTUserAttrs"])
             try:
                 conn.update_entry(entry)
             except errors.ACIError:
-                assert ('No correct ACI to the allow ipaNTUserAttrs '
-                        'for SMB service' in "failure")
+                assert (
+                    "No correct ACI to the allow ipaNTUserAttrs "
+                    "for SMB service" in "failure"
+                )
 
         # Step 2. With ipaNTUserAttrs in place, we can ask to regenerate
         # ipaNTHash value. We can also verify it is possible to write to
         # ipaNTHash attribute while being an SMB service
         with use_keytab(test_smb_svc.name, self.keytabname) as conn:
-            assert conn.can_write(test_smb_svc.dn, 'ipaNTHash') is True
-            entry = conn.get_entry(test_smb_svc.dn, ['ipaNTHash'])
-            entry['ipanthash'] = b'MagicRegen'
+            assert conn.can_write(test_smb_svc.dn, "ipaNTHash") is True
+            entry = conn.get_entry(test_smb_svc.dn, ["ipaNTHash"])
+            entry["ipanthash"] = b"MagicRegen"
             try:
                 conn.update_entry(entry)
             except errors.ACIError:
-                assert ("No correct ACI to the ipaNTHash for SMB service"
-                        in "failure")
+                assert "No correct ACI to the ipaNTHash for SMB service" in "failure"
             except errors.EmptyResult:
                 assert "No arcfour-hmac in Kerberos keys" in "failure"
             except errors.DatabaseError:
@@ -490,9 +508,10 @@ class test_smb_service(KeytabRetrievalTest):
         # a cn=Directory Manager. When bind_dn is None, ldap2.connect() wil
         # default to cn=Directory Manager.
         conn = ldap2(api)
-        conn.connect(bind_dn=None, bind_pw=self.dm_password,
-                     autobind=ipaldap.AUTOBIND_DISABLED)
-        entry = conn.retrieve(test_smb_svc.dn, ['ipaNTHash'])
-        ipanthash = entry.single_value.get('ipanthash')
+        conn.connect(
+            bind_dn=None, bind_pw=self.dm_password, autobind=ipaldap.AUTOBIND_DISABLED
+        )
+        entry = conn.retrieve(test_smb_svc.dn, ["ipaNTHash"])
+        ipanthash = entry.single_value.get("ipanthash")
         conn.disconnect()
-        assert ipanthash != b'MagicRegen', 'LDBM backend entry corruption'
+        assert ipanthash != b"MagicRegen", "LDBM backend entry corruption"

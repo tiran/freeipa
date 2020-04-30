@@ -91,15 +91,15 @@ def check_no_ipaapi(reason="Skip tests that needs an IPA API"):
 
 class TempDir:
     def __init__(self):
-        self.__path = tempfile.mkdtemp(prefix='ipa.tests.')
+        self.__path = tempfile.mkdtemp(prefix="ipa.tests.")
         assert self.path == self.__path
 
     def __get_path(self):
         assert path.abspath(self.__path) == self.__path
-        assert self.__path.startswith(path.join(tempfile.gettempdir(),
-                                                'ipa.tests.'))
+        assert self.__path.startswith(path.join(tempfile.gettempdir(), "ipa.tests."))
         assert path.isdir(self.__path) and not path.islink(self.__path)
         return self.__path
+
     path = property(__get_path)
 
     def rmtree(self):
@@ -118,7 +118,7 @@ class TempDir:
         d = self.makedirs(*parts[:-1])
         f = path.join(d, parts[-1])
         assert not path.exists(f)
-        open(f, 'w').close()
+        open(f, "w").close()
         assert path.isfile(f) and not path.islink(f)
         return f
 
@@ -126,7 +126,7 @@ class TempDir:
         d = self.makedirs(*parts[:-1])
         f = path.join(d, parts[-1])
         assert not path.exists(f)
-        open(f, 'w').write(content)
+        open(f, "w").write(content)
         assert path.isfile(f) and not path.islink(f)
         return f
 
@@ -146,8 +146,8 @@ class TempDir:
 class TempHome(TempDir):
     def __init__(self):
         super(TempHome, self).__init__()
-        self.__home = os.environ['HOME']
-        os.environ['HOME'] = self.path
+        self.__home = os.environ["HOME"]
+        os.environ["HOME"] = self.path
 
 
 class ExceptionNotRaised(Exception):
@@ -155,7 +155,8 @@ class ExceptionNotRaised(Exception):
     Exception raised when an *expected* exception is *not* raised during a
     unit test.
     """
-    msg = 'expected %s'
+
+    msg = "expected %s"
 
     def __init__(self, expected):
         self.expected = expected
@@ -168,16 +169,16 @@ def assert_equal(val1, val2):
     """
     Assert ``val1`` and ``val2`` are the same type and of equal value.
     """
-    assert type(val1) is type(val2), '%r != %r' % (val1, val2)
-    assert val1 == val2, '%r != %r' % (val1, val2)
+    assert type(val1) is type(val2), "%r != %r" % (val1, val2)
+    assert val1 == val2, "%r != %r" % (val1, val2)
 
 
 def assert_not_equal(val1, val2):
     """
     Assert ``val1`` and ``val2`` are the same type and of non-equal value.
     """
-    assert type(val1) is type(val2), '%r != %r' % (val1, val2)
-    assert val1 != val2, '%r == %r' % (val1, val2)
+    assert type(val1) is type(val2), "%r != %r" % (val1, val2)
+    assert val1 != val2, "%r == %r" % (val1, val2)
 
 
 class Fuzzy:
@@ -289,8 +290,11 @@ class Fuzzy:
         self.test = test
 
     def __repr__(self):
-        return '%s(%r, %r, %r)' % (
-            self.__class__.__name__, self.regex, self.type, self.test
+        return "%s(%r, %r, %r)" % (
+            self.__class__.__name__,
+            self.regex,
+            self.type,
+            self.test,
         )
 
     def __eq__(self, other):
@@ -336,8 +340,8 @@ KEYS = """assert_deepequal: dict keys mismatch.
   got = %s
   path = %r"""
 
-EXPECTED_LEN = len('  expected = ')
-GOT_LEN = len('  got = ')
+EXPECTED_LEN = len("  expected = ")
+GOT_LEN = len("  got = ")
 
 
 def struct_to_string(struct, indent=1):
@@ -345,10 +349,10 @@ def struct_to_string(struct, indent=1):
     Function to pretty-format a structure and optionally indent its lines
     so they match the visual indention of the first line
     """
-    return pformat(struct).replace('\n', '\n' + ' ' * indent)
+    return pformat(struct).replace("\n", "\n" + " " * indent)
 
 
-def assert_deepequal(expected, got, doc='', stack=tuple()):
+def assert_deepequal(expected, got, doc="", stack=tuple()):
     """
     Recursively check for type and equality.
 
@@ -392,10 +396,8 @@ def assert_deepequal(expected, got, doc='', stack=tuple()):
     if isinstance(expected, DN):
         if isinstance(got, str):
             got = DN(got)
-    if (
-        not (isinstance(expected, Fuzzy)
-             or callable(expected)
-             or type(expected) is type(got))
+    if not (
+        isinstance(expected, Fuzzy) or callable(expected) or type(expected) is type(got)
     ):
         raise AssertionError(
             TYPE % (doc, type(expected), type(got), expected, got, stack)
@@ -403,8 +405,7 @@ def assert_deepequal(expected, got, doc='', stack=tuple()):
     if isinstance(expected, (list, tuple)):
         if len(expected) != len(got):
             raise AssertionError(
-                LEN % (doc, len(expected), len(got), expected_str, got_str,
-                       stack)
+                LEN % (doc, len(expected), len(got), expected_str, got_str, stack)
             )
         # Sort list elements, unless they are dictionaries
         if expected and isinstance(expected[0], dict):
@@ -426,9 +427,9 @@ def assert_deepequal(expected, got, doc='', stack=tuple()):
         missing = set(expected).difference(got)
         extra = set(got).difference(expected)
         if missing or extra:
-            raise AssertionError(KEYS % (
-                    doc, sorted(missing), sorted(extra), expected_str, got_str,
-                    stack)
+            raise AssertionError(
+                KEYS
+                % (doc, sorted(missing), sorted(extra), expected_str, got_str, stack)
             )
         for key in sorted(expected):
             e_sub = expected[key]
@@ -436,13 +437,9 @@ def assert_deepequal(expected, got, doc='', stack=tuple()):
             assert_deepequal(e_sub, g_sub, doc, stack + (key,))
     elif callable(expected):
         if not expected(got):
-            raise AssertionError(
-                VALUE % (doc, expected, got, stack)
-                )
+            raise AssertionError(VALUE % (doc, expected, got, stack))
     elif expected != got:
-        raise AssertionError(
-            VALUE % (doc, expected, got, stack)
-        )
+        raise AssertionError(VALUE % (doc, expected, got, stack))
 
 
 def raises(exception, callback, *args, **kw):
@@ -481,7 +478,7 @@ def delitem(obj, key):
     del obj[key]
 
 
-def no_set(obj, name, value='some_new_obj'):
+def no_set(obj, name, value="some_new_obj"):
     """
     Tests that attribute cannot be set.
     """
@@ -495,7 +492,7 @@ def no_del(obj, name):
     raises(AttributeError, delattr, obj, name)
 
 
-def read_only(obj, name, value='some_new_obj'):
+def read_only(obj, name, value="some_new_obj"):
     """
     Tests that attribute is read-only. Returns attribute.
     """
@@ -522,6 +519,7 @@ class ClassChecker:
             self.__cls = self._cls  # pylint: disable=E1101
         assert inspect.isclass(self.__cls)
         return self.__cls
+
     cls = property(__get_cls)
 
     def __get_subcls(self):
@@ -529,18 +527,17 @@ class ClassChecker:
             self.__subcls = self.get_subcls()
         assert inspect.isclass(self.__subcls)
         return self.__subcls
+
     subcls = property(__get_subcls)
 
     def get_subcls(self):
-        raise AttributeError(
-            self.__class__.__name__,
-            'get_subcls()'
-        )
+        raise AttributeError(self.__class__.__name__, "get_subcls()")
 
     @pytest.fixture(autouse=True)
     def classchecker_setup(self, request):
         def fin():
             context.__dict__.clear()
+
         request.addfinalizer(fin)
 
 
@@ -552,7 +549,7 @@ def get_api(**kw):
     instance and a `TempHome` instance.
     """
     home = TempHome()
-    api = ipalib.create_api(mode='unit_test')
+    api = ipalib.create_api(mode="unit_test")
     api.env.in_tree = True
     for (key, value) in kw.items():
         api.env[key] = value
@@ -567,7 +564,7 @@ def create_test_api(**kw):
     instance and a `TempHome` instance.
     """
     home = TempHome()
-    api = ipalib.create_api(mode='unit_test')
+    api = ipalib.create_api(mode="unit_test")
     api.env.in_tree = True
     for (key, value) in kw.items():
         api.env[key] = value
@@ -582,6 +579,7 @@ class PluginTester:
             self.__plugin = self._plugin  # pylint: disable=E1101
         assert issubclass(self.__plugin, Plugin)
         return self.__plugin
+
     plugin = property(__get_plugin)
 
     def register(self, *plugins, **kw):
@@ -613,6 +611,7 @@ class PluginTester:
     def plugintester_setup(self, request):
         def fin():
             context.__dict__.clear()
+
         request.addfinalizer(fin)
 
 
@@ -621,7 +620,7 @@ class dummy_ugettext:
 
     def __init__(self, translation=None):
         if translation is None:
-            translation = u'The translation'
+            translation = u"The translation"
         self.translation = translation
         assert type(self.translation) is unicode
 
@@ -629,7 +628,7 @@ class dummy_ugettext:
         assert self.__called is False
         self.__called = True
         assert type(message) is str
-        assert not hasattr(self, 'message')
+        assert not hasattr(self, "message")
         self.message = message
         assert type(self.translation) is unicode
         return self.translation
@@ -649,8 +648,8 @@ class dummy_ungettext:
     __called = False
 
     def __init__(self):
-        self.translation_singular = u'The singular translation'
-        self.translation_plural = u'The plural translation'
+        self.translation_singular = u"The singular translation"
+        self.translation_plural = u"The plural translation"
 
     def __call__(self, singular, plural, n):
         assert type(singular) is str
@@ -695,9 +694,7 @@ class DummyClass:
         i = self.__i
         if name_ != name:
             raise AssertionError(
-                "call {0:d} should be to method {1!r}; got {2!r}".format(
-                    i, name, name_
-                )
+                "call {0:d} should be to method {1!r}; got {2!r}".format(i, name, name_)
             )
         if args_ != args:
             raise AssertionError(
@@ -722,11 +719,11 @@ class DummyClass:
 class MockLDAP:
     def __init__(self):
         self.connection = ldap_initialize(
-            'ldap://{host}'.format(host=ipalib.api.env.host)
+            "ldap://{host}".format(host=ipalib.api.env.host)
         )
 
-        auth = ldap.sasl.gssapi('')
-        self.connection.sasl_interactive_bind_s('', auth)
+        auth = ldap.sasl.gssapi("")
+        self.connection.sasl_interactive_bind_s("", auth)
 
     def add_entry(self, dn, mods):
         try:
@@ -760,24 +757,42 @@ def prepare_config(template, values):
     with open(template) as f:
         template = f.read()
 
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as config:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as config:
         config.write(template.format(**values))
 
     return config.name
 
 
 def unlock_principal_password(user, oldpw, newpw):
-    userdn = "uid={},{},{}".format(
-        user, api.env.container_user, api.env.basedn)
+    userdn = "uid={},{},{}".format(user, api.env.container_user, api.env.basedn)
 
-    args = [paths.LDAPPASSWD, '-D', userdn, '-w', oldpw, '-a', oldpw,
-            '-s', newpw, '-x', '-H', api.env.ldap_uri]
+    args = [
+        paths.LDAPPASSWD,
+        "-D",
+        userdn,
+        "-w",
+        oldpw,
+        "-a",
+        oldpw,
+        "-s",
+        newpw,
+        "-x",
+        "-H",
+        api.env.ldap_uri,
+    ]
     return run(args)
 
 
 @contextmanager
-def change_principal(principal, password=None, client=None, path=None,
-                     canonicalize=False, enterprise=False, keytab=None):
+def change_principal(
+    principal,
+    password=None,
+    client=None,
+    path=None,
+    canonicalize=False,
+    enterprise=False,
+    keytab=None,
+):
     """Temporarily change the kerberos principal
 
     Most of the test cases run with the admin ipa user which is granted
@@ -802,7 +817,7 @@ def change_principal(principal, password=None, client=None, path=None,
     if path:
         ccache_name = path
     else:
-        ccache_name = os.path.join('/tmp', str(uuid.uuid4()))
+        ccache_name = os.path.join("/tmp", str(uuid.uuid4()))
 
     if client is None:
         client = api
@@ -813,9 +828,13 @@ def change_principal(principal, password=None, client=None, path=None,
         if keytab:
             kinit_keytab(principal, keytab, ccache_name)
         else:
-            kinit_password(principal, password, ccache_name,
-                           canonicalize=canonicalize,
-                           enterprise=enterprise)
+            kinit_password(
+                principal,
+                password,
+                ccache_name,
+                canonicalize=canonicalize,
+                enterprise=enterprise,
+            )
         client.Backend.rpcclient.connect(ccache=ccache_name)
 
         try:
@@ -840,10 +859,10 @@ def get_entity_keytab(principal, options=None):
     otherwise in the options.
     To retrieve existing keytab, use the -r option
     """
-    keytab_filename = os.path.join('/tmp', str(uuid.uuid4()))
+    keytab_filename = os.path.join("/tmp", str(uuid.uuid4()))
 
     try:
-        cmd = [paths.IPA_GETKEYTAB, '-p', principal, '-k', keytab_filename]
+        cmd = [paths.IPA_GETKEYTAB, "-p", principal, "-k", keytab_filename]
 
         if options:
             cmd.extend(options)
@@ -862,18 +881,18 @@ def host_keytab(hostname, options=None):
     After leaving the context manager, the keytab file is
     deleted.
     """
-    principal = u'host/{}'.format(hostname)
+    principal = u"host/{}".format(hostname)
 
     with get_entity_keytab(principal, options) as keytab:
         yield keytab
 
 
 def get_group_dn(cn):
-    return DN(('cn', cn), api.env.container_group, api.env.basedn)
+    return DN(("cn", cn), api.env.container_group, api.env.basedn)
 
 
 def get_user_dn(uid):
-    return DN(('uid', uid), api.env.container_user, api.env.basedn)
+    return DN(("uid", uid), api.env.container_user, api.env.basedn)
 
 
 @contextmanager
@@ -898,4 +917,4 @@ def xfail_context(condition, reason):
         raise
     else:
         if condition:
-            pytest.fail('XPASS(strict) reason: {}'.format(reason), False)
+            pytest.fail("XPASS(strict) reason: {}".format(reason), False)

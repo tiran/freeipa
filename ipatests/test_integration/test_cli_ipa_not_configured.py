@@ -19,6 +19,8 @@ class TestIPANotConfigured(IntegrationTest):
         exp_str = "not configured on this system"
         unexp_str = "/var/log"
         cmd = self.master.run_command(["ipa-backup"], raiseonerr=False)
-        assert (exp_str in cmd.stderr_text and
-                cmd.returncode == SERVER_NOT_CONFIGURED and
-                unexp_str not in cmd.stderr_text)
+        assert (
+            exp_str in cmd.stderr_text
+            and cmd.returncode == SERVER_NOT_CONFIGURED
+            and unexp_str not in cmd.stderr_text
+        )

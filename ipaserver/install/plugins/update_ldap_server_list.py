@@ -16,18 +16,19 @@ class update_ldap_server_list(Updater):
     Update defaultServerList, an option that helps Solaris
     clients discover LDAP server replicas.
     """
+
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
 
-        dn = DN(('cn', 'default'), ('ou', 'profile'), self.api.env.basedn)
+        dn = DN(("cn", "default"), ("ou", "profile"), self.api.env.basedn)
         try:
             entry = ldap.get_entry(dn)
-            srvlist = entry.single_value.get('defaultServerList', '')
+            srvlist = entry.single_value.get("defaultServerList", "")
             srvlist = srvlist.split()
             if self.api.env.host not in srvlist:
                 srvlist.append(self.api.env.host)
-                attr = ' '.join(srvlist)
-                entry['defaultServerList'] = attr
+                attr = " ".join(srvlist)
+                entry["defaultServerList"] = attr
                 ldap.update_entry(entry)
         except errors.NotFound:
             pass

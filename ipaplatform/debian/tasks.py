@@ -26,12 +26,11 @@ logger = logging.getLogger(__name__)
 
 class DebianTaskNamespace(RedHatTaskNamespace):
     @staticmethod
-    def restore_pre_ipa_client_configuration(fstore, statestore,
-                                             was_sssd_installed,
-                                             was_sssd_configured):
+    def restore_pre_ipa_client_configuration(
+        fstore, statestore, was_sssd_installed, was_sssd_configured
+    ):
         try:
-            ipautil.run(["pam-auth-update",
-                         "--package", "--remove", "mkhomedir"])
+            ipautil.run(["pam-auth-update", "--package", "--remove", "mkhomedir"])
         except ipautil.CalledProcessError:
             return False
         return True
@@ -45,8 +44,7 @@ class DebianTaskNamespace(RedHatTaskNamespace):
     def modify_nsswitch_pam_stack(sssd, mkhomedir, statestore, sudo=True):
         if mkhomedir:
             try:
-                ipautil.run(["pam-auth-update",
-                             "--package", "--enable", "mkhomedir"])
+                ipautil.run(["pam-auth-update", "--package", "--enable", "mkhomedir"])
             except ipautil.CalledProcessError:
                 return False
             return True
@@ -78,9 +76,9 @@ class DebianTaskNamespace(RedHatTaskNamespace):
 
     def configure_httpd_protocol(self):
         # TLS 1.3 is not yet supported
-        directivesetter.set_directive(paths.HTTPD_SSL_CONF,
-                                      'SSLProtocol',
-                                      'TLSv1.2', False)
+        directivesetter.set_directive(
+            paths.HTTPD_SSL_CONF, "SSLProtocol", "TLSv1.2", False
+        )
 
     def setup_httpd_logging(self):
         # Debian handles httpd logging differently
@@ -99,23 +97,24 @@ class DebianTaskNamespace(RedHatTaskNamespace):
         try:
             self.write_p11kit_certs(paths.IPA_P11_KIT, ca_certs),
         except Exception:
-            logger.exception("""\
+            logger.exception(
+                """\
 Could not create p11-kit anchor trust file. On Debian this file is not
 used by ca-certificates and is provided for information only.\
-""")
+"""
+            )
 
-        return any([
-            self.write_ca_certificates_dir(
-                paths.CA_CERTIFICATES_DIR, ca_certs
-            ),
-            self.remove_ca_certificates_bundle(
-                paths.CA_CERTIFICATES_BUNDLE_PEM
-            ),
-        ])
+        return any(
+            [
+                self.write_ca_certificates_dir(paths.CA_CERTIFICATES_DIR, ca_certs),
+                self.remove_ca_certificates_bundle(paths.CA_CERTIFICATES_BUNDLE_PEM),
+            ]
+        )
 
     def write_ca_certificates_dir(self, directory, ca_certs):
         # pylint: disable=ipa-forbidden-import
         from ipalib import x509  # FixMe: break import cycle
+
         # pylint: enable=ipa-forbidden-import
 
         path = Path(directory)
@@ -143,13 +142,13 @@ used by ca-certificates and is provided for information only.\
             # DN, Serial Number). Do we care about the possibility of a clash
             # where a subordinate CA had two certificates issued by different
             # CAs who used the same serial number?)
-            filename = f'{subject.ldap_text()} {cert.serial_number}.crt'
+            filename = f"{subject.ldap_text()} {cert.serial_number}.crt"
 
             # pylint: disable=old-division
             cert_path = path / filename
             # pylint: enable=old-division
             try:
-                f = open(cert_path, 'w')
+                f = open(cert_path, "w")
             except Exception:
                 logger.error("Could not create %s", cert_path)
                 raise
@@ -162,7 +161,8 @@ used by ca-certificates and is provided for information only.\
                     raise
 
                 try:
-                    f.write(f"""\
+                    f.write(
+                        f"""\
 This file was created by IPA. Do not edit.
 
 Description: {nickname}
@@ -171,8 +171,9 @@ Issuer: {issuer.ldap_text()}
 Serial Number (dec): {cert.serial_number}
 Serial Number (hex): {cert.serial_number:#x}
 
-""")
-                    pem = cert.public_bytes(x509.Encoding.PEM).decode('ascii')
+"""
+                    )
+                    pem = cert.public_bytes(x509.Encoding.PEM).decode("ascii")
                     f.write(pem)
                 except Exception:
                     logger.error("Could not write to %s", cert_path)
@@ -181,13 +182,13 @@ Serial Number (hex): {cert.serial_number:#x}
         return True
 
     def platform_remove_ca_certs(self):
-        return any([
-            self.remove_ca_certificates_dir(paths.CA_CERTIFICATES_DIR),
-            self.remove_ca_certificates_bundle(paths.IPA_P11_KIT),
-            self.remove_ca_certificates_bundle(
-                paths.CA_CERTIFICATES_BUNDLE_PEM
-            ),
-        ])
+        return any(
+            [
+                self.remove_ca_certificates_dir(paths.CA_CERTIFICATES_DIR),
+                self.remove_ca_certificates_bundle(paths.IPA_P11_KIT),
+                self.remove_ca_certificates_bundle(paths.CA_CERTIFICATES_BUNDLE_PEM),
+            ]
+        )
 
     def remove_ca_certificates_dir(self, directory):
         path = Path(paths.CA_CERTIFICATES_DIR)
@@ -209,5 +210,6 @@ Serial Number (hex): {cert.serial_number:#x}
 
     def disable_ldap_automount(self, statestore):
         return BaseTaskNamespace.disable_ldap_automount(self, statestore)
+
 
 tasks = DebianTaskNamespace()

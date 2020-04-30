@@ -81,7 +81,7 @@ CLASS_LOGFILES = [
 
 def make_class_logs(host):
     logs = list(CLASS_LOGFILES)
-    env_filename = os.path.join(host.config.test_dir, 'env.sh')
+    env_filename = os.path.join(host.config.test_dir, "env.sh")
     logs.append(env_filename)
     return logs
 
@@ -90,19 +90,22 @@ def pytest_addoption(parser):
     group = parser.getgroup("IPA integration tests")
 
     group.addoption(
-        '--logfile-dir', dest="logfile_dir", default=None,
-        help="Directory to store integration test logs in.")
+        "--logfile-dir",
+        dest="logfile_dir",
+        default=None,
+        help="Directory to store integration test logs in.",
+    )
 
 
 def _get_logname_from_node(node):
     name = node.nodeid
-    name = re.sub(r'\(\)/', '', name)      # remove ()/
-    name = re.sub(r'[()]', '', name)       # and standalone brackets
-    name = re.sub(r'(/|::)', '-', name)
+    name = re.sub(r"\(\)/", "", name)  # remove ()/
+    name = re.sub(r"[()]", "", name)  # and standalone brackets
+    name = re.sub(r"(/|::)", "-", name)
     return name
 
 
-def collect_test_logs(node, logs_dict, test_config, suffix=''):
+def collect_test_logs(node, logs_dict, test_config, suffix=""):
     """Collect logs from a test
 
     Calls collect_logs and collect_systemd_journal
@@ -112,16 +115,13 @@ def collect_test_logs(node, logs_dict, test_config, suffix=''):
     :param test_config: Pytest configuration
     :param suffix: The custom suffix of the name of logfiles' directory
     """
-    name = '{node}{suffix}'.format(
-        node=_get_logname_from_node(node),
-        suffix=suffix,
-    )
-    logfile_dir = test_config.getoption('logfile_dir')
+    name = "{node}{suffix}".format(node=_get_logname_from_node(node), suffix=suffix,)
+    logfile_dir = test_config.getoption("logfile_dir")
     collect_logs(
         name=name,
         logs_dict=logs_dict,
         logfile_dir=logfile_dir,
-        beakerlib_plugin=test_config.pluginmanager.getplugin('BeakerLibPlugin'),
+        beakerlib_plugin=test_config.pluginmanager.getplugin("BeakerLibPlugin"),
     )
 
     hosts = logs_dict.keys()  # pylint: disable=dict-keys-not-iterating
@@ -147,14 +147,16 @@ def collect_systemd_journal(name, hosts, logfile_dir=None):
 
         # Get journal content
         cmd = host.run_command(
-            ['journalctl', '--since', host.config.log_journal_since],
-            log_stdout=False, raiseonerr=False)
+            ["journalctl", "--since", host.config.log_journal_since],
+            log_stdout=False,
+            raiseonerr=False,
+        )
         if cmd.returncode:
-            logger.error('An error occurred while collecting journal')
+            logger.error("An error occurred while collecting journal")
             continue
 
         # Write journal to file
-        with open(os.path.join(topdirname, "journal"), 'w') as f:
+        with open(os.path.join(topdirname, "journal"), "w") as f:
             f.write(cmd.stdout_text)
 
 
@@ -183,54 +185,58 @@ def collect_logs(name, logs_dict, logfile_dir=None, beakerlib_plugin=None):
         topdirname = os.path.join(logfile_dir, name)
 
         for host, logs in logs_dict.items():
-            logger.info('Collecting logs from: %s', host.hostname)
+            logger.info("Collecting logs from: %s", host.hostname)
             # make list of unique log filenames
             logs = list(set(logs))
             dirname = os.path.join(topdirname, host.hostname)
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
-            tarname = os.path.join(dirname, 'logs.tar.xz')
+            tarname = os.path.join(dirname, "logs.tar.xz")
             # get temporary file name
-            cmd = host.run_command(['mktemp'])
+            cmd = host.run_command(["mktemp"])
             tmpname = cmd.stdout_text.strip()
             # Tar up the logs on the remote server
             cmd = host.run_command(
-                ['tar', 'cJvf', tmpname, '--ignore-failed-read'] + logs,
-                log_stdout=False, raiseonerr=False)
+                ["tar", "cJvf", tmpname, "--ignore-failed-read"] + logs,
+                log_stdout=False,
+                raiseonerr=False,
+            )
             if cmd.returncode:
-                logger.warning('Could not collect all requested logs')
+                logger.warning("Could not collect all requested logs")
             # fetch tar file
-            with open(tarname, 'wb') as f:
+            with open(tarname, "wb") as f:
                 f.write(host.get_file_contents(tmpname))
             # delete from remote
-            host.run_command(['rm', '-f', tmpname])
+            host.run_command(["rm", "-f", tmpname])
             # Unpack on the local side
-            ipautil.run([paths.TAR, 'xJvf', 'logs.tar.xz'], cwd=dirname,
-                        raiseonerr=False)
+            ipautil.run(
+                [paths.TAR, "xJvf", "logs.tar.xz"], cwd=dirname, raiseonerr=False
+            )
             os.unlink(tarname)
 
         if beakerlib_plugin:
             # Use BeakerLib's rlFileSubmit on the indifidual files
             # The resulting submitted filename will be
             # $HOSTNAME-$FILENAME (with '/' replaced by '-')
-            beakerlib_plugin.run_beakerlib_command(['pushd', topdirname])
+            beakerlib_plugin.run_beakerlib_command(["pushd", topdirname])
             try:
                 for dirpath, _dirnames, filenames in os.walk(topdirname):
                     for filename in filenames:
                         fullname = os.path.relpath(
-                            os.path.join(dirpath, filename), topdirname)
-                        logger.debug('Submitting file: %s', fullname)
+                            os.path.join(dirpath, filename), topdirname
+                        )
+                        logger.debug("Submitting file: %s", fullname)
                         beakerlib_plugin.run_beakerlib_command(
-                            ['rlFileSubmit', fullname])
+                            ["rlFileSubmit", fullname]
+                        )
             finally:
-                beakerlib_plugin.run_beakerlib_command(['popd'])
+                beakerlib_plugin.run_beakerlib_command(["popd"])
 
         if remove_dir:
             if beakerlib_plugin:
                 # The BeakerLib process runs asynchronously, let it clean up
                 # after it's done with the directory
-                beakerlib_plugin.run_beakerlib_command(
-                    ['rm', '-rvf', topdirname])
+                beakerlib_plugin.run_beakerlib_command(["rm", "-rvf", topdirname])
             else:
                 shutil.rmtree(topdirname)
 
@@ -244,6 +250,7 @@ class IntegrationLogs:
     a list of logfiles which will be collected on only certain test
     completion (once).
     """
+
     def __init__(self):
         self._class_logs = {}
         self._method_logs = {}
@@ -270,8 +277,11 @@ class IntegrationLogs:
         The file with the given filename will be collected from the
         host on an each test completion(within a test class).
         """
-        logger.info('Adding %s:%s to list of class logs to collect',
-                    host.external_hostname, filename)
+        logger.info(
+            "Adding %s:%s to list of class logs to collect",
+            host.external_hostname,
+            filename,
+        )
         self._class_logs.setdefault(host, []).append(filename)
         self._method_logs.setdefault(host, []).append(filename)
 
@@ -280,12 +290,15 @@ class IntegrationLogs:
         The file with the given filename will be collected from the
         host on a test completion.
         """
-        logger.info('Adding %s:%s to list of method logs to collect',
-                    host.external_hostname, filename)
+        logger.info(
+            "Adding %s:%s to list of method logs to collect",
+            host.external_hostname,
+            filename,
+        )
         self._method_logs.setdefault(host, []).append(filename)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def class_integration_logs(request):
     """Internal fixture providing class-level logs_dict
     For adjusting collection of logs, please, use 'integration_logs'
@@ -299,8 +312,7 @@ def class_integration_logs(request):
     # This means that the logs collected here are the IPA *uninstall*
     # logs.
     class_logs = integration_logs.class_logs
-    collect_test_logs(request.node, class_logs, request.config,
-                      suffix='-uninstall')
+    collect_test_logs(request.node, class_logs, request.config, suffix="-uninstall")
 
 
 @pytest.fixture
@@ -347,62 +359,49 @@ def integration_logs(class_integration_logs, request):
     collect_test_logs(request.node, method_logs, request.config)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def mh(request, class_integration_logs):
     """IPA's multihost fixture object
     """
     cls = request.cls
 
     domain_description = {
-        'type': 'IPA',
-        'hosts': {
-            'master': 1,
-            'replica': cls.num_replicas,
-            'client': cls.num_clients,
-        },
+        "type": "IPA",
+        "hosts": {"master": 1, "replica": cls.num_replicas, "client": cls.num_clients,},
     }
-    domain_description['hosts'].update(
-        {role: 1 for role in cls.required_extra_roles})
+    domain_description["hosts"].update({role: 1 for role in cls.required_extra_roles})
 
     domain_descriptions = [domain_description]
     for _i in range(cls.num_ad_domains):
-        domain_descriptions.append({
-            'type': 'AD',
-            'hosts': {'ad': 1}
-        })
+        domain_descriptions.append({"type": "AD", "hosts": {"ad": 1}})
     for _i in range(cls.num_ad_subdomains):
-        domain_descriptions.append({
-            'type': 'AD_SUBDOMAIN',
-            'hosts': {'ad_subdomain': 1}
-        })
+        domain_descriptions.append(
+            {"type": "AD_SUBDOMAIN", "hosts": {"ad_subdomain": 1}}
+        )
     for _i in range(cls.num_ad_treedomains):
-        domain_descriptions.append({
-            'type': 'AD_TREEDOMAIN',
-            'hosts': {'ad_treedomain': 1}
-        })
+        domain_descriptions.append(
+            {"type": "AD_TREEDOMAIN", "hosts": {"ad_treedomain": 1}}
+        )
 
     mh = make_multihost_fixture(
-        request,
-        domain_descriptions,
-        config_class=Config,
-        _config=get_global_config(),
+        request, domain_descriptions, config_class=Config, _config=get_global_config(),
     )
 
     mh.domain = mh.config.domains[0]
-    [mh.master] = mh.domain.hosts_by_role('master')
-    mh.replicas = mh.domain.hosts_by_role('replica')
-    mh.clients = mh.domain.hosts_by_role('client')
+    [mh.master] = mh.domain.hosts_by_role("master")
+    mh.replicas = mh.domain.hosts_by_role("replica")
+    mh.clients = mh.domain.hosts_by_role("client")
     ad_domains = mh.config.ad_domains
     if ad_domains:
         mh.ads = []
         for domain in ad_domains:
-            mh.ads.extend(domain.hosts_by_role('ad'))
+            mh.ads.extend(domain.hosts_by_role("ad"))
         mh.ad_subdomains = []
         for domain in ad_domains:
-            mh.ad_subdomains.extend(domain.hosts_by_role('ad_subdomain'))
+            mh.ad_subdomains.extend(domain.hosts_by_role("ad_subdomain"))
         mh.ad_treedomains = []
         for domain in ad_domains:
-            mh.ad_treedomains.extend(domain.hosts_by_role('ad_treedomain'))
+            mh.ad_treedomains.extend(domain.hosts_by_role("ad_treedomain"))
 
     cls.logs_to_collect = class_integration_logs.class_logs
 
@@ -413,13 +412,14 @@ def mh(request, class_integration_logs):
         class_integration_logs.set_logs(ipa_host, make_class_logs(ipa_host))
 
     for host in mh.config.get_all_hosts():
-        logger.info('Preparing host %s', host.hostname)
+        logger.info("Preparing host %s", host.hostname)
         tasks.prepare_host(host)
 
     add_compat_attrs(cls, mh)
 
     def fin():
         del_compat_attrs(cls)
+
     mh._pytestmh_request.addfinalizer(fin)
 
     try:
@@ -434,8 +434,7 @@ def mh(request, class_integration_logs):
         # the install logs will be collected into '{nodeid}-install' directory
         # while the uninstall ones into '{nodeid}-uninstall'.
         class_logs = class_integration_logs.class_logs
-        collect_test_logs(request.node, class_logs, request.config,
-                          suffix='-install')
+        collect_test_logs(request.node, class_logs, request.config, suffix="-install")
 
 
 def add_compat_attrs(cls, mh):

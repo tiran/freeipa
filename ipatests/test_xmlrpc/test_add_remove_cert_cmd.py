@@ -15,43 +15,40 @@ from ipatests.test_xmlrpc.tracker.user_plugin import UserTracker
 from ipatests.test_xmlrpc.tracker.idview_plugin import IdviewTracker
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def idview(request, xmlrpc_setup):
-    tracker = IdviewTracker(cn=u'MyView')
+    tracker = IdviewTracker(cn=u"MyView")
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def testuser(request, xmlrpc_setup):
-    tracker = UserTracker(name=u'testuser', givenname=u'John', sn=u'Donne')
+    tracker = UserTracker(name=u"testuser", givenname=u"John", sn=u"Donne")
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def cert1(request, xmlrpc_setup):
-    return get_testcert(DN(('CN', u'testuser')), u'testuser')
+    return get_testcert(DN(("CN", u"testuser")), u"testuser")
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def cert2(request, xmlrpc_setup):
-    return get_testcert(DN(('CN', u'testuser')), u'testuser')
+    return get_testcert(DN(("CN", u"testuser")), u"testuser")
 
 
 @pytest.mark.tier1
 class CertManipCmdTestBase(XMLRPC_test):
-    entity_class = ''
+    entity_class = ""
     entity_pkey = None
     entity_subject = None
     entity_principal = None
     non_existent_entity = None
 
     profile_store_orig = True
-    default_profile_id = u'caIPAserviceCert'
-    default_caacl = u'hosts_services_%s' % default_profile_id
-    cmd_options = dict(
-        entity_add=None,
-        caacl=None,
-    )
+    default_profile_id = u"caIPAserviceCert"
+    default_caacl = u"hosts_services_%s" % default_profile_id
+    cmd_options = dict(entity_add=None, caacl=None,)
 
     certs = None
     certs_remainder = None
@@ -64,16 +61,17 @@ class CertManipCmdTestBase(XMLRPC_test):
     cert_add_cmd = None
     cert_del_cmd = None
 
-    cert_add_summary = u''
-    cert_del_summary = u''
+    cert_add_summary = u""
+    cert_del_summary = u""
 
     entity_attrs = None
 
     @classmethod
     def disable_profile_store(cls):
         try:
-            api.Command.certprofile_mod(cls.default_profile_id,
-                                        ipacertprofilestoreissued=False)
+            api.Command.certprofile_mod(
+                cls.default_profile_id, ipacertprofilestoreissued=False
+            )
         except errors.EmptyModlist:
             cls.profile_store_orig = False
         else:
@@ -83,19 +81,19 @@ class CertManipCmdTestBase(XMLRPC_test):
     def restore_profile_store(cls):
         if cls.profile_store_orig:
             api.Command.certprofile_mod(
-                cls.default_profile_id,
-                ipacertprofilestoreissued=cls.profile_store_orig)
+                cls.default_profile_id, ipacertprofilestoreissued=cls.profile_store_orig
+            )
 
     @classmethod
     def add_entity(cls):
-        api.Command['%s_add' % cls.entity_class](
-            cls.entity_pkey,
-            **cls.cmd_options['entity_add'])
+        api.Command["%s_add" % cls.entity_class](
+            cls.entity_pkey, **cls.cmd_options["entity_add"]
+        )
 
     @classmethod
     def delete_entity(cls):
         try:
-            api.Command['%s_del' % cls.entity_class](cls.entity_pkey)
+            api.Command["%s_del" % cls.entity_class](cls.entity_pkey)
         except errors.NotFound:
             pass
 
@@ -218,14 +216,13 @@ class CertManipCmdTestBase(XMLRPC_test):
         cls.mixed_certs = cls.certs[:2] + cls.nonexistent_certs[:1]
 
         # invalid base64 encoding
-        cls.invalid_b64 = [u'few4w24gvrae54y6463234f']
+        cls.invalid_b64 = [u"few4w24gvrae54y6463234f"]
 
         # malformed certificate
-        cls.malformed_cert = [base64.b64encode(b'malformed cert')]
+        cls.malformed_cert = [base64.b64encode(b"malformed cert")]
 
         # store entity info for the final test
-        cls.entity_attrs = api.Command[
-            '%s_show' % cls.entity_class](cls.entity_pkey)
+        cls.entity_attrs = api.Command["%s_show" % cls.entity_class](cls.entity_pkey)
 
         def fin():
             cls.delete_entity()
@@ -238,18 +235,18 @@ class CertManipCmdTestBase(XMLRPC_test):
         # pylint: disable=E1102
         result = self.cert_add_cmd(self.entity_pkey, usercertificate=certs)
         return dict(
-            usercertificate=result['result'].get('usercertificate', []),
-            value=result.get('value'),
-            summary=result.get('summary')
+            usercertificate=result["result"].get("usercertificate", []),
+            value=result.get("value"),
+            summary=result.get("summary"),
         )
 
     def remove_certs(self, certs):
         # pylint: disable=E1102
         result = self.cert_del_cmd(self.entity_pkey, usercertificate=certs)
         return dict(
-            usercertificate=result['result'].get('usercertificate', []),
-            value=result.get('value'),
-            summary=result.get('summary')
+            usercertificate=result["result"].get("usercertificate", []),
+            value=result.get("value"),
+            summary=result.get("summary"),
         )
 
     def test_01_add_cert_to_nonexistent_entity(self):
@@ -257,16 +254,24 @@ class CertManipCmdTestBase(XMLRPC_test):
         Tests whether trying to add certificates to a non-existent entry
         raises NotFound error.
         """
-        raises(errors.NotFound, self.cert_add_cmd,
-               self.non_existent_entity, usercertificate=self.certs)
+        raises(
+            errors.NotFound,
+            self.cert_add_cmd,
+            self.non_existent_entity,
+            usercertificate=self.certs,
+        )
 
     def test_02_remove_cert_from_nonexistent_entity(self):
         """
         Tests whether trying to remove certificates from a non-existent entry
         raises NotFound error.
         """
-        raises(errors.NotFound, self.cert_add_cmd,
-               self.non_existent_entity, usercertificate=self.certs)
+        raises(
+            errors.NotFound,
+            self.cert_add_cmd,
+            self.non_existent_entity,
+            usercertificate=self.certs,
+        )
 
     def test_03_remove_cert_from_entity_with_no_certs(self):
         """
@@ -279,8 +284,7 @@ class CertManipCmdTestBase(XMLRPC_test):
         raises(errors.Base64DecodeError, self.add_certs, self.invalid_b64)
 
     def test_05_add_malformed_cert_to_entity(self):
-        raises(errors.CertificateFormatError, self.add_certs,
-               self.malformed_cert)
+        raises(errors.CertificateFormatError, self.add_certs, self.malformed_cert)
 
     def test_06_add_single_cert_to_entity(self):
         """
@@ -292,7 +296,7 @@ class CertManipCmdTestBase(XMLRPC_test):
                 summary=self.cert_add_summary % self.entity_pkey,
                 value=self.entity_pkey,
             ),
-            self.add_certs([self.certs[0]])
+            self.add_certs([self.certs[0]]),
         )
 
     def test_07_add_more_certs_to_entity(self):
@@ -305,7 +309,7 @@ class CertManipCmdTestBase(XMLRPC_test):
                 summary=self.cert_add_summary % self.entity_pkey,
                 value=self.entity_pkey,
             ),
-            self.add_certs(self.certs[1:])
+            self.add_certs(self.certs[1:]),
         )
 
     def test_08_add_already_present_cert_to_entity(self):
@@ -313,33 +317,21 @@ class CertManipCmdTestBase(XMLRPC_test):
         Tests that ExecutionError is raised when attempting to add certificates
         to the entry that already contains them.
         """
-        raises(
-            errors.ExecutionError,
-            self.add_certs,
-            self.certs_subset
-        )
+        raises(errors.ExecutionError, self.add_certs, self.certs_subset)
 
     def test_09_remove_nonexistent_certs_from_entity(self):
         """
         Tests that an attempt to remove certificates that are not present in
         the entry raises AttrValueNotFound
         """
-        raises(
-            errors.AttrValueNotFound,
-            self.remove_certs,
-            self.nonexistent_certs
-        )
+        raises(errors.AttrValueNotFound, self.remove_certs, self.nonexistent_certs)
 
     def test_10_remove_valid_and_nonexistent_certs_from_entity(self):
         """
         Try to remove multiple certificates. Some of them are not present in
         the entry. This scenario should raise InvocationError.
         """
-        raises(
-            errors.AttrValueNotFound,
-            self.remove_certs,
-            self.mixed_certs
-        )
+        raises(errors.AttrValueNotFound, self.remove_certs, self.mixed_certs)
 
     def test_11_remove_cert_subset_from_entity(self):
         """
@@ -347,12 +339,11 @@ class CertManipCmdTestBase(XMLRPC_test):
         """
         assert_deepequal(
             dict(
-                usercertificate=[base64.b64decode(c)
-                                 for c in self.certs_remainder],
+                usercertificate=[base64.b64decode(c) for c in self.certs_remainder],
                 summary=self.cert_del_summary % self.entity_pkey,
                 value=self.entity_pkey,
             ),
-            self.remove_certs(self.certs_subset)
+            self.remove_certs(self.certs_subset),
         )
 
     def test_12_remove_remaining_certs_from_entity(self):
@@ -365,7 +356,7 @@ class CertManipCmdTestBase(XMLRPC_test):
                 summary=self.cert_del_summary % self.entity_pkey,
                 value=self.entity_pkey,
             ),
-            self.remove_certs(self.certs_remainder)
+            self.remove_certs(self.certs_remainder),
         )
 
     def test_99_check_final_entity_consistency(self):
@@ -376,21 +367,20 @@ class CertManipCmdTestBase(XMLRPC_test):
         """
         assert_deepequal(
             self.entity_attrs,
-            api.Command['%s_show' % self.entity_class](self.entity_pkey)
+            api.Command["%s_show" % self.entity_class](self.entity_pkey),
         )
 
 
 @pytest.mark.tier1
 class TestCertManipCmdUser(CertManipCmdTestBase):
-    entity_class = 'user'
-    entity_pkey = u'tuser'
+    entity_class = "user"
+    entity_pkey = u"tuser"
     entity_subject = entity_pkey
-    entity_principal = u'tuser'
-    non_existent_entity = u'nonexistentuser'
+    entity_principal = u"tuser"
+    non_existent_entity = u"nonexistentuser"
 
     cmd_options = dict(
-        entity_add=dict(givenname=u'Test', sn=u'User'),
-        caacl=dict(user=[u'tuser']),
+        entity_add=dict(givenname=u"Test", sn=u"User"), caacl=dict(user=[u"tuser"]),
     )
 
     cert_add_cmd = api.Command.user_add_cert
@@ -401,26 +391,26 @@ class TestCertManipCmdUser(CertManipCmdTestBase):
 
     @classmethod
     def add_caacl(cls):
-        api.Command['caacl_add_%s' % cls.entity_class](
-            cls.default_caacl, **cls.cmd_options['caacl'])
+        api.Command["caacl_add_%s" % cls.entity_class](
+            cls.default_caacl, **cls.cmd_options["caacl"]
+        )
 
     @classmethod
     def remove_caacl(cls):
-        api.Command['caacl_remove_%s' % cls.entity_class](
-            cls.default_caacl, **cls.cmd_options['caacl'])
+        api.Command["caacl_remove_%s" % cls.entity_class](
+            cls.default_caacl, **cls.cmd_options["caacl"]
+        )
 
 
 @pytest.mark.tier1
 class TestCertManipCmdStageuser(CertManipCmdTestBase):
-    entity_class = 'stageuser'
-    entity_pkey = u'suser'
+    entity_class = "stageuser"
+    entity_pkey = u"suser"
     entity_subject = entity_pkey
-    entity_principal = u'suser'
-    non_existent_entity = u'nonexistentstageuser'
+    entity_principal = u"suser"
+    non_existent_entity = u"nonexistentstageuser"
 
-    cmd_options = dict(
-        entity_add=dict(givenname=u'Stage', sn=u'User'),
-    )
+    cmd_options = dict(entity_add=dict(givenname=u"Stage", sn=u"User"),)
 
     cert_add_cmd = api.Command.stageuser_add_cert
     cert_del_cmd = api.Command.stageuser_remove_cert
@@ -431,15 +421,13 @@ class TestCertManipCmdStageuser(CertManipCmdTestBase):
 
 @pytest.mark.tier1
 class TestCertManipCmdHost(CertManipCmdTestBase):
-    entity_class = 'host'
-    entity_pkey = u'host.example.com'
+    entity_class = "host"
+    entity_pkey = u"host.example.com"
     entity_subject = entity_pkey
-    entity_principal = u'host/%s' % entity_pkey
-    non_existent_entity = u'non.existent.host.com'
+    entity_principal = u"host/%s" % entity_pkey
+    non_existent_entity = u"non.existent.host.com"
 
-    cmd_options = dict(
-        entity_add=dict(force=True),
-    )
+    cmd_options = dict(entity_add=dict(force=True),)
 
     cert_add_cmd = api.Command.host_add_cert
     cert_del_cmd = api.Command.host_remove_cert
@@ -450,16 +438,16 @@ class TestCertManipCmdHost(CertManipCmdTestBase):
 
 @pytest.mark.tier1
 class TestCertManipCmdService(CertManipCmdTestBase):
-    entity_class = 'service'
-    entity_pkey = u'testservice/%s@%s' % (TestCertManipCmdHost.entity_pkey,
-                                          api.env.realm)
+    entity_class = "service"
+    entity_pkey = u"testservice/%s@%s" % (
+        TestCertManipCmdHost.entity_pkey,
+        api.env.realm,
+    )
     entity_subject = TestCertManipCmdHost.entity_pkey
     entity_principal = entity_pkey
-    non_existent_entity = u'testservice/non.existent.host.com'
+    non_existent_entity = u"testservice/non.existent.host.com"
 
-    cmd_options = dict(
-        entity_add=dict(force=True),
-    )
+    cmd_options = dict(entity_add=dict(force=True),)
 
     cert_add_cmd = api.Command.service_add_cert
     cert_del_cmd = api.Command.service_remove_cert
@@ -483,8 +471,8 @@ class TestCertManipCmdService(CertManipCmdTestBase):
 
 @pytest.mark.tier1
 class TestCertManipIdOverride(XMLRPC_test):
-    entity_subject = u'testuser'
-    entity_principal = u'testuser'
+    entity_subject = u"testuser"
+    entity_principal = u"testuser"
 
     def test_00_add_idoverrideuser(self, testuser, idview):
         testuser.create()
@@ -493,47 +481,46 @@ class TestCertManipIdOverride(XMLRPC_test):
 
     def test_01_add_cert_to_idoverride(self, testuser, idview, cert1):
         assert_deepequal(
-            dict(usercertificate=(base64.b64decode(cert1),),
-                 summary=u'Added certificates to'
-                         ' idoverrideuser \"%s\"' % testuser.name,
-                 value=testuser.name,
-                 ),
-            idview.add_cert_to_idoverrideuser(testuser.name, cert1)
-        )
-
-    def test_02_add_second_cert_to_idoverride(self, testuser,
-                                              idview, cert1, cert2):
-        assert_deepequal(
             dict(
-                usercertificate=(base64.b64decode(cert1),
-                                 base64.b64decode(cert2)),
-                summary=u'Added certificates to'
-                        ' idoverrideuser \"%s\"' % testuser.name,
+                usercertificate=(base64.b64decode(cert1),),
+                summary=u"Added certificates to" ' idoverrideuser "%s"' % testuser.name,
                 value=testuser.name,
             ),
-            idview.add_cert_to_idoverrideuser(testuser.name, cert2)
+            idview.add_cert_to_idoverrideuser(testuser.name, cert1),
         )
 
-    def test_03_add_the_same_cert_to_idoverride(self, testuser,
-                                                idview, cert1, cert2):
-        pytest.raises(errors.ExecutionError,
-                      idview.add_cert_to_idoverrideuser,
-                      testuser.name, cert1)
+    def test_02_add_second_cert_to_idoverride(self, testuser, idview, cert1, cert2):
+        assert_deepequal(
+            dict(
+                usercertificate=(base64.b64decode(cert1), base64.b64decode(cert2)),
+                summary=u"Added certificates to" ' idoverrideuser "%s"' % testuser.name,
+                value=testuser.name,
+            ),
+            idview.add_cert_to_idoverrideuser(testuser.name, cert2),
+        )
+
+    def test_03_add_the_same_cert_to_idoverride(self, testuser, idview, cert1, cert2):
+        pytest.raises(
+            errors.ExecutionError,
+            idview.add_cert_to_idoverrideuser,
+            testuser.name,
+            cert1,
+        )
 
     def test_04_user_show_displays_cert(self, testuser, idview, cert1, cert2):
         result = api.Command.idoverrideuser_show(idview.cn, testuser.name)
-        assert_deepequal((base64.b64decode(cert1),
-                          base64.b64decode(cert2)),
-                         result['result']['usercertificate']
-                         )
+        assert_deepequal(
+            (base64.b64decode(cert1), base64.b64decode(cert2)),
+            result["result"]["usercertificate"],
+        )
 
     def test_05_remove_cert(self, testuser, idview, cert1, cert2):
         assert_deepequal(
             dict(
                 usercertificate=(base64.b64decode(cert2),),
                 value=testuser.name,
-                summary=u'Removed certificates from'
-                        ' idoverrideuser "%s"' % testuser.name
+                summary=u"Removed certificates from"
+                ' idoverrideuser "%s"' % testuser.name,
             ),
-            idview.del_cert_from_idoverrideuser(testuser.name, cert1)
+            idview.del_cert_from_idoverrideuser(testuser.name, cert1),
         )

@@ -6,6 +6,7 @@ import logging
 
 import dns.name
 import re
+
 try:
     from xml.etree import cElementTree as etree
 except ImportError:
@@ -25,7 +26,7 @@ class ZoneListReader:
     def __init__(self):
         self.names = set()  # dns.name
         self.uuids = set()  # UUID strings
-        self.mapping = dict()      # {UUID: dns.name}
+        self.mapping = dict()  # {UUID: dns.name}
 
     def _add_zone(self, name, zid):
         """Add zone & UUID to internal structures.
@@ -33,11 +34,17 @@ class ZoneListReader:
         Zone with given name and UUID must not exist."""
         # detect duplicate zone names
         name = dns.name.from_text(name)
-        assert name not in self.names, \
-            'duplicate name (%s, %s) vs. %s' % (name, zid, self.mapping)
+        assert name not in self.names, "duplicate name (%s, %s) vs. %s" % (
+            name,
+            zid,
+            self.mapping,
+        )
         # duplicate non-None zid is not allowed
-        assert not zid or zid not in self.uuids, \
-            'duplicate UUID (%s, %s) vs. %s' % (name, zid, self.mapping)
+        assert not zid or zid not in self.uuids, "duplicate UUID (%s, %s) vs. %s" % (
+            name,
+            zid,
+            self.mapping,
+        )
 
         self.names.add(name)
         self.uuids.add(zid)
@@ -50,12 +57,19 @@ class ZoneListReader:
         """
         name = dns.name.from_text(name)
         assert zid is not None
-        assert name in self.names, \
-            'name (%s, %s) does not exist in %s' % (name, zid, self.mapping)
-        assert zid in self.uuids, \
-            'UUID (%s, %s) does not exist in %s' % (name, zid, self.mapping)
-        assert zid in self.mapping and name == self.mapping[zid], \
-            'pair {%s: %s} does not exist in %s' % (zid, name, self.mapping)
+        assert name in self.names, "name (%s, %s) does not exist in %s" % (
+            name,
+            zid,
+            self.mapping,
+        )
+        assert zid in self.uuids, "UUID (%s, %s) does not exist in %s" % (
+            name,
+            zid,
+            self.mapping,
+        )
+        assert (
+            zid in self.mapping and name == self.mapping[zid]
+        ), "pair {%s: %s} does not exist in %s" % (zid, name, self.mapping)
 
         self.names.remove(name)
         self.uuids.remove(zid)
@@ -64,6 +78,7 @@ class ZoneListReader:
 
 class ODSZoneListReader(ZoneListReader):
     """One-shot parser for ODS zonelist.xml."""
+
     def __init__(self, zonelist_text):
         super(ODSZoneListReader, self).__init__()
         root = etree.fromstring(zonelist_text)
@@ -72,9 +87,9 @@ class ODSZoneListReader(ZoneListReader):
     def _parse_zonelist(self, root):
         """iterate over Zone elements with attribute 'name' and
         add IPA zones to self.zones"""
-        if not root.tag == 'ZoneList':
+        if not root.tag == "ZoneList":
             raise ValueError(root.tag)
-        for zone_xml in root.findall('./Zone[@name]'):
+        for zone_xml in root.findall("./Zone[@name]"):
             name, zid = self._parse_ipa_zone(zone_xml)
             self._add_zone(name, zid)
 
@@ -87,18 +102,18 @@ class ODSZoneListReader(ZoneListReader):
         Returns:
             tuple (zone name, ID)
         """
-        name = zone_xml.get('name')
+        name = zone_xml.get("name")
         zids = []
-        for in_adapter in zone_xml.findall(
-                './Adapters/Input/Adapter[@type="File"]'):
+        for in_adapter in zone_xml.findall('./Adapters/Input/Adapter[@type="File"]'):
             path = in_adapter.text
             if path.startswith(ENTRYUUID_PREFIX):
                 # strip prefix from path
                 zids.append(path[ENTRYUUID_PREFIX_LEN:])
 
         if len(zids) != 1:
-            raise ValueError('only IPA zones are supported: {}'.format(
-                etree.tostring(zone_xml)))
+            raise ValueError(
+                "only IPA zones are supported: {}".format(etree.tostring(zone_xml))
+            )
 
         return name, zids[0]
 
@@ -108,17 +123,17 @@ class LDAPZoneListReader(ZoneListReader):
         super(LDAPZoneListReader, self).__init__()
 
     def process_ipa_zone(self, op, uuid, zone_ldap):
-        assert (op in ['add', 'del']), 'unsupported op %s' % op
+        assert op in ["add", "del"], "unsupported op %s" % op
         assert uuid is not None
-        assert 'idnsname' in zone_ldap, \
-            'LDAP zone UUID %s without idnsName' % uuid
-        assert len(zone_ldap['idnsname']) == 1, \
-            'LDAP zone UUID %s with len(idnsname) != 1' % uuid
+        assert "idnsname" in zone_ldap, "LDAP zone UUID %s without idnsName" % uuid
+        assert len(zone_ldap["idnsname"]) == 1, (
+            "LDAP zone UUID %s with len(idnsname) != 1" % uuid
+        )
 
-        if op == 'add':
-            self._add_zone(zone_ldap['idnsname'][0], uuid)
-        elif op == 'del':
-            self._del_zone(zone_ldap['idnsname'][0], uuid)
+        if op == "add":
+            self._add_zone(zone_ldap["idnsname"][0], uuid)
+        elif op == "del":
+            self._del_zone(zone_ldap["idnsname"][0], uuid)
 
 
 class ODSMgr:
@@ -128,6 +143,7 @@ class ODSMgr:
     or deleted from ODS as necessary. ODS->LDAP key synchronization
     has to be solved seperatelly.
     """
+
     def __init__(self):
         self.zl_ldap = LDAPZoneListReader()
 
@@ -140,7 +156,7 @@ class ODSMgr:
         return result.output
 
     def get_ods_zonelist(self):
-        stdout = self.ksmutil(['zonelist', 'export'])
+        stdout = self.ksmutil(["zonelist", "export"])
         try:
             reader = ODSZoneListReader(stdout)
         except etree.ParseError:
@@ -148,7 +164,7 @@ class ODSMgr:
             # containing the zonelist filename instead of the XML text:
             # "Exported zonelist to /etc/opendnssec/zonelist.xml successfully"
             # extract the filename and read its content
-            pattern = re.compile(r'.* (/.*) .*')
+            pattern = re.compile(r".* (/.*) .*")
             matches = re.findall(pattern, stdout)
             if matches:
                 with open(matches[0]) as f:
@@ -158,21 +174,22 @@ class ODSMgr:
         return reader
 
     def add_ods_zone(self, uuid, name):
-        zone_path = '%s%s' % (ENTRYUUID_PREFIX, uuid)
+        zone_path = "%s%s" % (ENTRYUUID_PREFIX, uuid)
         if name != dns.name.root:
             name = name.relativize(dns.name.root)
-        cmd = ['zone', 'add', '--zone', str(name), '--input', zone_path]
+        cmd = ["zone", "add", "--zone", str(name), "--input", zone_path]
         output = None
         try:
             output = self.ksmutil(cmd)
         except ipautil.CalledProcessError as e:
             # Zone already exists in HSM
-            if e.returncode == 1 \
-                    and str(e.output).endswith(str(name) + ' already exists!'):
+            if e.returncode == 1 and str(e.output).endswith(
+                str(name) + " already exists!"
+            ):
                 # Just return
                 return
         if output is not None:
-            logger.info('%s', output)
+            logger.info("%s", output)
             self.notify_enforcer()
 
     def del_ods_zone(self, name):
@@ -182,37 +199,36 @@ class ODSMgr:
         # detect if name is root zone
         if name == dns.name.empty:
             name = dns.name.root
-        cmd = ['zone', 'delete', '--zone', str(name)]
+        cmd = ["zone", "delete", "--zone", str(name)]
         output = None
         try:
             output = self.ksmutil(cmd)
         except ipautil.CalledProcessError as e:
             # Zone already doesn't exist in HSM
-            if e.returncode == 1 \
-                    and str(e.output).endswith(str(name) + ' not found!'):
+            if e.returncode == 1 and str(e.output).endswith(str(name) + " not found!"):
                 # Just cleanup signer, no need to notify enforcer
                 self.cleanup_signer(name)
                 return
         if output is not None:
-            logger.info('%s', output)
+            logger.info("%s", output)
             self.notify_enforcer()
             self.cleanup_signer(name)
 
     def notify_enforcer(self):
         result = tasks.run_ods_notify(capture_output=True)
-        logger.info('%s', result.output)
+        logger.info("%s", result.output)
 
     def cleanup_signer(self, zone_name):
-        cmd = ['ods-signer', 'ldap-cleanup', str(zone_name)]
+        cmd = ["ods-signer", "ldap-cleanup", str(zone_name)]
         output = ipautil.run(cmd, capture_output=True)
-        logger.info('%s', output)
+        logger.info("%s", output)
 
     def ldap_event(self, op, uuid, attrs):
         """Record single LDAP event - zone addition or deletion.
 
         Change is only recorded to memory.
         self.sync() have to be called to synchronize change to ODS."""
-        assert op in ('add', 'del')
+        assert op in ("add", "del")
         self.zl_ldap.process_ipa_zone(op, uuid, attrs)
         logger.debug("LDAP zones: %s", self.zl_ldap.mapping)
 
@@ -234,13 +250,14 @@ class ODSMgr:
 
         Returns: List of (uuid, name) tuples with zones present only in s1."""
         s1_extra = s1.uuids - s2.uuids
-        removed = [(uuid, name) for (uuid, name) in s1.mapping.items()
-                   if uuid in s1_extra]
+        removed = [
+            (uuid, name) for (uuid, name) in s1.mapping.items() if uuid in s1_extra
+        ]
         return removed
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ipa_log_manager.standard_logging_setup(debug=True)
     ods = ODSMgr()
     reader = ods.get_ods_zonelist()
-    logger.info('ODS zones: %s', reader.mapping)
+    logger.info("ODS zones: %s", reader.mapping)

@@ -46,8 +46,8 @@ def subject_base():
     global _subject_base
 
     if _subject_base is None:
-        config = api.Command['config_show']()['result']
-        _subject_base = DN(config['ipacertificatesubjectbase'][0])
+        config = api.Command["config_show"]()["result"]
+        _subject_base = DN(config["ipacertificatesubjectbase"][0])
 
     return _subject_base
 
@@ -56,9 +56,7 @@ def strip_cert_header(pem):
     """
     Remove the header and footer from a certificate.
     """
-    regexp = (
-        r"^-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----"
-    )
+    regexp = r"^-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----"
     s = re.search(regexp, pem, re.MULTILINE | re.DOTALL)
     if s is not None:
         return s.group(1)
@@ -70,11 +68,10 @@ def get_testcert(subject, principal):
     """Get the certificate, creating it if it doesn't exist"""
     reqdir = tempfile.mkdtemp(prefix="tmp-")
     try:
-        _testcert = makecert(reqdir, subject,
-                             principal)
+        _testcert = makecert(reqdir, subject, principal)
     finally:
         shutil.rmtree(reqdir)
-    return strip_cert_header(_testcert.decode('utf-8'))
+    return strip_cert_header(_testcert.decode("utf-8"))
 
 
 def makecert(reqdir, subject, principal):
@@ -83,10 +80,14 @@ def makecert(reqdir, subject, principal):
     """
 
     ra = rabase.rabase(api)
-    if (not os.path.exists(ra.client_certfile) and
-            api.env.xmlrpc_uri == 'http://localhost:8888/ipa/xml'):
-        raise AssertionError('The self-signed CA is not configured, '
-                             'see ipatests/test_xmlrpc/test_cert.py')
+    if (
+        not os.path.exists(ra.client_certfile)
+        and api.env.xmlrpc_uri == "http://localhost:8888/ipa/xml"
+    ):
+        raise AssertionError(
+            "The self-signed CA is not configured, "
+            "see ipatests/test_xmlrpc/test_cert.py"
+        )
 
     nssdb = certdb.NSSDatabase(nssdir=reqdir)
     with open(nssdb.pwd_file, "w") as f:
@@ -95,17 +96,15 @@ def makecert(reqdir, subject, principal):
     # create db
     nssdb.create_db()
     # create CSR
-    csr_file = os.path.join(reqdir, 'req')
-    nssdb.run_certutil([
-        "-R", "-s", str(subject),
-        "-o", csr_file,
-        "-z", paths.GROUP,
-        "-a"
-    ])
+    csr_file = os.path.join(reqdir, "req")
+    nssdb.run_certutil(
+        ["-R", "-s", str(subject), "-o", csr_file, "-z", paths.GROUP, "-a"]
+    )
     with open(csr_file, "rb") as f:
-        csr = f.read().decode('ascii')
+        csr = f.read().decode("ascii")
 
-    res = api.Command['cert_request'](csr, principal=principal, add=True)
+    res = api.Command["cert_request"](csr, principal=principal, add=True)
     cert = x509.load_der_x509_certificate(
-        base64.b64decode(res['result']['certificate']))
+        base64.b64decode(res["result"]["certificate"])
+    )
     return cert.public_bytes(x509.Encoding.PEM)

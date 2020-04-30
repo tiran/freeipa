@@ -28,8 +28,8 @@ class update_ra_cert_store(Updater):
     """
 
     def execute(self, **options):
-        ra_nick = 'ipaCert'
-        ca_enabled = self.api.Command.ca_is_enabled()['result']
+        ra_nick = "ipaCert"
+        ca_enabled = self.api.Command.ca_is_enabled()["result"]
         if not ca_enabled:
             return False, []
 
@@ -44,11 +44,13 @@ class update_ra_cert_store(Updater):
                 "A certificate with the nickname 'ipaCert' exists in "
                 "the old '%s' NSS database as well as in the new "
                 "PEM file '%s'",
-                paths.HTTPD_ALIAS_DIR, paths.RA_AGENT_PEM)
+                paths.HTTPD_ALIAS_DIR,
+                paths.RA_AGENT_PEM,
+            )
 
         _fd, p12file = tempfile.mkstemp(dir=certdb.secdir)
         # no password is necessary as we will be saving it in clear anyway
-        certdb.export_pkcs12(ra_nick, p12file, pkcs12_passwd='')
+        certdb.export_pkcs12(ra_nick, p12file, pkcs12_passwd="")
 
         # stop tracking the old cert and remove it
         certmonger.stop_tracking(paths.HTTPD_ALIAS_DIR, nickname=ra_nick)

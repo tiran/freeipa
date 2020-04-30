@@ -17,7 +17,8 @@ class from_:
 
     See `run_generator_with_yield_from`.
     """
-    __slots__ = ('obj',)
+
+    __slots__ = ("obj",)
 
     def __init__(self, obj):
         self.obj = obj
@@ -73,7 +74,7 @@ def run_generator_with_yield_from(gen):
                 continue
 
         try:
-            value = (yield value)
+            value = yield value
         except BaseException:
             exc_info = sys.exc_info()
 
@@ -84,8 +85,8 @@ def run_generator_with_yield_from(gen):
 class InnerClassMeta(type):
     # pylint: disable=no-value-for-parameter
     def __new__(cls, name, bases, class_dict):
-        class_dict.pop('__outer_class__', None)
-        class_dict.pop('__outer_name__', None)
+        class_dict.pop("__outer_class__", None)
+        class_dict.pop("__outer_name__", None)
 
         return super(InnerClassMeta, cls).__new__(cls, name, bases, class_dict)
 
@@ -119,7 +120,7 @@ class InnerClassMeta(type):
             except AttributeError:
                 obj.__dict__[outer_name] = value
             else:
-                raise AttributeError('__set__')
+                raise AttributeError("__set__")
         else:
             setter(obj, value)
 
@@ -139,14 +140,14 @@ class InnerClassMeta(type):
                 except KeyError:
                     raise AttributeError(outer_name)
             else:
-                raise AttributeError('__delete__')
+                raise AttributeError("__delete__")
         else:
             deleter(obj)
 
     def __bind(cls, obj_type):
         try:
-            outer_class = cls.__dict__['__outer_class__']
-            name = cls.__dict__['__outer_name__']
+            outer_class = cls.__dict__["__outer_class__"]
+            name = cls.__dict__["__outer_name__"]
         except KeyError:
             outer_class, name, value = None, None, None
             for outer_class in obj_type.__mro__:
@@ -159,7 +160,7 @@ class InnerClassMeta(type):
 
             cls.__outer_class__ = outer_class
             cls.__outer_name__ = name
-            cls.__name__ = '.'.join((outer_class.__name__, name))
+            cls.__name__ = ".".join((outer_class.__name__, name))
             cls.__qualname__ = cls.__name__
 
         return outer_class, name

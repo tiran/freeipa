@@ -32,23 +32,24 @@ class update_ca_topology(Updater):
             logger.debug("CA is not configured on this host")
             return False, []
 
-        ld = ldapupdate.LDAPUpdate(ldapi=True, sub_dict={
-            'SUFFIX': self.api.env.basedn,
-            'FQDN': self.api.env.host,
-        })
+        ld = ldapupdate.LDAPUpdate(
+            ldapi=True,
+            sub_dict={"SUFFIX": self.api.env.basedn, "FQDN": self.api.env.host,},
+        )
 
         ld.update([paths.CA_TOPOLOGY_ULDIF])
 
         ldap = self.api.Backend.ldap2
 
         ca_replica_dn = DN(
-            ('cn', 'replica'),
-            ('cn', 'o=ipaca'),
-            ('cn', 'mapping tree'),
-            ('cn', 'config'))
+            ("cn", "replica"),
+            ("cn", "o=ipaca"),
+            ("cn", "mapping tree"),
+            ("cn", "config"),
+        )
 
-        check_interval_attr = 'nsds5replicabinddngroupcheckinterval'
-        default_check_interval = ['60']
+        check_interval_attr = "nsds5replicabinddngroupcheckinterval"
+        default_check_interval = ["60"]
 
         try:
             ca_replica_entry = ldap.get_entry(ca_replica_dn)

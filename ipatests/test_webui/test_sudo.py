@@ -34,7 +34,6 @@ import pytest
 
 @pytest.mark.tier1
 class test_sudo(UI_driver):
-
     @screenshot
     def test_crud(self):
         """
@@ -43,8 +42,11 @@ class test_sudo(UI_driver):
         self.init_app()
         self.basic_crud(sudo.RULE_ENTITY, sudo.RULE_DATA)
         self.basic_crud(sudo.CMDENTITY, sudo.CMD_DATA)
-        self.basic_crud(sudo.CMDGROUP_ENTITY, sudo.CMDGROUP_DATA,
-                        default_facet=sudo.CMDGROUP_DEF_FACET)
+        self.basic_crud(
+            sudo.CMDGROUP_ENTITY,
+            sudo.CMDGROUP_DATA,
+            default_facet=sudo.CMDGROUP_DEF_FACET,
+        )
 
     @screenshot
     def test_mod(self):
@@ -82,30 +84,36 @@ class test_sudo(UI_driver):
         self.navigate_to_record(sudo.RULE_PKEY, entity=sudo.RULE_ENTITY)
 
         tables = [
-            ['memberuser_user', [user.PKEY, user.PKEY2], ],
-            ['memberuser_group', [group.PKEY, group.PKEY2], ],
-            ['memberhost_host', [host.pkey, host.pkey2], ],
-            ['memberhost_hostgroup', [hostgroup.PKEY, hostgroup.PKEY2], ],
-            ['memberallowcmd_sudocmd', [sudo.CMD_PKEY, sudo.CMD_PKEY2], ],
-            ['memberallowcmd_sudocmdgroup', [sudo.CMD_GROUP_PKEY, sudo.CMD_GROUP_PKEY2], ],
-            ['memberdenycmd_sudocmd', [sudo.CMD_PKEY, sudo.CMD_PKEY2], ],
-            ['memberdenycmd_sudocmdgroup', [sudo.CMD_GROUP_PKEY, sudo.CMD_GROUP_PKEY2], ],
-            ['ipasudorunas_user', ['admin'], ],
-            ['ipasudorunas_group', ['editors', 'admins'], ],
-            ['ipasudorunasgroup_group', ['editors', 'admins'], ],
+            ["memberuser_user", [user.PKEY, user.PKEY2],],
+            ["memberuser_group", [group.PKEY, group.PKEY2],],
+            ["memberhost_host", [host.pkey, host.pkey2],],
+            ["memberhost_hostgroup", [hostgroup.PKEY, hostgroup.PKEY2],],
+            ["memberallowcmd_sudocmd", [sudo.CMD_PKEY, sudo.CMD_PKEY2],],
+            [
+                "memberallowcmd_sudocmdgroup",
+                [sudo.CMD_GROUP_PKEY, sudo.CMD_GROUP_PKEY2],
+            ],
+            ["memberdenycmd_sudocmd", [sudo.CMD_PKEY, sudo.CMD_PKEY2],],
+            [
+                "memberdenycmd_sudocmdgroup",
+                [sudo.CMD_GROUP_PKEY, sudo.CMD_GROUP_PKEY2],
+            ],
+            ["ipasudorunas_user", ["admin"],],
+            ["ipasudorunas_group", ["editors", "admins"],],
+            ["ipasudorunasgroup_group", ["editors", "admins"],],
         ]
 
         categories = [
-            'usercategory',
-            'hostcategory',
-            'cmdcategory',
-            'ipasudorunasusercategory',
-            'ipasudorunasgroupcategory',
+            "usercategory",
+            "hostcategory",
+            "cmdcategory",
+            "ipasudorunasusercategory",
+            "ipasudorunasgroupcategory",
         ]
 
         no_cats = [
-            'memberdenycmd_sudocmd',
-            'memberdenycmd_sudocmdgroup',
+            "memberdenycmd_sudocmd",
+            "memberdenycmd_sudocmdgroup",
         ]
 
         self.mod_rule_tables(tables, categories, no_cats)

@@ -115,19 +115,22 @@ class PrivateError(Exception):
     Base class for exceptions that are *never* forwarded in an RPC response.
     """
 
-    format = ''
+    format = ""
 
     def __init__(self, **kw):
         self.msg = self.format % kw
         self.kw = kw
         for (key, value) in kw.items():
-            assert not hasattr(self, key), 'conflicting kwarg %s.%s = %r' % (
-                self.__class__.__name__, key, value,
+            assert not hasattr(self, key), "conflicting kwarg %s.%s = %r" % (
+                self.__class__.__name__,
+                key,
+                value,
             )
             setattr(self, key, value)
         Exception.__init__(self, self.msg)
 
     if six.PY3:
+
         @property
         def message(self):
             return str(self)
@@ -157,7 +160,7 @@ class SubprocessError(PrivateError):
     ('/bin/false',)
     """
 
-    format = 'return code %(returncode)d from %(argv)r'
+    format = "return code %(returncode)d from %(argv)r"
 
 
 class PluginSubclassError(PrivateError):
@@ -173,7 +176,7 @@ class PluginSubclassError(PrivateError):
 
     """
 
-    format = '%(plugin)r not subclass of any base in %(bases)r'
+    format = "%(plugin)r not subclass of any base in %(bases)r"
 
 
 class PluginDuplicateError(PrivateError):
@@ -188,7 +191,7 @@ class PluginDuplicateError(PrivateError):
     PluginDuplicateError: 'my_plugin' was already registered
     """
 
-    format = '%(plugin)r was already registered'
+    format = "%(plugin)r was already registered"
 
 
 class PluginOverrideError(PrivateError):
@@ -203,7 +206,7 @@ class PluginOverrideError(PrivateError):
     PluginOverrideError: unexpected override of Command.env with 'my_env'
     """
 
-    format = 'unexpected override of %(base)s.%(name)s with %(plugin)r'
+    format = "unexpected override of %(base)s.%(name)s with %(plugin)r"
 
 
 class PluginMissingOverrideError(PrivateError):
@@ -218,7 +221,7 @@ class PluginMissingOverrideError(PrivateError):
     PluginMissingOverrideError: Command.env not registered, cannot override with 'my_env'
     """
 
-    format = '%(base)s.%(name)s not registered, cannot override with %(plugin)r'
+    format = "%(base)s.%(name)s not registered, cannot override with %(plugin)r"
 
 
 class SkipPluginModule(PrivateError):
@@ -226,7 +229,7 @@ class SkipPluginModule(PrivateError):
     Raised to abort the loading of a plugin module.
     """
 
-    format = '%(reason)s'
+    format = "%(reason)s"
 
 
 class PluginsPackageError(PrivateError):
@@ -234,7 +237,7 @@ class PluginsPackageError(PrivateError):
     Raised when ``package.plugins`` is a module instead of a sub-package.
     """
 
-    format = '%(name)s must be sub-package, not module: %(file)r'
+    format = "%(name)s must be sub-package, not module: %(file)r"
 
 
 class PluginModuleError(PrivateError):
@@ -242,13 +245,14 @@ class PluginModuleError(PrivateError):
     Raised when a module is not a valid plugin module.
     """
 
-    format = '%(name)s is not a valid plugin module'
+    format = "%(name)s is not a valid plugin module"
 
 
 ##############################################################################
 # Public errors:
 
 _texts = []
+
 
 def _(message):
     _texts.append(message)
@@ -259,6 +263,7 @@ class PublicError(Exception):
     """
     **900** Base class for exceptions that can be forwarded in an RPC response.
     """
+
     def __init__(self, format=None, message=None, **kw):
         messages.process_message_arguments(self, format, message, **kw)
         super(PublicError, self).__init__(self.msg)
@@ -268,6 +273,7 @@ class PublicError(Exception):
     format = None
 
     if six.PY3:
+
         @property
         def message(self):
             return str(self)
@@ -305,7 +311,7 @@ class UnknownError(PublicError):
     """
 
     errno = 902
-    format = _('unknown error %(code)d from %(server)s: %(error)s')
+    format = _("unknown error %(code)d from %(server)s: %(error)s")
 
 
 class InternalError(PublicError):
@@ -321,7 +327,7 @@ class InternalError(PublicError):
     """
 
     errno = 903
-    format = _('an internal error has occurred')
+    format = _("an internal error has occurred")
 
     def __init__(self, message=None):
         """
@@ -410,7 +416,7 @@ class JSONError(PublicError):
     """
 
     errno = 909
-    format = _('Invalid JSON-RPC request: %(error)s')
+    format = _("Invalid JSON-RPC request: %(error)s")
 
 
 class XMLRPCMarshallError(PublicError):
@@ -426,7 +432,7 @@ class XMLRPCMarshallError(PublicError):
     """
 
     errno = 910
-    format = _('error marshalling data for XML-RPC transport: %(error)s')
+    format = _("error marshalling data for XML-RPC transport: %(error)s")
 
 
 class RefererError(PublicError):
@@ -442,7 +448,7 @@ class RefererError(PublicError):
     """
 
     errno = 911
-    format = _('Missing or invalid HTTP Referer, %(referer)s')
+    format = _("Missing or invalid HTTP Referer, %(referer)s")
 
 
 class EnvironmentError(PublicError):
@@ -461,8 +467,9 @@ class SystemEncodingError(PublicError):
     errno = 913
     format = _(
         "System encoding must be UTF-8, '%(encoding)s' is not supported. "
-        "Set LC_ALL=\"C.UTF-8\", or LC_ALL=\"\" and LC_CTYPE=\"C.UTF-8\"."
+        'Set LC_ALL="C.UTF-8", or LC_ALL="" and LC_CTYPE="C.UTF-8".'
     )
+
 
 ##############################################################################
 # 1000 - 1999: Authentication errors
@@ -488,7 +495,7 @@ class KerberosError(AuthenticationError):
     """
 
     errno = 1100
-    format= _('Kerberos error: %(major)s/%(minor)s')
+    format = _("Kerberos error: %(major)s/%(minor)s")
 
 
 class CCacheError(KerberosError):
@@ -505,7 +512,7 @@ class CCacheError(KerberosError):
     """
 
     errno = 1101
-    format = _('did not receive Kerberos credentials')
+    format = _("did not receive Kerberos credentials")
 
 
 class ServiceError(KerberosError):
@@ -537,7 +544,7 @@ class NoCCacheError(KerberosError):
     """
 
     errno = 1103
-    format = _('No credentials cache found')
+    format = _("No credentials cache found")
 
 
 class TicketExpired(KerberosError):
@@ -553,7 +560,7 @@ class TicketExpired(KerberosError):
     """
 
     errno = 1104
-    format = _('Ticket expired')
+    format = _("Ticket expired")
 
 
 class BadCCachePerms(KerberosError):
@@ -569,7 +576,7 @@ class BadCCachePerms(KerberosError):
     """
 
     errno = 1105
-    format = _('Credentials cache permissions incorrect')
+    format = _("Credentials cache permissions incorrect")
 
 
 class BadCCacheFormat(KerberosError):
@@ -585,7 +592,7 @@ class BadCCacheFormat(KerberosError):
     """
 
     errno = 1106
-    format = _('Bad format in credentials cache')
+    format = _("Bad format in credentials cache")
 
 
 class CannotResolveKDC(KerberosError):
@@ -601,7 +608,7 @@ class CannotResolveKDC(KerberosError):
     """
 
     errno = 1107
-    format = _('Cannot resolve KDC for requested realm')
+    format = _("Cannot resolve KDC for requested realm")
 
 
 class SessionError(AuthenticationError):
@@ -613,33 +620,41 @@ class SessionError(AuthenticationError):
     """
 
     errno = 1200
-    format= _('Session error')
+    format = _("Session error")
 
 
 class InvalidSessionPassword(SessionError):
     """
     **1201** Raised when we cannot obtain a TGT for a principal.
     """
+
     errno = 1201
-    format= _('Principal %(principal)s cannot be authenticated: %(message)s')
+    format = _("Principal %(principal)s cannot be authenticated: %(message)s")
+
 
 class PasswordExpired(InvalidSessionPassword):
     """
     **1202** Raised when we cannot obtain a TGT for a principal because the password is expired.
     """
+
     errno = 1202
+
 
 class KrbPrincipalExpired(SessionError):
     """
     **1203** Raised when Kerberos Principal is expired.
     """
+
     errno = 1203
+
 
 class UserLocked(SessionError):
     """
     **1204** Raised when a user account is locked.
     """
+
     errno = 1204
+
 
 ##############################################################################
 # 2000 - 2999: Authorization errors
@@ -657,12 +672,12 @@ class ACIError(AuthorizationError):
     """
 
     errno = 2100
-    format = _('Insufficient access: %(info)s')
-
+    format = _("Insufficient access: %(info)s")
 
 
 ##############################################################################
 # 3000 - 3999: Invocation errors
+
 
 class InvocationError(PublicError):
     """
@@ -723,7 +738,7 @@ class MaxArgumentError(InvocationError):
             format = ungettext(
                 "command '%(name)s' takes at most %(count)d argument",
                 "command '%(name)s' takes at most %(count)d arguments",
-                kw['count']
+                kw["count"],
             )
         else:
             format = None
@@ -824,7 +839,7 @@ class PasswordMismatch(InvocationError):
     """
 
     errno = 3011
-    format = _('Passwords do not match')
+    format = _("Passwords do not match")
 
 
 class NotImplementedError(InvocationError):
@@ -833,7 +848,7 @@ class NotImplementedError(InvocationError):
     """
 
     errno = 3012
-    format = _('Command not implemented')
+    format = _("Command not implemented")
 
 
 class NotConfiguredError(InvocationError):
@@ -842,7 +857,7 @@ class NotConfiguredError(InvocationError):
     """
 
     errno = 3013
-    format = _('Client is not configured. Run ipa-client-install.')
+    format = _("Client is not configured. Run ipa-client-install.")
 
 
 class PromptFailed(InvocationError):
@@ -851,7 +866,7 @@ class PromptFailed(InvocationError):
     """
 
     errno = 3014
-    format = _('Could not get %(name)s interactively')
+    format = _("Could not get %(name)s interactively")
 
 
 class DeprecationError(InvocationError):
@@ -865,8 +880,10 @@ class DeprecationError(InvocationError):
       ...
     DeprecationError: Command 'hbacrule_add_sourcehost' has been deprecated
     """
+
     errno = 3015
     format = _("Command '%(name)s' has been deprecated")
+
 
 class NotAForestRootError(InvocationError):
     """
@@ -884,8 +901,10 @@ class NotAForestRootError(InvocationError):
     errno = 3016
     format = _("Domain '%(domain)s' is not a root domain for forest '%(forest)s'")
 
+
 ##############################################################################
 # 4000 - 4999: Execution errors
+
 
 class ExecutionError(PublicError):
     """
@@ -893,6 +912,7 @@ class ExecutionError(PublicError):
     """
 
     errno = 4000
+
 
 class NotFound(ExecutionError):
     """
@@ -909,7 +929,8 @@ class NotFound(ExecutionError):
 
     errno = 4001
     rval = 2
-    format = _('%(reason)s')
+    format = _("%(reason)s")
+
 
 class DuplicateEntry(ExecutionError):
     """
@@ -925,7 +946,8 @@ class DuplicateEntry(ExecutionError):
     """
 
     errno = 4002
-    format = _('This entry already exists')
+    format = _("This entry already exists")
+
 
 class HostService(ExecutionError):
     """
@@ -941,7 +963,8 @@ class HostService(ExecutionError):
     """
 
     errno = 4003
-    format = _('You must enroll a host in order to create a host service')
+    format = _("You must enroll a host in order to create a host service")
+
 
 class MalformedServicePrincipal(ExecutionError):
     """
@@ -957,7 +980,10 @@ class MalformedServicePrincipal(ExecutionError):
     """
 
     errno = 4004
-    format = _('Service principal is not of the form: service/fully-qualified host name: %(reason)s')
+    format = _(
+        "Service principal is not of the form: service/fully-qualified host name: %(reason)s"
+    )
+
 
 class RealmMismatch(ExecutionError):
     """
@@ -973,7 +999,10 @@ class RealmMismatch(ExecutionError):
     """
 
     errno = 4005
-    format = _('The realm for the principal does not match the realm for this IPA server')
+    format = _(
+        "The realm for the principal does not match the realm for this IPA server"
+    )
+
 
 class RequiresRoot(ExecutionError):
     """
@@ -989,7 +1018,8 @@ class RequiresRoot(ExecutionError):
     """
 
     errno = 4006
-    format = _('This command requires root access')
+    format = _("This command requires root access")
+
 
 class AlreadyPosixGroup(ExecutionError):
     """
@@ -1005,7 +1035,8 @@ class AlreadyPosixGroup(ExecutionError):
     """
 
     errno = 4007
-    format = _('This is already a posix group')
+    format = _("This is already a posix group")
+
 
 class MalformedUserPrincipal(ExecutionError):
     """
@@ -1023,6 +1054,7 @@ class MalformedUserPrincipal(ExecutionError):
     errno = 4008
     format = _("Principal is not of the form user@REALM: '%(principal)s'")
 
+
 class AlreadyActive(ExecutionError):
     """
     **4009** Raised when an entry is made active that is already active
@@ -1037,7 +1069,8 @@ class AlreadyActive(ExecutionError):
     """
 
     errno = 4009
-    format = _('This entry is already enabled')
+    format = _("This entry is already enabled")
+
 
 class AlreadyInactive(ExecutionError):
     """
@@ -1053,7 +1086,8 @@ class AlreadyInactive(ExecutionError):
     """
 
     errno = 4010
-    format = _('This entry is already disabled')
+    format = _("This entry is already disabled")
+
 
 class HasNSAccountLock(ExecutionError):
     """
@@ -1069,7 +1103,8 @@ class HasNSAccountLock(ExecutionError):
     """
 
     errno = 4011
-    format = _('This entry cannot be enabled or disabled')
+    format = _("This entry cannot be enabled or disabled")
+
 
 class NotGroupMember(ExecutionError):
     """
@@ -1085,7 +1120,8 @@ class NotGroupMember(ExecutionError):
     """
 
     errno = 4012
-    format = _('This entry is not a member')
+    format = _("This entry is not a member")
+
 
 class RecursiveGroup(ExecutionError):
     """
@@ -1101,7 +1137,8 @@ class RecursiveGroup(ExecutionError):
     """
 
     errno = 4013
-    format = _('A group may not be a member of itself')
+    format = _("A group may not be a member of itself")
+
 
 class AlreadyGroupMember(ExecutionError):
     """
@@ -1117,7 +1154,8 @@ class AlreadyGroupMember(ExecutionError):
     """
 
     errno = 4014
-    format = _('This entry is already a member')
+    format = _("This entry is already a member")
+
 
 class Base64DecodeError(ExecutionError):
     """
@@ -1133,7 +1171,8 @@ class Base64DecodeError(ExecutionError):
     """
 
     errno = 4015
-    format = _('Base64 decoding failed: %(reason)s')
+    format = _("Base64 decoding failed: %(reason)s")
+
 
 class RemoteRetrieveError(ExecutionError):
     """
@@ -1149,7 +1188,8 @@ class RemoteRetrieveError(ExecutionError):
     """
 
     errno = 4016
-    format = _('%(reason)s')
+    format = _("%(reason)s")
+
 
 class SameGroupError(ExecutionError):
     """
@@ -1165,7 +1205,8 @@ class SameGroupError(ExecutionError):
     """
 
     errno = 4017
-    format = _('A group may not be added as a member of itself')
+    format = _("A group may not be added as a member of itself")
+
 
 class DefaultGroupError(ExecutionError):
     """
@@ -1181,7 +1222,7 @@ class DefaultGroupError(ExecutionError):
     """
 
     errno = 4018
-    format = _('The default users group cannot be removed')
+    format = _("The default users group cannot be removed")
 
 
 class ManagedGroupError(ExecutionError):
@@ -1197,7 +1238,8 @@ class ManagedGroupError(ExecutionError):
     """
 
     errno = 4020
-    format = _('Deleting a managed group is not allowed. It must be detached first.')
+    format = _("Deleting a managed group is not allowed. It must be detached first.")
+
 
 class ManagedPolicyError(ExecutionError):
     """
@@ -1212,7 +1254,7 @@ class ManagedPolicyError(ExecutionError):
     """
 
     errno = 4021
-    format = _('A managed group cannot have a password policy.')
+    format = _("A managed group cannot have a password policy.")
 
 
 class FileError(ExecutionError):
@@ -1228,7 +1270,7 @@ class FileError(ExecutionError):
     """
 
     errno = 4022
-    format = _('%(reason)s')
+    format = _("%(reason)s")
 
 
 class NoCertificateError(ExecutionError):
@@ -1244,7 +1286,7 @@ class NoCertificateError(ExecutionError):
     """
 
     errno = 4023
-    format = _('\'%(entry)s\' doesn\'t have a certificate.')
+    format = _("'%(entry)s' doesn't have a certificate.")
 
 
 class ManagedGroupExistsError(ExecutionError):
@@ -1260,7 +1302,7 @@ class ManagedGroupExistsError(ExecutionError):
     """
 
     errno = 4024
-    format = _('Unable to create private group. A group \'%(group)s\' already exists.')
+    format = _("Unable to create private group. A group '%(group)s' already exists.")
 
 
 class ReverseMemberError(ExecutionError):
@@ -1276,7 +1318,9 @@ class ReverseMemberError(ExecutionError):
     """
 
     errno = 4025
-    format = _('A problem was encountered when verifying that all members were %(verb)s: %(exc)s')
+    format = _(
+        "A problem was encountered when verifying that all members were %(verb)s: %(exc)s"
+    )
 
 
 class AttrValueNotFound(ExecutionError):
@@ -1294,7 +1338,7 @@ class AttrValueNotFound(ExecutionError):
 
     errno = 4026
     rval = 1
-    format = _('%(attr)s does not contain \'%(value)s\'')
+    format = _("%(attr)s does not contain '%(value)s'")
 
 
 class SingleMatchExpected(ExecutionError):
@@ -1311,7 +1355,9 @@ class SingleMatchExpected(ExecutionError):
 
     errno = 4027
     rval = 1
-    format = _('The search criteria was not specific enough. Expected 1 and found %(found)d.')
+    format = _(
+        "The search criteria was not specific enough. Expected 1 and found %(found)d."
+    )
 
 
 class AlreadyExternalGroup(ExecutionError):
@@ -1328,7 +1374,8 @@ class AlreadyExternalGroup(ExecutionError):
     """
 
     errno = 4028
-    format = _('This group already allows external members')
+    format = _("This group already allows external members")
+
 
 class ExternalGroupViolation(ExecutionError):
     """
@@ -1345,7 +1392,8 @@ class ExternalGroupViolation(ExecutionError):
     """
 
     errno = 4029
-    format = _('This group cannot be posix because it is external')
+    format = _("This group cannot be posix because it is external")
+
 
 class PosixGroupViolation(ExecutionError):
     """
@@ -1362,7 +1410,8 @@ class PosixGroupViolation(ExecutionError):
     """
 
     errno = 4030
-    format = _('This is already a posix group and cannot be converted to external one')
+    format = _("This is already a posix group and cannot be converted to external one")
+
 
 class EmptyResult(NotFound):
     """
@@ -1379,6 +1428,7 @@ class EmptyResult(NotFound):
 
     errno = 4031
 
+
 class InvalidDomainLevelError(ExecutionError):
     """
     **4032** Raised when a operation could not be completed due to a invalid
@@ -1394,7 +1444,7 @@ class InvalidDomainLevelError(ExecutionError):
     """
 
     errno = 4032
-    format = _('%(reason)s')
+    format = _("%(reason)s")
 
 
 class ServerRemovalError(ExecutionError):
@@ -1411,7 +1461,7 @@ class ServerRemovalError(ExecutionError):
     """
 
     errno = 4033
-    format = _('Server removal aborted: %(reason)s.')
+    format = _("Server removal aborted: %(reason)s.")
 
 
 class OperationNotSupportedForPrincipalType(ExecutionError):
@@ -1420,8 +1470,7 @@ class OperationNotSupportedForPrincipalType(ExecutionError):
     """
 
     errno = 4034
-    format = _(
-        '%(operation)s is not supported for %(principal_type)s principals')
+    format = _("%(operation)s is not supported for %(principal_type)s principals")
 
 
 class HTTPRequestError(RemoteRetrieveError):
@@ -1431,7 +1480,7 @@ class HTTPRequestError(RemoteRetrieveError):
     """
 
     errno = 4035
-    format = _('Request failed with status %(status)s: %(reason)s')
+    format = _("Request failed with status %(status)s: %(reason)s")
 
 
 class RedundantMappingRule(SingleMatchExpected):
@@ -1449,8 +1498,10 @@ class RedundantMappingRule(SingleMatchExpected):
     """
 
     errno = 4036
-    format = _('Mapping ruleset "%(ruleset)s" has more than one rule for the'
-               ' %(helper)s helper')
+    format = _(
+        'Mapping ruleset "%(ruleset)s" has more than one rule for the'
+        " %(helper)s helper"
+    )
 
 
 class CSRTemplateError(ExecutionError):
@@ -1459,7 +1510,7 @@ class CSRTemplateError(ExecutionError):
     """
 
     errno = 4037
-    format = _('%(reason)s')
+    format = _("%(reason)s")
 
 
 class BuiltinError(ExecutionError):
@@ -1507,7 +1558,7 @@ class MidairCollision(ExecutionError):
     """
 
     errno = 4201
-    format = _('change collided with another change')
+    format = _("change collided with another change")
 
 
 class EmptyModlist(ExecutionError):
@@ -1523,7 +1574,7 @@ class EmptyModlist(ExecutionError):
     """
 
     errno = 4202
-    format = _('no modifications to be performed')
+    format = _("no modifications to be performed")
 
 
 class DatabaseError(ExecutionError):
@@ -1539,7 +1590,7 @@ class DatabaseError(ExecutionError):
     """
 
     errno = 4203
-    format = _('%(desc)s: %(info)s')
+    format = _("%(desc)s: %(info)s")
 
 
 class LimitsExceeded(ExecutionError):
@@ -1555,7 +1606,8 @@ class LimitsExceeded(ExecutionError):
     """
 
     errno = 4204
-    format = _('limits exceeded for this query')
+    format = _("limits exceeded for this query")
+
 
 class ObjectclassViolation(ExecutionError):
     """
@@ -1570,7 +1622,8 @@ class ObjectclassViolation(ExecutionError):
     """
 
     errno = 4205
-    format = _('%(info)s')
+    format = _("%(info)s")
+
 
 class NotAllowedOnRDN(ExecutionError):
     """
@@ -1585,7 +1638,7 @@ class NotAllowedOnRDN(ExecutionError):
     """
 
     errno = 4206
-    format = _('modifying primary key is not allowed')
+    format = _("modifying primary key is not allowed")
 
 
 class OnlyOneValueAllowed(ExecutionError):
@@ -1601,7 +1654,7 @@ class OnlyOneValueAllowed(ExecutionError):
     """
 
     errno = 4207
-    format = _('%(attr)s: Only one value allowed.')
+    format = _("%(attr)s: Only one value allowed.")
 
 
 class InvalidSyntax(ExecutionError):
@@ -1617,7 +1670,7 @@ class InvalidSyntax(ExecutionError):
     """
 
     errno = 4208
-    format = _('%(attr)s: Invalid syntax.')
+    format = _("%(attr)s: Invalid syntax.")
 
 
 class BadSearchFilter(ExecutionError):
@@ -1633,7 +1686,7 @@ class BadSearchFilter(ExecutionError):
     """
 
     errno = 4209
-    format = _('Bad search filter %(info)s')
+    format = _("Bad search filter %(info)s")
 
 
 class NotAllowedOnNonLeaf(ExecutionError):
@@ -1649,7 +1702,7 @@ class NotAllowedOnNonLeaf(ExecutionError):
     """
 
     errno = 4210
-    format = _('Not allowed on non-leaf entry')
+    format = _("Not allowed on non-leaf entry")
 
 
 class DatabaseTimeout(DatabaseError):
@@ -1665,7 +1718,7 @@ class DatabaseTimeout(DatabaseError):
     """
 
     errno = 4211
-    format = _('LDAP timeout')
+    format = _("LDAP timeout")
 
 
 class TaskTimeout(DatabaseError):
@@ -1690,7 +1743,7 @@ class TimeLimitExceeded(LimitsExceeded):
     """
 
     errno = 4214
-    format = _('Configured time limit exceeded')
+    format = _("Configured time limit exceeded")
 
 
 class SizeLimitExceeded(LimitsExceeded):
@@ -1699,7 +1752,7 @@ class SizeLimitExceeded(LimitsExceeded):
     """
 
     errno = 4215
-    format = _('Configured size limit exceeded')
+    format = _("Configured size limit exceeded")
 
 
 class AdminLimitExceeded(LimitsExceeded):
@@ -1709,7 +1762,7 @@ class AdminLimitExceeded(LimitsExceeded):
     """
 
     errno = 4216
-    format = _('Configured administrative server limit exceeded')
+    format = _("Configured administrative server limit exceeded")
 
 
 class CertificateError(ExecutionError):
@@ -1734,7 +1787,8 @@ class CertificateOperationError(CertificateError):
     """
 
     errno = 4301
-    format = _('Certificate operation cannot be completed: %(error)s')
+    format = _("Certificate operation cannot be completed: %(error)s")
+
 
 class CertificateFormatError(CertificateError):
     """
@@ -1750,7 +1804,7 @@ class CertificateFormatError(CertificateError):
     """
 
     errno = 4302
-    format = _('Certificate format error: %(error)s')
+    format = _("Certificate format error: %(error)s")
 
 
 class MutuallyExclusiveError(ExecutionError):
@@ -1767,7 +1821,7 @@ class MutuallyExclusiveError(ExecutionError):
     """
 
     errno = 4303
-    format = _('%(reason)s')
+    format = _("%(reason)s")
 
 
 class NonFatalError(ExecutionError):
@@ -1784,7 +1838,7 @@ class NonFatalError(ExecutionError):
     """
 
     errno = 4304
-    format = _('%(reason)s')
+    format = _("%(reason)s")
 
 
 class AlreadyRegisteredError(ExecutionError):
@@ -1801,7 +1855,7 @@ class AlreadyRegisteredError(ExecutionError):
     """
 
     errno = 4305
-    format = _('Already registered')
+    format = _("Already registered")
 
 
 class NotRegisteredError(ExecutionError):
@@ -1817,7 +1871,7 @@ class NotRegisteredError(ExecutionError):
     """
 
     errno = 4306
-    format = _('Not registered yet')
+    format = _("Not registered yet")
 
 
 class DependentEntry(ExecutionError):
@@ -1833,7 +1887,7 @@ class DependentEntry(ExecutionError):
     """
 
     errno = 4307
-    format = _('%(key)s cannot be deleted because %(label)s %(dependent)s requires it')
+    format = _("%(key)s cannot be deleted because %(label)s %(dependent)s requires it")
 
 
 class LastMemberError(ExecutionError):
@@ -1849,7 +1903,9 @@ class LastMemberError(ExecutionError):
     """
 
     errno = 4308
-    format = _('%(key)s cannot be deleted or disabled because it is the last member of %(label)s %(container)s')
+    format = _(
+        "%(key)s cannot be deleted or disabled because it is the last member of %(label)s %(container)s"
+    )
 
 
 class ProtectedEntryError(ExecutionError):
@@ -1865,7 +1921,7 @@ class ProtectedEntryError(ExecutionError):
     """
 
     errno = 4309
-    format = _('%(label)s %(key)s cannot be deleted/modified: %(reason)s')
+    format = _("%(label)s %(key)s cannot be deleted/modified: %(reason)s")
 
 
 class CertificateInvalidError(CertificateError):
@@ -1882,7 +1938,7 @@ class CertificateInvalidError(CertificateError):
     """
 
     errno = 4310
-    format = _('%(name)s certificate is not valid')
+    format = _("%(name)s certificate is not valid")
 
 
 class SchemaUpToDate(ExecutionError):
@@ -1926,8 +1982,7 @@ class DNSNotARecordError(DNSError):
     """
 
     errno = 4019  # this exception was defined before DNSError
-    format = _(
-        'Host \'%(hostname)s\' does not have corresponding DNS A/AAAA record')
+    format = _("Host '%(hostname)s' does not have corresponding DNS A/AAAA record")
 
 
 class DNSDataMismatch(DNSError):
@@ -1945,7 +2000,7 @@ class DNSDataMismatch(DNSError):
     """
 
     errno = 4212  # this exception was defined before DNSError
-    format = _('DNS check failed: Expected {%(expected)s} got {%(got)s}')
+    format = _("DNS check failed: Expected {%(expected)s} got {%(got)s}")
 
 
 class DNSResolverError(DNSError):
@@ -1961,7 +2016,8 @@ class DNSResolverError(DNSError):
     """
 
     errno = 4401
-    format = _('%(exception)s')
+    format = _("%(exception)s")
+
 
 class TrustError(ExecutionError):
     """
@@ -1971,6 +2027,7 @@ class TrustError(ExecutionError):
     """
 
     errno = 4500
+
 
 class TrustTopologyConflictError(TrustError):
     """
@@ -1988,12 +2045,15 @@ class TrustTopologyConflictError(TrustError):
     """
 
     errno = 4501
-    format = _("Forest '%(forest)s' has existing trust to forest(s) "
-               "%(domains)s which prevents a trust to '%(conflict)s'")
+    format = _(
+        "Forest '%(forest)s' has existing trust to forest(s) "
+        "%(domains)s which prevents a trust to '%(conflict)s'"
+    )
 
 
 ##############################################################################
 # 5000 - 5999: Generic errors
+
 
 class GenericError(PublicError):
     """
@@ -2003,9 +2063,9 @@ class GenericError(PublicError):
     errno = 5000
 
 
+public_errors = tuple(
+    sorted(messages.iter_messages(globals(), PublicError), key=lambda E: E.errno)
+)
 
-public_errors = tuple(sorted(
-    messages.iter_messages(globals(), PublicError), key=lambda E: E.errno))
-
-if __name__ == '__main__':
-    messages.print_report('public errors', public_errors)
+if __name__ == "__main__":
+    messages.print_report("public errors", public_errors)

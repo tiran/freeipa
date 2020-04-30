@@ -35,9 +35,11 @@ from ipapython.dn import DN
 from ipapython.dnsutil import query_srv
 from ipapython.ipaldap import ldap_initialize
 from ipaserver.install import installutils
-from ipaserver.dcerpc_common import (TRUST_BIDIRECTIONAL,
-                                     TRUST_JOIN_EXTERNAL,
-                                     trust_type_string)
+from ipaserver.dcerpc_common import (
+    TRUST_BIDIRECTIONAL,
+    TRUST_JOIN_EXTERNAL,
+    trust_type_string,
+)
 
 from ipalib.util import normalize_name
 
@@ -74,12 +76,14 @@ if six.PY3:
     unicode = str
     long = int
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Classes to manage trust joins using DCE-RPC calls
 
 The code in this module relies heavily on samba4-python package
 and Samba4 python bindings.
-""")
+"""
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,59 +97,63 @@ def is_sid_valid(sid):
         return True
 
 
-access_denied_error = errors.ACIError(
-                          info=_('CIFS server denied your credentials'))
+access_denied_error = errors.ACIError(info=_("CIFS server denied your credentials"))
 dcerpc_error_codes = {
-    -1073741823:
-        errors.RemoteRetrieveError(
-            reason=_('communication with CIFS server was unsuccessful')),
+    -1073741823: errors.RemoteRetrieveError(
+        reason=_("communication with CIFS server was unsuccessful")
+    ),
     -1073741790: access_denied_error,
     -1073741715: access_denied_error,
     -1073741614: access_denied_error,
-    -1073741603:
-        errors.ValidationError(
-            name=_('AD domain controller'),
-            error=_('unsupported functional level')),
-    -1073741811:  # NT_STATUS_INVALID_PARAMETER
-        errors.RemoteRetrieveError(
-            reason=_('AD domain controller complains about communication '
-                     'sequence. It may mean unsynchronized time on both '
-                     'sides, for example')),
+    -1073741603: errors.ValidationError(
+        name=_("AD domain controller"), error=_("unsupported functional level")
+    ),
+    -1073741811: errors.RemoteRetrieveError(  # NT_STATUS_INVALID_PARAMETER
+        reason=_(
+            "AD domain controller complains about communication "
+            "sequence. It may mean unsynchronized time on both "
+            "sides, for example"
+        )
+    ),
     -1073741776:  # NT_STATUS_INVALID_PARAMETER_MIX,
-                  # we simply will skip the binding
-        access_denied_error,
-    -1073741772:  # NT_STATUS_OBJECT_NAME_NOT_FOUND
-        errors.NotFound(
-            reason=_('Cannot find specified domain or server name')),
+    # we simply will skip the binding
+    access_denied_error,
+    -1073741772: errors.NotFound(  # NT_STATUS_OBJECT_NAME_NOT_FOUND
+        reason=_("Cannot find specified domain or server name")
+    ),
 }
 
 dcerpc_error_messages = {
-    "NT_STATUS_OBJECT_NAME_NOT_FOUND":
-        errors.NotFound(
-            reason=_('Cannot find specified domain or server name')),
-    "The object name is not found.":
-        errors.NotFound(
-            reason=_('Cannot find specified domain or server name')),
-    "WERR_NO_LOGON_SERVERS":
-        errors.RemoteRetrieveError(
-            reason=_('AD DC was unable to reach any IPA domain controller. '
-                     'Most likely it is a DNS or firewall issue')),
+    "NT_STATUS_OBJECT_NAME_NOT_FOUND": errors.NotFound(
+        reason=_("Cannot find specified domain or server name")
+    ),
+    "The object name is not found.": errors.NotFound(
+        reason=_("Cannot find specified domain or server name")
+    ),
+    "WERR_NO_LOGON_SERVERS": errors.RemoteRetrieveError(
+        reason=_(
+            "AD DC was unable to reach any IPA domain controller. "
+            "Most likely it is a DNS or firewall issue"
+        )
+    ),
     # This is a very long key, don't change it
     "There are currently no logon servers available to "
-    "service the logon request.":
-        errors.RemoteRetrieveError(
-            reason=_('AD DC was unable to reach any IPA domain controller. '
-                     'Most likely it is a DNS or firewall issue')),
-    "NT_STATUS_INVALID_PARAMETER_MIX":
-        errors.RequirementError(
-            name=_('At least the domain or IP address should be specified')),
+    "service the logon request.": errors.RemoteRetrieveError(
+        reason=_(
+            "AD DC was unable to reach any IPA domain controller. "
+            "Most likely it is a DNS or firewall issue"
+        )
+    ),
+    "NT_STATUS_INVALID_PARAMETER_MIX": errors.RequirementError(
+        name=_("At least the domain or IP address should be specified")
+    ),
 }
 
 pysss_type_key_translation_dict = {
-    pysss_nss_idmap.ID_USER: 'user',
-    pysss_nss_idmap.ID_GROUP: 'group',
+    pysss_nss_idmap.ID_USER: "user",
+    pysss_nss_idmap.ID_GROUP: "group",
     # Used for users with magic private groups
-    pysss_nss_idmap.ID_BOTH: 'both',
+    pysss_nss_idmap.ID_BOTH: "both",
 }
 
 
@@ -176,9 +184,10 @@ def assess_dcerpc_error(error):
         return dcerpc_error_codes[num]
     if message and message in dcerpc_error_messages:
         return dcerpc_error_messages[message]
-    reason = _('CIFS server communication error: code "%(num)s", '
-               'message "%(message)s" (both may be "None")') % \
-        dict(num=num, message=message)
+    reason = _(
+        'CIFS server communication error: code "%(num)s", '
+        'message "%(message)s" (both may be "None")'
+    ) % dict(num=num, message=message)
     return errors.RemoteRetrieveError(reason=reason)
 
 
@@ -188,16 +197,16 @@ class ExtendedDNControl(LDAPControl):
             self,
             controlType="1.2.840.113556.1.4.529",
             criticality=False,
-            encodedControlValue=b'0\x03\x02\x01\x01'
+            encodedControlValue=b"0\x03\x02\x01\x01",
         )
 
 
 class DomainValidator:
-    ATTR_FLATNAME = 'ipantflatname'
-    ATTR_SID = 'ipantsecurityidentifier'
-    ATTR_TRUSTED_SID = 'ipanttrusteddomainsid'
-    ATTR_TRUST_PARTNER = 'ipanttrustpartner'
-    ATTR_TRUST_AUTHOUT = 'ipanttrustauthoutgoing'
+    ATTR_FLATNAME = "ipantflatname"
+    ATTR_SID = "ipantsecurityidentifier"
+    ATTR_TRUSTED_SID = "ipanttrusteddomainsid"
+    ATTR_TRUST_PARTNER = "ipanttrustpartner"
+    ATTR_TRUST_AUTHOUT = "ipanttrustauthoutgoing"
 
     def __init__(self, api):
         self.api = api
@@ -213,13 +222,15 @@ class DomainValidator:
         self._parm = None
 
     def is_configured(self):
-        cn_trust_local = DN(('cn', self.api.env.domain),
-                            self.api.env.container_cifsdomains,
-                            self.api.env.basedn)
+        cn_trust_local = DN(
+            ("cn", self.api.env.domain),
+            self.api.env.container_cifsdomains,
+            self.api.env.basedn,
+        )
         try:
-            entry_attrs = self.ldap.get_entry(cn_trust_local,
-                                              [self.ATTR_FLATNAME,
-                                               self.ATTR_SID])
+            entry_attrs = self.ldap.get_entry(
+                cn_trust_local, [self.ATTR_FLATNAME, self.ATTR_SID]
+            )
             self.flatname = entry_attrs[self.ATTR_FLATNAME][0]
             self.sid = entry_attrs[self.ATTR_SID][0]
             self.dn = entry_attrs.dn
@@ -233,20 +244,20 @@ class DomainValidator:
         Returns case-insensitive dict of trusted domain tuples
         (flatname, sid, trust_auth_outgoing), keyed by domain name.
         """
-        cn_trust = DN(('cn', 'ad'), self.api.env.container_trusts,
-                      self.api.env.basedn)
+        cn_trust = DN(("cn", "ad"), self.api.env.container_trusts, self.api.env.basedn)
 
         try:
-            search_kw = {'objectClass': 'ipaNTTrustedDomain'}
-            filter = self.ldap.make_filter(search_kw,
-                                           rules=self.ldap.MATCH_ALL)
+            search_kw = {"objectClass": "ipaNTTrustedDomain"}
+            filter = self.ldap.make_filter(search_kw, rules=self.ldap.MATCH_ALL)
             entries, _truncated = self.ldap.find_entries(
                 filter=filter,
                 base_dn=cn_trust,
-                attrs_list=[self.ATTR_TRUSTED_SID,
-                            self.ATTR_FLATNAME,
-                            self.ATTR_TRUST_PARTNER]
-                )
+                attrs_list=[
+                    self.ATTR_TRUSTED_SID,
+                    self.ATTR_FLATNAME,
+                    self.ATTR_TRUST_PARTNER,
+                ],
+            )
 
             # We need to use case-insensitive dictionary since we use
             # domain names as keys and those are generally case-insensitive
@@ -260,12 +271,14 @@ class DomainValidator:
                 except KeyError as exc:
                     # Some piece of trusted domain info in LDAP is missing
                     # Skip the domain, but leave log entry for investigation
-                    logger.warning("Trusted domain '%s' entry misses an "
-                                   "attribute: %s", e.dn, exc)
+                    logger.warning(
+                        "Trusted domain '%s' entry misses an " "attribute: %s",
+                        e.dn,
+                        exc,
+                    )
                     continue
 
-                result[t_partner] = (fname_norm,
-                                     security.dom_sid(trusted_sid))
+                result[t_partner] = (fname_norm, security.dom_sid(trusted_sid))
             return result
         except errors.NotFound as exc:
             return []
@@ -279,23 +292,23 @@ class DomainValidator:
             # Our domain is configured but no trusted domains are configured
             # This means we can't check the correctness of a trusted
             # domain SIDs
-            raise errors.ValidationError(name='sid',
-                                         error=_('no trusted domain '
-                                                 'is configured'))
+            raise errors.ValidationError(
+                name="sid", error=_("no trusted domain " "is configured")
+            )
 
     def get_domain_by_sid(self, sid, exact_match=False):
         if not self.domain:
             # our domain is not configured or self.is_configured() never run
             # reject SIDs as we can't check correctness of them
-            raise errors.ValidationError(name='sid',
-                                         error=_('domain is not configured'))
+            raise errors.ValidationError(
+                name="sid", error=_("domain is not configured")
+            )
 
         # Parse sid string to see if it is really in a SID format
         try:
             test_sid = security.dom_sid(sid)
         except TypeError:
-            raise errors.ValidationError(name='sid',
-                                         error=_('SID is not valid'))
+            raise errors.ValidationError(name="sid", error=_("SID is not valid"))
 
         # At this point we have SID_NT_AUTHORITY family SID and really need to
         # check it against prefixes of domain SIDs we trust to
@@ -310,8 +323,9 @@ class DomainValidator:
                 if sid == str(self._domains[domain][1]):
                     return domain
 
-            raise errors.NotFound(reason=_("SID does not match exactly"
-                                           "with any trusted domain's SID"))
+            raise errors.NotFound(
+                reason=_("SID does not match exactly" "with any trusted domain's SID")
+            )
         else:
             # check as prefixes
             test_sid_subauths = test_sid.sub_auths
@@ -321,8 +335,7 @@ class DomainValidator:
                 num_auths = min(test_sid.num_auths, domsid.num_auths)
                 if test_sid_subauths[:num_auths] == sub_auths[:num_auths]:
                     return domain
-            raise errors.NotFound(reason=_('SID does not match any '
-                                           'trusted domain'))
+            raise errors.NotFound(reason=_("SID does not match any " "trusted domain"))
 
     def is_trusted_sid_valid(self, sid):
         try:
@@ -350,9 +363,15 @@ class DomainValidator:
         else:
             return None
 
-    def get_trusted_domain_objects(self, domain=None, flatname=None, filter="",
-                                   attrs=None, scope=_ldap.SCOPE_SUBTREE,
-                                   basedn=None):
+    def get_trusted_domain_objects(
+        self,
+        domain=None,
+        flatname=None,
+        filter="",
+        attrs=None,
+        scope=_ldap.SCOPE_SUBTREE,
+        basedn=None,
+    ):
         """
         Search for LDAP objects in a trusted domain specified either by
         `domain' or `flatname'. The actual LDAP search is specified by
@@ -363,22 +382,23 @@ class DomainValidator:
         """Returns SID for the trusted domain object (user or group only)"""
         if not self.domain:
             # our domain is not configured or self.is_configured() never run
-            raise errors.ValidationError(name=_('Trust setup'),
-                                         error=_('Our domain is '
-                                                 'not configured'))
+            raise errors.ValidationError(
+                name=_("Trust setup"), error=_("Our domain is " "not configured")
+            )
         if not self._domains:
             self._domains = self.get_trusted_domains()
         if len(self._domains) == 0:
             # Our domain is configured but no trusted domains are configured
-            raise errors.ValidationError(name=_('Trust setup'),
-                                         error=_('No trusted domain is '
-                                                 'not configured'))
+            raise errors.ValidationError(
+                name=_("Trust setup"), error=_("No trusted domain is " "not configured")
+            )
 
         entries = None
         if domain is not None:
             if domain not in self._domains:
-                raise errors.ValidationError(name=_('trusted domain object'),
-                                             error=_('domain is not trusted'))
+                raise errors.ValidationError(
+                    name=_("trusted domain object"), error=_("domain is not trusted")
+                )
             # Now we have a name to check against our list of trusted domains
             entries = self.search_in_dc(domain, filter, attrs, scope, basedn)
         elif flatname is not None:
@@ -388,70 +408,74 @@ class DomainValidator:
             for domain in self._domains:
                 if self._domains[domain][0] == flatname:
                     found_flatname = True
-                    entries = self.search_in_dc(domain, filter,
-                                                attrs, scope, basedn)
+                    entries = self.search_in_dc(domain, filter, attrs, scope, basedn)
                     if entries:
                         break
             if not found_flatname:
-                raise errors.ValidationError(name=_('trusted domain object'),
-                                             error=_('no trusted domain '
-                                                     'matched the specified '
-                                                     'flat name'))
+                raise errors.ValidationError(
+                    name=_("trusted domain object"),
+                    error=_("no trusted domain " "matched the specified " "flat name"),
+                )
         if not entries:
-            raise errors.NotFound(reason=_('trusted domain object not found'))
+            raise errors.NotFound(reason=_("trusted domain object not found"))
 
         return entries
 
-    def get_trusted_domain_object_sid(self, object_name,
-                                      fallback_to_ldap=True):
+    def get_trusted_domain_object_sid(self, object_name, fallback_to_ldap=True):
         result = pysss_nss_idmap.getsidbyname(object_name)
-        if object_name in result and \
-           (pysss_nss_idmap.SID_KEY in result[object_name]):
+        if object_name in result and (pysss_nss_idmap.SID_KEY in result[object_name]):
             object_sid = result[object_name][pysss_nss_idmap.SID_KEY]
             if self.is_trusted_sid_valid(object_sid):
                 return object_sid
             else:
-                raise errors.ValidationError(name=_('trusted domain object'),
-                                             error=_('Object does not belong '
-                                                     'to a trusted domain'))
+                raise errors.ValidationError(
+                    name=_("trusted domain object"),
+                    error=_("Object does not belong " "to a trusted domain"),
+                )
 
         # If fallback to AD DC LDAP is not allowed, bail out
         if not fallback_to_ldap:
-            raise errors.ValidationError(name=_('trusted domain object'),
-                                         error=_('SSSD was unable to resolve '
-                                                 'the object to a valid SID'))
+            raise errors.ValidationError(
+                name=_("trusted domain object"),
+                error=_("SSSD was unable to resolve " "the object to a valid SID"),
+            )
 
         # Else, we are going to contact AD DC LDAP
         components = normalize_name(object_name)
-        if not ('domain' in components or 'flatname' in components):
+        if not ("domain" in components or "flatname" in components):
             # No domain or realm specified, ambiguous search
-            raise errors.ValidationError(name=_('trusted domain object'),
-                                         error=_('Ambiguous search, user '
-                                                 'domain was not specified'))
+            raise errors.ValidationError(
+                name=_("trusted domain object"),
+                error=_("Ambiguous search, user " "domain was not specified"),
+            )
 
-        attrs = ['objectSid']
-        filter = '(&(sAMAccountName=%(name)s)' \
-                 '(|(objectClass=user)(objectClass=group)))' \
-                 % dict(name=components['name'])
+        attrs = ["objectSid"]
+        filter = (
+            "(&(sAMAccountName=%(name)s)"
+            "(|(objectClass=user)(objectClass=group)))" % dict(name=components["name"])
+        )
         scope = _ldap.SCOPE_SUBTREE
-        entries = self.get_trusted_domain_objects(components.get('domain'),
-                                                  components.get('flatname'),
-                                                  filter, attrs, scope)
+        entries = self.get_trusted_domain_objects(
+            components.get("domain"), components.get("flatname"), filter, attrs, scope
+        )
 
         if len(entries) > 1:
             # Treat non-unique entries as invalid
-            raise errors.ValidationError(name=_('trusted domain object'),
-                                         error=_('Trusted domain did not '
-                                                 'return a unique object'))
-        sid = self.__sid_to_str(entries[0]['objectSid'][0])
+            raise errors.ValidationError(
+                name=_("trusted domain object"),
+                error=_("Trusted domain did not " "return a unique object"),
+            )
+        sid = self.__sid_to_str(entries[0]["objectSid"][0])
         try:
             test_sid = security.dom_sid(sid)
             return unicode(test_sid)
         except TypeError:
-            raise errors.ValidationError(name=_('trusted domain object'),
-                                         error=_('Trusted domain did not '
-                                                 'return a valid SID for '
-                                                 'the object'))
+            raise errors.ValidationError(
+                name=_("trusted domain object"),
+                error=_(
+                    "Trusted domain did not " "return a valid SID for " "the object"
+                ),
+            )
 
     def get_trusted_domain_object_type(self, name_or_sid):
         """
@@ -479,14 +503,16 @@ class DomainValidator:
 
         # Check if the given SID is valid
         if not self.is_trusted_sid_valid(sid):
-            raise errors.ValidationError(name='sid', error='SID is not valid')
+            raise errors.ValidationError(name="sid", error="SID is not valid")
 
         # Use pysss_nss_idmap to obtain the name
         result = pysss_nss_idmap.getnamebysid(sid).get(sid)
 
-        valid_types = (pysss_nss_idmap.ID_USER,
-                       pysss_nss_idmap.ID_GROUP,
-                       pysss_nss_idmap.ID_BOTH)
+        valid_types = (
+            pysss_nss_idmap.ID_USER,
+            pysss_nss_idmap.ID_GROUP,
+            pysss_nss_idmap.ID_BOTH,
+        )
 
         if result:
             if result.get(pysss_nss_idmap.TYPE_KEY) in valid_types:
@@ -496,30 +522,30 @@ class DomainValidator:
         logger.debug("Searching AD DC LDAP")
 
         # escape_filter_chars(sid_bytes, 2) but for bytes
-        escaped_sid = "".join(
-            "\\%02x" % b for b in ndr_pack(security.dom_sid(sid))
-        )
+        escaped_sid = "".join("\\%02x" % b for b in ndr_pack(security.dom_sid(sid)))
 
-        attrs = ['sAMAccountName']
-        filter = (r'(&(objectSid=%(sid)s)'
-                  '(|(objectClass=user)(objectClass=group)))'
-                  % dict(sid=escaped_sid))  # sid in binary
+        attrs = ["sAMAccountName"]
+        filter = (
+            r"(&(objectSid=%(sid)s)"
+            "(|(objectClass=user)(objectClass=group)))" % dict(sid=escaped_sid)
+        )  # sid in binary
         domain = self.get_domain_by_sid(sid)
 
-        entries = self.get_trusted_domain_objects(domain=domain,
-                                                  filter=filter,
-                                                  attrs=attrs)
+        entries = self.get_trusted_domain_objects(
+            domain=domain, filter=filter, attrs=attrs
+        )
 
         if len(entries) > 1:
             # Treat non-unique entries as invalid
-            raise errors.ValidationError(name=_('trusted domain object'),
-                                         error=_('Trusted domain did not '
-                                                 'return a unique object'))
-
-        object_name = (
-            "%s@%s" % (entries[0].single_value['sAMAccountName'].lower(),
-                       domain.lower())
+            raise errors.ValidationError(
+                name=_("trusted domain object"),
+                error=_("Trusted domain did not " "return a unique object"),
             )
+
+        object_name = "%s@%s" % (
+            entries[0].single_value["sAMAccountName"].lower(),
+            domain.lower(),
+        )
 
         return unicode(object_name)
 
@@ -535,54 +561,51 @@ class DomainValidator:
               of the trusted domain
         """
         components = normalize_name(object_name)
-        domain = components.get('domain')
-        flatname = components.get('flatname')
-        name = components.get('name')
+        domain = components.get("domain")
+        flatname = components.get("flatname")
+        name = components.get("name")
 
         is_valid_sid = is_sid_valid(object_name)
         if is_valid_sid:
             # Find a trusted domain for the SID
             domain = self.get_domain_by_sid(object_name)
             # Now search a trusted domain for a user with this SID
-            attrs = ['cn']
-            filter = '(&(objectClass=user)(objectSid=%(sid)s))' \
-                % dict(sid=object_name)
+            attrs = ["cn"]
+            filter = "(&(objectClass=user)(objectSid=%(sid)s))" % dict(sid=object_name)
             try:
-                entries = self.get_trusted_domain_objects(domain=domain,
-                                                          filter=filter,
-                                                          attrs=attrs,
-                                                          scope=_ldap.SCOPE_SUBTREE)
+                entries = self.get_trusted_domain_objects(
+                    domain=domain, filter=filter, attrs=attrs, scope=_ldap.SCOPE_SUBTREE
+                )
             except errors.NotFound:
-                raise errors.NotFound(reason=_('trusted domain user not found'))
+                raise errors.NotFound(reason=_("trusted domain user not found"))
             user_dn = entries[0].dn
         elif domain or flatname:
-            attrs = ['cn']
-            filter = '(&(sAMAccountName=%(name)s)(objectClass=user))' \
-                     % dict(name=name)
+            attrs = ["cn"]
+            filter = "(&(sAMAccountName=%(name)s)(objectClass=user))" % dict(name=name)
             try:
-                entries = self.get_trusted_domain_objects(domain,
-                                                          flatname, filter, attrs,
-                                                          _ldap.SCOPE_SUBTREE)
+                entries = self.get_trusted_domain_objects(
+                    domain, flatname, filter, attrs, _ldap.SCOPE_SUBTREE
+                )
             except errors.NotFound:
-                raise errors.NotFound(reason=_('trusted domain user not found'))
+                raise errors.NotFound(reason=_("trusted domain user not found"))
             user_dn = entries[0].dn
         else:
             # No domain or realm specified, ambiguous search
-            raise errors.ValidationError(name=_('trusted domain object'),
-                                         error=_('Ambiguous search, '
-                                                 'user domain was not specified'))
+            raise errors.ValidationError(
+                name=_("trusted domain object"),
+                error=_("Ambiguous search, " "user domain was not specified"),
+            )
 
         # Get SIDs of user object and it's groups
         # tokenGroups attribute must be read with a scope BASE for a known user
         # distinguished name to avoid search error
-        attrs = ['objectSID', 'tokenGroups']
+        attrs = ["objectSID", "tokenGroups"]
         filter = "(objectClass=user)"
-        entries = self.get_trusted_domain_objects(domain,
-                                                  flatname, filter, attrs,
-                                                  _ldap.SCOPE_BASE, user_dn)
-        object_sid = self.__sid_to_str(entries[0]['objectSid'][0])
-        group_sids = [self.__sid_to_str(sid)
-                      for sid in entries[0]['tokenGroups']]
+        entries = self.get_trusted_domain_objects(
+            domain, flatname, filter, attrs, _ldap.SCOPE_BASE, user_dn
+        )
+        object_sid = self.__sid_to_str(entries[0]["objectSid"][0])
+        group_sids = [self.__sid_to_str(sid) for sid in entries[0]["tokenGroups"]]
         return (object_sid, group_sids)
 
     def get_trusted_domain_user_and_groups(self, object_name):
@@ -606,14 +629,17 @@ class DomainValidator:
         if is_valid_sid:
             object_sid = object_name
             result = pysss_nss_idmap.getnamebysid(object_name)
-            if object_name in result and \
-               (pysss_nss_idmap.NAME_KEY in result[object_name]):
+            if object_name in result and (
+                pysss_nss_idmap.NAME_KEY in result[object_name]
+            ):
                 group_list = pysss.getgrouplist(
-                                 result[object_name][pysss_nss_idmap.NAME_KEY])
+                    result[object_name][pysss_nss_idmap.NAME_KEY]
+                )
         else:
             result = pysss_nss_idmap.getsidbyname(object_name)
-            if object_name in result and \
-               (pysss_nss_idmap.SID_KEY in result[object_name]):
+            if object_name in result and (
+                pysss_nss_idmap.SID_KEY in result[object_name]
+            ):
                 object_sid = result[object_name][pysss_nss_idmap.SID_KEY]
                 group_list = pysss.getgrouplist(object_name)
 
@@ -622,9 +648,9 @@ class DomainValidator:
 
         group_sids = pysss_nss_idmap.getsidbyname(group_list)
         return (
-                object_sid,
-                [el[1][pysss_nss_idmap.SID_KEY] for el in group_sids.items()]
-               )
+            object_sid,
+            [el[1][pysss_nss_idmap.SID_KEY] for el in group_sids.items()],
+        )
 
     def __sid_to_str(self, sid):
         """
@@ -633,13 +659,12 @@ class DomainValidator:
         """
         sid_rev_num = ord(sid[0])
         number_sub_id = ord(sid[1])
-        ia = struct.unpack('!Q', '\x00\x00'+sid[2:8])[0]
+        ia = struct.unpack("!Q", "\x00\x00" + sid[2:8])[0]
         subs = [
-            struct.unpack('<I', sid[8+4*i:12+4*i])[0]
+            struct.unpack("<I", sid[8 + 4 * i : 12 + 4 * i])[0]
             for i in range(number_sub_id)
         ]
-        return 'S-%d-%d-%s' % (sid_rev_num, ia,
-                                '-'.join([str(s) for s in subs]),)
+        return "S-%d-%d-%s" % (sid_rev_num, ia, "-".join([str(s) for s in subs]),)
 
     def kinit_as_administrator(self, domain):
         """
@@ -656,37 +681,38 @@ class DomainValidator:
         if self._admin_creds is None:
             return (None, None)
 
-        domain_suffix = domain.replace('.', '-')
+        domain_suffix = domain.replace(".", "-")
 
         ccache_name = "kinit_TDA%s" % (domain_suffix)
         ccache_path = os.path.join(paths.IPA_CCACHES, ccache_name)
 
-        (principal, password) = self._admin_creds.split('%', 1)
+        (principal, password) = self._admin_creds.split("%", 1)
 
         # Destroy the contents of the ccache
-        logger.debug('Destroying the contents of the separate ccache')
+        logger.debug("Destroying the contents of the separate ccache")
 
         ipautil.run(
-            [paths.KDESTROY, '-A', '-c', ccache_path],
-            env={'KRB5CCNAME': ccache_path},
-            raiseonerr=False)
+            [paths.KDESTROY, "-A", "-c", ccache_path],
+            env={"KRB5CCNAME": ccache_path},
+            raiseonerr=False,
+        )
 
         # Destroy the contents of the ccache
-        logger.debug('Running kinit with credentials of AD administrator')
+        logger.debug("Running kinit with credentials of AD administrator")
 
         result = ipautil.run(
             [paths.KINIT, principal],
-            env={'KRB5CCNAME': ccache_path},
+            env={"KRB5CCNAME": ccache_path},
             stdin=password,
-            raiseonerr=False)
+            raiseonerr=False,
+        )
 
         if result.returncode == 0:
             return (ccache_path, principal)
         else:
             return (None, None)
 
-    def search_in_dc(self, domain, filter, attrs, scope, basedn=None,
-                     quiet=False):
+    def search_in_dc(self, domain, filter, attrs, scope, basedn=None, quiet=False):
         """
         Perform LDAP search in a trusted domain `domain' Domain Controller.
         Returns resulting entries or None.
@@ -698,20 +724,21 @@ class DomainValidator:
 
         if not info:
             raise errors.ValidationError(
-                name=_('Trust setup'),
-                error=_('Cannot retrieve trusted domain GC list'))
+                name=_("Trust setup"), error=_("Cannot retrieve trusted domain GC list")
+            )
 
-        for (host, port) in info['gc']:
-            entries = self.__search_in_dc(info, host, port, filter, attrs,
-                                          scope, basedn=basedn,
-                                          quiet=quiet)
+        for (host, port) in info["gc"]:
+            entries = self.__search_in_dc(
+                info, host, port, filter, attrs, scope, basedn=basedn, quiet=quiet
+            )
             if entries:
                 break
 
         return entries
 
-    def __search_in_dc(self, info, host, port, filter, attrs, scope,
-                       basedn=None, quiet=False):
+    def __search_in_dc(
+        self, info, host, port, filter, attrs, scope, basedn=None, quiet=False
+    ):
         """
         Actual search in AD LDAP server, using SASL GSSAPI authentication
         Returns LDAP result or None.
@@ -720,8 +747,7 @@ class DomainValidator:
         ccache_name = None
 
         if self._admin_creds:
-            (ccache_name,
-             _principal) = self.kinit_as_administrator(info['dns_domain'])
+            (ccache_name, _principal) = self.kinit_as_administrator(info["dns_domain"])
 
         if ccache_name:
             with ipautil.private_ccache(path=ccache_name):
@@ -731,24 +757,23 @@ class DomainValidator:
                     # AD does not support SASL + TLS at the same time
                     # https://msdn.microsoft.com/en-us/library/cc223500.aspx
                     conn = ipaldap.LDAPClient.from_hostname_plain(
-                        host,
-                        no_schema=True,
-                        decode_attrs=False
+                        host, no_schema=True, decode_attrs=False
                     )
                     conn.gssapi_bind()
 
                     if basedn is None:
                         # Use domain root base DN
-                        basedn = ipautil.realm_to_suffix(info['dns_domain'])
+                        basedn = ipautil.realm_to_suffix(info["dns_domain"])
 
                     entries = conn.get_entries(basedn, scope, filter, attrs)
                 except Exception as e:
-                    msg = "Search on AD DC {host}:{port} failed with: {err}"\
-                          .format(host=host, port=str(port), err=str(e))
+                    msg = "Search on AD DC {host}:{port} failed with: {err}".format(
+                        host=host, port=str(port), err=str(e)
+                    )
                     if quiet:
-                        logger.debug('%s', msg)
+                        logger.debug("%s", msg)
                     else:
-                        logger.warning('%s', msg)
+                        logger.warning("%s", msg)
 
                 return entries
         return None
@@ -766,9 +791,8 @@ class DomainValidator:
 
         if not self._creds:
             self._parm = param.LoadParm()
-            self._parm.load(
-                os.path.join(paths.USR_SHARE_IPA_DIR, "smb.conf.empty"))
-            self._parm.set('netbios name', self.flatname)
+            self._parm.load(os.path.join(paths.USR_SHARE_IPA_DIR, "smb.conf.empty"))
+            self._parm.set("netbios name", self.flatname)
             self._creds = credentials.Credentials()
             self._creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
             self._creds.guess(self._parm)
@@ -795,14 +819,14 @@ class DomainValidator:
         servers = []
 
         if result:
-            info['name'] = unicode(result.domain_name)
-            info['dns_domain'] = unicode(result.dns_domain)
+            info["name"] = unicode(result.domain_name)
+            info["dns_domain"] = unicode(result.dns_domain)
             servers = [(unicode(result.pdc_dns_name), 3268)]
         else:
-            info['name'] = self._domains[domain]
-            info['dns_domain'] = domain
+            info["name"] = self._domains[domain]
+            info["dns_domain"] = domain
             # Retrieve GC servers list
-            gc_name = '_gc._tcp.%s.' % info['dns_domain']
+            gc_name = "_gc._tcp.%s." % info["dns_domain"]
 
             try:
                 answers = query_srv(gc_name)
@@ -813,10 +837,10 @@ class DomainValidator:
                 server = str(answer.target).rstrip(".")
                 servers.append((server, answer.port))
 
-        info['gc'] = servers
+        info["gc"] = servers
 
         # Both methods should not fail at the same time
-        if finddc_error and len(info['gc']) == 0:
+        if finddc_error and len(info["gc"]) == 0:
             raise assess_dcerpc_error(finddc_error)
 
         self._info[domain] = info
@@ -830,12 +854,11 @@ def string_to_array(what):
 
 
 class TrustDomainInstance:
-
     def __init__(self, hostname, creds=None):
         self.parm = param.LoadParm()
         self.parm.load(os.path.join(paths.USR_SHARE_IPA_DIR, "smb.conf.empty"))
         if len(hostname) > 0:
-            self.parm.set('netbios name', hostname)
+            self.parm.set("netbios name", hostname)
         self.creds = creds
         self.hostname = hostname
         self.info = {}
@@ -847,7 +870,7 @@ class TrustDomainInstance:
 
     def __gen_lsa_connection(self, binding):
         if self.creds is None:
-            raise errors.RequirementError(name=_('CIFS credentials object'))
+            raise errors.RequirementError(name=_("CIFS credentials object"))
         try:
             result = lsa.lsarpc(binding, self.parm, self.creds)
             return result
@@ -882,16 +905,20 @@ class TrustDomainInstance:
                 # When session key is not available, we just skip this binding
                 session_attempts = session_attempts + 1
 
-        if self._pipe is None and \
-           (attempts + session_attempts) == len(bindings):
+        if self._pipe is None and (attempts + session_attempts) == len(bindings):
             raise errors.ACIError(
-                      info=_('CIFS server %(host)s denied your credentials')
-                      % dict(host=remote_host))
+                info=_("CIFS server %(host)s denied your credentials")
+                % dict(host=remote_host)
+            )
 
         if self._pipe is None:
             raise errors.RemoteRetrieveError(
-                    reason=_('Cannot establish LSA connection to %(host)s. '
-                             'Is CIFS server running?') % dict(host=remote_host))
+                reason=_(
+                    "Cannot establish LSA connection to %(host)s. "
+                    "Is CIFS server running?"
+                )
+                % dict(host=remote_host)
+            )
         self.binding = binding
         self.session_key = self._pipe.session_key
 
@@ -904,13 +931,11 @@ class TrustDomainInstance:
 
         We try NCACN_NP before NCACN_IP_TCP and use SMB2 before SMB1.
         """
-        transports = ('ncacn_np', 'ncacn_ip_tcp')
-        options = ('smb2,print', 'print')
-        return ['%s:%s[%s]' % (t, remote_host, o)
-                for t in transports for o in options]
+        transports = ("ncacn_np", "ncacn_ip_tcp")
+        options = ("smb2,print", "print")
+        return ["%s:%s[%s]" % (t, remote_host, o) for t in transports for o in options]
 
-    def retrieve_anonymously(self, remote_host,
-                             discover_srv=False, search_pdc=False):
+    def retrieve_anonymously(self, remote_host, discover_srv=False, search_pdc=False):
         """
         When retrieving DC information anonymously, we can't get SID of the domain
         """
@@ -928,49 +953,51 @@ class TrustDomainInstance:
 
         if not result:
             return False
-        self.info['name'] = unicode(result.domain_name)
-        self.info['dns_domain'] = unicode(result.dns_domain)
-        self.info['dns_forest'] = unicode(result.forest)
-        self.info['guid'] = unicode(result.domain_uuid)
-        self.info['dc'] = unicode(result.pdc_dns_name)
-        self.info['is_pdc'] = (result.server_type & nbt.NBT_SERVER_PDC) != 0
+        self.info["name"] = unicode(result.domain_name)
+        self.info["dns_domain"] = unicode(result.dns_domain)
+        self.info["dns_forest"] = unicode(result.forest)
+        self.info["guid"] = unicode(result.domain_uuid)
+        self.info["dc"] = unicode(result.pdc_dns_name)
+        self.info["is_pdc"] = (result.server_type & nbt.NBT_SERVER_PDC) != 0
 
         # Netlogon response doesn't contain SID of the domain.
         # We need to do rootDSE search with LDAP_SERVER_EXTENDED_DN_OID
         # control to reveal the SID
-        ldap_uri = 'ldap://%s' % (result.pdc_dns_name)
+        ldap_uri = "ldap://%s" % (result.pdc_dns_name)
         conn = ldap_initialize(ldap_uri)
         conn.set_option(_ldap.OPT_SERVER_CONTROLS, [ExtendedDNControl()])
         search_result = None
         try:
-            _objtype, res = conn.search_s('', _ldap.SCOPE_BASE)[0]
+            _objtype, res = conn.search_s("", _ldap.SCOPE_BASE)[0]
             for o in res.keys():
                 if isinstance(res[o], list):
                     t = res[o]
                     for z, v in enumerate(t):
                         if isinstance(v, bytes):
-                            t[z] = v.decode('utf-8')
+                            t[z] = v.decode("utf-8")
                 elif isinstance(res[o], bytes):
-                    res[o] = res[o].decode('utf-8')
-            search_result = res['defaultNamingContext'][0]
-            self.info['dns_hostname'] = res['dnsHostName'][0]
+                    res[o] = res[o].decode("utf-8")
+            search_result = res["defaultNamingContext"][0]
+            self.info["dns_hostname"] = res["dnsHostName"][0]
         except _ldap.LDAPError as e:
             logger.error(
-                "LDAP error when connecting to %s: %s",
-                unicode(result.pdc_name), str(e))
+                "LDAP error when connecting to %s: %s", unicode(result.pdc_name), str(e)
+            )
         except KeyError as e:
-            logger.error("KeyError: %s, LDAP entry from %s "
-                         "returned malformed. Your DNS might be "
-                         "misconfigured.",
-                         unicode(e),
-                         unicode(result.pdc_name))
+            logger.error(
+                "KeyError: %s, LDAP entry from %s "
+                "returned malformed. Your DNS might be "
+                "misconfigured.",
+                unicode(e),
+                unicode(result.pdc_name),
+            )
 
         if search_result:
-            self.info['sid'] = self.parse_naming_context(search_result)
+            self.info["sid"] = self.parse_naming_context(search_result)
         return True
 
     def parse_naming_context(self, context):
-        naming_ref = re.compile('.*<SID=(S-.*)>.*')
+        naming_ref = re.compile(".*<SID=(S-.*)>.*")
         return unicode(naming_ref.match(context).group(1))
 
     def retrieve(self, remote_host):
@@ -979,31 +1006,33 @@ class TrustDomainInstance:
         objectAttribute = lsa.ObjectAttribute()
         objectAttribute.sec_qos = lsa.QosInfo()
         try:
-            self._policy_handle = \
-                self._pipe.OpenPolicy2("", objectAttribute,
-                                       security.SEC_FLAG_MAXIMUM_ALLOWED)
-            result = self._pipe.QueryInfoPolicy2(self._policy_handle,
-                                                 lsa.LSA_POLICY_INFO_DNS)
+            self._policy_handle = self._pipe.OpenPolicy2(
+                "", objectAttribute, security.SEC_FLAG_MAXIMUM_ALLOWED
+            )
+            result = self._pipe.QueryInfoPolicy2(
+                self._policy_handle, lsa.LSA_POLICY_INFO_DNS
+            )
         except RuntimeError as e:
             raise assess_dcerpc_error(e)
 
-        self.info['name'] = unicode(result.name.string)
-        self.info['dns_domain'] = unicode(result.dns_domain.string)
-        self.info['dns_forest'] = unicode(result.dns_forest.string)
-        self.info['guid'] = unicode(result.domain_guid)
-        self.info['sid'] = unicode(result.sid)
-        self.info['dc'] = remote_host
+        self.info["name"] = unicode(result.name.string)
+        self.info["dns_domain"] = unicode(result.dns_domain.string)
+        self.info["dns_forest"] = unicode(result.dns_forest.string)
+        self.info["guid"] = unicode(result.domain_guid)
+        self.info["sid"] = unicode(result.sid)
+        self.info["dc"] = remote_host
 
         try:
-            result = self._pipe.QueryInfoPolicy2(self._policy_handle,
-                                                 lsa.LSA_POLICY_INFO_ROLE)
+            result = self._pipe.QueryInfoPolicy2(
+                self._policy_handle, lsa.LSA_POLICY_INFO_ROLE
+            )
         except RuntimeError as e:
             raise assess_dcerpc_error(e)
 
-        self.info['is_pdc'] = (result.role == lsa.LSA_ROLE_PRIMARY)
+        self.info["is_pdc"] = result.role == lsa.LSA_ROLE_PRIMARY
 
     def generate_auth(self, trustdom_secret):
-        password_blob = string_to_array(trustdom_secret.encode('utf-16-le'))
+        password_blob = string_to_array(trustdom_secret.encode("utf-16-le"))
 
         clear_value = drsblobs.AuthInfoClear()
         clear_value.size = len(password_blob)
@@ -1022,7 +1051,7 @@ class TrustDomainInstance:
         outgoing.count = 1
         outgoing.current = authinfo_array
 
-        confounder = [3]*512
+        confounder = [3] * 512
         for i in range(512):
             confounder[i] = random.randint(0, 255)
 
@@ -1034,8 +1063,7 @@ class TrustDomainInstance:
 
         trustpass_blob = ndr_pack(trustpass)
 
-        encrypted_trustpass = arcfour_encrypt(self._pipe.session_key,
-                                              trustpass_blob)
+        encrypted_trustpass = arcfour_encrypt(self._pipe.session_key, trustpass_blob)
 
         auth_blob = lsa.DATA_BUF2()
         auth_blob.size = len(encrypted_trustpass)
@@ -1062,9 +1090,9 @@ class TrustDomainInstance:
         for rec in another_domain.ftinfo_records:
             record = lsa.ForestTrustRecord()
             record.flags = 0
-            record.time = rec['rec_time']
-            record.type = rec['rec_type']
-            record.forest_trust_data.string = rec['rec_name']
+            record.time = rec["rec_time"]
+            record.type = rec["rec_type"]
+            record.forest_trust_data.string = rec["rec_name"]
             ftinfo_records.append(record)
 
         info.count = len(ftinfo_records)
@@ -1133,7 +1161,7 @@ class TrustDomainInstance:
         # List of entries for unsolved conflicts
         result = []
 
-        trust_timestamp = long(time.time()*1e7+116444736000000000)
+        trust_timestamp = long(time.time() * 1e7 + 116444736000000000)
 
         # Collision information contains entries for specific trusted domains
         # we collide with. Look into TLN collisions and add a TLN exclusion
@@ -1142,22 +1170,23 @@ class TrustDomainInstance:
         for rec in cinfo.entries:
             if rec.type == lsa.LSA_FOREST_TRUST_COLLISION_TDO:
                 dominfo = self._pipe.lsaRQueryForestTrustInformation(
-                                 self._policy_handle,
-                                 rec.name,
-                                 lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
+                    self._policy_handle, rec.name, lsa.LSA_FOREST_TRUST_DOMAIN_INFO
+                )
 
                 # Oops, we were unable to retrieve trust topology for this
                 # trusted domain (forest).
                 if not dominfo:
                     result.append(rec)
-                    logger.error("Unable to resolve conflict for "
-                                 "DNS domain %s in the forest %s "
-                                 "for domain trust %s. Trust cannot "
-                                 "be established unless this conflict "
-                                 "is fixed manually.",
-                                 another_domain.info['dns_domain'],
-                                 self.info['dns_domain'],
-                                 rec.name.string)
+                    logger.error(
+                        "Unable to resolve conflict for "
+                        "DNS domain %s in the forest %s "
+                        "for domain trust %s. Trust cannot "
+                        "be established unless this conflict "
+                        "is fixed manually.",
+                        another_domain.info["dns_domain"],
+                        self.info["dns_domain"],
+                        rec.name.string,
+                    )
                     continue
 
                 # Copy over the entries, extend with TLN exclusion
@@ -1182,7 +1211,7 @@ class TrustDomainInstance:
                     for r in another_domain.ftinfo_records:
                         # r['rec_name'] cannot be None, thus we can ignore
                         # the case when dns_domain_name is None
-                        if r['rec_name'] == dns_domain_name:
+                        if r["rec_name"] == dns_domain_name:
                             is_our_record = True
 
                             # Convert e1 into an exclusion record
@@ -1202,8 +1231,7 @@ class TrustDomainInstance:
                     record.type = lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX
                     record.flags = 0
                     record.time = trust_timestamp
-                    record.forest_trust_data.string = \
-                        another_domain.info['dns_domain']
+                    record.forest_trust_data.string = another_domain.info["dns_domain"]
                     entries.append(record)
 
                 fti = lsa.ForestTrustInformation()
@@ -1219,43 +1247,50 @@ class TrustDomainInstance:
                         self._policy_handle,
                         ldname,
                         lsa.LSA_FOREST_TRUST_DOMAIN_INFO,
-                        fti, 0)
+                        fti,
+                        0,
+                    )
                 except samba.NTSTATUSError as error:
                     # Handle NT_STATUS_INVALID_PARAMETER separately
                     if ntstatus.NT_STATUS_INVALID_PARAMETER == error.args[0]:
                         result.append(rec)
-                        logger.error("Unable to resolve conflict for "
-                                     "DNS domain %s in the forest %s "
-                                     "for in-forest domain %s. Trust cannot "
-                                     "be established unless this conflict "
-                                     "is fixed manually.",
-                                     another_domain.info['dns_domain'],
-                                     self.info['dns_domain'],
-                                     rec.name.string)
+                        logger.error(
+                            "Unable to resolve conflict for "
+                            "DNS domain %s in the forest %s "
+                            "for in-forest domain %s. Trust cannot "
+                            "be established unless this conflict "
+                            "is fixed manually.",
+                            another_domain.info["dns_domain"],
+                            self.info["dns_domain"],
+                            rec.name.string,
+                        )
                     else:
                         raise assess_dcerpc_error(error)
 
-
                 if cninfo:
                     result.append(rec)
-                    logger.error("When defining exception for DNS "
-                                 "domain %s in forest %s for "
-                                 "trusted forest %s, "
-                                 "got collision info back:\n%s",
-                                 another_domain.info['dns_domain'],
-                                 self.info['dns_domain'],
-                                 rec.name.string,
-                                 ndr_print(cninfo))
+                    logger.error(
+                        "When defining exception for DNS "
+                        "domain %s in forest %s for "
+                        "trusted forest %s, "
+                        "got collision info back:\n%s",
+                        another_domain.info["dns_domain"],
+                        self.info["dns_domain"],
+                        rec.name.string,
+                        ndr_print(cninfo),
+                    )
             else:
                 result.append(rec)
-                logger.error("Unable to resolve conflict for "
-                             "DNS domain %s in the forest %s "
-                             "for in-forest domain %s. Trust cannot "
-                             "be established unless this conflict "
-                             "is fixed manually.",
-                             another_domain.info['dns_domain'],
-                             self.info['dns_domain'],
-                             rec.name.string)
+                logger.error(
+                    "Unable to resolve conflict for "
+                    "DNS domain %s in the forest %s "
+                    "for in-forest domain %s. Trust cannot "
+                    "be established unless this conflict "
+                    "is fixed manually.",
+                    another_domain.info["dns_domain"],
+                    self.info["dns_domain"],
+                    rec.name.string,
+                )
 
         if len(result) == 0:
             logger.error("Successfully solved all conflicts")
@@ -1264,11 +1299,10 @@ class TrustDomainInstance:
         # Otherwise, raise TrustTopologyConflictError() exception
         domains = [x.name.string for x in result]
         raise errors.TrustTopologyConflictError(
-            forest=self.info['dns_domain'],
-            conflict=another_domain.info['dns_domain'],
-            domains=domains)
-
-
+            forest=self.info["dns_domain"],
+            conflict=another_domain.info["dns_domain"],
+            domains=domains,
+        )
 
     def update_ftinfo(self, another_domain):
         """
@@ -1280,43 +1314,52 @@ class TrustDomainInstance:
             # Set forest trust information -- we do it only against AD DC as
             # smbd already has the information about itself
             ldname = lsa.StringLarge()
-            ldname.string = another_domain.info['dns_domain']
+            ldname.string = another_domain.info["dns_domain"]
             ftlevel = lsa.LSA_FOREST_TRUST_DOMAIN_INFO
             # RSetForestTrustInformation returns collision information
             # for trust topology
             cinfo = self._pipe.lsaRSetForestTrustInformation(
-                        self._policy_handle,
-                        ldname,
-                        ftlevel,
-                        ftinfo, 0)
+                self._policy_handle, ldname, ftlevel, ftinfo, 0
+            )
             if cinfo:
-                logger.error("When setting forest trust information, "
-                             "got collision info back:\n%s",
-                             ndr_print(cinfo))
+                logger.error(
+                    "When setting forest trust information, "
+                    "got collision info back:\n%s",
+                    ndr_print(cinfo),
+                )
                 self.clear_ftinfo_conflict(another_domain, cinfo)
 
-    def establish_trust(self, another_domain, trustdom_secret,
-                        trust_type='bidirectional', trust_external=False):
+    def establish_trust(
+        self,
+        another_domain,
+        trustdom_secret,
+        trust_type="bidirectional",
+        trust_external=False,
+    ):
         """
         Establishes trust between our and another domain
         Input: another_domain -- instance of TrustDomainInstance,
                                  initialized with #retrieve call
                trustdom_secret -- shared secred used for the trust
         """
-        if self.info['name'] == another_domain.info['name']:
+        if self.info["name"] == another_domain.info["name"]:
             # Check that NetBIOS names do not clash
-            raise errors.ValidationError(name='AD Trust Setup',
-                                         error=_('the IPA server and the '
-                                                 'remote domain cannot share '
-                                                 'the same NetBIOS name: %s')
-                                         % self.info['name'])
+            raise errors.ValidationError(
+                name="AD Trust Setup",
+                error=_(
+                    "the IPA server and the "
+                    "remote domain cannot share "
+                    "the same NetBIOS name: %s"
+                )
+                % self.info["name"],
+            )
 
         self.generate_auth(trustdom_secret)
 
         info = lsa.TrustDomainInfoInfoEx()
-        info.domain_name.string = another_domain.info['dns_domain']
-        info.netbios_name.string = another_domain.info['name']
-        info.sid = security.dom_sid(another_domain.info['sid'])
+        info.domain_name.string = another_domain.info["dns_domain"]
+        info.netbios_name.string = another_domain.info["name"]
+        info.sid = security.dom_sid(another_domain.info["sid"])
         info.trust_direction = lsa.LSA_TRUST_DIRECTION_INBOUND
         if trust_type == TRUST_BIDIRECTIONAL:
             info.trust_direction |= lsa.LSA_TRUST_DIRECTION_OUTBOUND
@@ -1327,30 +1370,26 @@ class TrustDomainInstance:
 
         try:
             dname = lsa.String()
-            dname.string = another_domain.info['dns_domain']
+            dname.string = another_domain.info["dns_domain"]
             res = self._pipe.QueryTrustedDomainInfoByName(
-                self._policy_handle,
-                dname,
-                lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO
+                self._policy_handle, dname, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO
             )
             if res.info_ex.trust_type != lsa.LSA_TRUST_TYPE_UPLEVEL:
-                msg = _('There is already a trust to {ipa_domain} with '
-                        'unsupported type {trust_type}. Please remove '
-                        'it manually on AD DC side.')
+                msg = _(
+                    "There is already a trust to {ipa_domain} with "
+                    "unsupported type {trust_type}. Please remove "
+                    "it manually on AD DC side."
+                )
                 ttype = trust_type_string(
                     res.info_ex.trust_type, res.info_ex.trust_attributes
                 )
                 err = msg.format(
-                    ipa_domain=another_domain.info['dns_domain'],
-                    trust_type=ttype)
-
-                raise errors.ValidationError(
-                    name=_('AD domain controller'),
-                    error=err
+                    ipa_domain=another_domain.info["dns_domain"], trust_type=ttype
                 )
 
-            self._pipe.DeleteTrustedDomain(self._policy_handle,
-                                           res.info_ex.sid)
+                raise errors.ValidationError(name=_("AD domain controller"), error=err)
+
+            self._pipe.DeleteTrustedDomain(self._policy_handle, res.info_ex.sid)
         except RuntimeError as e:
             # pylint: disable=unbalanced-tuple-unpacking
             num, _message = e.args
@@ -1361,9 +1400,8 @@ class TrustDomainInstance:
 
         try:
             trustdom_handle = self._pipe.CreateTrustedDomainEx2(
-                                           self._policy_handle,
-                                           info, self.auth_info,
-                                           security.SEC_STD_DELETE)
+                self._policy_handle, info, self.auth_info, security.SEC_STD_DELETE
+            )
         except RuntimeError as e:
             raise assess_dcerpc_error(e)
 
@@ -1372,18 +1410,18 @@ class TrustDomainInstance:
         # OpenTrustedDomain* calls, it is not enough to have a handle
         # returned by the CreateTrustedDomainEx2 call.
         trustdom_handle = self._pipe.OpenTrustedDomainByName(
-                                         self._policy_handle,
-                                         dname,
-                                         security.SEC_FLAG_MAXIMUM_ALLOWED)
+            self._policy_handle, dname, security.SEC_FLAG_MAXIMUM_ALLOWED
+        )
         try:
             infocls = lsa.TrustDomainInfoSupportedEncTypes()
             infocls.enc_types = security.KERB_ENCTYPE_RC4_HMAC_MD5
             infocls.enc_types |= security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96
             infocls.enc_types |= security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96
             self._pipe.SetInformationTrustedDomain(
-                           trustdom_handle,
-                           lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES,
-                           infocls)
+                trustdom_handle,
+                lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES,
+                infocls,
+            )
         except RuntimeError as e:
             # We can ignore the error here -- changing enctypes is for
             # improved security but the trust will work with default values as
@@ -1394,15 +1432,14 @@ class TrustDomainInstance:
         if not trust_external:
             try:
                 info = self._pipe.QueryTrustedDomainInfo(
-                                      trustdom_handle,
-                                      lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
+                    trustdom_handle, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX
+                )
                 info.trust_attributes |= lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE
                 self._pipe.SetInformationTrustedDomain(
-                                      trustdom_handle,
-                                      lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX, info)
+                    trustdom_handle, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX, info
+                )
             except RuntimeError as e:
-                logger.error(
-                      'unable to set trust transitivity status: %s', str(e))
+                logger.error("unable to set trust transitivity status: %s", str(e))
 
         # Updating forest trust info may fail
         # If it failed due to topology conflict, it may be fixed automatically
@@ -1416,30 +1453,35 @@ class TrustDomainInstance:
         # STATUS_INVALID_PARAMETER.
         # -------------------------
         # Thus, we must not update forest trust info for the external trust
-        if self.info['is_pdc'] and not trust_external:
+        if self.info["is_pdc"] and not trust_external:
             self.update_ftinfo(another_domain)
 
     def verify_trust(self, another_domain):
         def retrieve_netlogon_info_2(logon_server, domain, function_code, data):
             try:
-                netr_pipe = netlogon.netlogon(domain.binding,
-                                              domain.parm, domain.creds)
+                netr_pipe = netlogon.netlogon(domain.binding, domain.parm, domain.creds)
                 result = netr_pipe.netr_LogonControl2Ex(
-                                           logon_server=logon_server,
-                                           function_code=function_code,
-                                           level=2,
-                                           data=data)
+                    logon_server=logon_server,
+                    function_code=function_code,
+                    level=2,
+                    data=data,
+                )
                 return result
             except RuntimeError as e:
                 raise assess_dcerpc_error(e)
 
-        result = retrieve_netlogon_info_2(None, self,
-                                          netlogon.NETLOGON_CONTROL_TC_VERIFY,
-                                          another_domain.info['dns_domain'])
+        result = retrieve_netlogon_info_2(
+            None,
+            self,
+            netlogon.NETLOGON_CONTROL_TC_VERIFY,
+            another_domain.info["dns_domain"],
+        )
 
         if result and result.flags and netlogon.NETLOGON_VERIFY_STATUS_RETURNED:
-            if result.pdc_connection_status[0] != 0 and \
-               result.tc_connection_status[0] != 0:
+            if (
+                result.pdc_connection_status[0] != 0
+                and result.tc_connection_status[0] != 0
+            ):
                 if result.pdc_connection_status[1] == "WERR_ACCESS_DENIED":
                     # Most likely AD DC hit another IPA replica which
                     # yet has no trust secret replicated
@@ -1452,23 +1494,25 @@ class TrustDomainInstance:
 
                     # If we get here, we already failed 10 times
                     srv_record_templates = (
-                        '_ldap._tcp.%s',
-                        '_ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.%s'
+                        "_ldap._tcp.%s",
+                        "_ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.%s",
                     )
 
-                    srv_records = ', '.join(
-                        [srv_record % api.env.domain
-                         for srv_record in srv_record_templates]
+                    srv_records = ", ".join(
+                        [
+                            srv_record % api.env.domain
+                            for srv_record in srv_record_templates
+                        ]
                     )
 
                     error_message = _(
-                        'IPA master denied trust validation requests from AD '
-                        'DC %(count)d times. Most likely AD DC contacted a '
-                        'replica that has no trust information replicated '
-                        'yet. Additionally, please check that AD DNS is able '
-                        'to resolve %(records)s SRV records to the correct '
-                        'IPA server.') % dict(count=self.validation_attempts,
-                                              records=srv_records)
+                        "IPA master denied trust validation requests from AD "
+                        "DC %(count)d times. Most likely AD DC contacted a "
+                        "replica that has no trust information replicated "
+                        "yet. Additionally, please check that AD DNS is able "
+                        "to resolve %(records)s SRV records to the correct "
+                        "IPA server."
+                    ) % dict(count=self.validation_attempts, records=srv_records)
 
                     raise errors.ACIError(info=error_message)
 
@@ -1481,12 +1525,12 @@ class TrustDomainInstance:
 
 def fetch_domains(api, mydomain, trustdomain, creds=None, server=None):
     def communicate(td):
-        td.init_lsa_pipe(td.info['dc'])
+        td.init_lsa_pipe(td.info["dc"])
         netr_pipe = netlogon.netlogon(td.binding, td.parm, td.creds)
         # Older FreeIPA versions used netr_DsrEnumerateDomainTrusts call
         # but it doesn't provide information about non-domain UPNs associated
         # with the forest, thus we have to use netr_DsRGetForestTrustInformation
-        domains = netr_pipe.netr_DsRGetForestTrustInformation(td.info['dc'], None, 0)
+        domains = netr_pipe.netr_DsRGetForestTrustInformation(td.info["dc"], None, 0)
         return domains
 
     domains = None
@@ -1495,8 +1539,8 @@ def fetch_domains(api, mydomain, trustdomain, creds=None, server=None):
     if not configured:
         return None
 
-    td = TrustDomainInstance('')
-    td.parm.set('workgroup', mydomain)
+    td = TrustDomainInstance("")
+    td.parm.set("workgroup", mydomain)
     cr = credentials.Credentials()
     cr.set_kerberos_state(credentials.DONT_USE_KERBEROS)
     cr.guess(td.parm)
@@ -1505,16 +1549,18 @@ def fetch_domains(api, mydomain, trustdomain, creds=None, server=None):
     netrc = net.Net(creds=cr, lp=td.parm)
     try:
         if server:
-            result = netrc.finddc(address=server,
-                                  flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS)
+            result = netrc.finddc(
+                address=server, flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS
+            )
         else:
-            result = netrc.finddc(domain=trustdomain,
-                                  flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS)
+            result = netrc.finddc(
+                domain=trustdomain, flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS
+            )
     except RuntimeError as e:
         raise assess_dcerpc_error(e)
 
-    td.info['dc'] = unicode(result.pdc_dns_name)
-    td.info['name'] = unicode(result.dns_domain)
+    td.info["dc"] = unicode(result.pdc_dns_name)
+    td.info["name"] = unicode(result.dns_domain)
     if type(creds) is bool:
         # Rely on existing Kerberos credentials in the environment
         td.creds = credentials.Credentials()
@@ -1529,12 +1575,12 @@ def fetch_domains(api, mydomain, trustdomain, creds=None, server=None):
         ccache_name = None
         if creds:
             domval._admin_creds = creds
-            ccache_name, _principal = domval.kinit_as_administrator(
-                trustdomain)
+            ccache_name, _principal = domval.kinit_as_administrator(trustdomain)
         else:
-            raise errors.ValidationError(name=_('Credentials'),
-                                         error=_('Missing credentials for '
-                                                 'cross-forest communication'))
+            raise errors.ValidationError(
+                name=_("Credentials"),
+                error=_("Missing credentials for " "cross-forest communication"),
+            )
         td.creds = credentials.Credentials()
         td.creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
         if ccache_name:
@@ -1546,7 +1592,7 @@ def fetch_domains(api, mydomain, trustdomain, creds=None, server=None):
     if domains is None:
         return None
 
-    result = {'domains': {}, 'suffixes': {}}
+    result = {"domains": {}, "suffixes": {}}
     # netr_DsRGetForestTrustInformation returns two types of entries:
     # domain information  -- name, NetBIOS name, SID of the domain
     # top level name info -- a name suffix associated with the forest
@@ -1557,29 +1603,34 @@ def fetch_domains(api, mydomain, trustdomain, creds=None, server=None):
             tname = unicode(t.forest_trust_data.dns_domain_name.string)
             if tname == trustdomain:
                 continue
-            result['domains'][tname] = {
-                'cn': tname,
-                'ipantflatname': unicode(
-                    t.forest_trust_data.netbios_domain_name.string),
-                'ipanttrusteddomainsid': unicode(
-                    t.forest_trust_data.domain_sid)
+            result["domains"][tname] = {
+                "cn": tname,
+                "ipantflatname": unicode(
+                    t.forest_trust_data.netbios_domain_name.string
+                ),
+                "ipanttrusteddomainsid": unicode(t.forest_trust_data.domain_sid),
             }
         elif t.type == lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME:
             tname = unicode(t.forest_trust_data.string)
             if tname == trustdomain:
                 continue
 
-            result['suffixes'][tname] = {'cn': tname}
+            result["suffixes"][tname] = {"cn": tname}
     return result
 
 
-def retrieve_remote_domain(hostname, local_flatname,
-                           realm, realm_server=None,
-                           realm_admin=None, realm_passwd=None):
+def retrieve_remote_domain(
+    hostname,
+    local_flatname,
+    realm,
+    realm_server=None,
+    realm_admin=None,
+    realm_passwd=None,
+):
     def get_instance(local_flatname):
         # Fetch data from foreign domain using password only
-        rd = TrustDomainInstance('')
-        rd.parm.set('workgroup', local_flatname)
+        rd = TrustDomainInstance("")
+        rd.parm.set("workgroup", local_flatname)
         rd.creds = credentials.Credentials()
         rd.creds.set_kerberos_state(credentials.DONT_USE_KERBEROS)
         rd.creds.guess(rd.parm)
@@ -1591,25 +1642,23 @@ def retrieve_remote_domain(hostname, local_flatname,
     if realm_server is None:
         rd.retrieve_anonymously(realm, discover_srv=True, search_pdc=True)
     else:
-        rd.retrieve_anonymously(realm_server,
-                                discover_srv=False, search_pdc=True)
+        rd.retrieve_anonymously(realm_server, discover_srv=False, search_pdc=True)
     rd.read_only = True
     if realm_admin and realm_passwd:
-        if 'name' in rd.info:
-            names = realm_admin.split('\\')
+        if "name" in rd.info:
+            names = realm_admin.split("\\")
             if len(names) > 1:
                 # realm admin is in DOMAIN\user format
                 # strip DOMAIN part as we'll enforce the one discovered
                 realm_admin = names[-1]
-            auth_string = r"%s\%s%%%s" \
-                          % (rd.info['name'], realm_admin, realm_passwd)
+            auth_string = r"%s\%s%%%s" % (rd.info["name"], realm_admin, realm_passwd)
             td = get_instance(local_flatname)
             td.creds.parse_string(auth_string)
             td.creds.set_workstation(hostname)
             if realm_server is None:
                 # we must have rd.info['dns_hostname'] then
                 # as it is part of the anonymous discovery
-                td.retrieve(rd.info['dns_hostname'])
+                td.retrieve(rd.info["dns_hostname"])
             else:
                 td.retrieve(realm_server)
             td.read_only = False
@@ -1648,15 +1697,17 @@ class TrustDomainJoins:
         ld.retrieve(installutils.get_fqdn())
         self.local_domain = ld
 
-    def populate_remote_domain(self, realm, realm_server=None,
-                               realm_admin=None, realm_passwd=None):
+    def populate_remote_domain(
+        self, realm, realm_server=None, realm_admin=None, realm_passwd=None
+    ):
         self.remote_domain = retrieve_remote_domain(
             self.local_domain.hostname,
-            self.local_domain.info['name'],
+            self.local_domain.info["name"],
             realm,
             realm_server=realm_server,
             realm_admin=realm_admin,
-            realm_passwd=realm_passwd)
+            realm_passwd=realm_passwd,
+        )
 
     def get_realmdomains(self):
         """
@@ -1670,21 +1721,22 @@ class TrustDomainJoins:
 
         self.local_domain.ftinfo_records = []
 
-        realm_domains = self.api.Command.realmdomains_show()['result']
+        realm_domains = self.api.Command.realmdomains_show()["result"]
         # Use realmdomains' modification timestamp
         # to judge records' last update time
         entry = self.api.Backend.ldap2.get_entry(
-                    realm_domains['dn'], ['modifyTimestamp'])
+            realm_domains["dn"], ["modifyTimestamp"]
+        )
         # Convert the timestamp to Windows 64-bit timestamp format
         trust_timestamp = long(
-                time.mktime(
-                     entry.single_value.get('modifytimestamp').timetuple()
-                )*1e7+116444736000000000)
+            time.mktime(entry.single_value.get("modifytimestamp").timetuple()) * 1e7
+            + 116444736000000000
+        )
 
-        forest = DNSName(self.local_domain.info['dns_forest'])
+        forest = DNSName(self.local_domain.info["dns_forest"])
         # tforest is IPA forest. keep the line below for future checks
         # tforest = DNSName(self.remote_domain.info['dns_forest'])
-        for dom in realm_domains['associateddomain']:
+        for dom in realm_domains["associateddomain"]:
             d = DNSName(dom)
 
             # We should skip all DNS subdomains of our forest
@@ -1698,31 +1750,30 @@ class TrustDomainJoins:
                 continue
 
             ftinfo = dict()
-            ftinfo['rec_name'] = dom
-            ftinfo['rec_time'] = trust_timestamp
-            ftinfo['rec_type'] = lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME
+            ftinfo["rec_name"] = dom
+            ftinfo["rec_time"] = trust_timestamp
+            ftinfo["rec_type"] = lsa.LSA_FOREST_TRUST_TOP_LEVEL_NAME
             self.local_domain.ftinfo_records.append(ftinfo)
 
-    def join_ad_full_credentials(self, realm, realm_server, realm_admin,
-                                 realm_passwd, trust_type):
+    def join_ad_full_credentials(
+        self, realm, realm_server, realm_admin, realm_passwd, trust_type
+    ):
         if not self.configured:
             return None
 
-        if not(isinstance(self.remote_domain, TrustDomainInstance)):
-            self.populate_remote_domain(
-                realm,
-                realm_server,
-                realm_admin,
-                realm_passwd
-            )
+        if not (isinstance(self.remote_domain, TrustDomainInstance)):
+            self.populate_remote_domain(realm, realm_server, realm_admin, realm_passwd)
 
         trust_external = bool(self.__allow_behavior & TRUST_JOIN_EXTERNAL)
-        if self.remote_domain.info['dns_domain'] != \
-           self.remote_domain.info['dns_forest']:
+        if (
+            self.remote_domain.info["dns_domain"]
+            != self.remote_domain.info["dns_forest"]
+        ):
             if not trust_external:
                 raise errors.NotAForestRootError(
-                          forest=self.remote_domain.info['dns_forest'],
-                          domain=self.remote_domain.info['dns_domain'])
+                    forest=self.remote_domain.info["dns_forest"],
+                    domain=self.remote_domain.info["dns_domain"],
+                )
 
         if not self.remote_domain.read_only:
             trustdom_pass = samba.generate_random_password(128, 128)
@@ -1732,19 +1783,19 @@ class TrustDomainJoins:
             # conflict. If it was solved, re-establish the trust again
             # Otherwise let the CLI to display a message about the conflict
             try:
-                self.remote_domain.establish_trust(self.local_domain,
-                                                   trustdom_pass,
-                                                   trust_type, trust_external)
+                self.remote_domain.establish_trust(
+                    self.local_domain, trustdom_pass, trust_type, trust_external
+                )
             except TrustTopologyConflictSolved:
                 # we solved topology conflict, retry again
-                self.remote_domain.establish_trust(self.local_domain,
-                                                   trustdom_pass,
-                                                   trust_type, trust_external)
+                self.remote_domain.establish_trust(
+                    self.local_domain, trustdom_pass, trust_type, trust_external
+                )
 
             # For local domain we don't set topology information
-            self.local_domain.establish_trust(self.remote_domain,
-                                              trustdom_pass,
-                                              trust_type, trust_external)
+            self.local_domain.establish_trust(
+                self.remote_domain, trustdom_pass, trust_type, trust_external
+            )
             # if trust is inbound, we don't need to verify it because
             # AD DC will respond with WERR_NO_SUCH_DOMAIN --
             # it only does verification for outbound trusts.
@@ -1752,32 +1803,33 @@ class TrustDomainJoins:
             if trust_type == TRUST_BIDIRECTIONAL:
                 result = self.remote_domain.verify_trust(self.local_domain)
             return dict(
-                        local=self.local_domain,
-                        remote=self.remote_domain,
-                        verified=result
-                       )
+                local=self.local_domain, remote=self.remote_domain, verified=result
+            )
         return None
 
     def join_ad_ipa_half(self, realm, realm_server, trustdom_passwd, trust_type):
         if not self.configured:
             return None
 
-        if not(isinstance(self.remote_domain, TrustDomainInstance)):
+        if not (isinstance(self.remote_domain, TrustDomainInstance)):
             self.populate_remote_domain(realm, realm_server, realm_passwd=None)
 
         trust_external = bool(self.__allow_behavior & TRUST_JOIN_EXTERNAL)
-        if self.remote_domain.info['dns_domain'] != \
-           self.remote_domain.info['dns_forest']:
+        if (
+            self.remote_domain.info["dns_domain"]
+            != self.remote_domain.info["dns_forest"]
+        ):
             if not trust_external:
                 raise errors.NotAForestRootError(
-                          forest=self.remote_domain.info['dns_forest'],
-                          domain=self.remote_domain.info['dns_domain'])
+                    forest=self.remote_domain.info["dns_forest"],
+                    domain=self.remote_domain.info["dns_domain"],
+                )
 
-        self.local_domain.establish_trust(self.remote_domain,
-                                          trustdom_passwd,
-                                          trust_type, trust_external)
+        self.local_domain.establish_trust(
+            self.remote_domain, trustdom_passwd, trust_type, trust_external
+        )
         return {
-            'local': self.local_domain,
-            'remote': self.remote_domain,
-            'verified': False,
+            "local": self.local_domain,
+            "remote": self.remote_domain,
+            "verified": False,
         }

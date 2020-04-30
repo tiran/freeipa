@@ -25,13 +25,13 @@ import re
 from ipalib import errors
 
 # dnsrecord param name formats
-record_name_format = '%srecord'
+record_name_format = "%srecord"
 part_name_format = "%s_part_%s"
 extra_name_format = "%s_extra_%s"
 
 
 def get_record_rrtype(name):
-    match = re.match('([^_]+)record$', name)
+    match = re.match("([^_]+)record$", name)
     if match is None:
         return None
 
@@ -39,7 +39,7 @@ def get_record_rrtype(name):
 
 
 def get_part_rrtype(name):
-    match = re.match('([^_]+)_part_.*$', name)
+    match = re.match("([^_]+)_part_.*$", name)
     if match is None:
         return None
 
@@ -47,7 +47,7 @@ def get_part_rrtype(name):
 
 
 def get_extra_rrtype(name):
-    match = re.match('([^_]+)_extra_.*$', name)
+    match = re.match("([^_]+)_extra_.*$", name)
     if match is None:
         return None
 
@@ -55,14 +55,15 @@ def get_extra_rrtype(name):
 
 
 def has_cli_options(cmd, options, no_option_msg, allow_empty_attrs=False):
-    sufficient = ('setattr', 'addattr', 'delattr', 'rename', 'dnsttl')
+    sufficient = ("setattr", "addattr", "delattr", "rename", "dnsttl")
     if any(k in options for k in sufficient):
         return
 
     has_options = False
     for attr in options.keys():
-        obj_params = [n for n in cmd.params
-                      if get_record_rrtype(n) or get_part_rrtype(n)]
+        obj_params = [
+            n for n in cmd.params if get_record_rrtype(n) or get_part_rrtype(n)
+        ]
         if attr in obj_params:
             if options[attr] or allow_empty_attrs:
                 has_options = True
@@ -82,8 +83,7 @@ def get_rrparam_from_part(cmd, part_name):
     try:
         param = cmd.params[part_name]
 
-        rrtype = (get_part_rrtype(param.name) or
-                  get_extra_rrtype(param.name))
+        rrtype = get_part_rrtype(param.name) or get_extra_rrtype(param.name)
         if not rrtype:
             return None
 

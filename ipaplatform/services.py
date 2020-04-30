@@ -7,4 +7,4 @@ from __future__ import absolute_import
 
 import ipaplatform._importhook
 
-ipaplatform._importhook.fixup_module('ipaplatform.services')
+ipaplatform._importhook.fixup_module("ipaplatform.services")

@@ -107,193 +107,226 @@ OBSOLETE_PERMISSIONS = {
     # These permissions will be removed on upgrade, if they exist.
     # Any modifications the user might have made to them are not taken
     # into account. This should be used sparingly.
-    'System: Read Timestamp and USN Operational Attributes',
-    'System: Read Creator and Modifier Operational Attributes',
+    "System: Read Timestamp and USN Operational Attributes",
+    "System: Read Creator and Modifier Operational Attributes",
 }
 
 NONOBJECT_PERMISSIONS = {
-    'System: Read IPA Masters': {
-        'replaces_global_anonymous_aci': True,
-        'ipapermlocation': DN('cn=masters,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=nscontainer)'},
-        'ipapermbindruletype': 'permission',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'cn', 'objectclass', 'ipaconfigstring',
-        },
-        'default_privileges': {'IPA Masters Readers'},
+    "System: Read IPA Masters": {
+        "replaces_global_anonymous_aci": True,
+        "ipapermlocation": DN("cn=masters,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=nscontainer)"},
+        "ipapermbindruletype": "permission",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {"cn", "objectclass", "ipaconfigstring",},
+        "default_privileges": {"IPA Masters Readers"},
     },
-    'System: Compat Tree ID View targets': {
-        'replaces_global_anonymous_aci': True,
-        'ipapermlocation':  api.env.basedn,
-        'ipapermtarget': DN('cn=*,cn=compat', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=ipaOverrideTarget)'},
-        'ipapermbindruletype': 'anonymous',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'ipaAnchorUUID',
-        },
+    "System: Compat Tree ID View targets": {
+        "replaces_global_anonymous_aci": True,
+        "ipapermlocation": api.env.basedn,
+        "ipapermtarget": DN("cn=*,cn=compat", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=ipaOverrideTarget)"},
+        "ipapermbindruletype": "anonymous",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {"ipaAnchorUUID",},
     },
-    'System: Read DNA Configuration': {
-        'replaces_global_anonymous_aci': True,
-        'ipapermlocation': DN('cn=dna,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=dnasharedconfig)'},
-        'ipapermbindruletype': 'all',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'cn', 'objectclass', 'dnaHostname', 'dnaPortNum',
-            'dnaSecurePortNum', 'dnaRemoteBindMethod', 'dnaRemoteConnProtocol',
-            'dnaRemainingValues',
-        },
-    },
-    'System: Read CA Renewal Information': {
-        'replaces_global_anonymous_aci': True,
-        'ipapermlocation': DN('cn=ca_renewal,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=pkiuser)'},
-        'ipapermbindruletype': 'all',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'cn', 'objectclass', 'usercertificate',
+    "System: Read DNA Configuration": {
+        "replaces_global_anonymous_aci": True,
+        "ipapermlocation": DN("cn=dna,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=dnasharedconfig)"},
+        "ipapermbindruletype": "all",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {
+            "cn",
+            "objectclass",
+            "dnaHostname",
+            "dnaPortNum",
+            "dnaSecurePortNum",
+            "dnaRemoteBindMethod",
+            "dnaRemoteConnProtocol",
+            "dnaRemainingValues",
         },
     },
-    'System: Add CA Certificate For Renewal': {
-        'ipapermlocation': DN('cn=ca_renewal,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtarget': DN(
-            'cn=caSigningCert cert-pki-ca,cn=ca_renewal,cn=ipa,cn=etc',
-            api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=pkiuser)'},
-        'ipapermbindruletype': 'permission',
-        'ipapermright': {'add'},
-        'default_privileges': {'Certificate Administrators'},
+    "System: Read CA Renewal Information": {
+        "replaces_global_anonymous_aci": True,
+        "ipapermlocation": DN("cn=ca_renewal,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=pkiuser)"},
+        "ipapermbindruletype": "all",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {"cn", "objectclass", "usercertificate",},
     },
-    'System: Modify CA Certificate For Renewal': {
-        'ipapermlocation': DN('cn=ca_renewal,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtarget': DN(
-            'cn=caSigningCert cert-pki-ca,cn=ca_renewal,cn=ipa,cn=etc',
-            api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=pkiuser)'},
-        'ipapermbindruletype': 'permission',
-        'ipapermright': {'write'},
-        'ipapermdefaultattr': {
-            'usercertificate',
-        },
-        'default_privileges': {'Certificate Administrators'},
+    "System: Add CA Certificate For Renewal": {
+        "ipapermlocation": DN("cn=ca_renewal,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtarget": DN(
+            "cn=caSigningCert cert-pki-ca,cn=ca_renewal,cn=ipa,cn=etc", api.env.basedn
+        ),
+        "ipapermtargetfilter": {"(objectclass=pkiuser)"},
+        "ipapermbindruletype": "permission",
+        "ipapermright": {"add"},
+        "default_privileges": {"Certificate Administrators"},
     },
-    'System: Read CA Certificate': {
-        'replaces_global_anonymous_aci': True,
-        'ipapermlocation': DN('cn=CAcert,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=pkica)'},
-        'ipapermbindruletype': 'anonymous',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'cn', 'objectclass', 'cacertificate', 'certificaterevocationlist',
-            'authorityrevocationlist', 'crosscertificatepair',
-        },
+    "System: Modify CA Certificate For Renewal": {
+        "ipapermlocation": DN("cn=ca_renewal,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtarget": DN(
+            "cn=caSigningCert cert-pki-ca,cn=ca_renewal,cn=ipa,cn=etc", api.env.basedn
+        ),
+        "ipapermtargetfilter": {"(objectclass=pkiuser)"},
+        "ipapermbindruletype": "permission",
+        "ipapermright": {"write"},
+        "ipapermdefaultattr": {"usercertificate",},
+        "default_privileges": {"Certificate Administrators"},
     },
-    'System: Modify CA Certificate': {
-        'ipapermlocation': DN('cn=CAcert,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=pkica)'},
-        'ipapermbindruletype': 'permission',
-        'ipapermright': {'write'},
-        'ipapermdefaultattr': {
-            'cacertificate',
-        },
-        'default_privileges': {'Certificate Administrators'},
-    },
-    'System: Read Certificate Store Entries': {
-        'ipapermlocation': DN('cn=certificates,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=ipacertificate)'},
-        'ipapermbindruletype': 'anonymous',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'cn', 'objectclass', 'ipacertsubject', 'ipacertissuerserial',
-            'ipapublickey', 'ipaconfigstring', 'cacertificate', 'ipakeytrust',
-            'ipakeyusage', 'ipakeyextusage',
+    "System: Read CA Certificate": {
+        "replaces_global_anonymous_aci": True,
+        "ipapermlocation": DN("cn=CAcert,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=pkica)"},
+        "ipapermbindruletype": "anonymous",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {
+            "cn",
+            "objectclass",
+            "cacertificate",
+            "certificaterevocationlist",
+            "authorityrevocationlist",
+            "crosscertificatepair",
         },
     },
-    'System: Add Certificate Store Entry': {
-        'ipapermlocation': DN('cn=certificates,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=ipacertificate)'},
-        'ipapermbindruletype': 'permission',
-        'ipapermright': {'add'},
-        'default_privileges': {'Certificate Administrators'},
+    "System: Modify CA Certificate": {
+        "ipapermlocation": DN("cn=CAcert,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=pkica)"},
+        "ipapermbindruletype": "permission",
+        "ipapermright": {"write"},
+        "ipapermdefaultattr": {"cacertificate",},
+        "default_privileges": {"Certificate Administrators"},
     },
-    'System: Modify Certificate Store Entry': {
-        'ipapermlocation': DN('cn=certificates,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=ipacertificate)'},
-        'ipapermbindruletype': 'permission',
-        'ipapermright': {'write'},
-        'ipapermdefaultattr': {
-            'ipacertissuerserial', 'ipaconfigstring', 'cacertificate',
-            'ipakeytrust', 'ipakeyusage', 'ipakeyextusage',
-        },
-        'default_privileges': {'Certificate Administrators'},
-    },
-    'System: Remove Certificate Store Entry': {
-        'ipapermlocation': DN('cn=certificates,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=ipacertificate)'},
-        'ipapermbindruletype': 'permission',
-        'ipapermright': {'delete'},
-        'default_privileges': {'Certificate Administrators'},
-    },
-    'System: Read Replication Information': {
-        'replaces_global_anonymous_aci': True,
-        'ipapermlocation': DN('cn=replication,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=nsds5replica)'},
-        'ipapermbindruletype': 'all',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'cn', 'objectclass', 'nsds5replicaroot', 'nsds5replicaid',
-            'nsds5replicacleanruv', 'nsds5replicaabortcleanruv',
-            'nsds5replicatype', 'nsds5replicabinddn', 'nsstate',
-            'nsds5replicaname', 'nsds5flags', 'nsds5task',
-            'nsds5replicareferral', 'nsds5replicaautoreferral',
-            'nsds5replicapurgedelay', 'nsds5replicatombstonepurgeinterval',
-            'nsds5replicachangecount', 'nsds5replicalegacyconsumer',
-            'nsds5replicaprotocoltimeout', 'nsds5replicabackoffmin',
-            'nsds5replicabackoffmax',
+    "System: Read Certificate Store Entries": {
+        "ipapermlocation": DN("cn=certificates,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=ipacertificate)"},
+        "ipapermbindruletype": "anonymous",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {
+            "cn",
+            "objectclass",
+            "ipacertsubject",
+            "ipacertissuerserial",
+            "ipapublickey",
+            "ipaconfigstring",
+            "cacertificate",
+            "ipakeytrust",
+            "ipakeyusage",
+            "ipakeyextusage",
         },
     },
-    'System: Read AD Domains': {
-        'replaces_global_anonymous_aci': True,
-        'ipapermlocation': DN('cn=etc', api.env.basedn),
-        'ipapermtarget': DN('cn=ad,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=ipantdomainattrs)'},
-        'ipapermbindruletype': 'all',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'cn', 'objectclass', 'ipantsecurityidentifier', 'ipantflatname',
-            'ipantdomainguid', 'ipantfallbackprimarygroup',
+    "System: Add Certificate Store Entry": {
+        "ipapermlocation": DN("cn=certificates,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=ipacertificate)"},
+        "ipapermbindruletype": "permission",
+        "ipapermright": {"add"},
+        "default_privileges": {"Certificate Administrators"},
+    },
+    "System: Modify Certificate Store Entry": {
+        "ipapermlocation": DN("cn=certificates,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=ipacertificate)"},
+        "ipapermbindruletype": "permission",
+        "ipapermright": {"write"},
+        "ipapermdefaultattr": {
+            "ipacertissuerserial",
+            "ipaconfigstring",
+            "cacertificate",
+            "ipakeytrust",
+            "ipakeyusage",
+            "ipakeyextusage",
+        },
+        "default_privileges": {"Certificate Administrators"},
+    },
+    "System: Remove Certificate Store Entry": {
+        "ipapermlocation": DN("cn=certificates,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=ipacertificate)"},
+        "ipapermbindruletype": "permission",
+        "ipapermright": {"delete"},
+        "default_privileges": {"Certificate Administrators"},
+    },
+    "System: Read Replication Information": {
+        "replaces_global_anonymous_aci": True,
+        "ipapermlocation": DN("cn=replication,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=nsds5replica)"},
+        "ipapermbindruletype": "all",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {
+            "cn",
+            "objectclass",
+            "nsds5replicaroot",
+            "nsds5replicaid",
+            "nsds5replicacleanruv",
+            "nsds5replicaabortcleanruv",
+            "nsds5replicatype",
+            "nsds5replicabinddn",
+            "nsstate",
+            "nsds5replicaname",
+            "nsds5flags",
+            "nsds5task",
+            "nsds5replicareferral",
+            "nsds5replicaautoreferral",
+            "nsds5replicapurgedelay",
+            "nsds5replicatombstonepurgeinterval",
+            "nsds5replicachangecount",
+            "nsds5replicalegacyconsumer",
+            "nsds5replicaprotocoltimeout",
+            "nsds5replicabackoffmin",
+            "nsds5replicabackoffmax",
         },
     },
-    'System: Read DUA Profile': {
-        'ipapermlocation': DN('ou=profile', api.env.basedn),
-        'ipapermtargetfilter': {
-            '(|'
-                '(objectclass=organizationalUnit)'
-                '(objectclass=DUAConfigProfile)'
-            ')'
-        },
-        'ipapermbindruletype': 'anonymous',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'objectclass', 'ou', 'cn', 'defaultServerList',
-            'preferredServerList', 'defaultSearchBase', 'defaultSearchScope',
-            'searchTimeLimit', 'bindTimeLimit', 'credentialLevel',
-            'authenticationMethod', 'followReferrals', 'dereferenceAliases',
-            'serviceSearchDescriptor', 'serviceCredentialLevel',
-            'serviceAuthenticationMethod', 'objectclassMap', 'attributeMap',
-            'profileTTL'
+    "System: Read AD Domains": {
+        "replaces_global_anonymous_aci": True,
+        "ipapermlocation": DN("cn=etc", api.env.basedn),
+        "ipapermtarget": DN("cn=ad,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=ipantdomainattrs)"},
+        "ipapermbindruletype": "all",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {
+            "cn",
+            "objectclass",
+            "ipantsecurityidentifier",
+            "ipantflatname",
+            "ipantdomainguid",
+            "ipantfallbackprimarygroup",
         },
     },
-    'System: Read Domain Level': {
-        'ipapermlocation': DN('cn=Domain Level,cn=ipa,cn=etc', api.env.basedn),
-        'ipapermtargetfilter': {'(objectclass=ipadomainlevelconfig)'},
-        'ipapermbindruletype': 'all',
-        'ipapermright': {'read', 'search', 'compare'},
-        'ipapermdefaultattr': {
-            'ipadomainlevel', 'objectclass',
+    "System: Read DUA Profile": {
+        "ipapermlocation": DN("ou=profile", api.env.basedn),
+        "ipapermtargetfilter": {
+            "(|" "(objectclass=organizationalUnit)" "(objectclass=DUAConfigProfile)" ")"
         },
+        "ipapermbindruletype": "anonymous",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {
+            "objectclass",
+            "ou",
+            "cn",
+            "defaultServerList",
+            "preferredServerList",
+            "defaultSearchBase",
+            "defaultSearchScope",
+            "searchTimeLimit",
+            "bindTimeLimit",
+            "credentialLevel",
+            "authenticationMethod",
+            "followReferrals",
+            "dereferenceAliases",
+            "serviceSearchDescriptor",
+            "serviceCredentialLevel",
+            "serviceAuthenticationMethod",
+            "objectclassMap",
+            "attributeMap",
+            "profileTTL",
+        },
+    },
+    "System: Read Domain Level": {
+        "ipapermlocation": DN("cn=Domain Level,cn=ipa,cn=etc", api.env.basedn),
+        "ipapermtargetfilter": {"(objectclass=ipadomainlevelconfig)"},
+        "ipapermbindruletype": "all",
+        "ipapermright": {"read", "search", "compare"},
+        "ipapermdefaultattr": {"ipadomainlevel", "objectclass",},
     },
 }
 
@@ -312,12 +345,12 @@ class update_managed_permissions(Updater):
     """
 
     def get_anonymous_read_aci(self, ldap):
-        aciname = u'Enable Anonymous access'
-        aciprefix = u'none'
+        aciname = u"Enable Anonymous access"
+        aciprefix = u"none"
 
-        base_entry = ldap.get_entry(self.api.env.basedn, ['aci'])
+        base_entry = ldap.get_entry(self.api.env.basedn, ["aci"])
 
-        acistrs = base_entry.get('aci', [])
+        acistrs = base_entry.get("aci", [])
         acilist = aci._convert_strings_to_acis(acistrs)
         try:
             return aci._find_aci_by_name(acilist, aciprefix, aciname)
@@ -325,13 +358,13 @@ class update_managed_permissions(Updater):
             return None
 
     def remove_anonymous_read_aci(self, ldap, anonymous_read_aci):
-        base_entry = ldap.get_entry(self.api.env.basedn, ['aci'])
+        base_entry = ldap.get_entry(self.api.env.basedn, ["aci"])
 
-        acistrs = base_entry.get('aci', [])
+        acistrs = base_entry.get("aci", [])
 
         for acistr in acistrs:
             if ACI(acistr).isequal(anonymous_read_aci):
-                logger.debug('Removing anonymous ACI: %s', acistr)
+                logger.debug("Removing anonymous ACI: %s", acistr)
                 acistrs.remove(acistr)
                 break
         else:
@@ -346,13 +379,12 @@ class update_managed_permissions(Updater):
         Entries with the same obj are returned consecutively.
         """
         for obj in sorted(self.api.Object(), key=lambda o: o.name):
-            managed_permissions = getattr(obj, 'managed_permissions', {})
+            managed_permissions = getattr(obj, "managed_permissions", {})
             for name, template in sorted(managed_permissions.items()):
                 yield name, template, obj
 
         for name, template in sorted(NONOBJECT_PERMISSIONS.items()):
             yield name, template, None
-
 
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
@@ -360,143 +392,149 @@ class update_managed_permissions(Updater):
         anonymous_read_aci = self.get_anonymous_read_aci(ldap)
 
         if anonymous_read_aci:
-            logger.debug('Anonymous read ACI: %s', anonymous_read_aci)
+            logger.debug("Anonymous read ACI: %s", anonymous_read_aci)
         else:
-            logger.debug('Anonymous ACI not found')
+            logger.debug("Anonymous ACI not found")
 
         current_obj = ()  # initially distinct from any obj value, even None
         for name, template, obj in self.get_templates():
             if current_obj != obj:
                 if obj:
-                    logger.debug('Updating managed permissions for %s',
-                                 obj.name)
+                    logger.debug("Updating managed permissions for %s", obj.name)
                 else:
-                    logger.debug('Updating non-object managed permissions')
+                    logger.debug("Updating non-object managed permissions")
                 current_obj = obj
 
-            self.update_permission(ldap,
-                                    obj,
-                                    unicode(name),
-                                    template,
-                                    anonymous_read_aci)
+            self.update_permission(
+                ldap, obj, unicode(name), template, anonymous_read_aci
+            )
 
         if anonymous_read_aci:
             self.remove_anonymous_read_aci(ldap, anonymous_read_aci)
 
         for obsolete_name in OBSOLETE_PERMISSIONS:
-            logger.debug('Deleting obsolete permission %s', obsolete_name)
+            logger.debug("Deleting obsolete permission %s", obsolete_name)
             try:
-                self.api.Command[permission_del](unicode(obsolete_name),
-                                                 force=True,
-                                                 version=u'2.101')
+                self.api.Command[permission_del](
+                    unicode(obsolete_name), force=True, version=u"2.101"
+                )
             except errors.NotFound:
-                logger.debug('Obsolete permission not found')
+                logger.debug("Obsolete permission not found")
             else:
-                logger.debug('Obsolete permission deleted: %s', obsolete_name)
+                logger.debug("Obsolete permission deleted: %s", obsolete_name)
 
         return False, ()
 
     def update_permission(self, ldap, obj, name, template, anonymous_read_aci):
         """Update the given permission and the corresponding ACI"""
-        assert name.startswith('System:')
+        assert name.startswith("System:")
 
         dn = self.api.Object[permission].get_dn(name)
         permission_plugin = self.api.Object[permission]
 
         try:
             attrs_list = list(permission_plugin.default_attributes)
-            attrs_list.remove('memberindirect')
+            attrs_list.remove("memberindirect")
             entry = ldap.get_entry(dn, attrs_list)
             is_new = False
         except errors.NotFound:
             entry = ldap.make_entry(dn)
             is_new = True
 
-        self.update_entry(obj, entry, template,
-                          anonymous_read_aci, is_new=is_new)
+        self.update_entry(obj, entry, template, anonymous_read_aci, is_new=is_new)
 
         remove_legacy = False
-        if 'replaces' in template:
+        if "replaces" in template:
             sub_dict = {
-                'SUFFIX': str(self.api.env.basedn),
-                'REALM': str(self.api.env.realm),
+                "SUFFIX": str(self.api.env.basedn),
+                "REALM": str(self.api.env.realm),
             }
-            legacy_acistrs = [ipautil.template_str(r, sub_dict)
-                              for r in template['replaces']]
+            legacy_acistrs = [
+                ipautil.template_str(r, sub_dict) for r in template["replaces"]
+            ]
 
             legacy_aci = ACI(legacy_acistrs[0])
-            prefix, sep, legacy_name = legacy_aci.name.partition(':')
-            assert prefix == 'permission' and sep
+            prefix, sep, legacy_name = legacy_aci.name.partition(":")
+            assert prefix == "permission" and sep
 
             legacy_dn = permission_plugin.get_dn(legacy_name)
             try:
-                legacy_entry = ldap.get_entry(legacy_dn,
-                                              ['ipapermissiontype', 'cn'])
+                legacy_entry = ldap.get_entry(legacy_dn, ["ipapermissiontype", "cn"])
             except errors.NotFound:
                 logger.debug("Legacy permission %s not found", legacy_name)
             else:
-                if 'ipapermissiontype' not in legacy_entry:
+                if "ipapermissiontype" not in legacy_entry:
                     if is_new:
-                        _acientry, acistr = (
-                            permission_plugin._get_aci_entry_and_string(
-                                legacy_entry, notfound_ok=True))
+                        _acientry, acistr = permission_plugin._get_aci_entry_and_string(
+                            legacy_entry, notfound_ok=True
+                        )
                         try:
                             included, excluded = self.get_upgrade_attr_lists(
-                                acistr, legacy_acistrs)
+                                acistr, legacy_acistrs
+                            )
                         except IncompatibleACIModification:
                             logger.error(
                                 "Permission '%s' has been modified from its "
                                 "default; not updating it to '%s'.",
-                                legacy_name, name)
+                                legacy_name,
+                                name,
+                            )
                             return
                         else:
-                            logger.debug("Merging attributes from legacy "
-                                         "permission '%s'", legacy_name)
-                            logger.debug("Included attrs: %s",
-                                         ', '.join(sorted(included)))
-                            logger.debug("Excluded attrs: %s",
-                                         ', '.join(sorted(excluded)))
-                            entry['ipapermincludedattr'] = list(included)
-                            entry['ipapermexcludedattr'] = list(excluded)
+                            logger.debug(
+                                "Merging attributes from legacy " "permission '%s'",
+                                legacy_name,
+                            )
+                            logger.debug(
+                                "Included attrs: %s", ", ".join(sorted(included))
+                            )
+                            logger.debug(
+                                "Excluded attrs: %s", ", ".join(sorted(excluded))
+                            )
+                            entry["ipapermincludedattr"] = list(included)
+                            entry["ipapermexcludedattr"] = list(excluded)
                             remove_legacy = True
                     else:
-                        logger.debug("Ignoring attributes in legacy "
-                                     "permission '%s' because '%s' exists",
-                                     legacy_name, name)
+                        logger.debug(
+                            "Ignoring attributes in legacy "
+                            "permission '%s' because '%s' exists",
+                            legacy_name,
+                            name,
+                        )
                         remove_legacy = True
                 else:
-                    logger.debug("Ignoring V2 permission named '%s'",
-                                 legacy_name)
+                    logger.debug("Ignoring V2 permission named '%s'", legacy_name)
 
         update_aci = True
-        logger.debug('Updating managed permission: %s', name)
+        logger.debug("Updating managed permission: %s", name)
         if is_new:
             ldap.add_entry(entry)
         else:
             try:
                 ldap.update_entry(entry)
             except errors.EmptyModlist:
-                logger.debug('No changes to permission: %s', name)
+                logger.debug("No changes to permission: %s", name)
                 update_aci = False
 
         if update_aci:
-            logger.debug('Updating ACI for managed permission: %s', name)
+            logger.debug("Updating ACI for managed permission: %s", name)
             permission_plugin.update_aci(entry)
 
         if remove_legacy:
             logger.debug("Removing legacy permission '%s'", legacy_name)
             self.api.Command[permission_del](unicode(legacy_name))
 
-        for name in template.get('replaces_system', ()):
+        for name in template.get("replaces_system", ()):
             name = unicode(name)
             try:
-                entry = ldap.get_entry(permission_plugin.get_dn(name),
-                                       ['ipapermissiontype'])
+                entry = ldap.get_entry(
+                    permission_plugin.get_dn(name), ["ipapermissiontype"]
+                )
             except errors.NotFound:
                 logger.debug("Legacy permission '%s' not found", name)
             else:
-                flags = entry.get('ipapermissiontype', [])
-                if list(flags) == ['SYSTEM']:
+                flags = entry.get("ipapermissiontype", [])
+                if list(flags) == ["SYSTEM"]:
                     logger.debug("Removing legacy permission '%s'", name)
                     self.api.Command[permission_del](name, force=True)
                 else:
@@ -535,18 +573,17 @@ class update_managed_permissions(Updater):
         def _pop_targetattr(aci):
             """Return the attr list it as a set, clear it in the ACI object
             """
-            targetattr = aci.target.get('targetattr')
+            targetattr = aci.target.get("targetattr")
             if targetattr:
-                attrs = targetattr['expression']
-                targetattr['expression'] = []
+                attrs = targetattr["expression"]
+                targetattr["expression"] = []
                 return set(t.lower() for t in attrs)
             else:
                 return set()
 
         current_aci = ACI(current_acistring)
         current_attrs = _pop_targetattr(current_aci)
-        logger.debug("Current ACI for '%s': %s",
-                     current_aci.name, current_acistring)
+        logger.debug("Current ACI for '%s': %s", current_aci.name, current_acistring)
 
         attrs_in_all_defaults = None
         attrs_in_any_defaults = set()
@@ -554,11 +591,12 @@ class update_managed_permissions(Updater):
         for default_acistring in default_acistrings:
             default_aci = ACI(default_acistring)
             default_attrs = _pop_targetattr(default_aci)
-            logger.debug("Default ACI for '%s': %s",
-                         default_aci.name, default_acistring)
+            logger.debug(
+                "Default ACI for '%s': %s", default_aci.name, default_acistring
+            )
 
             if current_aci != default_aci:
-                logger.debug('ACIs not compatible')
+                logger.debug("ACIs not compatible")
                 continue
             all_incompatible = False
 
@@ -569,108 +607,112 @@ class update_managed_permissions(Updater):
             attrs_in_any_defaults |= default_attrs
 
         if all_incompatible:
-            logger.debug('All old default ACIs are incompatible')
-            raise(IncompatibleACIModification())
+            logger.debug("All old default ACIs are incompatible")
+            raise (IncompatibleACIModification())
 
         included = current_attrs - attrs_in_any_defaults
         excluded = attrs_in_all_defaults - current_attrs
 
         return included, excluded
 
-    def update_entry(self, obj, entry, template,
-                     anonymous_read_aci, is_new):
+    def update_entry(self, obj, entry, template, anonymous_read_aci, is_new):
         """Update the given permission Entry (without contacting LDAP)"""
 
         [name_ava] = entry.dn[0]
-        assert name_ava.attr == 'cn'
+        assert name_ava.attr == "cn"
         name = name_ava.value
-        entry.single_value['cn'] = name
+        entry.single_value["cn"] = name
 
         template = dict(template)
-        template.pop('replaces', None)
-        template.pop('replaces_system', None)
-        template.pop('replaces_permissions', None)
-        template.pop('replaces_acis', None)
+        template.pop("replaces", None)
+        template.pop("replaces_system", None)
+        template.pop("replaces_permissions", None)
+        template.pop("replaces_acis", None)
 
-        fixup_function = template.pop('fixup_function', None)
+        fixup_function = template.pop("fixup_function", None)
         if fixup_function:
-            fixup_function(name, template,
-                           is_new=is_new,
-                           anonymous_read_aci=anonymous_read_aci)
+            fixup_function(
+                name, template, is_new=is_new, anonymous_read_aci=anonymous_read_aci
+            )
 
-        if template.pop('non_object', False):
+        if template.pop("non_object", False):
             obj = None
 
-        entry['ipapermissiontype'] = [u'SYSTEM', u'V2', u'MANAGED']
+        entry["ipapermissiontype"] = [u"SYSTEM", u"V2", u"MANAGED"]
 
         # Attributes with defaults
-        objectclass = template.pop('objectclass', None)
+        objectclass = template.pop("objectclass", None)
         if objectclass is None:
             objectclass = self.api.Object[permission].object_class
-        entry['objectclass'] = list(objectclass)
+        entry["objectclass"] = list(objectclass)
 
-        ldap_filter = template.pop('ipapermtargetfilter', None)
+        ldap_filter = template.pop("ipapermtargetfilter", None)
         if obj and ldap_filter is None:
             ldap_filter = [self.api.Object[permission].make_type_filter(obj)]
-        entry['ipapermtargetfilter'] = list(ldap_filter or [])
+        entry["ipapermtargetfilter"] = list(ldap_filter or [])
 
-        ipapermlocation = template.pop('ipapermlocation', None)
+        ipapermlocation = template.pop("ipapermlocation", None)
         if ipapermlocation is None:
             assert obj
             ipapermlocation = DN(obj.container_dn, self.api.env.basedn)
-        entry.single_value['ipapermlocation'] = ipapermlocation
+        entry.single_value["ipapermlocation"] = ipapermlocation
 
         # Optional attributes
-        ipapermtarget = template.pop('ipapermtarget', None)
+        ipapermtarget = template.pop("ipapermtarget", None)
         if ipapermtarget is not None:
-            entry['ipapermtarget'] = ipapermtarget
+            entry["ipapermtarget"] = ipapermtarget
 
-        ipapermtargetto = template.pop('ipapermtargetto', None)
+        ipapermtargetto = template.pop("ipapermtargetto", None)
         if ipapermtargetto is not None:
-            entry['ipapermtargetto'] = ipapermtargetto
+            entry["ipapermtargetto"] = ipapermtargetto
 
-        ipapermtargetfrom = template.pop('ipapermtargetfrom', None)
+        ipapermtargetfrom = template.pop("ipapermtargetfrom", None)
         if ipapermtargetfrom is not None:
-            entry['ipapermtargetfrom'] = ipapermtargetfrom
+            entry["ipapermtargetfrom"] = ipapermtargetfrom
 
         # Attributes from template
-        bindruletype = template.pop('ipapermbindruletype', 'permission')
+        bindruletype = template.pop("ipapermbindruletype", "permission")
         if is_new:
-            entry.single_value['ipapermbindruletype'] = bindruletype
+            entry.single_value["ipapermbindruletype"] = bindruletype
 
-        entry['ipapermright'] = list(template.pop('ipapermright'))
+        entry["ipapermright"] = list(template.pop("ipapermright"))
 
-        default_privileges = template.pop('default_privileges', None)
+        default_privileges = template.pop("default_privileges", None)
         if is_new and default_privileges:
-            entry['member'] = list(
-                DN(('cn', privilege_name),
-                   self.api.env.container_privilege,
-                   self.api.env.basedn)
-                for privilege_name in default_privileges)
+            entry["member"] = list(
+                DN(
+                    ("cn", privilege_name),
+                    self.api.env.container_privilege,
+                    self.api.env.basedn,
+                )
+                for privilege_name in default_privileges
+            )
 
         # Add to the set of default attributes
-        attributes = set(template.pop('ipapermdefaultattr', ()))
-        attributes.update(entry.get('ipapermdefaultattr', ()))
+        attributes = set(template.pop("ipapermdefaultattr", ()))
+        attributes.update(entry.get("ipapermdefaultattr", ()))
         attributes = set(a.lower() for a in attributes)
-        entry['ipapermdefaultattr'] = list(attributes)
+        entry["ipapermdefaultattr"] = list(attributes)
 
         # Exclude attributes filtered from the global read ACI
-        replaces_ga_aci = template.pop('replaces_global_anonymous_aci', False)
+        replaces_ga_aci = template.pop("replaces_global_anonymous_aci", False)
         if replaces_ga_aci and is_new and anonymous_read_aci:
             read_blacklist = set(
-                a.lower() for a in
-                anonymous_read_aci.target['targetattr']['expression'])
+                a.lower() for a in anonymous_read_aci.target["targetattr"]["expression"]
+            )
             read_blacklist &= attributes
             if read_blacklist:
-                logger.debug('Excluded attributes for %s: %s',
-                             name, ', '.join(read_blacklist))
-                entry['ipapermexcludedattr'] = list(read_blacklist)
+                logger.debug(
+                    "Excluded attributes for %s: %s", name, ", ".join(read_blacklist)
+                )
+                entry["ipapermexcludedattr"] = list(read_blacklist)
 
         # Sanity check
         if template:
             raise ValueError(
-                'Unknown key(s) in managed permission template %s: %s' % (
-                    name, ', '.join(template.keys())))
+                "Unknown key(s) in managed permission template %s: %s"
+                % (name, ", ".join(template.keys()))
+            )
 
 
 @register()
@@ -689,15 +731,15 @@ class update_read_replication_agreements_permission(Updater):
     def execute(self, **options):
         ldap = self.api.Backend.ldap2
         old_perm_dn = DN(
-            ('cn', 'System: Read Replication Agreements'),
+            ("cn", "System: Read Replication Agreements"),
             self.api.env.container_permission,
-            self.api.env.basedn
+            self.api.env.basedn,
         )
 
         new_perm_dn = DN(
-            ('cn', 'Read Replication Agreements'),
+            ("cn", "Read Replication Agreements"),
             self.api.env.container_permission,
-            self.api.env.basedn
+            self.api.env.basedn,
         )
 
         try:
@@ -712,28 +754,31 @@ class update_read_replication_agreements_permission(Updater):
             # we can happily upgrade
             pass
         else:
-            logger.error("Permission '%s' cannot be upgraded. "
-                         "Permission with target name '%s' already "
-                         "exists", old_perm_dn, new_perm_dn)
+            logger.error(
+                "Permission '%s' cannot be upgraded. "
+                "Permission with target name '%s' already "
+                "exists",
+                old_perm_dn,
+                new_perm_dn,
+            )
             return False, ()
 
         # values are case insensitive
-        for t in list(perm_entry['ipapermissiontype']):
-            if t.lower() in ['managed', 'v2']:
-                perm_entry['ipapermissiontype'].remove(t)
+        for t in list(perm_entry["ipapermissiontype"]):
+            if t.lower() in ["managed", "v2"]:
+                perm_entry["ipapermissiontype"].remove(t)
 
-        for o in list(perm_entry['objectclass']):
-            if o.lower() == 'ipapermissionv2':
+        for o in list(perm_entry["objectclass"]):
+            if o.lower() == "ipapermissionv2":
                 # remove permission V2 objectclass and related attributes
-                perm_entry['objectclass'].remove(o)
-                perm_entry['ipapermdefaultattr'] = []
-                perm_entry['ipapermright'] = []
-                perm_entry['ipapermbindruletype'] = []
-                perm_entry['ipapermlocation'] = []
-                perm_entry['ipapermtargetfilter'] = []
+                perm_entry["objectclass"].remove(o)
+                perm_entry["ipapermdefaultattr"] = []
+                perm_entry["ipapermright"] = []
+                perm_entry["ipapermbindruletype"] = []
+                perm_entry["ipapermlocation"] = []
+                perm_entry["ipapermtargetfilter"] = []
 
-        logger.debug("Removing MANAGED attributes from permission %s",
-                     old_perm_dn)
+        logger.debug("Removing MANAGED attributes from permission %s", old_perm_dn)
         try:
             ldap.update_entry(perm_entry)
         except errors.EmptyModlist:

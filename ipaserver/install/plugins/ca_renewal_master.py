@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 register = Registry()
 
+
 @register()
 class update_ca_renewal_master(Updater):
     """
@@ -48,11 +49,10 @@ class update_ca_renewal_master(Updater):
 
         ldap = self.api.Backend.ldap2
         base_dn = DN(self.api.env.container_masters, self.api.env.basedn)
-        dn = DN(('cn', 'CA'), ('cn', self.api.env.host), base_dn)
-        filter = '(&(cn=CA)(ipaConfigString=caRenewalMaster))'
+        dn = DN(("cn", "CA"), ("cn", self.api.env.host), base_dn)
+        filter = "(&(cn=CA)(ipaConfigString=caRenewalMaster))"
         try:
-            entries = ldap.get_entries(base_dn=base_dn, filter=filter,
-                                       attrs_list=[])
+            entries = ldap.get_entries(base_dn=base_dn, filter=filter, attrs_list=[])
         except errors.NotFound:
             pass
         else:
@@ -66,13 +66,18 @@ class update_ca_renewal_master(Updater):
                     master = True
                     continue
 
-                updates.append({
-                    'dn': entry.dn,
-                    'updates': [
-                        dict(action='remove', attr='ipaConfigString',
-                             value='caRenewalMaster')
-                    ],
-                })
+                updates.append(
+                    {
+                        "dn": entry.dn,
+                        "updates": [
+                            dict(
+                                action="remove",
+                                attr="ipaConfigString",
+                                value="caRenewalMaster",
+                            )
+                        ],
+                    }
+                )
 
             if master:
                 return False, updates
@@ -80,53 +85,58 @@ class update_ca_renewal_master(Updater):
                 return False, []
 
         criteria = {
-            'cert-file': paths.RA_AGENT_PEM,
+            "cert-file": paths.RA_AGENT_PEM,
         }
         request_id = certmonger.get_request_id(criteria)
         if request_id is not None:
             logger.debug("found certmonger request for RA cert")
 
-            ca_name = certmonger.get_request_value(request_id, 'ca-name')
+            ca_name = certmonger.get_request_value(request_id, "ca-name")
             if ca_name is None:
                 logger.warning(
                     "certmonger request for RA cert is missing ca_name, "
-                    "assuming local CA is renewal slave")
+                    "assuming local CA is renewal slave"
+                )
                 return False, []
             ca_name = ca_name.strip()
 
-            if ca_name == 'dogtag-ipa-renew-agent':
+            if ca_name == "dogtag-ipa-renew-agent":
                 pass
-            elif ca_name == 'dogtag-ipa-retrieve-agent-submit':
+            elif ca_name == "dogtag-ipa-retrieve-agent-submit":
                 return False, []
-            elif ca_name == 'dogtag-ipa-ca-renew-agent':
+            elif ca_name == "dogtag-ipa-ca-renew-agent":
                 return False, []
             else:
                 logger.warning(
                     "certmonger request for RA cert has unknown ca_name '%s', "
-                    "assuming local CA is renewal slave", ca_name)
+                    "assuming local CA is renewal slave",
+                    ca_name,
+                )
                 return False, []
         else:
             logger.debug("certmonger request for RA cert not found")
 
             config = directivesetter.get_directive(
-                paths.CA_CS_CFG_PATH, 'subsystem.select', '=')
+                paths.CA_CS_CFG_PATH, "subsystem.select", "="
+            )
 
-            if config == 'New':
+            if config == "New":
                 pass
-            elif config == 'Clone':
+            elif config == "Clone":
                 return False, []
             else:
                 logger.warning(
                     "CS.cfg has unknown subsystem.select value '%s', "
-                    "assuming local CA is renewal slave", config)
+                    "assuming local CA is renewal slave",
+                    config,
+                )
                 return (False, False, [])
 
         update = {
-                'dn': dn,
-                'updates': [
-                    dict(action='add', attr='ipaConfigString',
-                         value='caRenewalMaster')
-                ],
+            "dn": dn,
+            "updates": [
+                dict(action="add", attr="ipaConfigString", value="caRenewalMaster")
+            ],
         }
 
         return False, [update]

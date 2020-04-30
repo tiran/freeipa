@@ -26,11 +26,13 @@ import re
 
 from ipaclient.frontend import MethodOverride
 from ipalib import errors
-from ipalib.dns import (get_record_rrtype,
-                        has_cli_options,
-                        iterate_rrparams_by_parts,
-                        part_name_format,
-                        record_name_format)
+from ipalib.dns import (
+    get_record_rrtype,
+    has_cli_options,
+    iterate_rrparams_by_parts,
+    part_name_format,
+    record_name_format,
+)
 from ipalib.frontend import Command
 from ipalib.parameters import Bool, Str
 from ipalib.plugable import Registry
@@ -44,9 +46,16 @@ if six.PY3:
 register = Registry()
 
 # most used record types, always ask for those in interactive prompt
-_top_record_types = ('A', 'AAAA', )
-_rev_top_record_types = ('PTR', )
-_zone_top_record_types = ('NS', 'MX', 'LOC', )
+_top_record_types = (
+    "A",
+    "AAAA",
+)
+_rev_top_record_types = ("PTR",)
+_zone_top_record_types = (
+    "NS",
+    "MX",
+    "LOC",
+)
 
 
 def __get_part_param(rrtype, cmd, part, output_kw, default=None):
@@ -54,21 +63,18 @@ def __get_part_param(rrtype, cmd, part, output_kw, default=None):
     label = unicode(cmd.params[name].label)
     optional = not part.required
 
-    output_kw[name] = cmd.prompt_param(part,
-                                       optional=optional,
-                                       label=label)
+    output_kw[name] = cmd.prompt_param(part, optional=optional, label=label)
 
 
 def prompt_parts(rrtype, cmd, mod_dnsvalue=None):
     mod_parts = None
     if mod_dnsvalue is not None:
         name = record_name_format % unicode(rrtype.lower())
-        mod_parts = cmd.api.Command.dnsrecord_split_parts(
-            name, mod_dnsvalue)['result']
+        mod_parts = cmd.api.Command.dnsrecord_split_parts(name, mod_dnsvalue)["result"]
 
     user_options = {}
     try:
-        rrobj = cmd.api.Object['dns{}record'.format(rrtype.lower())]
+        rrobj = cmd.api.Object["dns{}record".format(rrtype.lower())]
     except KeyError:
         return user_options
 
@@ -90,7 +96,7 @@ def prompt_parts(rrtype, cmd, mod_dnsvalue=None):
 def prompt_missing_parts(rrtype, cmd, kw, prompt_optional=False):
     user_options = {}
     try:
-        rrobj = cmd.api.Object['dns{}record'.format(rrtype.lower())]
+        rrobj = cmd.api.Object["dns{}record".format(rrtype.lower())]
     except KeyError:
         return user_options
 
@@ -115,7 +121,7 @@ def prompt_missing_parts(rrtype, cmd, kw, prompt_optional=False):
 class DNSZoneMethodOverride(MethodOverride):
     def get_options(self):
         for option in super(DNSZoneMethodOverride, self).get_options():
-            if option.name == 'idnsallowdynupdate':
+            if option.name == "idnsallowdynupdate":
                 option = option.clone_retype(option.name, Bool)
             yield option
 
@@ -134,12 +140,12 @@ class dnszone_mod(DNSZoneMethodOverride):
 # Do not add anything new here!
 @register(no_fail=True)
 class dnsrecord_split_parts(Command):
-    __doc__ = _('Split DNS record to parts')
+    __doc__ = _("Split DNS record to parts")
     NO_CLI = True
 
     takes_args = (
-        Str('name'),
-        Str('value'),
+        Str("name"),
+        Str("value"),
     )
 
     def execute(self, name, value, *args, **options):
@@ -152,36 +158,36 @@ class dnsrecord_split_parts(Command):
         result = ()
 
         rrtype = get_record_rrtype(name)
-        if rrtype in ('A', 'AAAA', 'CNAME', 'DNAME', 'NS', 'PTR'):
+        if rrtype in ("A", "AAAA", "CNAME", "DNAME", "NS", "PTR"):
             result = split_exactly(1)
-        elif rrtype in ('AFSDB', 'KX', 'MX'):
+        elif rrtype in ("AFSDB", "KX", "MX"):
             result = split_exactly(2)
-        elif rrtype in ('CERT', 'DLV', 'DS', 'SRV', 'TLSA'):
+        elif rrtype in ("CERT", "DLV", "DS", "SRV", "TLSA"):
             result = split_exactly(4)
-        elif rrtype in ('NAPTR'):
+        elif rrtype in ("NAPTR"):
             result = split_exactly(6)
-        elif rrtype in ('A6', 'TXT'):
+        elif rrtype in ("A6", "TXT"):
             result = (value,)
-        elif rrtype == 'LOC':
+        elif rrtype == "LOC":
             regex = re.compile(
-                r'(?P<d1>\d{1,2}\s+)'
-                r'(?:(?P<m1>\d{1,2}\s+)'
-                r'(?P<s1>\d{1,2}(?:\.\d{1,3})?\s+)?)?'
-                r'(?P<dir1>[NS])\s+'
-                r'(?P<d2>\d{1,3}\s+)'
-                r'(?:(?P<m2>\d{1,2}\s+)'
-                r'(?P<s2>\d{1,2}(?:\.\d{1,3})?\s+)?)?'
-                r'(?P<dir2>[WE])\s+'
-                r'(?P<alt>-?\d{1,8}(?:\.\d{1,2})?)m?'
-                r'(?:\s+(?P<siz>\d{1,8}(?:\.\d{1,2})?)m?'
-                r'(?:\s+(?P<hp>\d{1,8}(?:\.\d{1,2})?)m?'
-                r'(?:\s+(?P<vp>\d{1,8}(?:\.\d{1,2})?)m?\s*)?)?)?$')
+                r"(?P<d1>\d{1,2}\s+)"
+                r"(?:(?P<m1>\d{1,2}\s+)"
+                r"(?P<s1>\d{1,2}(?:\.\d{1,3})?\s+)?)?"
+                r"(?P<dir1>[NS])\s+"
+                r"(?P<d2>\d{1,3}\s+)"
+                r"(?:(?P<m2>\d{1,2}\s+)"
+                r"(?P<s2>\d{1,2}(?:\.\d{1,3})?\s+)?)?"
+                r"(?P<dir2>[WE])\s+"
+                r"(?P<alt>-?\d{1,8}(?:\.\d{1,2})?)m?"
+                r"(?:\s+(?P<siz>\d{1,8}(?:\.\d{1,2})?)m?"
+                r"(?:\s+(?P<hp>\d{1,8}(?:\.\d{1,2})?)m?"
+                r"(?:\s+(?P<vp>\d{1,8}(?:\.\d{1,2})?)m?\s*)?)?)?$"
+            )
 
             m = regex.match(value)
             if m is not None:
-                result = tuple(
-                    x.strip() if x is not None else x for x in m.groups())
-        elif rrtype == 'SSHFP':
+                result = tuple(x.strip() if x is not None else x for x in m.groups())
+        elif rrtype == "SSHFP":
             values = value.split(None, 2)
             if len(values) == 3:
                 result = tuple(values)
@@ -191,8 +197,10 @@ class dnsrecord_split_parts(Command):
 
 @register(override=True, no_fail=True)
 class dnsrecord_add(MethodOverride):
-    no_option_msg = 'No options to add a specific record provided.\n' \
-            "Command help may be consulted for all supported record types."
+    no_option_msg = (
+        "No options to add a specific record provided.\n"
+        "Command help may be consulted for all supported record types."
+    )
 
     def interactive_prompt_callback(self, kw):
         try:
@@ -205,11 +213,11 @@ class dnsrecord_add(MethodOverride):
             # Do not ask for required parts when any "extra" option is used,
             # it can be used to fill all required params by itself
             new_kw = {}
-            for rrparam in iterate_rrparams_by_parts(self, kw,
-                                                     skip_extra=True):
+            for rrparam in iterate_rrparams_by_parts(self, kw, skip_extra=True):
                 rrtype = get_record_rrtype(rrparam.name)
-                user_options = prompt_missing_parts(rrtype, self, kw,
-                                                    prompt_optional=False)
+                user_options = prompt_missing_parts(
+                    rrtype, self, kw, prompt_optional=False
+                )
                 new_kw.update(user_options)
             kw.update(new_kw)
             return
@@ -217,30 +225,33 @@ class dnsrecord_add(MethodOverride):
             pass
 
         try:
-            idnsname = DNSName(kw['idnsname'])
+            idnsname = DNSName(kw["idnsname"])
         except Exception as e:
-            raise errors.ValidationError(name='idnsname', error=unicode(e))
+            raise errors.ValidationError(name="idnsname", error=unicode(e))
 
         try:
-            zonename = DNSName(kw['dnszoneidnsname'])
+            zonename = DNSName(kw["dnszoneidnsname"])
         except Exception as e:
-            raise errors.ValidationError(name='dnszoneidnsname', error=unicode(e))
+            raise errors.ValidationError(name="dnszoneidnsname", error=unicode(e))
 
         # check zone type
         if idnsname.is_empty():
-            common_types = u', '.join(_zone_top_record_types)
+            common_types = u", ".join(_zone_top_record_types)
         elif zonename.is_reverse():
-            common_types = u', '.join(_rev_top_record_types)
+            common_types = u", ".join(_rev_top_record_types)
         else:
-            common_types = u', '.join(_top_record_types)
+            common_types = u", ".join(_top_record_types)
 
-        self.Backend.textui.print_plain(_(u'Please choose a type of DNS resource record to be added'))
-        self.Backend.textui.print_plain(_(u'The most common types for this type of zone are: %s\n') %\
-                                          common_types)
+        self.Backend.textui.print_plain(
+            _(u"Please choose a type of DNS resource record to be added")
+        )
+        self.Backend.textui.print_plain(
+            _(u"The most common types for this type of zone are: %s\n") % common_types
+        )
 
         ok = False
         while not ok:
-            rrtype = self.Backend.textui.prompt(_(u'DNS resource record type'))
+            rrtype = self.Backend.textui.prompt(_(u"DNS resource record type"))
 
             if rrtype is None:
                 return
@@ -251,14 +262,18 @@ class dnsrecord_add(MethodOverride):
                 name = record_name_format % rrtype.lower()
                 param = self.params[name]
 
-                if 'no_option' in param.flags:
+                if "no_option" in param.flags:
                     raise ValueError()
             except (KeyError, ValueError):
-                all_types = u', '.join(get_record_rrtype(p.name)
-                                       for p in self.params()
-                                       if (get_record_rrtype(p.name) and
-                                           'no_option' not in p.flags))
-                self.Backend.textui.print_plain(_(u'Invalid or unsupported type. Allowed values are: %s') % all_types)
+                all_types = u", ".join(
+                    get_record_rrtype(p.name)
+                    for p in self.params()
+                    if (get_record_rrtype(p.name) and "no_option" not in p.flags)
+                )
+                self.Backend.textui.print_plain(
+                    _(u"Invalid or unsupported type. Allowed values are: %s")
+                    % all_types
+                )
                 continue
             ok = True
 
@@ -268,7 +283,7 @@ class dnsrecord_add(MethodOverride):
 
 @register(override=True, no_fail=True)
 class dnsrecord_mod(MethodOverride):
-    no_option_msg = 'No options to modify a specific record provided.'
+    no_option_msg = "No options to modify a specific record provided."
 
     def interactive_prompt_callback(self, kw):
         try:
@@ -281,12 +296,16 @@ class dnsrecord_mod(MethodOverride):
 
         # get DNS record first so that the NotFound exception is raised
         # before the helper would start
-        dns_record = self.api.Command['dnsrecord_show'](kw['dnszoneidnsname'], kw['idnsname'])['result']
+        dns_record = self.api.Command["dnsrecord_show"](
+            kw["dnszoneidnsname"], kw["idnsname"]
+        )["result"]
 
-        self.Backend.textui.print_plain(_("No option to modify specific record provided."))
+        self.Backend.textui.print_plain(
+            _("No option to modify specific record provided.")
+        )
 
         # ask user for records to be removed
-        self.Backend.textui.print_plain(_(u'Current DNS record contents:\n'))
+        self.Backend.textui.print_plain(_(u"Current DNS record contents:\n"))
         record_params = []
 
         for attr in dns_record:
@@ -299,9 +318,9 @@ class dnsrecord_mod(MethodOverride):
                 continue
 
             record_params.append((param, rrtype))
-            rec_type_content = u', '.join(dns_record[param.name])
-            self.Backend.textui.print_plain(u'%s: %s' % (param.label, rec_type_content))
-        self.Backend.textui.print_plain(u'')
+            rec_type_content = u", ".join(dns_record[param.name])
+            self.Backend.textui.print_plain(u"%s: %s" % (param.label, rec_type_content))
+        self.Backend.textui.print_plain(u"")
 
         # ask what records to remove
         for param, rrtype in record_params:
@@ -309,28 +328,36 @@ class dnsrecord_mod(MethodOverride):
             for rec_value in dns_record[param.name]:
                 rec_values.remove(rec_value)
                 mod_value = self.Backend.textui.prompt_yesno(
-                        _("Modify %(name)s '%(value)s'?") % dict(name=param.label, value=rec_value), default=False)
+                    _("Modify %(name)s '%(value)s'?")
+                    % dict(name=param.label, value=rec_value),
+                    default=False,
+                )
                 if mod_value is True:
-                    user_options = prompt_parts(rrtype, self,
-                                                mod_dnsvalue=rec_value)
+                    user_options = prompt_parts(rrtype, self, mod_dnsvalue=rec_value)
                     kw[param.name] = [rec_value]
                     kw.update(user_options)
 
                     if rec_values:
-                         self.Backend.textui.print_plain(ngettext(
-                            u'%(count)d %(type)s record skipped. Only one value per DNS record type can be modified at one time.',
-                            u'%(count)d %(type)s records skipped. Only one value per DNS record type can be modified at one time.',
-                            0) % dict(count=len(rec_values), type=rrtype))
-                         break
+                        self.Backend.textui.print_plain(
+                            ngettext(
+                                u"%(count)d %(type)s record skipped. Only one value per DNS record type can be modified at one time.",
+                                u"%(count)d %(type)s records skipped. Only one value per DNS record type can be modified at one time.",
+                                0,
+                            )
+                            % dict(count=len(rec_values), type=rrtype)
+                        )
+                        break
 
 
 @register(override=True, no_fail=True)
 class dnsrecord_del(MethodOverride):
-    no_option_msg = _('Neither --del-all nor options to delete a specific record provided.\n'\
-            "Command help may be consulted for all supported record types.")
+    no_option_msg = _(
+        "Neither --del-all nor options to delete a specific record provided.\n"
+        "Command help may be consulted for all supported record types."
+    )
 
     def interactive_prompt_callback(self, kw):
-        if kw.get('del_all', False):
+        if kw.get("del_all", False):
             return
         try:
             has_cli_options(self, kw, self.no_option_msg)
@@ -342,17 +369,21 @@ class dnsrecord_del(MethodOverride):
 
         # get DNS record first so that the NotFound exception is raised
         # before the helper would start
-        dns_record = self.api.Command['dnsrecord_show'](kw['dnszoneidnsname'], kw['idnsname'])['result']
+        dns_record = self.api.Command["dnsrecord_show"](
+            kw["dnszoneidnsname"], kw["idnsname"]
+        )["result"]
 
-        self.Backend.textui.print_plain(_("No option to delete specific record provided."))
+        self.Backend.textui.print_plain(
+            _("No option to delete specific record provided.")
+        )
         user_del_all = self.Backend.textui.prompt_yesno(_("Delete all?"), default=False)
 
         if user_del_all is True:
-            kw['del_all'] = True
+            kw["del_all"] = True
             return
 
         # ask user for records to be removed
-        self.Backend.textui.print_plain(_(u'Current DNS record contents:\n'))
+        self.Backend.textui.print_plain(_(u"Current DNS record contents:\n"))
         present_params = []
 
         for attr in dns_record:
@@ -364,19 +395,21 @@ class dnsrecord_del(MethodOverride):
                 continue
 
             present_params.append(param)
-            rec_type_content = u', '.join(dns_record[param.name])
-            self.Backend.textui.print_plain(u'%s: %s' % (param.label, rec_type_content))
-        self.Backend.textui.print_plain(u'')
+            rec_type_content = u", ".join(dns_record[param.name])
+            self.Backend.textui.print_plain(u"%s: %s" % (param.label, rec_type_content))
+        self.Backend.textui.print_plain(u"")
 
         # ask what records to remove
         for param in present_params:
             deleted_values = []
             for rec_value in dns_record[param.name]:
                 user_del_value = self.Backend.textui.prompt_yesno(
-                        _("Delete %(name)s '%(value)s'?")
-                            % dict(name=param.label, value=rec_value), default=False)
+                    _("Delete %(name)s '%(value)s'?")
+                    % dict(name=param.label, value=rec_value),
+                    default=False,
+                )
                 if user_del_value is True:
-                     deleted_values.append(rec_value)
+                    deleted_values.append(rec_value)
             if deleted_values:
                 kw[param.name] = tuple(deleted_values)
 
@@ -387,28 +420,26 @@ class dnsconfig_mod(MethodOverride):
 
         # show informative message on client side
         # server cannot send messages asynchronous
-        if kw.get('idnsforwarders', False):
+        if kw.get("idnsforwarders", False):
+            self.Backend.textui.print_plain(_("Server will check DNS forwarder(s)."))
             self.Backend.textui.print_plain(
-                _("Server will check DNS forwarder(s)."))
-            self.Backend.textui.print_plain(
-                _("This may take some time, please wait ..."))
+                _("This may take some time, please wait ...")
+            )
 
 
 @register(override=True, no_fail=True)
 class dnsforwardzone_add(MethodOverride):
     def interactive_prompt_callback(self, kw):
-        if ('idnsforwarders' not in kw and
-                kw.get('idnsforwardpolicy') != u'none'):
-            kw['idnsforwarders'] = self.Backend.textui.prompt(
-                _(u'DNS forwarder'))
+        if "idnsforwarders" not in kw and kw.get("idnsforwardpolicy") != u"none":
+            kw["idnsforwarders"] = self.Backend.textui.prompt(_(u"DNS forwarder"))
 
         # show informative message on client side
         # server cannot send messages asynchronous
-        if kw.get('idnsforwarders', False):
+        if kw.get("idnsforwarders", False):
+            self.Backend.textui.print_plain(_("Server will check DNS forwarder(s)."))
             self.Backend.textui.print_plain(
-                _("Server will check DNS forwarder(s)."))
-            self.Backend.textui.print_plain(
-                _("This may take some time, please wait ..."))
+                _("This may take some time, please wait ...")
+            )
 
 
 @register(override=True, no_fail=True)
@@ -416,43 +447,41 @@ class dnsforwardzone_mod(MethodOverride):
     def interactive_prompt_callback(self, kw):
         # show informative message on client side
         # server cannot send messages asynchronous
-        if kw.get('idnsforwarders', False):
+        if kw.get("idnsforwarders", False):
+            self.Backend.textui.print_plain(_("Server will check DNS forwarder(s)."))
             self.Backend.textui.print_plain(
-                _("Server will check DNS forwarder(s)."))
-            self.Backend.textui.print_plain(
-                _("This may take some time, please wait ..."))
+                _("This may take some time, please wait ...")
+            )
 
 
 @register(override=True, no_fail=True)
 class dns_update_system_records(MethodOverride):
-    record_groups = ('ipa_records', 'location_records')
+    record_groups = ("ipa_records", "location_records")
 
     takes_options = (
         Str(
-            'out?',
-            include='cli',
-            doc=_('file to store DNS records in nsupdate format')
+            "out?", include="cli", doc=_("file to store DNS records in nsupdate format")
         ),
     )
+
     def _standard_output(self, textui, result, labels):
         """Print output in standard format common across the other plugins"""
         for key in self.record_groups:
             if result.get(key):
-                textui.print_indented(u'{}:'.format(labels[key]), indent=1)
+                textui.print_indented(u"{}:".format(labels[key]), indent=1)
                 for val in sorted(result[key]):
                     textui.print_indented(val, indent=2)
-                textui.print_line(u'')
+                textui.print_line(u"")
 
     def _nsupdate_output_file(self, out_f, result):
         """Store data in nsupdate format in file"""
+
         def parse_rname_rtype(record):
             """Get rname and rtype from textual representation of record"""
-            l = record.split(' ', 4)
+            l = record.split(" ", 4)
             return l[0], l[3]
 
-        labels = {
-            p.name: unicode(p.label) for p in self.output_params()
-        }
+        labels = {p.name: unicode(p.label) for p in self.output_params()}
 
         already_removed = set()
         for key in self.record_groups:
@@ -464,25 +493,27 @@ class dns_update_system_records(MethodOverride):
                     if r_name_type not in already_removed:
                         # remove it only once
                         already_removed.add(r_name_type)
-                        out_f.write("update delete {rname} {rtype}\n".format(
-                            rname=r_name_type[0], rtype=r_name_type[1]
-                        ))
+                        out_f.write(
+                            "update delete {rname} {rtype}\n".format(
+                                rname=r_name_type[0], rtype=r_name_type[1]
+                            )
+                        )
                     # add new
                     out_f.write("update add {}\n".format(val))
                 out_f.write("send\n\n")
 
     def forward(self, *keys, **options):
         # pop `out` before sending to server as it is only client side option
-        out = options.pop('out', None)
+        out = options.pop("out", None)
         if out:
             util.check_writable_file(out)
 
         res = super(dns_update_system_records, self).forward(*keys, **options)
 
-        if out and 'result' in res:
+        if out and "result" in res:
             try:
                 with open(out, "w") as f:
-                    self._nsupdate_output_file(f, res['result'])
+                    self._nsupdate_output_file(f, res["result"])
             except (OSError, IOError) as e:
                 raise errors.FileError(reason=unicode(e))
 
@@ -490,19 +521,18 @@ class dns_update_system_records(MethodOverride):
 
     def output_for_cli(self, textui, output, *args, **options):
         output_super = copy.deepcopy(output)
-        super_res = output_super.get('result', {})
-        super_res.pop('ipa_records', None)
-        super_res.pop('location_records', None)
+        super_res = output_super.get("result", {})
+        super_res.pop("ipa_records", None)
+        super_res.pop("location_records", None)
 
         super(dns_update_system_records, self).output_for_cli(
-            textui, output_super, *args, **options)
+            textui, output_super, *args, **options
+        )
 
-        labels = {
-            p.name: unicode(p.label) for p in self.output_params()
-        }
+        labels = {p.name: unicode(p.label) for p in self.output_params()}
 
-        result = output.get('result', {})
+        result = output.get("result", {})
 
         self._standard_output(textui, result, labels)
 
-        return int(not output['value'])
+        return int(not output["value"])

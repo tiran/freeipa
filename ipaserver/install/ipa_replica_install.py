@@ -23,14 +23,15 @@ class CompatServerReplicaInstall(ServerReplicaInstall):
     replica_install = True  # Used in ServerInstallInterface.__init__
 
     auto_password = knob(
-        str, None,
+        str,
+        None,
         description="Password to join the IPA realm. Assumes bulk password "
-                    "unless principal is also set. (domain level 1+) "
-                    "Directory Manager (existing master) password. (domain "
-                    "level 0)",
+        "unless principal is also set. (domain level 1+) "
+        "Directory Manager (existing master) password. (domain "
+        "level 0)",
         sensitive=True,
-        cli_names=['--password', '-p'],
-        cli_metavar='PASSWORD',
+        cli_names=["--password", "-p"],
+        cli_metavar="PASSWORD",
     )
 
     @property
@@ -49,15 +50,12 @@ class CompatServerReplicaInstall(ServerReplicaInstall):
     ip_addresses = extend_knob(
         ServerReplicaInstall.ip_addresses,  # pylint: disable=no-member
         description="Replica server IP Address. This option can be used "
-                    "multiple times",
+        "multiple times",
     )
 
-    admin_password = (
-        ServerReplicaInstall.admin_password     # pylint: disable=no-member
-    )
+    admin_password = ServerReplicaInstall.admin_password  # pylint: disable=no-member
     admin_password = extend_knob(
-        admin_password,
-        cli_names=list(admin_password.cli_names) + ['-w'],
+        admin_password, cli_names=list(admin_password.cli_names) + ["-w"],
     )
 
     @admin_password.default_getter
@@ -69,8 +67,7 @@ class CompatServerReplicaInstall(ServerReplicaInstall):
 
     @property
     def host_password(self):
-        admin_password = (
-            super(CompatServerReplicaInstall, self).admin_password)
+        admin_password = super(CompatServerReplicaInstall, self).admin_password
         if not self.principal or admin_password:
             return self.auto_password
 
@@ -79,9 +76,9 @@ class CompatServerReplicaInstall(ServerReplicaInstall):
 
 ReplicaInstall = cli.install_tool(
     CompatServerReplicaInstall,
-    command_name='ipa-replica-install',
+    command_name="ipa-replica-install",
     log_file_name=paths.IPAREPLICA_INSTALL_LOG,
-    console_format='%(message)s',
+    console_format="%(message)s",
     debug_option=True,
     verbose=True,
 )

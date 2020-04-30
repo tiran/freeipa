@@ -40,15 +40,13 @@ except ImportError:
 
 @pytest.mark.tier1
 class test_group(UI_driver):
-
     @screenshot
     def test_crud(self):
         """
         Basic CRUD: group
         """
         self.init_app()
-        self.basic_crud(group.ENTITY, group.DATA,
-                        default_facet=group.DEFAULT_FACET)
+        self.basic_crud(group.ENTITY, group.DATA, default_facet=group.DEFAULT_FACET)
 
     @screenshot
     def test_group_types(self):
@@ -57,21 +55,21 @@ class test_group(UI_driver):
         """
         self.init_app()
 
-        pkey = 'itest-group'
+        pkey = "itest-group"
         data = {
-            'pkey': pkey,
-            'add': [
-                ('callback', self.check_posix_enabled, True),
-                ('textbox', 'cn', pkey),
-                ('textarea', 'description', 'test-group desc'),
-                ('radio', 'type', 'nonposix'),
-                ('callback', self.check_posix_enabled, False),
-                ('radio', 'type', 'posix'),
-                ('callback', self.check_posix_enabled, True),
-                ('radio', 'type', 'external'),
-                ('callback', self.check_posix_enabled, False),
-                ('radio', 'type', 'posix'),
-                ('callback', self.check_posix_enabled, True),
+            "pkey": pkey,
+            "add": [
+                ("callback", self.check_posix_enabled, True),
+                ("textbox", "cn", pkey),
+                ("textarea", "description", "test-group desc"),
+                ("radio", "type", "nonposix"),
+                ("callback", self.check_posix_enabled, False),
+                ("radio", "type", "posix"),
+                ("callback", self.check_posix_enabled, True),
+                ("radio", "type", "external"),
+                ("callback", self.check_posix_enabled, False),
+                ("radio", "type", "posix"),
+                ("callback", self.check_posix_enabled, True),
             ],
         }
 
@@ -96,64 +94,66 @@ class test_group(UI_driver):
 
     def empty_group_name(self):
         self.navigate_to_entity(group.ENTITY)
-        self.facet_button_click('add')
-        self.dialog_button_click('add')
+        self.facet_button_click("add")
+        self.dialog_button_click("add")
         elem = self.find(".widget[name='cn']")
         self.assert_field_validation_required(elem)
-        self.dialog_button_click('cancel')
+        self.dialog_button_click("cancel")
 
     def invalid_group_name(self):
-        expected_error = 'may only include letters, numbers, _, -, . and $'
-        pkey = ';test-gr@up'
+        expected_error = "may only include letters, numbers, _, -, . and $"
+        pkey = ";test-gr@up"
         self.navigate_to_entity(group.ENTITY)
-        self.facet_button_click('add')
-        self.fill_input('cn', pkey)
+        self.facet_button_click("add")
+        self.fill_input("cn", pkey)
         elem = self.find(".widget[name='cn']")
         self.assert_field_validation(expected_error, parent=elem)
-        self.dialog_button_click('cancel')
+        self.dialog_button_click("cancel")
 
     def duplicate_group_name(self):
-        pkey = 'editors'
+        pkey = "editors"
         expected_error = 'group with name "editors" already exists'
         self.navigate_to_entity(group.ENTITY)
-        self.facet_button_click('add')
-        self.fill_input('cn', pkey)
+        self.facet_button_click("add")
+        self.fill_input("cn", pkey)
         self.cancel_retry_dialog(expected_error)
 
     def tailing_spaces_in_group_description(self):
-        pkey = 'itest_group0'
-        desc = 'with_trailing_space '
-        expected_error = 'invalid \'desc\': Leading and trailing ' \
-                         'spaces are not allowed'
+        pkey = "itest_group0"
+        desc = "with_trailing_space "
+        expected_error = (
+            "invalid 'desc': Leading and trailing " "spaces are not allowed"
+        )
         self.navigate_to_entity(group.ENTITY)
-        self.facet_button_click('add')
-        self.fill_input('cn', pkey)
-        self.fill_textarea('description', desc)
+        self.facet_button_click("add")
+        self.fill_input("cn", pkey)
+        self.fill_textarea("description", desc)
         self.cancel_retry_dialog(expected_error)
 
     def leading_spaces_in_group_description(self):
-        pkey = 'itest_group0'
-        desc = ' with_leading_space'
-        expected_error = 'invalid \'desc\': Leading and trailing' \
-                         ' spaces are not allowed'
+        pkey = "itest_group0"
+        desc = " with_leading_space"
+        expected_error = (
+            "invalid 'desc': Leading and trailing" " spaces are not allowed"
+        )
         self.navigate_to_entity(group.ENTITY)
-        self.facet_button_click('add')
-        self.fill_input('cn', pkey)
-        self.fill_textarea('description', desc)
+        self.facet_button_click("add")
+        self.fill_input("cn", pkey)
+        self.fill_textarea("description", desc)
         self.cancel_retry_dialog(expected_error)
 
     def cancel_retry_dialog(self, expected_error):
-        self.dialog_button_click('add')
+        self.dialog_button_click("add")
         dialog = self.get_last_error_dialog()
-        assert (expected_error in dialog.text)
+        assert expected_error in dialog.text
         self.wait_for_request()
         # Key press for Retry
         actions = ActionChains(self.driver)
         actions.send_keys(Keys.ENTER).perform()
         self.wait_for_request(n=2)
-        self.dialog_button_click('cancel')
+        self.dialog_button_click("cancel")
         self.wait_for_request(n=2)
-        self.dialog_button_click('cancel')
+        self.dialog_button_click("cancel")
 
     @screenshot
     def test_add_multiple_group(self):
@@ -171,11 +171,17 @@ class test_group(UI_driver):
         self.add_record(group.ENTITY, [group.DATA5, group.DATA6])
 
         # delete multiple records
-        records = [group.DATA, group.DATA2, group.DATA5, group.DATA6,
-                   group.DATA9, group.DATA10]
+        records = [
+            group.DATA,
+            group.DATA2,
+            group.DATA5,
+            group.DATA6,
+            group.DATA9,
+            group.DATA10,
+        ]
         self.select_multiple_records(records)
-        self.facet_button_click('remove')
-        self.dialog_button_click('ok')
+        self.facet_button_click("remove")
+        self.dialog_button_click("ok")
 
     @screenshot
     def test_add_and_edit_group(self):
@@ -186,12 +192,12 @@ class test_group(UI_driver):
         self.init_app()
 
         # add and edit record
-        self.add_record(group.ENTITY, group.DATA, dialog_btn='add_and_edit')
-        self.switch_to_facet('details')
+        self.add_record(group.ENTITY, group.DATA, dialog_btn="add_and_edit")
+        self.switch_to_facet("details")
         self.delete_action()
 
         # add then cancel
-        self.add_record(group.ENTITY, group.DATA, dialog_btn='cancel')
+        self.add_record(group.ENTITY, group.DATA, dialog_btn="cancel")
 
     @screenshot
     def test_actions(self):
@@ -203,34 +209,34 @@ class test_group(UI_driver):
 
         self.add_record(group.ENTITY, group.DATA)
         self.navigate_to_record(group.PKEY)
-        self.switch_to_facet('details')
+        self.switch_to_facet("details")
         self.make_posix_action()
         self.delete_action()
 
         self.add_record(group.ENTITY, group.DATA, navigate=False)
         self.navigate_to_record(group.PKEY)
-        self.switch_to_facet('details')
-        self.facet_button_click('refresh')  # workaround for BUG: #3702
+        self.switch_to_facet("details")
+        self.facet_button_click("refresh")  # workaround for BUG: #3702
         self.make_external_action()
         self.delete_action()
 
     def make_external_action(self):
-        self.action_list_action('make_external')
+        self.action_list_action("make_external")
         self.wait_for_request(n=2)
         self.assert_no_error_dialog()
-        self.assert_text_field('external', 'External', element='span')
+        self.assert_text_field("external", "External", element="span")
 
     def make_posix_action(self):
-        self.action_list_action('make_posix')
+        self.action_list_action("make_posix")
         self.wait_for_request(n=2)
         self.assert_no_error_dialog()
-        self.assert_text_field('external', 'POSIX', element='span')
+        self.assert_text_field("external", "POSIX", element="span")
 
     def delete_action(self, entity=group.ENTITY, pkey=group.PKEY):
-        self.action_list_action('delete')
+        self.action_list_action("delete")
         self.wait_for_request(n=4)
         self.assert_no_error_dialog()
-        self.assert_facet(entity, 'search')
+        self.assert_facet(entity, "search")
         self.assert_record(pkey, negative=True)
 
     @screenshot
@@ -254,25 +260,28 @@ class test_group(UI_driver):
         self.navigate_to_record(group.PKEY, entity=group.ENTITY)
 
         # "members" add with multiple select
-        self.add_associations([group.PKEY2, group.PKEY3], facet='member_group',
-                              delete=True)
-        self.add_associations([user.PKEY, user.PKEY2], facet='member_user',
-                              delete=True)
+        self.add_associations(
+            [group.PKEY2, group.PKEY3], facet="member_group", delete=True
+        )
+        self.add_associations([user.PKEY, user.PKEY2], facet="member_user", delete=True)
         # TODO: external
 
         # "member of": add with search
-        self.add_associations([group.PKEY3, group.PKEY2],
-                              facet='memberof_group', delete=True, search=True)
-        self.add_associations([netgroup.PKEY, netgroup.PKEY2],
-                              facet='memberof_netgroup',
-                              delete=True, search=True)
-        self.add_associations([rbac.ROLE_PKEY], facet='memberof_role',
-                              delete=True)
-        self.add_associations([hbac.RULE_PKEY], facet='memberof_hbacrule',
-                              delete=True)
+        self.add_associations(
+            [group.PKEY3, group.PKEY2], facet="memberof_group", delete=True, search=True
+        )
+        self.add_associations(
+            [netgroup.PKEY, netgroup.PKEY2],
+            facet="memberof_netgroup",
+            delete=True,
+            search=True,
+        )
+        self.add_associations([rbac.ROLE_PKEY], facet="memberof_role", delete=True)
+        self.add_associations([hbac.RULE_PKEY], facet="memberof_hbacrule", delete=True)
         self.navigate_to_record(group.PKEY, entity=group.ENTITY)
-        self.add_associations([sudo.RULE_PKEY], facet='memberof_sudorule',
-                              delete=True, search=True)
+        self.add_associations(
+            [sudo.RULE_PKEY], facet="memberof_sudorule", delete=True, search=True
+        )
 
         # cleanup
         # -------
@@ -292,65 +301,64 @@ class test_group(UI_driver):
 
         # add
         # ---
-        self.add_record(group.ENTITY, [group.DATA, group.DATA2, group.DATA3,
-                                       group.DATA4, group.DATA5])
+        self.add_record(
+            group.ENTITY,
+            [group.DATA, group.DATA2, group.DATA3, group.DATA4, group.DATA5],
+        )
         self.add_record(user.ENTITY, user.DATA)
 
         # prepare indirect member
-        self.navigate_to_entity(group.ENTITY, 'search')
+        self.navigate_to_entity(group.ENTITY, "search")
         self.navigate_to_record(group.PKEY2)
         self.add_associations([user.PKEY])
-        self.add_associations([group.PKEY3], 'member_group')
+        self.add_associations([group.PKEY3], "member_group")
 
-        self.navigate_to_entity(group.ENTITY, 'search')
+        self.navigate_to_entity(group.ENTITY, "search")
         self.navigate_to_record(group.PKEY)
-        self.add_associations([group.PKEY2], 'member_group')
+        self.add_associations([group.PKEY2], "member_group")
 
         # prepare indirect memberof
-        self.navigate_to_entity(group.ENTITY, 'search')
+        self.navigate_to_entity(group.ENTITY, "search")
         self.navigate_to_record(group.PKEY4)
-        self.add_associations([group.PKEY], 'member_group')
-        self.add_associations([group.PKEY5], 'memberof_group')
+        self.add_associations([group.PKEY], "member_group")
+        self.add_associations([group.PKEY5], "memberof_group")
 
         self.add_record(netgroup.ENTITY, netgroup.DATA)
         self.navigate_to_record(netgroup.PKEY)
-        self.add_table_associations('memberuser_group', [group.PKEY4])
+        self.add_table_associations("memberuser_group", [group.PKEY4])
 
         self.add_record(rbac.ROLE_ENTITY, rbac.ROLE_DATA)
         self.navigate_to_record(rbac.ROLE_PKEY)
-        self.add_associations([group.PKEY4], facet='member_group')
+        self.add_associations([group.PKEY4], facet="member_group")
 
         self.add_record(hbac.RULE_ENTITY, hbac.RULE_DATA)
         self.navigate_to_record(hbac.RULE_PKEY)
-        self.add_table_associations('memberuser_group', [group.PKEY4])
+        self.add_table_associations("memberuser_group", [group.PKEY4])
 
         self.add_record(sudo.RULE_ENTITY, sudo.RULE_DATA)
         self.navigate_to_record(sudo.RULE_PKEY)
-        self.add_table_associations('memberuser_group', [group.PKEY4])
+        self.add_table_associations("memberuser_group", [group.PKEY4])
 
         # check indirect associations
         # ---------------------------
-        self.navigate_to_entity(group.ENTITY, 'search')
+        self.navigate_to_entity(group.ENTITY, "search")
         self.navigate_to_record(group.PKEY)
 
-        self.assert_indirect_record(user.PKEY, group.ENTITY, 'member_user')
-        self.assert_indirect_record(group.PKEY3, group.ENTITY, 'member_group')
+        self.assert_indirect_record(user.PKEY, group.ENTITY, "member_user")
+        self.assert_indirect_record(group.PKEY3, group.ENTITY, "member_group")
 
-        self.assert_indirect_record(group.PKEY5, group.ENTITY,
-                                    'memberof_group')
-        self.assert_indirect_record(netgroup.PKEY, group.ENTITY,
-                                    'memberof_netgroup')
-        self.assert_indirect_record(rbac.ROLE_PKEY, group.ENTITY,
-                                    'memberof_role')
-        self.assert_indirect_record(hbac.RULE_PKEY, group.ENTITY,
-                                    'memberof_hbacrule')
-        self.assert_indirect_record(sudo.RULE_PKEY, group.ENTITY,
-                                    'memberof_sudorule')
+        self.assert_indirect_record(group.PKEY5, group.ENTITY, "memberof_group")
+        self.assert_indirect_record(netgroup.PKEY, group.ENTITY, "memberof_netgroup")
+        self.assert_indirect_record(rbac.ROLE_PKEY, group.ENTITY, "memberof_role")
+        self.assert_indirect_record(hbac.RULE_PKEY, group.ENTITY, "memberof_hbacrule")
+        self.assert_indirect_record(sudo.RULE_PKEY, group.ENTITY, "memberof_sudorule")
 
         # cleanup
         # -------
-        self.delete(group.ENTITY, [group.DATA, group.DATA2, group.DATA3,
-                                   group.DATA4, group.DATA5])
+        self.delete(
+            group.ENTITY,
+            [group.DATA, group.DATA2, group.DATA3, group.DATA4, group.DATA5],
+        )
         self.delete(user.ENTITY, [user.DATA])
         self.delete(netgroup.ENTITY, [netgroup.DATA])
         self.delete(rbac.ROLE_ENTITY, [rbac.ROLE_DATA])

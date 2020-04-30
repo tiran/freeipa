@@ -27,8 +27,8 @@ from pytest_sourceorder import ordered
 
 
 @ordered
-@pytest.mark.usefixtures('mh')
-@pytest.mark.usefixtures('integration_logs')
+@pytest.mark.usefixtures("mh")
+@pytest.mark.usefixtures("integration_logs")
 class IntegrationTest:
     num_replicas = 0
     num_clients = 0
@@ -51,8 +51,12 @@ class IntegrationTest:
 
     @classmethod
     def get_all_hosts(cls):
-        return ([cls.master] + cls.replicas + cls.clients +
-                [cls.host_by_role(r) for r in cls.required_extra_roles])
+        return (
+            [cls.master]
+            + cls.replicas
+            + cls.clients
+            + [cls.host_by_role(r) for r in cls.required_extra_roles]
+        )
 
     @classmethod
     def get_domains(cls):
@@ -85,16 +89,21 @@ class IntegrationTest:
         if cls.topology is None:
             return
         else:
-            tasks.install_topo(cls.topology,
-                               cls.master, cls.replicas,
-                               cls.clients, domain_level)
+            tasks.install_topo(
+                cls.topology, cls.master, cls.replicas, cls.clients, domain_level
+            )
+
     @classmethod
     def uninstall(cls, mh):
         for replica in cls.replicas:
             try:
                 tasks.run_server_del(
-                    cls.master, replica.hostname, force=True,
-                    ignore_topology_disconnect=True, ignore_last_of_role=True)
+                    cls.master,
+                    replica.hostname,
+                    force=True,
+                    ignore_topology_disconnect=True,
+                    ignore_last_of_role=True,
+                )
             except subprocess.CalledProcessError:
                 # If the master has already been uninstalled,
                 # this call may fail

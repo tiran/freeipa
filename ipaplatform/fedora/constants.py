@@ -2,9 +2,9 @@
 # Copyright (C) 2015  FreeIPA Contributors see COPYING for license
 #
 
-'''
+"""
 This Fedora base platform module exports platform related constants.
-'''
+"""
 
 # Fallback to default constant definitions
 from __future__ import absolute_import
@@ -26,5 +26,6 @@ class FedoraConstantsNamespace(RedHatConstantsNamespace):
 
     if HAS_NFS_CONF:
         SECURE_NFS_VAR = None
+
 
 constants = FedoraConstantsNamespace()

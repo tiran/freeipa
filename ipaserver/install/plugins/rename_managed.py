@@ -60,10 +60,14 @@ class GenerateUpdateMixin:
         If the input DN doesn't end with old_suffix, log, an raise ValueError.
         """
         if not dn.endswith(old_suffix):
-            logger.error("unable to replace suffix '%s' with '%s' in '%s'",
-                         old_suffix, new_suffix, dn)
-            raise ValueError('no replacement made')
-        return DN(*dn[:-len(old_suffix)]) + new_suffix
+            logger.error(
+                "unable to replace suffix '%s' with '%s' in '%s'",
+                old_suffix,
+                new_suffix,
+                dn,
+            )
+            raise ValueError("no replacement made")
+        return DN(*dn[: -len(old_suffix)]) + new_suffix
 
     def generate_update(self, deletes=False):
         """
@@ -73,14 +77,20 @@ class GenerateUpdateMixin:
         ldap = self.api.Backend.ldap2
 
         suffix = ipautil.realm_to_suffix(self.api.env.realm)
-        searchfilter = '(objectclass=*)'
+        searchfilter = "(objectclass=*)"
         definitions_managed_entries = []
 
-        old_template_container = DN(('cn', 'etc'), suffix)
-        new_template_container = DN(('cn', 'Templates'), ('cn', 'Managed Entries'), ('cn', 'etc'), suffix)
+        old_template_container = DN(("cn", "etc"), suffix)
+        new_template_container = DN(
+            ("cn", "Templates"), ("cn", "Managed Entries"), ("cn", "etc"), suffix
+        )
 
-        old_definition_container = DN(('cn', 'managed entries'), ('cn', 'plugins'), ('cn', 'config'), suffix)
-        new_definition_container = DN(('cn', 'Definitions'), ('cn', 'Managed Entries'), ('cn', 'etc'), suffix)
+        old_definition_container = DN(
+            ("cn", "managed entries"), ("cn", "plugins"), ("cn", "config"), suffix
+        )
+        new_definition_container = DN(
+            ("cn", "Definitions"), ("cn", "Managed Entries"), ("cn", "etc"), suffix
+        )
 
         update_list = []
         restart = False
@@ -88,18 +98,18 @@ class GenerateUpdateMixin:
         # If the old entries don't exist the server has already been updated.
         try:
             definitions_managed_entries, _truncated = ldap.find_entries(
-                searchfilter, ['*'], old_definition_container,
-                ldap.SCOPE_ONELEVEL)
+                searchfilter, ["*"], old_definition_container, ldap.SCOPE_ONELEVEL
+            )
         except errors.NotFound:
             return (False, update_list)
 
         for entry in definitions_managed_entries:
             assert isinstance(entry.dn, DN)
             if deletes:
-                old_dn = entry['managedtemplate'][0]
+                old_dn = entry["managedtemplate"][0]
                 assert isinstance(old_dn, DN)
                 try:
-                    entry = ldap.get_entry(old_dn, ['*'])
+                    entry = ldap.get_entry(old_dn, ["*"])
                 except errors.NotFound:
                     pass
                 else:
@@ -108,16 +118,16 @@ class GenerateUpdateMixin:
                         new_dn = self._dn_suffix_replace(
                             entry.dn,
                             old_suffix=old_template_container,
-                            new_suffix=new_template_container)
+                            new_suffix=new_template_container,
+                        )
                     except ValueError:
                         continue
 
                     # The old attributes become defaults for the new entry
-                    new_update = {'dn': new_dn,
-                                  'default': entry_to_update(entry)}
+                    new_update = {"dn": new_dn, "default": entry_to_update(entry)}
 
                     # Delete the old entry
-                    old_update = {'dn': entry.dn, 'deleteentry': None}
+                    old_update = {"dn": entry.dn, "deleteentry": None}
 
                     # Add the delete and replacement updates to the list of all updates
                     update_list.append(old_update)
@@ -127,32 +137,33 @@ class GenerateUpdateMixin:
                 # Update the template dn by replacing the old containter with the new container
                 try:
                     new_dn = self._dn_suffix_replace(
-                        entry['managedtemplate'][0],
+                        entry["managedtemplate"][0],
                         old_suffix=old_template_container,
-                        new_suffix=new_template_container)
+                        new_suffix=new_template_container,
+                    )
                 except ValueError:
                     continue
-                entry['managedtemplate'] = new_dn
+                entry["managedtemplate"] = new_dn
 
                 # Update the entry dn similarly
                 try:
                     new_dn = self._dn_suffix_replace(
                         entry.dn,
                         old_suffix=old_definition_container,
-                        new_suffix=new_definition_container)
+                        new_suffix=new_definition_container,
+                    )
                 except ValueError:
                     continue
 
                 # The old attributes become defaults for the new entry
-                new_update = {'dn': new_dn,
-                              'default': entry_to_update(entry)}
+                new_update = {"dn": new_dn, "default": entry_to_update(entry)}
 
                 # Add the replacement update to the collection of all updates
                 update_list.append(new_update)
 
         if len(update_list) > 0:
             restart = True
-            update_list.sort(reverse=True, key=lambda x: x['dn'])
+            update_list.sort(reverse=True, key=lambda x: x["dn"])
 
         return (restart, update_list)
 

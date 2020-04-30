@@ -79,6 +79,7 @@ class NoOpFirewall(FirewallBase):
     no-op firewall is intended for platforms which haven't high level firewall
     backend.
     """
+
     def run(self):
         pass
 
@@ -131,20 +132,19 @@ class FirewallD(FirewallBase):
             # Ignore firewalld error codes:
             #   11 is ALREADY_ENABLED
             #   12 is NOT_ENABLED
-            raise ipautil.CalledProcessError(result.returncode, cmd,
-                                             result.stdout_text,
-                                             result.stderr_text)
+            raise ipautil.CalledProcessError(
+                result.returncode, cmd, result.stdout_text, result.stderr_text
+            )
 
         # Permanent part
-        result = self.host.run_command(cmd + ["--permanent"],
-                                       raiseonerr=False)
+        result = self.host.run_command(cmd + ["--permanent"], raiseonerr=False)
         if result.returncode not in [0, 11, 12]:
             # Ignore firewalld error codes:
             #   11 is ALREADY_ENABLED
             #   12 is NOT_ENABLED
-            raise ipautil.CalledProcessError(result.returncode, cmd,
-                                             result.stdout_text,
-                                             result.stderr_text)
+            raise ipautil.CalledProcessError(
+                result.returncode, cmd, result.stdout_text, result.stderr_text
+            )
 
     def enable_service(self, service):
         """Enable firewall service in firewalld runtime and permanent
@@ -228,6 +228,7 @@ class Firewall(FirewallBase):
     Depending on the ipaplatform proxy firewall tasks to the actual backend.
     Current supported backends: firewalld and no-op firewall.
     """
+
     def __init__(self, host):
         """Initialize with host where firewall changes should be applied"""
         # break circular dependency
@@ -237,15 +238,14 @@ class Firewall(FirewallBase):
         platform = get_platform(host)
 
         firewalls = {
-            'rhel': FirewallD,
-            'fedora': FirewallD,
-            'debian': FirewallD,
-            'ubuntu': FirewallD,
-            'altlinux': NoOpFirewall,
+            "rhel": FirewallD,
+            "fedora": FirewallD,
+            "debian": FirewallD,
+            "ubuntu": FirewallD,
+            "altlinux": NoOpFirewall,
         }
         if platform not in firewalls:
-            raise ValueError(
-                "Platform {} doesn't support Firewall".format(platform))
+            raise ValueError("Platform {} doesn't support Firewall".format(platform))
         self.firewall = firewalls[platform](self.host)
         self.run()
 

@@ -22,8 +22,10 @@ class TestHttpKdcProxy(IntegrationTest):
     # each rule is the chain name, the argument to add or delete the rule
     # will be added by the used Firewall method. See firewall.py for more
     # information.
-    fw_rules = [['OUTPUT', '-p', 'tcp', '--dport', '88', '-j', 'DROP'],
-                ['OUTPUT', '-p', 'udp', '--dport', '88', '-j', 'DROP']]
+    fw_rules = [
+        ["OUTPUT", "-p", "tcp", "--dport", "88", "-j", "DROP"],
+        ["OUTPUT", "-p", "udp", "--dport", "88", "-j", "DROP"],
+    ]
 
     @classmethod
     def install(cls, mh):
@@ -32,16 +34,15 @@ class TestHttpKdcProxy(IntegrationTest):
         Firewall(cls.clients[0]).prepend_passthrough_rules(cls.fw_rules)
         # configure client
         cls.clients[0].run_command(
-            r"sed -i 's/ kdc = .*$/ kdc = https:\/\/%s\/KdcProxy/' %s" % (
-                cls.master.hostname, paths.KRB5_CONF)
-            )
+            r"sed -i 's/ kdc = .*$/ kdc = https:\/\/%s\/KdcProxy/' %s"
+            % (cls.master.hostname, paths.KRB5_CONF)
+        )
         cls.clients[0].run_command(
             r"sed -i 's/master_kdc = .*$/master_kdc"
-            r" = https:\/\/%s\/KdcProxy/' %s" % (
-                cls.master.hostname, paths.KRB5_CONF)
-            )
+            r" = https:\/\/%s\/KdcProxy/' %s" % (cls.master.hostname, paths.KRB5_CONF)
+        )
         # Workaround for https://fedorahosted.org/freeipa/ticket/6443
-        cls.clients[0].run_command(['systemctl', 'restart', 'sssd.service'])
+        cls.clients[0].run_command(["systemctl", "restart", "sssd.service"])
         # End of workaround
 
     @classmethod
@@ -51,6 +52,6 @@ class TestHttpKdcProxy(IntegrationTest):
 
     def test_http_kdc_proxy_works(self):
         result = tasks.kinit_admin(self.clients[0], raiseonerr=False)
-        assert(result.returncode == 0), (
+        assert result.returncode == 0, (
             "Unable to kinit using KdcProxy: %s" % result.stderr_text
-            )
+        )

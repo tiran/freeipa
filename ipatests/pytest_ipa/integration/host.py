@@ -28,9 +28,7 @@ import pytest_multihost.host
 from ipaplatform.paths import paths
 from ipapython import ipaldap
 
-from .fips import (
-    is_fips_enabled, enable_userspace_fips, disable_userspace_fips
-)
+from .fips import is_fips_enabled, enable_userspace_fips, disable_userspace_fips
 from .transport import IPAOpenSSHTransport
 
 FIPS_NOISE_RE = re.compile(br"FIPS mode initialized\r?\n?")
@@ -43,19 +41,16 @@ class LDAPClientWithoutCertCheck(ipaldap.LDAPClient):
     no_certificate_check:
     client = LDAPClientWithoutCertCheck(..., no_certificate_check=True)
     """
+
     def __init__(self, *args, **kwargs):
-        self._no_certificate_check = kwargs.pop(
-            'no_certificate_check', False)
+        self._no_certificate_check = kwargs.pop("no_certificate_check", False)
         super(LDAPClientWithoutCertCheck, self).__init__(*args, **kwargs)
 
     def _connect(self):
-        if (self._start_tls and self.protocol == 'ldap' and
-                self._no_certificate_check):
+        if self._start_tls and self.protocol == "ldap" and self._no_certificate_check:
             with self.error_handler():
-                conn = ipaldap.ldap_initialize(
-                    self.ldap_uri, cacertfile=self._cacert)
-                conn.set_option(ldap.OPT_X_TLS_REQUIRE_CERT,
-                                ldap.OPT_X_TLS_NEVER)
+                conn = ipaldap.ldap_initialize(self.ldap_uri, cacertfile=self._cacert)
+                conn.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
                 conn.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
                 conn.start_tls_s()
                 return conn
@@ -68,13 +63,28 @@ class Host(pytest_multihost.host.Host):
 
     transport_class = IPAOpenSSHTransport
 
-    def __init__(self, domain, hostname, role, ip=None,
-                 external_hostname=None, username=None, password=None,
-                 test_dir=None, host_type=None):
+    def __init__(
+        self,
+        domain,
+        hostname,
+        role,
+        ip=None,
+        external_hostname=None,
+        username=None,
+        password=None,
+        test_dir=None,
+        host_type=None,
+    ):
         super().__init__(
-            domain, hostname, role, ip=ip,
-            external_hostname=external_hostname, username=username,
-            password=password, test_dir=test_dir, host_type=host_type
+            domain,
+            hostname,
+            role,
+            ip=ip,
+            external_hostname=external_hostname,
+            username=username,
+            password=password,
+            test_dir=test_dir,
+            host_type=host_type,
         )
         self._fips_mode = None
         self._userspace_fips = False
@@ -129,23 +139,17 @@ class Host(pytest_multihost.host.Host):
         # type, as we assume all Unix machines are in the Unix domain and
         # all Windows machine in a AD domain
 
-        if domain.type == 'AD':
+        if domain.type == "AD":
             cls = WinHost
         else:
             cls = Host
 
-        return cls(
-            domain,
-            hostname,
-            role,
-            ip=ip,
-            external_hostname=external_hostname
-        )
+        return cls(domain, hostname, role, ip=ip, external_hostname=external_hostname)
 
     def ldap_connect(self):
         """Return an LDAPClient authenticated to this host as directory manager
         """
-        self.log.info('Connecting to LDAP at %s', self.external_hostname)
+        self.log.info("Connecting to LDAP at %s", self.external_hostname)
         # get IPA CA cert to establish a secure connection
         cacert = self.get_file_contents(paths.IPA_CA_CRT)
         with tempfile.NamedTemporaryFile() as f:
@@ -156,9 +160,10 @@ class Host(pytest_multihost.host.Host):
             conn = LDAPClientWithoutCertCheck.from_hostname_secure(
                 self.external_hostname,
                 cacert=f.name,
-                no_certificate_check=hostnames_mismatch)
+                no_certificate_check=hostnames_mismatch,
+            )
             binddn = self.config.dirman_dn
-            self.log.info('LDAP bind as %s', binddn)
+            self.log.info("LDAP bind as %s", binddn)
             conn.simple_bind(binddn, self.config.dirman_password)
 
             # The CA cert file  has been loaded into the SSL_CTX and is no
@@ -169,37 +174,52 @@ class Host(pytest_multihost.host.Host):
     @classmethod
     def from_env(cls, env, domain, hostname, role, index, domain_index):
         from ipatests.pytest_ipa.integration.env_config import host_from_env
+
         return host_from_env(env, domain, hostname, role, index, domain_index)
 
     def to_env(self, **kwargs):
         from ipatests.pytest_ipa.integration.env_config import host_to_env
+
         return host_to_env(self, **kwargs)
 
-    def run_command(self, argv, set_env=True, stdin_text=None,
-                    log_stdout=True, raiseonerr=True,
-                    cwd=None, bg=False, encoding='utf-8', ok_returncode=0):
+    def run_command(
+        self,
+        argv,
+        set_env=True,
+        stdin_text=None,
+        log_stdout=True,
+        raiseonerr=True,
+        cwd=None,
+        bg=False,
+        encoding="utf-8",
+        ok_returncode=0,
+    ):
         """Wrapper around run_command to log stderr on raiseonerr=True
 
         :param ok_returncode: return code considered to be correct,
                               you can pass an integer or sequence of integers
         """
         result = super().run_command(
-            argv, set_env=set_env, stdin_text=stdin_text,
-            log_stdout=log_stdout, raiseonerr=False, cwd=cwd, bg=bg,
-            encoding=encoding
+            argv,
+            set_env=set_env,
+            stdin_text=stdin_text,
+            log_stdout=log_stdout,
+            raiseonerr=False,
+            cwd=cwd,
+            bg=bg,
+            encoding=encoding,
         )
         # in FIPS mode SSH may print noise to stderr, remove the string
         # "FIPS mode initialized" + optional newline.
-        result.stderr_bytes = FIPS_NOISE_RE.sub(b'', result.stderr_bytes)
+        result.stderr_bytes = FIPS_NOISE_RE.sub(b"", result.stderr_bytes)
         try:
             result_ok = result.returncode in ok_returncode
         except TypeError:
             result_ok = result.returncode == ok_returncode
         if not result_ok and raiseonerr:
-            result.log.error('stderr: %s', result.stderr_text)
+            result.log.error("stderr: %s", result.stderr_text)
             raise subprocess.CalledProcessError(
-                result.returncode, argv,
-                result.stdout_text, result.stderr_text
+                result.returncode, argv, result.stdout_text, result.stderr_text
             )
         else:
             return result
@@ -212,4 +232,5 @@ class WinHost(pytest_multihost.host.WinHost):
     This serves as a sketch class once we move from manual preparation of
     Active Directory to the automated setup.
     """
+
     transport_class = IPAOpenSSHTransport

@@ -30,6 +30,7 @@ from ipalib.util import apirepr
 if six.PY3:
     unicode = str
 
+
 class Output(ReadOnly):
     """
     Simple description of a member in the return value ``dict``.
@@ -87,14 +88,11 @@ class Output(ReadOnly):
         lock(self)
 
     def __repr__(self):
-        return '%s(%s)' % (
-            self.__class__.__name__,
-            ', '.join(self.__repr_iter())
-        )
+        return "%s(%s)" % (self.__class__.__name__, ", ".join(self.__repr_iter()))
 
     def __repr_iter(self):
         yield repr(self.name)
-        for key in ('type', 'doc', 'flags'):
+        for key in ("type", "doc", "flags"):
             value = self.__dict__.get(key)
             if not value:
                 continue
@@ -102,33 +100,44 @@ class Output(ReadOnly):
                 value = apirepr(list(value))
             else:
                 value = repr(value)
-            yield '%s=%s' % (key, value)
+            yield "%s=%s" % (key, value)
 
 
 class Entry(Output):
     type = dict
-    doc = _('A dictionary representing an LDAP entry')
+    doc = _("A dictionary representing an LDAP entry")
 
 
 emsg = """%s.validate_output() => %s.validate():
   output[%r][%d]: need a %r; got a %r: %r"""
 
+
 class ListOfEntries(Output):
     type = (list, tuple)
-    doc = _('A list of LDAP entries')
+    doc = _("A list of LDAP entries")
 
     def validate(self, cmd, entries, version):
         assert isinstance(entries, self.type)
         for (i, entry) in enumerate(entries):
             if not isinstance(entry, dict):
-                raise TypeError(emsg % (cmd.name, self.__class__.__name__,
-                    self.name, i, dict, type(entry), entry)
+                raise TypeError(
+                    emsg
+                    % (
+                        cmd.name,
+                        self.__class__.__name__,
+                        self.name,
+                        i,
+                        dict,
+                        type(entry),
+                        entry,
+                    )
                 )
+
 
 class PrimaryKey(Output):
     def validate(self, cmd, value, version):
-        if client_has_capability(version, 'primary_key_types'):
-            if hasattr(cmd, 'obj') and cmd.obj and cmd.obj.primary_key:
+        if client_has_capability(version, "primary_key_types"):
+            if hasattr(cmd, "obj") and cmd.obj and cmd.obj.primary_key:
                 types = cmd.obj.primary_key.allowed_types
             else:
                 types = (unicode,)
@@ -138,76 +147,102 @@ class PrimaryKey(Output):
         if not isinstance(value, types):
             raise TypeError(
                 "%s.validate_output() => %s.validate():\n"
-                "  output[%r]: need %r; got %r: %r" % (
-                    cmd.name, self.__class__.__name__, self.name,
-                    types[0], type(value), value))
+                "  output[%r]: need %r; got %r: %r"
+                % (
+                    cmd.name,
+                    self.__class__.__name__,
+                    self.name,
+                    types[0],
+                    type(value),
+                    value,
+                )
+            )
+
 
 class ListOfPrimaryKeys(Output):
     def validate(self, cmd, values, version):
-        if client_has_capability(version, 'primary_key_types'):
+        if client_has_capability(version, "primary_key_types"):
             types = (tuple, list)
         else:
             types = (unicode,)
         if not isinstance(values, types):
             raise TypeError(
                 "%s.validate_output() => %s.validate():\n"
-                "  output[%r]: need %r; got %r: %r" % (
-                    cmd.name, self.__class__.__name__, self.name,
-                    types[0], type(values), values))
+                "  output[%r]: need %r; got %r: %r"
+                % (
+                    cmd.name,
+                    self.__class__.__name__,
+                    self.name,
+                    types[0],
+                    type(values),
+                    values,
+                )
+            )
 
-        if client_has_capability(version, 'primary_key_types'):
-            if hasattr(cmd, 'obj') and cmd.obj and cmd.obj.primary_key:
+        if client_has_capability(version, "primary_key_types"):
+            if hasattr(cmd, "obj") and cmd.obj and cmd.obj.primary_key:
                 types = cmd.obj.primary_key.allowed_types
             else:
                 types = (unicode,)
             for (i, value) in enumerate(values):
                 if not isinstance(value, types):
-                    raise TypeError(emsg % (
-                        cmd.name, self.__class__.__name__, i, self.name,
-                        types[0], type(value), value))
+                    raise TypeError(
+                        emsg
+                        % (
+                            cmd.name,
+                            self.__class__.__name__,
+                            i,
+                            self.name,
+                            types[0],
+                            type(value),
+                            value,
+                        )
+                    )
 
 
-result = Output('result', doc=_('All commands should at least have a result'))
+result = Output("result", doc=_("All commands should at least have a result"))
 
-summary = Output('summary', (unicode, type(None)),
-    _('User-friendly description of action performed')
+summary = Output(
+    "summary", (unicode, type(None)), _("User-friendly description of action performed")
 )
 
-value = PrimaryKey('value', None,
+value = PrimaryKey(
+    "value",
+    None,
     _("The primary_key value of the entry, e.g. 'jdoe' for a user"),
-    flags=['no_display'],
+    flags=["no_display"],
 )
 
 standard = (summary, result)
 
 standard_entry = (
     summary,
-    Entry('result'),
+    Entry("result"),
     value,
 )
 
 standard_list_of_entries = (
     summary,
-    ListOfEntries('result'),
-    Output('count', int, _('Number of entries returned')),
-    Output('truncated', bool, _('True if not all results were returned')),
+    ListOfEntries("result"),
+    Output("count", int, _("Number of entries returned")),
+    Output("truncated", bool, _("True if not all results were returned")),
 )
 
 standard_delete = (
     summary,
-    Output('result', dict, _('List of deletions that failed')),
+    Output("result", dict, _("List of deletions that failed")),
     value,
 )
 
 standard_multi_delete = (
     summary,
-    Output('result', dict, _('List of deletions that failed')),
-    ListOfPrimaryKeys('value', flags=['no_display']),
+    Output("result", dict, _("List of deletions that failed")),
+    ListOfPrimaryKeys("value", flags=["no_display"]),
 )
 
 standard_boolean = (
     summary,
-    Output('result', bool, _('True means the operation was successful')),
+    Output("result", bool, _("True means the operation was successful")),
     value,
 )
 
@@ -215,8 +250,8 @@ standard_value = standard_boolean
 
 simple_value = (
     summary,
-    Output('result', bool, _('True means the operation was successful')),
-    Output('value', unicode, flags=['no_display']),
+    Output("result", bool, _("True means the operation was successful")),
+    Output("value", unicode, flags=["no_display"]),
 )
 
 # custom shim for commands like `trustconfig-show`,
@@ -225,6 +260,6 @@ simple_value = (
 # good practice, so please do not use this for new code.
 simple_entry = (
     summary,
-    Entry('result'),
-    Output('value', unicode, flags=['no_display']),
+    Entry("result"),
+    Output("value", unicode, flags=["no_display"]),
 )

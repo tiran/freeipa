@@ -22,7 +22,7 @@ FreeIPA is a server for identity, policy, and audit.
 from os.path import abspath, dirname
 import sys
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # include ../ for ipasetup.py
     sys.path.append(dirname(dirname(abspath(__file__))))
     from ipasetup import ipasetup  # noqa: E402
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     ipasetup(
         name="ipaclient",
         doc=__doc__,
-        package_dir={'ipaclient': ''},
+        package_dir={"ipaclient": ""},
         packages=[
             "ipaclient",
             "ipaclient.install",
@@ -42,24 +42,14 @@ if __name__ == '__main__':
             "ipaclient.remote_plugins.2_164",
         ],
         package_data={
-            'ipaclient': [
-                'csrgen/profiles/*.json',
-                'csrgen/rules/*.json',
-                'csrgen/templates/*.tmpl',
+            "ipaclient": [
+                "csrgen/profiles/*.json",
+                "csrgen/rules/*.json",
+                "csrgen/templates/*.tmpl",
             ],
         },
-        install_requires=[
-            "cryptography",
-            "ipalib",
-            "ipapython",
-            "qrcode",
-            "six",
-        ],
-        entry_points={
-            'console_scripts': [
-                'ipa = ipaclient.__main__:main'
-            ]
-        },
+        install_requires=["cryptography", "ipalib", "ipapython", "qrcode", "six",],
+        entry_points={"console_scripts": ["ipa = ipaclient.__main__:main"]},
         extras_require={
             "install": ["ipaplatform"],
             "otptoken_yubikey": ["python-yubico", "pyusb"],

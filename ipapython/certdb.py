@@ -38,7 +38,7 @@ from ipaplatform.tasks import tasks
 from ipapython.dn import DN
 from ipapython.kerberos import Principal
 from ipapython import ipautil
-from ipalib import x509     # pylint: disable=ipa-forbidden-import
+from ipalib import x509  # pylint: disable=ipa-forbidden-import
 
 
 logger = logging.getLogger(__name__)
@@ -49,19 +49,24 @@ NSS_DBM_FILES = ("cert8.db", "key3.db", "secmod.db")
 NSS_SQL_FILES = ("cert9.db", "key4.db", "pkcs11.txt")
 NSS_FILES = NSS_DBM_FILES + NSS_SQL_FILES + ("pwdfile.txt",)
 
-TrustFlags = collections.namedtuple('TrustFlags', 'has_key trusted ca usages')
+TrustFlags = collections.namedtuple("TrustFlags", "has_key trusted ca usages")
 
 EMPTY_TRUST_FLAGS = TrustFlags(False, None, None, None)
 
 IPA_CA_TRUST_FLAGS = TrustFlags(
-    False, True, True, frozenset({
-        x509.EKU_SERVER_AUTH,
-        x509.EKU_CLIENT_AUTH,
-        x509.EKU_CODE_SIGNING,
-        x509.EKU_EMAIL_PROTECTION,
-        x509.EKU_PKINIT_CLIENT_AUTH,
-        x509.EKU_PKINIT_KDC,
-    }),
+    False,
+    True,
+    True,
+    frozenset(
+        {
+            x509.EKU_SERVER_AUTH,
+            x509.EKU_CLIENT_AUTH,
+            x509.EKU_CODE_SIGNING,
+            x509.EKU_EMAIL_PROTECTION,
+            x509.EKU_PKINIT_CLIENT_AUTH,
+            x509.EKU_PKINIT_KDC,
+        }
+    ),
 )
 
 EXTERNAL_CA_TRUST_FLAGS = TrustFlags(
@@ -85,15 +90,15 @@ def find_cert_from_txt(cert, start=0):
 
     :returns: a tuple (IPACertificate, last position in cert)
     """
-    s = cert.find('-----BEGIN CERTIFICATE-----', start)
-    e = cert.find('-----END CERTIFICATE-----', s)
+    s = cert.find("-----BEGIN CERTIFICATE-----", start)
+    e = cert.find("-----END CERTIFICATE-----", s)
     if e > 0:
         e = e + 25
 
     if s < 0 or e < 0:
         raise RuntimeError("Unable to find certificate")
 
-    cert = x509.load_pem_x509_certificate(cert[s:e].encode('utf-8'))
+    cert = x509.load_pem_x509_certificate(cert[s:e].encode("utf-8"))
     return (cert, e)
 
 
@@ -101,29 +106,29 @@ def parse_trust_flags(trust_flags):
     """
     Convert certutil trust flags to TrustFlags object.
     """
-    has_key = 'u' in trust_flags
+    has_key = "u" in trust_flags
 
-    if 'p' in trust_flags:
-        if 'C' in trust_flags or 'P' in trust_flags or 'T' in trust_flags:
+    if "p" in trust_flags:
+        if "C" in trust_flags or "P" in trust_flags or "T" in trust_flags:
             raise ValueError("cannot be both trusted and not trusted")
         return False, None, None
-    elif 'C' in trust_flags or 'T' in trust_flags:
-        if 'P' in trust_flags:
+    elif "C" in trust_flags or "T" in trust_flags:
+        if "P" in trust_flags:
             raise ValueError("cannot be both CA and not CA")
         ca = True
-    elif 'P' in trust_flags:
+    elif "P" in trust_flags:
         ca = False
     else:
         return TrustFlags(has_key, None, None, frozenset())
 
-    trust_flags = trust_flags.split(',')
+    trust_flags = trust_flags.split(",")
     ext_key_usage = set()
-    for i, kp in enumerate((x509.EKU_SERVER_AUTH,
-                            x509.EKU_EMAIL_PROTECTION,
-                            x509.EKU_CODE_SIGNING)):
-        if 'C' in trust_flags[i] or 'P' in trust_flags[i]:
+    for i, kp in enumerate(
+        (x509.EKU_SERVER_AUTH, x509.EKU_EMAIL_PROTECTION, x509.EKU_CODE_SIGNING)
+    ):
+        if "C" in trust_flags[i] or "P" in trust_flags[i]:
             ext_key_usage.add(kp)
-    if 'T' in trust_flags[0]:
+    if "T" in trust_flags[0]:
         ext_key_usage.add(x509.EKU_CLIENT_AUTH)
 
     return TrustFlags(has_key, True, ca, frozenset(ext_key_usage))
@@ -137,39 +142,39 @@ def unparse_trust_flags(trust_flags):
 
     if trusted is False:
         if has_key:
-            return 'pu,pu,pu'
+            return "pu,pu,pu"
         else:
-            return 'p,p,p'
+            return "p,p,p"
     elif trusted is None or ca is None:
         if has_key:
-            return 'u,u,u'
+            return "u,u,u"
         else:
-            return ',,'
+            return ",,"
     elif ext_key_usage is None:
         if ca:
             if has_key:
-                return 'CTu,Cu,Cu'
+                return "CTu,Cu,Cu"
             else:
-                return 'CT,C,C'
+                return "CT,C,C"
         else:
             if has_key:
-                return 'Pu,Pu,Pu'
+                return "Pu,Pu,Pu"
             else:
-                return 'P,P,P'
+                return "P,P,P"
 
-    trust_flags = ['', '', '']
-    for i, kp in enumerate((x509.EKU_SERVER_AUTH,
-                            x509.EKU_EMAIL_PROTECTION,
-                            x509.EKU_CODE_SIGNING)):
+    trust_flags = ["", "", ""]
+    for i, kp in enumerate(
+        (x509.EKU_SERVER_AUTH, x509.EKU_EMAIL_PROTECTION, x509.EKU_CODE_SIGNING)
+    ):
         if kp in ext_key_usage:
-            trust_flags[i] += ('C' if ca else 'P')
+            trust_flags[i] += "C" if ca else "P"
     if ca and x509.EKU_CLIENT_AUTH in ext_key_usage:
-        trust_flags[0] += 'T'
+        trust_flags[0] += "T"
     if has_key:
         for i in range(3):
-            trust_flags[i] += 'u'
+            trust_flags[i] += "u"
 
-    trust_flags = ','.join(trust_flags)
+    trust_flags = ",".join(trust_flags)
     return trust_flags
 
 
@@ -187,22 +192,23 @@ def verify_kdc_cert_validity(kdc_cert, ca_certs, realm):
 
         try:
             ipautil.run(
-                [paths.OPENSSL, 'verify', '-CAfile', ca_file.name,
-                 kdc_file.name],
-                capture_output=True)
+                [paths.OPENSSL, "verify", "-CAfile", ca_file.name, kdc_file.name],
+                capture_output=True,
+            )
         except ipautil.CalledProcessError as e:
             raise ValueError(e.output)
 
         try:
             eku = kdc_cert.extensions.get_extension_for_class(
-                cryptography.x509.ExtendedKeyUsage)
+                cryptography.x509.ExtendedKeyUsage
+            )
             list(eku.value).index(
-                cryptography.x509.ObjectIdentifier(x509.EKU_PKINIT_KDC))
-        except (cryptography.x509.ExtensionNotFound,
-                ValueError):
+                cryptography.x509.ObjectIdentifier(x509.EKU_PKINIT_KDC)
+            )
+        except (cryptography.x509.ExtensionNotFound, ValueError):
             raise ValueError("invalid for a KDC")
 
-        principal = str(Principal(['krbtgt', realm], realm))
+        principal = str(Principal(["krbtgt", realm], realm))
         gns = x509.process_othernames(kdc_cert.san_general_names)
         for gn in gns:
             if isinstance(gn, x509.KRB5PrincipalName) and gn.name == principal:
@@ -211,14 +217,12 @@ def verify_kdc_cert_validity(kdc_cert, ca_certs, realm):
             raise ValueError("invalid for realm %s" % realm)
 
 
-CERT_RE = re.compile(
-    r'^(?P<nick>.+?)\s+(?P<flags>\w*,\w*,\w*)\s*$'
-)
+CERT_RE = re.compile(r"^(?P<nick>.+?)\s+(?P<flags>\w*,\w*,\w*)\s*$")
 KEY_RE = re.compile(
-    r'^<\s*(?P<slot>\d+)>'
-    r'\s+(?P<algo>\w+)'
-    r'\s+(?P<keyid>[0-9a-z]+)'
-    r'\s+(?P<nick>.*?)\s*$'
+    r"^<\s*(?P<slot>\d+)>"
+    r"\s+(?P<algo>\w+)"
+    r"\s+(?P<keyid>[0-9a-z]+)"
+    r"\s+(?P<nick>.*?)\s*$"
 )
 
 
@@ -246,22 +250,23 @@ class NSSDatabase:
     to remove the DB. Alternatively, a NSSDatabase can be used as a
     context manager that calls close() automatically.
     """
+
     # Traditionally, we used CertDB for our NSS DB operations, but that class
     # got too tied to IPA server details, killing reusability.
     # BaseCertDB is a class that knows nothing about IPA.
     # Generic NSS DB code should be moved here.
 
-    def __init__(self, nssdir=None, dbtype='auto'):
+    def __init__(self, nssdir=None, dbtype="auto"):
         if nssdir is None:
             self.secdir = tempfile.mkdtemp()
             self._is_temporary = True
         else:
             self.secdir = nssdir
             self._is_temporary = False
-            if dbtype == 'auto':
+            if dbtype == "auto":
                 dbtype = self._detect_dbtype()
 
-        self.pwd_file = os.path.join(self.secdir, 'pwdfile.txt')
+        self.pwd_file = os.path.join(self.secdir, "pwdfile.txt")
         self.dbtype = None
         self.certdb = self.keydb = self.secmod = None
         # files in actual db
@@ -272,38 +277,36 @@ class NSSDatabase:
 
     def _detect_dbtype(self):
         if os.path.isfile(os.path.join(self.secdir, "cert9.db")):
-            return 'sql'
+            return "sql"
         elif os.path.isfile(os.path.join(self.secdir, "cert8.db")):
-            return 'dbm'
+            return "dbm"
         else:
-            return 'auto'
+            return "auto"
 
     def _set_filenames(self, dbtype):
         self.dbtype = dbtype
         dbmfiles = (
             os.path.join(self.secdir, "cert8.db"),
             os.path.join(self.secdir, "key3.db"),
-            os.path.join(self.secdir, "secmod.db")
+            os.path.join(self.secdir, "secmod.db"),
         )
         sqlfiles = (
             os.path.join(self.secdir, "cert9.db"),
             os.path.join(self.secdir, "key4.db"),
-            os.path.join(self.secdir, "pkcs11.txt")
+            os.path.join(self.secdir, "pkcs11.txt"),
         )
-        if dbtype == 'dbm':
+        if dbtype == "dbm":
             self.certdb, self.keydb, self.secmod = dbmfiles
             self.filenames = dbmfiles + (self.pwd_file,)
-        elif dbtype == 'sql':
+        elif dbtype == "sql":
             self.certdb, self.keydb, self.secmod = sqlfiles
             self.filenames = sqlfiles + (self.pwd_file,)
-        elif dbtype == 'auto':
+        elif dbtype == "auto":
             self.certdb = self.keydb = self.secmod = None
             self.filenames = None
         else:
             raise ValueError(dbtype)
-        self.backup_filenames = (
-            self.pwd_file,
-        ) + sqlfiles + dbmfiles
+        self.backup_filenames = (self.pwd_file,) + sqlfiles + dbmfiles
 
     def close(self):
         if self._is_temporary:
@@ -317,28 +320,20 @@ class NSSDatabase:
 
     def _check_db(self):
         if self.filenames is None:
-            raise RuntimeError(
-                "NSSDB '{}' not initialized.".format(self.secdir)
-            )
+            raise RuntimeError("NSSDB '{}' not initialized.".format(self.secdir))
 
     def run_certutil(self, args, stdin=None, **kwargs):
         self._check_db()
-        new_args = [
-            paths.CERTUTIL,
-            "-d", '{}:{}'.format(self.dbtype, self.secdir)
-        ]
+        new_args = [paths.CERTUTIL, "-d", "{}:{}".format(self.dbtype, self.secdir)]
         new_args.extend(args)
-        new_args.extend(['-f', self.pwd_file])
+        new_args.extend(["-f", self.pwd_file])
         # When certutil makes a request it creates a file in the cwd, make
         # sure we are in a unique place when this happens.
         return ipautil.run(new_args, stdin, cwd=self.secdir, **kwargs)
 
     def run_pk12util(self, args, stdin=None, **kwargs):
         self._check_db()
-        new_args = [
-            paths.PK12UTIL,
-            "-d", '{}:{}'.format(self.dbtype, self.secdir)
-        ]
+        new_args = [paths.PK12UTIL, "-d", "{}:{}".format(self.dbtype, self.secdir)]
         new_args.extend(args)
         return ipautil.run(new_args, stdin, **kwargs)
 
@@ -382,9 +377,11 @@ class NSSDatabase:
 
         if not os.path.exists(self.pwd_file):
             # Create the password file for this db
-            with io.open(os.open(self.pwd_file,
-                                 os.O_CREAT | os.O_WRONLY,
-                                 pwdfilemode), 'w', closefd=True) as f:
+            with io.open(
+                os.open(self.pwd_file, os.O_CREAT | os.O_WRONLY, pwdfilemode),
+                "w",
+                closefd=True,
+            ) as f:
                 f.write(ipautil.ipa_generate_password())
                 # flush and sync tempfile inode
                 f.flush()
@@ -392,25 +389,26 @@ class NSSDatabase:
 
         # In case dbtype is auto, let certutil decide which type of DB
         # to create.
-        if self.dbtype == 'auto':
+        if self.dbtype == "auto":
             dbdir = self.secdir
         else:
-            dbdir = '{}:{}'.format(self.dbtype, self.secdir)
+            dbdir = "{}:{}".format(self.dbtype, self.secdir)
         args = [
             paths.CERTUTIL,
-            '-d', dbdir,
-            '-N',
-            '-f', self.pwd_file,
+            "-d",
+            dbdir,
+            "-N",
+            "-f",
+            self.pwd_file,
             # -@ in case it's an old db and it must be migrated
-            '-@', self.pwd_file,
+            "-@",
+            self.pwd_file,
         ]
         ipautil.run(args, stdin=None, cwd=self.secdir)
         self._set_filenames(self._detect_dbtype())
         if self.filenames is None:
             # something went wrong...
-            raise ValueError(
-                "Failed to create NSSDB at '{}'".format(self.secdir)
-            )
+            raise ValueError("Failed to create NSSDB at '{}'".format(self.secdir))
 
         # Finally fix up perms
         os.chown(self.secdir, uid, gid)
@@ -438,27 +436,31 @@ class NSSDatabase:
 
         **WARNING** **WARNING** **WARNING** **WARNING** **WARNING**
         """
-        if (self.dbtype == 'sql' or
-                os.path.isfile(os.path.join(self.secdir, "cert9.db"))):
-            raise ValueError(
-                'NSS DB {} has been migrated already.'.format(self.secdir)
-            )
+        if self.dbtype == "sql" or os.path.isfile(
+            os.path.join(self.secdir, "cert9.db")
+        ):
+            raise ValueError("NSS DB {} has been migrated already.".format(self.secdir))
 
         # use certutil to migrate db to new format
         # see https://bugzilla.mozilla.org/show_bug.cgi?id=1415912
         # https://fedoraproject.org/wiki/Changes/NSSDefaultFileFormatSql
         args = [
             paths.CERTUTIL,
-            '-d', 'sql:{}'.format(self.secdir), '-N',
-            '-f', self.pwd_file, '-@', self.pwd_file
+            "-d",
+            "sql:{}".format(self.secdir),
+            "-N",
+            "-f",
+            self.pwd_file,
+            "-@",
+            self.pwd_file,
         ]
         ipautil.run(args, stdin=None, cwd=self.secdir)
 
         # retain file ownership and permission, backup old files
         migration = (
-            ('cert8.db', 'cert9.db'),
-            ('key3.db', 'key4.db'),
-            ('secmod.db', 'pkcs11.txt'),
+            ("cert8.db", "cert9.db"),
+            ("key3.db", "key4.db"),
+            ("secmod.db", "pkcs11.txt"),
         )
         for oldname, newname in migration:
             oldname = os.path.join(self.secdir, oldname)
@@ -468,25 +470,25 @@ class NSSDatabase:
             os.chown(newname, oldstat.st_uid, oldstat.st_gid)
             tasks.restore_context(newname, force=True)
 
-        self._set_filenames('sql')
+        self._set_filenames("sql")
         self.list_certs()  # self-test
 
         if rename_old:
             for oldname, _ in migration:  # pylint: disable=unused-variable
                 oldname = os.path.join(self.secdir, oldname)
-                os.rename(oldname, oldname + '.migrated')
+                os.rename(oldname, oldname + ".migrated")
 
     def restore(self):
         for filename in self.backup_filenames:
-            backup_path = filename + '.orig'
-            save_path = filename + '.ipasave'
+            backup_path = filename + ".orig"
+            save_path = filename + ".ipasave"
             try:
                 if os.path.exists(filename):
                     os.rename(filename, save_path)
                 if os.path.exists(backup_path):
                     os.rename(backup_path, filename)
             except OSError as e:
-                logger.debug('%s', e)
+                logger.debug("%s", e)
 
     def list_certs(self):
         """Return nicknames and cert flags for all certs in the database
@@ -501,28 +503,28 @@ class NSSDatabase:
         for cert in certs:
             match = CERT_RE.match(cert)
             if match:
-                nickname = match.group('nick')
-                trust_flags = parse_trust_flags(match.group('flags'))
+                nickname = match.group("nick")
+                trust_flags = parse_trust_flags(match.group("flags"))
                 certlist.append((nickname, trust_flags))
 
         return tuple(certlist)
 
     def list_keys(self):
-        result = self.run_certutil(
-            ["-K"], raiseonerr=False,  capture_output=True
-        )
+        result = self.run_certutil(["-K"], raiseonerr=False, capture_output=True)
         if result.returncode == 255:
             return ()
         keylist = []
         for line in result.output.splitlines():
             mo = KEY_RE.match(line)
             if mo is not None:
-                keylist.append((
-                    int(mo.group('slot')),
-                    mo.group('algo'),
-                    mo.group('keyid'),
-                    mo.group('nick'),
-                ))
+                keylist.append(
+                    (
+                        int(mo.group("slot")),
+                        mo.group("algo"),
+                        mo.group("keyid"),
+                        mo.group("nick"),
+                    )
+                )
         return tuple(keylist)
 
     def find_server_certs(self):
@@ -550,8 +552,8 @@ class NSSDatabase:
         """
         root_nicknames = []
         result = self.run_certutil(
-            ["-O", "--simple-self-signed", "-n", nickname],
-            capture_output=True)
+            ["-O", "--simple-self-signed", "-n", nickname], capture_output=True
+        )
         chain = result.output.splitlines()
 
         for c in chain:
@@ -562,59 +564,54 @@ class NSSDatabase:
         return root_nicknames
 
     def export_pkcs12(self, nickname, pkcs12_filename, pkcs12_passwd=None):
-        args = [
-            "-o", pkcs12_filename,
-            "-n", nickname,
-            "-k", self.pwd_file
-        ]
+        args = ["-o", pkcs12_filename, "-n", nickname, "-k", self.pwd_file]
         pkcs12_password_file = None
         if pkcs12_passwd is not None:
-            pkcs12_password_file = ipautil.write_tmp_file(pkcs12_passwd + '\n')
+            pkcs12_password_file = ipautil.write_tmp_file(pkcs12_passwd + "\n")
             args.extend(["-w", pkcs12_password_file.name])
         try:
             self.run_pk12util(args)
         except ipautil.CalledProcessError as e:
             if e.returncode == 17:
-                raise RuntimeError("incorrect password for pkcs#12 file %s" %
-                                   pkcs12_filename)
+                raise RuntimeError(
+                    "incorrect password for pkcs#12 file %s" % pkcs12_filename
+                )
             elif e.returncode == 10:
                 raise RuntimeError("Failed to open %s" % pkcs12_filename)
             else:
-                raise RuntimeError("unknown error exporting pkcs#12 file %s" %
-                                   pkcs12_filename)
+                raise RuntimeError(
+                    "unknown error exporting pkcs#12 file %s" % pkcs12_filename
+                )
         finally:
             if pkcs12_password_file is not None:
                 pkcs12_password_file.close()
 
     def import_pkcs12(self, pkcs12_filename, pkcs12_passwd=None):
-        args = [
-            "-i", pkcs12_filename,
-            "-k", self.pwd_file,
-            "-v"
-        ]
+        args = ["-i", pkcs12_filename, "-k", self.pwd_file, "-v"]
         pkcs12_password_file = None
         if pkcs12_passwd is not None:
-            pkcs12_password_file = ipautil.write_tmp_file(pkcs12_passwd + '\n')
+            pkcs12_password_file = ipautil.write_tmp_file(pkcs12_passwd + "\n")
             args.extend(["-w", pkcs12_password_file.name])
         try:
             self.run_pk12util(args)
         except ipautil.CalledProcessError as e:
             if e.returncode == 17 or e.returncode == 18:
                 raise Pkcs12ImportIncorrectPasswordError(
-                    "incorrect password for pkcs#12 file %s" % pkcs12_filename)
+                    "incorrect password for pkcs#12 file %s" % pkcs12_filename
+                )
             elif e.returncode == 10:
-                raise Pkcs12ImportOpenError(
-                    "Failed to open %s" % pkcs12_filename)
+                raise Pkcs12ImportOpenError("Failed to open %s" % pkcs12_filename)
             else:
                 raise Pkcs12ImportUnknownError(
-                    "unknown error import pkcs#12 file %s" %
-                    pkcs12_filename)
+                    "unknown error import pkcs#12 file %s" % pkcs12_filename
+                )
         finally:
             if pkcs12_password_file is not None:
                 pkcs12_password_file.close()
 
-    def import_files(self, files, import_keys=False, key_password=None,
-                     key_nickname=None):
+    def import_files(
+        self, files, import_keys=False, key_password=None, key_nickname=None
+    ):
         """
         Import certificates and a single private key from multiple files
 
@@ -633,17 +630,15 @@ class NSSDatabase:
 
         for filename in files:
             try:
-                with open(filename, 'rb') as f:
+                with open(filename, "rb") as f:
                     data = f.read()
             except IOError as e:
-                raise RuntimeError(
-                    "Failed to open %s: %s" % (filename, e.strerror))
+                raise RuntimeError("Failed to open %s: %s" % (filename, e.strerror))
 
             # Try to parse the file as PEM file
             matches = list(
                 re.finditer(
-                    br'-----BEGIN (.+?)-----(.*?)-----END \1-----',
-                    data, re.DOTALL
+                    br"-----BEGIN (.+?)-----(.*?)-----END \1-----", data, re.DOTALL
                 )
             )
             if matches:
@@ -651,77 +646,100 @@ class NSSDatabase:
                 for match in matches:
                     body = match.group()
                     label = match.group(1)
-                    line = len(data[:match.start() + 1].splitlines())
+                    line = len(data[: match.start() + 1].splitlines())
 
-                    if label in (b'CERTIFICATE', b'X509 CERTIFICATE',
-                                 b'X.509 CERTIFICATE'):
+                    if label in (
+                        b"CERTIFICATE",
+                        b"X509 CERTIFICATE",
+                        b"X.509 CERTIFICATE",
+                    ):
                         try:
                             cert = x509.load_pem_x509_certificate(body)
                         except ValueError as e:
-                            if label != b'CERTIFICATE':
+                            if label != b"CERTIFICATE":
                                 logger.warning(
-                                    "Skipping certificate in %s at line %s: "
-                                    "%s",
-                                    filename, line, e)
+                                    "Skipping certificate in %s at line %s: " "%s",
+                                    filename,
+                                    line,
+                                    e,
+                                )
                                 continue
                         else:
                             extracted_certs.append(cert)
                             loaded = True
                             continue
 
-                    if label in (b'PKCS7', b'PKCS #7 SIGNED DATA',
-                                 b'CERTIFICATE'):
+                    if label in (b"PKCS7", b"PKCS #7 SIGNED DATA", b"CERTIFICATE"):
                         try:
                             certs = x509.pkcs7_to_certs(body)
                         except ipautil.CalledProcessError as e:
-                            if label == b'CERTIFICATE':
+                            if label == b"CERTIFICATE":
                                 logger.warning(
-                                    "Skipping certificate in %s at line %s: "
-                                    "%s",
-                                    filename, line, e)
+                                    "Skipping certificate in %s at line %s: " "%s",
+                                    filename,
+                                    line,
+                                    e,
+                                )
                             else:
                                 logger.warning(
                                     "Skipping PKCS#7 in %s at line %s: %s",
-                                    filename, line, e)
+                                    filename,
+                                    line,
+                                    e,
+                                )
                             continue
                         else:
                             extracted_certs.extend(certs)
                             loaded = True
                             continue
 
-                    if label in (b'PRIVATE KEY', b'ENCRYPTED PRIVATE KEY',
-                                 b'RSA PRIVATE KEY', b'DSA PRIVATE KEY',
-                                 b'EC PRIVATE KEY'):
+                    if label in (
+                        b"PRIVATE KEY",
+                        b"ENCRYPTED PRIVATE KEY",
+                        b"RSA PRIVATE KEY",
+                        b"DSA PRIVATE KEY",
+                        b"EC PRIVATE KEY",
+                    ):
                         if not import_keys:
                             continue
 
                         if key_file:
                             raise RuntimeError(
-                                "Can't load private key from both %s and %s" %
-                                (key_file, filename))
+                                "Can't load private key from both %s and %s"
+                                % (key_file, filename)
+                            )
 
                         # the args -v2 aes256 -v2prf hmacWithSHA256 are needed
                         # on OpenSSL 1.0.2 (fips mode). As soon as FreeIPA
                         # requires OpenSSL 1.1.0 we'll be able to drop them
                         args = [
-                            paths.OPENSSL, 'pkcs8',
-                            '-topk8',
-                            '-v2', 'aes256', '-v2prf', 'hmacWithSHA256',
-                            '-passout', 'file:' + self.pwd_file,
+                            paths.OPENSSL,
+                            "pkcs8",
+                            "-topk8",
+                            "-v2",
+                            "aes256",
+                            "-v2prf",
+                            "hmacWithSHA256",
+                            "-passout",
+                            "file:" + self.pwd_file,
                         ]
-                        if ((label != b'PRIVATE KEY' and key_password) or
-                                label == b'ENCRYPTED PRIVATE KEY'):
+                        if (
+                            label != b"PRIVATE KEY" and key_password
+                        ) or label == b"ENCRYPTED PRIVATE KEY":
                             key_pwdfile = ipautil.write_tmp_file(key_password)
                             args += [
-                                '-passin', 'file:' + key_pwdfile.name,
+                                "-passin",
+                                "file:" + key_pwdfile.name,
                             ]
                         try:
-                            result = ipautil.run(
-                                args, stdin=body, capture_output=True)
+                            result = ipautil.run(args, stdin=body, capture_output=True)
                         except ipautil.CalledProcessError as e:
                             logger.warning(
                                 "Skipping private key in %s at line %s: %s",
-                                filename, line, e)
+                                filename,
+                                line,
+                                e,
+                            )
                             continue
                         else:
                             extracted_key = result.raw_output
@@ -750,13 +768,13 @@ class NSSDatabase:
                     # go to the generic error about unrecognized format
                     pass
                 except RuntimeError as e:
-                    raise RuntimeError("Failed to load %s: %s" %
-                                       (filename, str(e)))
+                    raise RuntimeError("Failed to load %s: %s" % (filename, str(e)))
                 else:
                     if key_file:
                         raise RuntimeError(
-                            "Can't load private key from both %s and %s" %
-                            (key_file, filename))
+                            "Can't load private key from both %s and %s"
+                            % (key_file, filename)
+                        )
                     key_file = filename
 
                     server_certs = self.find_server_certs()
@@ -766,32 +784,32 @@ class NSSDatabase:
                                 break
                         else:
                             raise RuntimeError(
-                                "Server certificate \"%s\" not found in %s" %
-                                (key_nickname, filename))
+                                'Server certificate "%s" not found in %s'
+                                % (key_nickname, filename)
+                            )
                     else:
                         if len(server_certs) > 1:
                             raise RuntimeError(
                                 "%s server certificates found in %s, "
-                                "expecting only one" %
-                                (len(server_certs), filename))
+                                "expecting only one" % (len(server_certs), filename)
+                            )
 
                     continue
 
             # Supported formats were tried but none succeeded
-            raise RuntimeError("Failed to load %s: unrecognized format" %
-                               filename)
+            raise RuntimeError("Failed to load %s: unrecognized format" % filename)
 
         if import_keys and not key_file:
             raise RuntimeError(
-                "No server certificates found in %s" % (', '.join(files)))
+                "No server certificates found in %s" % (", ".join(files))
+            )
 
         for cert in extracted_certs:
             nickname = str(DN(cert.subject))
             self.add_cert(cert, nickname, EMPTY_TRUST_FLAGS)
 
         if extracted_key:
-            with tempfile.NamedTemporaryFile() as in_file, \
-                    tempfile.NamedTemporaryFile() as out_file:
+            with tempfile.NamedTemporaryFile() as in_file, tempfile.NamedTemporaryFile() as out_file:
                 for cert in extracted_certs:
                     in_file.write(cert.public_bytes(x509.Encoding.PEM))
                 in_file.write(extracted_key)
@@ -799,37 +817,43 @@ class NSSDatabase:
                 out_password = ipautil.ipa_generate_password()
                 out_pwdfile = ipautil.write_tmp_file(out_password)
                 args = [
-                    paths.OPENSSL, 'pkcs12',
-                    '-export',
-                    '-in', in_file.name,
-                    '-out', out_file.name,
-                    '-passin', 'file:' + self.pwd_file,
-                    '-passout', 'file:' + out_pwdfile.name,
-                    '-certpbe', 'aes-128-cbc',
-                    '-keypbe', 'aes-128-cbc',
+                    paths.OPENSSL,
+                    "pkcs12",
+                    "-export",
+                    "-in",
+                    in_file.name,
+                    "-out",
+                    out_file.name,
+                    "-passin",
+                    "file:" + self.pwd_file,
+                    "-passout",
+                    "file:" + out_pwdfile.name,
+                    "-certpbe",
+                    "aes-128-cbc",
+                    "-keypbe",
+                    "aes-128-cbc",
                 ]
                 try:
                     ipautil.run(args)
                 except ipautil.CalledProcessError as e:
                     raise RuntimeError(
                         "No matching certificate found for private key from "
-                        "%s" % key_file)
+                        "%s" % key_file
+                    )
 
                 self.import_pkcs12(out_file.name, out_password)
 
     def trust_root_cert(self, root_nickname, trust_flags):
         if root_nickname[:7] == "Builtin":
             logger.debug(
-                "No need to add trust for built-in root CAs, skipping %s",
-                root_nickname)
+                "No need to add trust for built-in root CAs, skipping %s", root_nickname
+            )
         else:
             trust_flags = unparse_trust_flags(trust_flags)
             try:
-                self.run_certutil(["-M", "-n", root_nickname,
-                                   "-t", trust_flags])
+                self.run_certutil(["-M", "-n", root_nickname, "-t", trust_flags])
             except ipautil.CalledProcessError:
-                raise RuntimeError(
-                    "Setting trust on %s failed" % root_nickname)
+                raise RuntimeError("Setting trust on %s failed" % root_nickname)
 
     def get_cert(self, nickname):
         """
@@ -837,7 +861,7 @@ class NSSDatabase:
         :returns: string in Python2
                   bytes in Python3
         """
-        args = ['-L', '-n', nickname, '-a']
+        args = ["-L", "-n", nickname, "-a"]
         try:
             result = self.run_certutil(args, capture_output=True)
         except ipautil.CalledProcessError:
@@ -870,9 +894,7 @@ class NSSDatabase:
             with open(location) as fd:
                 certs = fd.read()
         except IOError as e:
-            raise RuntimeError(
-                "Failed to open %s: %s" % (location, e.strerror)
-            )
+            raise RuntimeError("Failed to open %s: %s" % (location, e.strerror))
 
         cert, st = find_cert_from_txt(certs)
         self.add_cert(cert, nickname, flags)
@@ -882,12 +904,11 @@ class NSSDatabase:
         except RuntimeError:
             pass
         else:
-            raise ValueError('%s contains more than one certificate' %
-                             location)
+            raise ValueError("%s contains more than one certificate" % location)
 
     def add_cert(self, cert, nick, flags):
         flags = unparse_trust_flags(flags)
-        args = ["-A", "-n", nick, "-t", flags, '-a']
+        args = ["-A", "-n", nick, "-t", flags, "-a"]
         self.run_certutil(args, stdin=cert.public_bytes(x509.Encoding.PEM))
 
     def delete_cert(self, nick):
@@ -925,13 +946,10 @@ class NSSDatabase:
         utcnow = datetime.datetime.utcnow()
         if cert.not_valid_before > utcnow:
             raise ValueError(
-                f"not valid before {cert.not_valid_before} UTC is in the "
-                "future."
+                f"not valid before {cert.not_valid_before} UTC is in the " "future."
             )
         if cert.not_valid_after < utcnow:
-            raise ValueError(
-                f"has expired {cert.not_valid_after} UTC"
-            )
+            raise ValueError(f"has expired {cert.not_valid_after} UTC")
         # make sure the cert does not expire during installation
         if cert.not_valid_after + datetime.timedelta(hours=1) < utcnow:
             raise ValueError(
@@ -949,13 +967,16 @@ class NSSDatabase:
         try:
             self.run_certutil(
                 [
-                    '-V',  # check validity of cert and attrs
-                    '-n', nickname,
-                    '-u', 'V',  # usage; 'V' means "SSL server"
-                    '-e',  # check signature(s); this checks
+                    "-V",  # check validity of cert and attrs
+                    "-n",
+                    nickname,
+                    "-u",
+                    "V",  # usage; 'V' means "SSL server"
+                    "-e",  # check signature(s); this checks
                     # key sizes, sig algorithm, etc.
                 ],
-                capture_output=True)
+                capture_output=True,
+            )
         except ipautil.CalledProcessError as e:
             # certutil output in case of error is
             # 'certutil: certificate is invalid: <ERROR_STRING>\n'
@@ -964,7 +985,7 @@ class NSSDatabase:
         try:
             cert.match_hostname(hostname)
         except ValueError:
-            raise ValueError('invalid for server %s' % hostname)
+            raise ValueError("invalid for server %s" % hostname)
 
     def verify_ca_cert_validity(self, nickname, minpathlen=None):
         cert = self.get_cert(nickname)
@@ -975,7 +996,8 @@ class NSSDatabase:
 
         try:
             bc = cert.extensions.get_extension_for_class(
-                    cryptography.x509.BasicConstraints)
+                cryptography.x509.BasicConstraints
+            )
         except cryptography.x509.ExtensionNotFound:
             raise ValueError("missing basic constraints")
 
@@ -993,7 +1015,8 @@ class NSSDatabase:
 
         try:
             ski = cert.extensions.get_extension_for_class(
-                    cryptography.x509.SubjectKeyIdentifier)
+                cryptography.x509.SubjectKeyIdentifier
+            )
         except cryptography.x509.ExtensionNotFound:
             raise ValueError("missing subject key identifier extension")
         else:
@@ -1003,13 +1026,16 @@ class NSSDatabase:
         try:
             self.run_certutil(
                 [
-                    '-V',       # check validity of cert and attrs
-                    '-n', nickname,
-                    '-u', 'L',  # usage; 'L' means "SSL CA"
-                    '-e',       # check signature(s); this checks
-                                # key sizes, sig algorithm, etc.
+                    "-V",  # check validity of cert and attrs
+                    "-n",
+                    nickname,
+                    "-u",
+                    "L",  # usage; 'L' means "SSL CA"
+                    "-e",  # check signature(s); this checks
+                    # key sizes, sig algorithm, etc.
                 ],
-                capture_output=True)
+                capture_output=True,
+            )
         except ipautil.CalledProcessError as e:
             # certutil output in case of error is
             # 'certutil: certificate is invalid: <ERROR_STRING>\n'

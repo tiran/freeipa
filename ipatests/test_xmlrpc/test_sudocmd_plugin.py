@@ -23,31 +23,34 @@ Test the `ipaserver/plugins/sudocmd.py` module.
 
 from ipalib import api, errors
 from ipatests.util import assert_deepequal
-from ipatests.test_xmlrpc.xmlrpc_test import (XMLRPC_test, raises_exact)
+from ipatests.test_xmlrpc.xmlrpc_test import XMLRPC_test, raises_exact
 from ipatests.test_xmlrpc.tracker.sudocmd_plugin import SudoCmdTracker
 import pytest
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def sudocmd1(request, xmlrpc_setup):
-    tracker = SudoCmdTracker(command=u'/usr/bin/sudotestcmd1',
-                             description=u'Test sudo command 1')
+    tracker = SudoCmdTracker(
+        command=u"/usr/bin/sudotestcmd1", description=u"Test sudo command 1"
+    )
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def sudocmd2(request, xmlrpc_setup):
-    tracker = SudoCmdTracker(command=u'/usr/bin/sudoTestCmd1',
-                             description=u'Test sudo command 2')
+    tracker = SudoCmdTracker(
+        command=u"/usr/bin/sudoTestCmd1", description=u"Test sudo command 2"
+    )
     return tracker.make_fixture(request)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def sudorule1(request, xmlrpc_setup):
-    name = u'test_sudorule1'
+    name = u"test_sudorule1"
 
     def fin():
-        api.Command['sudorule_del'](name)
+        api.Command["sudorule_del"](name)
+
     request.addfinalizer(fin)
     return name
 
@@ -57,22 +60,25 @@ class TestNonexistentSudoCmd(XMLRPC_test):
     def test_retrieve_nonexistent(self, sudocmd1):
         """ Try to retrieve non-existent sudocmd """
         command = sudocmd1.make_retrieve_command()
-        with raises_exact(errors.NotFound(
-                reason=u'%s: sudo command not found' % sudocmd1.cmd)):
+        with raises_exact(
+            errors.NotFound(reason=u"%s: sudo command not found" % sudocmd1.cmd)
+        ):
             command()
 
     def test_update_nonexistent(self, sudocmd1):
         """ Try to update non-existent sudocmd """
-        command = sudocmd1.make_update_command(dict(description=u'Nope'))
-        with raises_exact(errors.NotFound(
-                reason=u'%s: sudo command not found' % sudocmd1.cmd)):
+        command = sudocmd1.make_update_command(dict(description=u"Nope"))
+        with raises_exact(
+            errors.NotFound(reason=u"%s: sudo command not found" % sudocmd1.cmd)
+        ):
             command()
 
     def test_delete_nonexistent(self, sudocmd1):
         """ Try to delete non-existent sudocmd """
         command = sudocmd1.make_delete_command()
-        with raises_exact(errors.NotFound(
-                reason=u'%s: sudo command not found' % sudocmd1.cmd)):
+        with raises_exact(
+            errors.NotFound(reason=u"%s: sudo command not found" % sudocmd1.cmd)
+        ):
             command()
 
 
@@ -90,13 +96,17 @@ class TestSudoCmd(XMLRPC_test):
         command1 = sudocmd1.make_create_command()
         command2 = sudocmd2.make_create_command()
 
-        with raises_exact(errors.DuplicateEntry(
-                message=u'sudo command with name "%s" already exists' %
-                sudocmd1.cmd)):
+        with raises_exact(
+            errors.DuplicateEntry(
+                message=u'sudo command with name "%s" already exists' % sudocmd1.cmd
+            )
+        ):
             command1()
-        with raises_exact(errors.DuplicateEntry(
-                message=u'sudo command with name "%s" already exists' %
-                sudocmd2.cmd)):
+        with raises_exact(
+            errors.DuplicateEntry(
+                message=u'sudo command with name "%s" already exists' % sudocmd2.cmd
+            )
+        ):
             command2()
 
     def test_retrieve(self, sudocmd1):
@@ -111,9 +121,10 @@ class TestSudoCmd(XMLRPC_test):
 
     def test_update_and_verify(self, sudocmd1):
         """ Update sudocmd description and verify by retrieve """
-        sudocmd1_desc_new = u'Updated sudo command 1'
-        sudocmd1.update(dict(description=sudocmd1_desc_new),
-                        dict(description=[sudocmd1_desc_new]))
+        sudocmd1_desc_new = u"Updated sudo command 1"
+        sudocmd1.update(
+            dict(description=sudocmd1_desc_new), dict(description=[sudocmd1_desc_new])
+        )
         sudocmd1.retrieve()
 
 
@@ -122,72 +133,82 @@ class TestSudoCmdInSudoRuleLists(XMLRPC_test):
     def test_add_sudocmd_to_sudorule_allow_list(self, sudocmd1, sudorule1):
         """ Add sudocmd to sudorule allow list """
         sudocmd1.ensure_exists()
-        api.Command['sudorule_add'](sudorule1)
-        result = api.Command['sudorule_add_allow_command'](
+        api.Command["sudorule_add"](sudorule1)
+        result = api.Command["sudorule_add_allow_command"](
             sudorule1, sudocmd=sudocmd1.cmd
         )
-        assert_deepequal(dict(
-            completed=1,
-            failed=dict(
-                memberallowcmd=dict(sudocmdgroup=(), sudocmd=())),
-            result=lambda result: True,
-        ), result)
+        assert_deepequal(
+            dict(
+                completed=1,
+                failed=dict(memberallowcmd=dict(sudocmdgroup=(), sudocmd=())),
+                result=lambda result: True,
+            ),
+            result,
+        )
 
     def test_del_dependent_sudocmd_sudorule_allow(self, sudocmd1, sudorule1):
         """ Try to delete sudocmd that is in sudorule allow list """
         sudocmd1.ensure_exists()
         command = sudocmd1.make_delete_command()
-        with raises_exact(errors.DependentEntry(
-                key=sudocmd1.cmd,
-                label='sudorule',
-                dependent=sudorule1)):
+        with raises_exact(
+            errors.DependentEntry(
+                key=sudocmd1.cmd, label="sudorule", dependent=sudorule1
+            )
+        ):
             command()
 
     def test_remove_sudocmd_from_sudorule_allow(self, sudocmd1, sudorule1):
         """ Remove sudocmd from sudorule allow list """
         sudocmd1.ensure_exists()
-        result = api.Command['sudorule_remove_allow_command'](
+        result = api.Command["sudorule_remove_allow_command"](
             sudorule1, sudocmd=sudocmd1.cmd
         )
-        assert_deepequal(dict(
-            completed=1,
-            failed=dict(
-                memberallowcmd=dict(sudocmdgroup=(), sudocmd=())),
-            result=lambda result: True),
-            result)
+        assert_deepequal(
+            dict(
+                completed=1,
+                failed=dict(memberallowcmd=dict(sudocmdgroup=(), sudocmd=())),
+                result=lambda result: True,
+            ),
+            result,
+        )
 
     def test_add_sudocmd_to_sudorule_deny_list(self, sudocmd1, sudorule1):
         """ Add sudocmd to sudorule deny list """
         sudocmd1.ensure_exists()
-        result = api.Command['sudorule_add_deny_command'](
+        result = api.Command["sudorule_add_deny_command"](
             sudorule1, sudocmd=sudocmd1.cmd
         )
-        assert_deepequal(dict(
-            completed=1,
-            failed=dict(
-                memberdenycmd=dict(sudocmdgroup=(), sudocmd=())),
-            result=lambda result: True),
-            result)
+        assert_deepequal(
+            dict(
+                completed=1,
+                failed=dict(memberdenycmd=dict(sudocmdgroup=(), sudocmd=())),
+                result=lambda result: True,
+            ),
+            result,
+        )
 
     def test_del_dependent_sudocmd_sudorule_deny(self, sudocmd1, sudorule1):
         """ Try to delete sudocmd that is in sudorule deny list """
         sudocmd1.ensure_exists()
         command = sudocmd1.make_delete_command()
-        with raises_exact(errors.DependentEntry(
-                key=sudocmd1.cmd,
-                label='sudorule',
-                dependent=sudorule1)):
+        with raises_exact(
+            errors.DependentEntry(
+                key=sudocmd1.cmd, label="sudorule", dependent=sudorule1
+            )
+        ):
             command()
 
     def test_remove_sudocmd_from_sudorule_deny(self, sudocmd1, sudorule1):
         """ Remove sudocmd from sudorule deny list """
         sudocmd1.ensure_exists()
-        result = api.Command['sudorule_remove_deny_command'](
+        result = api.Command["sudorule_remove_deny_command"](
             sudorule1, sudocmd=sudocmd1.cmd
         )
-        assert_deepequal(dict(
-            completed=1,
-            failed=dict(
-                memberdenycmd=dict(sudocmdgroup=(), sudocmd=())),
-            result=lambda result: True),
-            result)
+        assert_deepequal(
+            dict(
+                completed=1,
+                failed=dict(memberdenycmd=dict(sudocmdgroup=(), sudocmd=())),
+                result=lambda result: True,
+            ),
+            result,
+        )

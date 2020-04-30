@@ -32,43 +32,44 @@ from ipalib.constants import MAX_DOMAIN_LEVEL
 
 class Config(pytest_multihost.config.Config):
     extra_init_args = {
-        'admin_name',
-        'admin_password',
-        'dirman_dn',
-        'dirman_password',
-        'nis_domain',
-        'ntp_server',
-        'ad_admin_name',
-        'ad_admin_password',
-        'dns_forwarder',
-        'domain_level',
-        'log_journal_since',
-        'fips_mode',
+        "admin_name",
+        "admin_password",
+        "dirman_dn",
+        "dirman_password",
+        "nis_domain",
+        "ntp_server",
+        "ad_admin_name",
+        "ad_admin_password",
+        "dns_forwarder",
+        "domain_level",
+        "log_journal_since",
+        "fips_mode",
     }
 
     def __init__(self, **kwargs):
-        kwargs.setdefault('test_dir', '/root/ipatests')
+        kwargs.setdefault("test_dir", "/root/ipatests")
         super(Config, self).__init__(**kwargs)
 
-        admin_password = kwargs.get('admin_password') or 'Secret123'
+        admin_password = kwargs.get("admin_password") or "Secret123"
 
-        self.admin_name = kwargs.get('admin_name') or 'admin'
+        self.admin_name = kwargs.get("admin_name") or "admin"
         self.admin_password = admin_password
-        self.dirman_dn = DN(kwargs.get('dirman_dn') or 'cn=Directory Manager')
-        self.dirman_password = kwargs.get('dirman_password') or admin_password
-        self.nis_domain = kwargs.get('nis_domain') or 'ipatest'
-        self.ntp_server = str(kwargs.get('ntp_server') or (
-            '%s.pool.ntp.org' % random.randint(0, 3)))
-        self.ad_admin_name = kwargs.get('ad_admin_name') or 'Administrator'
-        self.ad_admin_password = kwargs.get('ad_admin_password') or 'Secret123'
-        self.domain_level = kwargs.get('domain_level', MAX_DOMAIN_LEVEL)
+        self.dirman_dn = DN(kwargs.get("dirman_dn") or "cn=Directory Manager")
+        self.dirman_password = kwargs.get("dirman_password") or admin_password
+        self.nis_domain = kwargs.get("nis_domain") or "ipatest"
+        self.ntp_server = str(
+            kwargs.get("ntp_server") or ("%s.pool.ntp.org" % random.randint(0, 3))
+        )
+        self.ad_admin_name = kwargs.get("ad_admin_name") or "Administrator"
+        self.ad_admin_password = kwargs.get("ad_admin_password") or "Secret123"
+        self.domain_level = kwargs.get("domain_level", MAX_DOMAIN_LEVEL)
         # 8.8.8.8 is probably the best-known public DNS
-        self.dns_forwarder = kwargs.get('dns_forwarder') or '8.8.8.8'
+        self.dns_forwarder = kwargs.get("dns_forwarder") or "8.8.8.8"
         self.debug = False
-        self.log_journal_since = kwargs.get('log_journal_since') or '-1h'
+        self.log_journal_since = kwargs.get("log_journal_since") or "-1h"
         if self.domain_level is None:
             self.domain_level = MAX_DOMAIN_LEVEL
-        self.fips_mode = kwargs.get('fips_mode', False)
+        self.fips_mode = kwargs.get("fips_mode", False)
 
     def get_domain_class(self):
         return Domain
@@ -93,18 +94,20 @@ class Config(pytest_multihost.config.Config):
                 yield ipa_host
 
     def to_dict(self):
-        extra_args = self.extra_init_args - {'dirman_dn'}
+        extra_args = self.extra_init_args - {"dirman_dn"}
         result = super(Config, self).to_dict(extra_args)
-        result['dirman_dn'] = str(self.dirman_dn)
+        result["dirman_dn"] = str(self.dirman_dn)
         return result
 
     @classmethod
     def from_env(cls, env):
         from ipatests.pytest_ipa.integration.env_config import config_from_env
+
         return config_from_env(env)
 
     def to_env(self, **kwargs):
         from ipatests.pytest_ipa.integration.env_config import config_to_env
+
         return config_to_env(self, **kwargs)
 
     def filter(self, descriptions):
@@ -122,6 +125,7 @@ class Config(pytest_multihost.config.Config):
 
 class Domain(pytest_multihost.config.Domain):
     """Configuration for an IPA / AD domain"""
+
     def __init__(self, config, name, domain_type):
         self.type = str(domain_type)
 
@@ -131,27 +135,27 @@ class Domain(pytest_multihost.config.Domain):
 
         assert self.is_ipa_type or self.is_ad_type
         self.realm = self.name.upper()
-        self.basedn = DN(*(('dc', p) for p in name.split('.')))
+        self.basedn = DN(*(("dc", p) for p in name.split(".")))
 
     @property
     def is_ipa_type(self):
-        return self.type == 'IPA'
+        return self.type == "IPA"
 
     @property
     def is_ad_type(self):
-        return self.type == 'AD' or self.type.startswith('AD_')
+        return self.type == "AD" or self.type.startswith("AD_")
 
     @property
     def static_roles(self):
         # Specific roles for each domain type are hardcoded
-        if self.type == 'IPA':
-            return ('master', 'replica', 'client', 'other')
-        elif self.type == 'AD':
-            return ('ad',)
-        elif self.type == 'AD_SUBDOMAIN':
-            return ('ad_subdomain',)
-        elif self.type == 'AD_TREEDOMAIN':
-            return ('ad_treedomain',)
+        if self.type == "IPA":
+            return ("master", "replica", "client", "other")
+        elif self.type == "AD":
+            return ("ad",)
+        elif self.type == "AD_SUBDOMAIN":
+            return ("ad_subdomain",)
+        elif self.type == "AD_TREEDOMAIN":
+            return ("ad_treedomain",)
         else:
             raise LookupError(self.type)
 
@@ -167,33 +171,35 @@ class Domain(pytest_multihost.config.Domain):
 
     @property
     def master(self):
-        return self.host_by_role('master')
+        return self.host_by_role("master")
 
     @property
     def masters(self):
-        return self.hosts_by_role('master')
+        return self.hosts_by_role("master")
 
     @property
     def replicas(self):
-        return self.hosts_by_role('replica')
+        return self.hosts_by_role("replica")
 
     @property
     def clients(self):
-        return self.hosts_by_role('client')
+        return self.hosts_by_role("client")
 
     @property
     def ads(self):
-        return self.hosts_by_role('ad')
+        return self.hosts_by_role("ad")
 
     @property
     def other_hosts(self):
-        return self.hosts_by_role('other')
+        return self.hosts_by_role("other")
 
     @classmethod
     def from_env(cls, env, config, index, domain_type):
         from ipatests.pytest_ipa.integration.env_config import domain_from_env
+
         return domain_from_env(env, config, index, domain_type)
 
     def to_env(self, **kwargs):
         from ipatests.pytest_ipa.integration.env_config import domain_to_env
+
         return domain_to_env(self, **kwargs)

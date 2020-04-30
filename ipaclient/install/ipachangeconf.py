@@ -30,6 +30,6 @@ class IPAChangeConf(realIPAChangeConf):
         warnings.warn(
             "Use 'ipapython.ipachangeconf.IPAChangeConfg'",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         super(IPAChangeConf, self).__init__(name)

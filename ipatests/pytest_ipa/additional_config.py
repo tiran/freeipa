@@ -4,5 +4,9 @@
 
 
 def pytest_addoption(parser):
-    parser.addoption("--no-pretty-print", action="store_false",
-                     dest="pretty_print", help="Don't pretty-print structures")
+    parser.addoption(
+        "--no-pretty-print",
+        action="store_false",
+        dest="pretty_print",
+        help="Don't pretty-print structures",
+    )

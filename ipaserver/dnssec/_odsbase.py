@@ -11,13 +11,14 @@ ODS_SE_MAXLINE = 1024  # from ODS common/config.h
 
 
 @six.add_metaclass(abc.ABCMeta)
-class AbstractODSDBConnection():
+class AbstractODSDBConnection:
     """Abstract class representing the Connection to ODS database."""
+
     def __init__(self):
         """Creates a connection to the kasp database."""
         self._db = sqlite3.connect(paths.OPENDNSSEC_KASP_DB)
         self._db.row_factory = sqlite3.Row
-        self._db.execute('BEGIN')
+        self._db.execute("BEGIN")
 
     @abc.abstractmethod
     def get_zones(self):
@@ -37,8 +38,9 @@ class AbstractODSDBConnection():
 
 
 @six.add_metaclass(abc.ABCMeta)
-class AbstractODSSignerConn():
+class AbstractODSSignerConn:
     """Abstract class representing the Connection to ods-signer."""
+
     def __init__(self, conn):
         """Initializes the object with a socket conn."""
         self._conn = conn

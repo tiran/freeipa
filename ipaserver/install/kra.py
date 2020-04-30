@@ -39,16 +39,19 @@ def install_check(api, replica_config, options):
                 pass
             else:
                 raise RuntimeError(
-                    "Dogtag must be version 10.2 or above to install KRA")
+                    "Dogtag must be version 10.2 or above to install KRA"
+                )
         else:
             raise RuntimeError(
-                "Dogtag CA is not installed.  Please install the CA first")
+                "Dogtag CA is not installed.  Please install the CA first"
+            )
 
     if replica_config is not None:
-        if not api.Command.kra_is_enabled()['result']:
+        if not api.Command.kra_is_enabled()["result"]:
             raise RuntimeError(
                 "KRA is not installed on the master system. Please use "
-                "'ipa-kra-install' command to install the first instance.")
+                "'ipa-kra-install' command to install the first instance."
+            )
 
 
 def install(api, replica_config, options, custodia):
@@ -66,16 +69,15 @@ def install(api, replica_config, options, custodia):
     else:
         if not replica_config.setup_kra:
             return
-        krafile = os.path.join(replica_config.dir, 'kracert.p12')
+        krafile = os.path.join(replica_config.dir, "kracert.p12")
         with ipautil.private_ccache():
-            ccache = os.environ['KRB5CCNAME']
+            ccache = os.environ["KRB5CCNAME"]
             kinit_keytab(
-                'host/{env.host}@{env.realm}'.format(env=api.env),
+                "host/{env.host}@{env.realm}".format(env=api.env),
                 paths.KRB5_KEYTAB,
-                ccache)
-            custodia.get_kra_keys(
-                krafile,
-                replica_config.dirman_password)
+                ccache,
+            )
+            custodia.get_kra_keys(krafile, replica_config.dirman_password)
 
         realm_name = replica_config.realm_name
         dm_password = replica_config.dirman_password
@@ -90,7 +92,10 @@ def install(api, replica_config, options, custodia):
 
     kra = krainstance.KRAInstance(realm_name)
     kra.configure_instance(
-        realm_name, host_name, dm_password, dm_password,
+        realm_name,
+        host_name,
+        dm_password,
+        dm_password,
         subject_base=subject_base,
         ca_subject=ca_subject,
         pkcs12_info=pkcs12_info,
@@ -131,4 +136,5 @@ class KRAInstallInterface(dogtag.DogtagInstallInterface):
     * ipa-replica-install
     * ipa-kra-install
     """
+
     description = "KRA"

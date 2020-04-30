@@ -22,10 +22,12 @@ def ipatestdir(testdir, monkeypatch):
     ipatests_dir = testdir.mkpydir("ipatests")
     for i in range(MODS_NUM):
         ipatests_dir.join("{}.py".format(MOD_NAME.format(i))).write(
-            "def {}(): pass".format(FUNC_NAME.format(i)))
+            "def {}(): pass".format(FUNC_NAME.format(i))
+        )
 
     python_path = os.pathsep.join(
-        filter(None, [str(testdir.tmpdir), os.environ.get("PYTHONPATH", "")]))
+        filter(None, [str(testdir.tmpdir), os.environ.get("PYTHONPATH", "")])
+    )
     monkeypatch.setenv("PYTHONPATH", python_path)
 
     def run_ipa_tests(*args):
@@ -44,37 +46,47 @@ def test_ipa_run_tests_basic(ipatestdir):
     assert result.ret == 0
     result.assert_outcomes(passed=MODS_NUM)
     for mod_num in range(MODS_NUM):
-        result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-            mod=MOD_NAME.format(mod_num),
-            func=FUNC_NAME.format(mod_num))])
+        result.stdout.fnmatch_lines(
+            [
+                "*{mod}.py::{func} PASSED*".format(
+                    mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+                )
+            ]
+        )
 
 
 def test_ipa_run_tests_glob1(ipatestdir):
     """
     Run ipa-run-tests using glob patterns to collect tests
     """
-    result = ipatestdir.run_ipa_tests("{mod}".format(
-        mod="test_modul[!E]?[0-5]*"))
+    result = ipatestdir.run_ipa_tests("{mod}".format(mod="test_modul[!E]?[0-5]*"))
     assert result.ret == 0
     result.assert_outcomes(passed=MODS_NUM)
     for mod_num in range(MODS_NUM):
-        result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-            mod=MOD_NAME.format(mod_num),
-            func=FUNC_NAME.format(mod_num))])
+        result.stdout.fnmatch_lines(
+            [
+                "*{mod}.py::{func} PASSED*".format(
+                    mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+                )
+            ]
+        )
 
 
 def test_ipa_run_tests_glob2(ipatestdir):
     """
     Run ipa-run-tests using glob patterns to collect tests
     """
-    result = ipatestdir.run_ipa_tests("{mod}".format(
-        mod="test_module_{0,1}*"))
+    result = ipatestdir.run_ipa_tests("{mod}".format(mod="test_module_{0,1}*"))
     assert result.ret == 0
     result.assert_outcomes(passed=2)
     for mod_num in range(2):
-        result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-            mod=MOD_NAME.format(mod_num),
-            func=FUNC_NAME.format(mod_num))])
+        result.stdout.fnmatch_lines(
+            [
+                "*{mod}.py::{func} PASSED*".format(
+                    mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+                )
+            ]
+        )
 
 
 def test_ipa_run_tests_specific_nodeid(ipatestdir):
@@ -82,20 +94,29 @@ def test_ipa_run_tests_specific_nodeid(ipatestdir):
     Run ipa-run-tests using nodeid to collect test
     """
     mod_num = 0
-    result = ipatestdir.run_ipa_tests("{mod}.py::{func}".format(
-        mod=MOD_NAME.format(mod_num),
-        func=FUNC_NAME.format(mod_num)))
+    result = ipatestdir.run_ipa_tests(
+        "{mod}.py::{func}".format(
+            mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+        )
+    )
     assert result.ret == 0
     result.assert_outcomes(passed=1)
-    result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-        mod=MOD_NAME.format(mod_num),
-        func=FUNC_NAME.format(mod_num))])
+    result.stdout.fnmatch_lines(
+        [
+            "*{mod}.py::{func} PASSED*".format(
+                mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+            )
+        ]
+    )
 
 
 @pytest.mark.parametrize(
     "expr",
-    [["-k", "not {func}".format(func=FUNC_NAME.format(0))],
-     ["-k not {func}".format(func=FUNC_NAME.format(0))]])
+    [
+        ["-k", "not {func}".format(func=FUNC_NAME.format(0))],
+        ["-k not {func}".format(func=FUNC_NAME.format(0))],
+    ],
+)
 def test_ipa_run_tests_expression(ipatestdir, expr):
     """
     Run ipa-run-tests using expression
@@ -104,9 +125,13 @@ def test_ipa_run_tests_expression(ipatestdir, expr):
     assert result.ret == 0
     result.assert_outcomes(passed=4)
     for mod_num in range(1, MODS_NUM):
-        result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-            mod=MOD_NAME.format(mod_num),
-            func=FUNC_NAME.format(mod_num))])
+        result.stdout.fnmatch_lines(
+            [
+                "*{mod}.py::{func} PASSED*".format(
+                    mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+                )
+            ]
+        )
 
 
 def test_ipa_run_tests_empty_expression(ipatestdir):
@@ -114,13 +139,17 @@ def test_ipa_run_tests_empty_expression(ipatestdir):
     Run ipa-run-tests using an empty expression.
     Expected result: all tests should pass.
     """
-    result = ipatestdir.run_ipa_tests('-k', '')
+    result = ipatestdir.run_ipa_tests("-k", "")
     assert result.ret == 0
     result.assert_outcomes(passed=5)
     for mod_num in range(0, MODS_NUM):
-        result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-            mod=MOD_NAME.format(mod_num),
-            func=FUNC_NAME.format(mod_num))])
+        result.stdout.fnmatch_lines(
+            [
+                "*{mod}.py::{func} PASSED*".format(
+                    mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+                )
+            ]
+        )
 
 
 def test_ipa_run_tests_ignore_basic(ipatestdir):
@@ -128,15 +157,21 @@ def test_ipa_run_tests_ignore_basic(ipatestdir):
     Run ipa-run-tests ignoring one test module
     """
     result = ipatestdir.run_ipa_tests(
-        "--ignore", "{mod}.py".format(mod=MOD_NAME.format(0)),
-        "--ignore", "{mod}.py".format(mod=MOD_NAME.format(1)),
+        "--ignore",
+        "{mod}.py".format(mod=MOD_NAME.format(0)),
+        "--ignore",
+        "{mod}.py".format(mod=MOD_NAME.format(1)),
     )
     assert result.ret == 0
     result.assert_outcomes(passed=MODS_NUM - 2)
     for mod_num in range(2, MODS_NUM):
-        result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-            mod=MOD_NAME.format(mod_num),
-            func=FUNC_NAME.format(mod_num))])
+        result.stdout.fnmatch_lines(
+            [
+                "*{mod}.py::{func} PASSED*".format(
+                    mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+                )
+            ]
+        )
 
 
 def test_ipa_run_tests_defaultargs(ipatestdir):
@@ -146,17 +181,23 @@ def test_ipa_run_tests_defaultargs(ipatestdir):
     * rootdir
     """
     mod_num = 0
-    result = ipatestdir.run_ipa_tests("{mod}.py::{func}".format(
-        mod=MOD_NAME.format(mod_num),
-        func=FUNC_NAME.format(mod_num)))
+    result = ipatestdir.run_ipa_tests(
+        "{mod}.py::{func}".format(
+            mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+        )
+    )
     assert result.ret == 0
     result.assert_outcomes(passed=1)
-    result.stdout.re_match_lines([
-        "^cachedir: {cachedir}$".format(
-            cachedir=os.path.join(os.getcwd(), ".pytest_cache")),
-        "^rootdir: {rootdir}([,].*)?$".format(
-            rootdir=os.path.join(str(ipatestdir.tmpdir), "ipatests"))
-    ])
+    result.stdout.re_match_lines(
+        [
+            "^cachedir: {cachedir}$".format(
+                cachedir=os.path.join(os.getcwd(), ".pytest_cache")
+            ),
+            "^rootdir: {rootdir}([,].*)?$".format(
+                rootdir=os.path.join(str(ipatestdir.tmpdir), "ipatests")
+            ),
+        ]
+    )
 
 
 def test_ipa_run_tests_confcutdir(ipatestdir):
@@ -166,11 +207,17 @@ def test_ipa_run_tests_confcutdir(ipatestdir):
     """
     mod_num = 0
     ipatestdir.makeconftest("import somenotexistedpackage")
-    result = ipatestdir.run_ipa_tests("{mod}.py::{func}".format(
-        mod=MOD_NAME.format(mod_num),
-        func=FUNC_NAME.format(mod_num)))
+    result = ipatestdir.run_ipa_tests(
+        "{mod}.py::{func}".format(
+            mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+        )
+    )
     assert result.ret == 0
     result.assert_outcomes(passed=1)
-    result.stdout.fnmatch_lines(["*{mod}.py::{func} PASSED*".format(
-        mod=MOD_NAME.format(mod_num),
-        func=FUNC_NAME.format(mod_num))])
+    result.stdout.fnmatch_lines(
+        [
+            "*{mod}.py::{func} PASSED*".format(
+                mod=MOD_NAME.format(mod_num), func=FUNC_NAME.format(mod_num)
+            )
+        ]
+    )

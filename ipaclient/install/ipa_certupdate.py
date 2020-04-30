@@ -40,12 +40,13 @@ logger = logging.getLogger(__name__)
 
 
 class CertUpdate(admintool.AdminTool):
-    command_name = 'ipa-certupdate'
+    command_name = "ipa-certupdate"
 
     usage = "%prog [options]"
 
-    description = ("Update local IPA certificate databases with certificates "
-                   "from the server.")
+    description = (
+        "Update local IPA certificate databases with certificates " "from the server."
+    )
 
     def validate_options(self):
         super(CertUpdate, self).validate_options(needs_root=True)
@@ -53,7 +54,7 @@ class CertUpdate(admintool.AdminTool):
     def run(self):
         check_client_configuration()
 
-        api.bootstrap(context='cli_installer', confdir=paths.ETC_IPA)
+        api.bootstrap(context="cli_installer", confdir=paths.ETC_IPA)
         api.finalize()
 
         api.Backend.rpcclient.connect()
@@ -73,35 +74,34 @@ def run_with_args(api):
     ldap = ipaldap.LDAPClient.from_hostname_secure(server)
 
     tmpdir = tempfile.mkdtemp(prefix="tmp-")
-    ccache_name = os.path.join(tmpdir, 'ccache')
-    old_krb5ccname = os.environ.get('KRB5CCNAME')
+    ccache_name = os.path.join(tmpdir, "ccache")
+    old_krb5ccname = os.environ.get("KRB5CCNAME")
     try:
-        principal = str('host/%s@%s' % (api.env.host, api.env.realm))
+        principal = str("host/%s@%s" % (api.env.host, api.env.realm))
         kinit_keytab(principal, paths.KRB5_KEYTAB, ccache_name)
-        os.environ['KRB5CCNAME'] = ccache_name
+        os.environ["KRB5CCNAME"] = ccache_name
 
         try:
-            result = api.Command.ca_is_enabled(version=u'2.107')
-            ca_enabled = result['result']
+            result = api.Command.ca_is_enabled(version=u"2.107")
+            ca_enabled = result["result"]
         except (errors.CommandError, errors.NetworkError):
-            result = api.Command.env(server=True, version=u'2.0')
-            ca_enabled = result['result']['enable_ra']
+            result = api.Command.env(server=True, version=u"2.0")
+            ca_enabled = result["result"]["enable_ra"]
 
         ldap.gssapi_bind()
 
-        certs = certstore.get_ca_certs(
-            ldap, api.env.basedn, api.env.realm, ca_enabled)
+        certs = certstore.get_ca_certs(ldap, api.env.basedn, api.env.realm, ca_enabled)
 
         if ca_enabled:
-            lwcas = api.Command.ca_find()['result']
+            lwcas = api.Command.ca_find()["result"]
         else:
             lwcas = []
 
     finally:
         if old_krb5ccname is None:
-            del os.environ['KRB5CCNAME']
+            del os.environ["KRB5CCNAME"]
         else:
-            os.environ['KRB5CCNAME'] = old_krb5ccname
+            os.environ["KRB5CCNAME"] = old_krb5ccname
         shutil.rmtree(tmpdir)
 
     server_fstore = sysrestore.FileStore(paths.SYSRESTORE)
@@ -110,11 +110,11 @@ def run_with_args(api):
         try:
             # pylint: disable=import-error,ipa-forbidden-import
             from ipaserver.install import cainstance
+
             # pylint: enable=import-error,ipa-forbidden-import
             cainstance.add_lightweight_ca_tracking_requests(lwcas)
         except Exception:
-            logger.exception(
-                "Failed to add lightweight CA tracking requests")
+            logger.exception("Failed to add lightweight CA tracking requests")
 
     update_client(certs)
 
@@ -127,14 +127,14 @@ def update_client(certs):
     ipa_db = certdb.NSSDatabase(api.env.nss_dir)
 
     # Remove old IPA certs from /etc/ipa/nssdb
-    for nickname in ('IPA CA', 'External CA cert'):
+    for nickname in ("IPA CA", "External CA cert"):
         while ipa_db.has_nickname(nickname):
             try:
                 ipa_db.delete_cert(nickname)
             except ipautil.CalledProcessError as e:
                 logger.error(
-                    "Failed to remove %s from %s: %s",
-                    nickname, ipa_db.secdir, e)
+                    "Failed to remove %s from %s: %s", nickname, ipa_db.secdir, e
+                )
                 break
 
     update_db(ipa_db.secdir, certs)
@@ -144,7 +144,7 @@ def update_client(certs):
 
 
 def update_server(certs):
-    instance = '-'.join(api.env.realm.split('.'))
+    instance = "-".join(api.env.realm.split("."))
     update_db(paths.ETC_DIRSRV_SLAPD_INSTANCE_TEMPLATE % instance, certs)
     if services.knownservices.dirsrv.is_running():
         services.knownservices.dirsrv.restart(instance)
@@ -153,9 +153,9 @@ def update_server(certs):
         services.knownservices.httpd.restart()
 
     criteria = {
-        'cert-database': paths.PKI_TOMCAT_ALIAS_DIR,
-        'cert-nickname': IPA_CA_NICKNAME,
-        'ca-name': RENEWAL_CA_NAME,
+        "cert-database": paths.PKI_TOMCAT_ALIAS_DIR,
+        "cert-nickname": IPA_CA_NICKNAME,
+        "ca-name": RENEWAL_CA_NAME,
     }
     request_id = certmonger.get_request_id(criteria)
     if request_id is not None:
@@ -174,21 +174,24 @@ def update_server(certs):
         #
         logger.debug("resubmitting certmonger request '%s'", request_id)
         certmonger.resubmit_request(
-            request_id, ca='dogtag-ipa-ca-renew-agent-reuse', profile='')
+            request_id, ca="dogtag-ipa-ca-renew-agent-reuse", profile=""
+        )
         try:
             state = certmonger.wait_for_request(request_id, timeout)
         except RuntimeError:
             raise admintool.ScriptError(
                 "Resubmitting certmonger request '%s' timed out, "
-                "please check the request manually" % request_id)
-        ca_error = certmonger.get_request_value(request_id, 'ca-error')
-        if state != 'MONITORING' or ca_error:
+                "please check the request manually" % request_id
+            )
+        ca_error = certmonger.get_request_value(request_id, "ca-error")
+        if state != "MONITORING" or ca_error:
             raise admintool.ScriptError(
                 "Error resubmitting certmonger request '%s', "
-                "please check the request manually" % request_id)
+                "please check the request manually" % request_id
+            )
 
         logger.debug("modifying certmonger request '%s'", request_id)
-        certmonger.modify(request_id, ca='dogtag-ipa-ca-renew-agent')
+        certmonger.modify(request_id, ca="dogtag-ipa-ca-renew-agent")
 
     update_file(paths.CA_CRT, certs)
     update_file(paths.CACERT_PEM, certs)

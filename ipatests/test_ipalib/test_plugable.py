@@ -40,6 +40,7 @@ class test_Plugin(ClassChecker):
     """
     Test the `ipalib.plugable.Plugin` class.
     """
+
     _cls = plugable.Plugin
 
     def test_class(self):
@@ -53,10 +54,11 @@ class test_Plugin(ClassChecker):
         """
         Test the `ipalib.plugable.Plugin.__init__` method.
         """
-        api = 'the api instance'
+        api = "the api instance"
         o = self.cls(api)
-        assert o.name == 'Plugin'
+        assert o.name == "Plugin"
         assert isinstance(o.doc, str)
+
         class some_subclass(self.cls):
             """
             Do sub-classy things.
@@ -67,24 +69,31 @@ class test_Plugin(ClassChecker):
 
             One more paragraph.
             """
+
         o = some_subclass(api)
-        assert o.name == 'some_subclass'
-        assert o.summary == 'Do sub-classy things.'
+        assert o.name == "some_subclass"
+        assert o.summary == "Do sub-classy things."
         assert isinstance(o.doc, str)
+
         class another_subclass(self.cls):
             pass
+
         o = another_subclass(api)
-        assert o.summary == u'<%s.%s>' % (another_subclass.__module__,
-                                          another_subclass.__name__)
+        assert o.summary == u"<%s.%s>" % (
+            another_subclass.__module__,
+            another_subclass.__name__,
+        )
 
     def test_finalize(self):
         """
         Test the `ipalib.plugable.Plugin.finalize` method.
         """
+
         class api:
             @staticmethod
             def is_production_mode():
                 return False
+
         o = self.cls(api)
         assert not o.__islocked__()
         o.finalize()
@@ -95,6 +104,7 @@ def test_Registry():
     """
     Test the `ipalib.plugable.Registry` class
     """
+
     class Base1:
         pass
 
@@ -114,7 +124,7 @@ def test_Registry():
     # a class:
     p = plugin1()
     e = raises(TypeError, r(), p)
-    assert str(e) == 'plugin must be callable; got %r' % p
+    assert str(e) == "plugin must be callable; got %r" % p
 
     # Check that registration works
     r()(plugin1)
@@ -127,8 +137,10 @@ def test_Registry():
     # Check that overriding works
     class base1_extended(Base1):
         pass
+
     class plugin1(base1_extended):  # pylint: disable=function-redefined
         pass
+
     r(override=True)(plugin1)
 
     # Test that another plugin can be registered:
@@ -137,18 +149,22 @@ def test_Registry():
     # Setup to test more registration:
     class plugin1a(Base1):
         pass
+
     r()(plugin1a)
 
     class plugin1b(Base1):
         pass
+
     r()(plugin1b)
 
     class plugin2a(Base2):
         pass
+
     r()(plugin2a)
 
     class plugin2b(Base2):
         pass
+
     r()(plugin2b)
 
 
@@ -179,47 +195,52 @@ class test_API(ClassChecker):
             modules = ()
 
         api = API()
-        api.env.mode = 'unit_test'
+        api.env.mode = "unit_test"
         api.env.in_tree = True
         r = api.add_plugin
 
         class base0_plugin0(base0):
             pass
+
         r(base0_plugin0)
 
         class base0_plugin1(base0):
             pass
+
         r(base0_plugin1)
 
         class base0_plugin2(base0):
             pass
+
         r(base0_plugin2)
 
         class base1_plugin0(base1):
             pass
+
         r(base1_plugin0)
 
         class base1_plugin1(base1):
             pass
+
         r(base1_plugin1)
 
         class base1_plugin2(base1):
             pass
+
         r(base1_plugin2)
 
         # Test API instance:
-        assert api.isdone('bootstrap') is False
-        assert api.isdone('finalize') is False
+        assert api.isdone("bootstrap") is False
+        assert api.isdone("finalize") is False
         api.finalize()
-        assert api.isdone('bootstrap') is True
-        assert api.isdone('finalize') is True
+        assert api.isdone("bootstrap") is True
+        assert api.isdone("finalize") is True
 
         def get_base_name(b):
-            return 'base%d' % b
-
+            return "base%d" % b
 
         def get_plugin_name(b, p):
-            return 'base%d_plugin%d' % (b, p)
+            return "base%d_plugin%d" % (b, p)
 
         for b in range(2):
             base_name = get_base_name(b)
@@ -239,65 +260,68 @@ class test_API(ClassChecker):
 
         # Test that calling finilize again raises AssertionError:
         e = raises(Exception, api.finalize)
-        assert str(e) == 'API.finalize() already called', str(e)
+        assert str(e) == "API.finalize() already called", str(e)
 
     def test_bootstrap(self):
         """
         Test the `ipalib.plugable.API.bootstrap` method.
         """
         o, _home = create_test_api()
-        assert o.env._isdone('_bootstrap') is False
-        assert o.env._isdone('_finalize_core') is False
-        assert o.isdone('bootstrap') is False
-        o.bootstrap(my_test_override='Hello, world!')
-        assert o.isdone('bootstrap') is True
-        assert o.env._isdone('_bootstrap') is True
-        assert o.env._isdone('_finalize_core') is True
-        assert o.env.my_test_override == 'Hello, world!'
+        assert o.env._isdone("_bootstrap") is False
+        assert o.env._isdone("_finalize_core") is False
+        assert o.isdone("bootstrap") is False
+        o.bootstrap(my_test_override="Hello, world!")
+        assert o.isdone("bootstrap") is True
+        assert o.env._isdone("_bootstrap") is True
+        assert o.env._isdone("_finalize_core") is True
+        assert o.env.my_test_override == "Hello, world!"
         e = raises(Exception, o.bootstrap)
-        assert str(e) == 'API.bootstrap() already called'
+        assert str(e) == "API.bootstrap() already called"
 
     def test_load_plugins(self):
         """
         Test the `ipalib.plugable.API.load_plugins` method.
         """
         o, _home = create_test_api()
-        assert o.isdone('bootstrap') is False
-        assert o.isdone('load_plugins') is False
+        assert o.isdone("bootstrap") is False
+        assert o.isdone("load_plugins") is False
         o.load_plugins()
-        assert o.isdone('bootstrap') is True
-        assert o.isdone('load_plugins') is True
+        assert o.isdone("bootstrap") is True
+        assert o.isdone("load_plugins") is True
         e = raises(Exception, o.load_plugins)
-        assert str(e) == 'API.load_plugins() already called'
+        assert str(e) == "API.load_plugins() already called"
 
     def test_ipaconf_env(self):
-        ipa_confdir = os.environ.get('IPA_CONFDIR', None)
+        ipa_confdir = os.environ.get("IPA_CONFDIR", None)
         try:
             with TempHome() as home:
-                defaultconf = home.join('default.conf')
-                with open(defaultconf, 'w') as f:
-                    f.write(textwrap.dedent("""
+                defaultconf = home.join("default.conf")
+                with open(defaultconf, "w") as f:
+                    f.write(
+                        textwrap.dedent(
+                            """
                         [global]
                         basedn = dc=ipa,dc=test
                         realm = IPA.TEST
                         domain = ipa.test
-                        """)
+                        """
+                        )
                     )
-                os.environ['IPA_CONFDIR'] = home.path
-                api = create_api(mode='unit_test')
+                os.environ["IPA_CONFDIR"] = home.path
+                api = create_api(mode="unit_test")
                 api.bootstrap()
                 api.finalize()
                 assert api.env.confdir == home.path
                 assert api.env.conf_default == defaultconf
-                assert api.env.realm == 'IPA.TEST'
-                assert api.env.domain == 'ipa.test'
+                assert api.env.realm == "IPA.TEST"
+                assert api.env.domain == "ipa.test"
 
-                os.environ['IPA_CONFDIR'] = home.join('invalid')
-                api = create_api(mode='unit_test')
+                os.environ["IPA_CONFDIR"] = home.join("invalid")
+                api = create_api(mode="unit_test")
                 with pytest.raises(errors.EnvironmentError):
                     api.bootstrap()
         finally:
             if ipa_confdir:
-                os.environ['IPA_CONFDIR'] = ipa_confdir
+                os.environ["IPA_CONFDIR"] = ipa_confdir
             else:
-                os.environ.pop('IPA_CONFDIR')
+                os.environ.pop("IPA_CONFDIR")

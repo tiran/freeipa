@@ -44,19 +44,22 @@ newcert = None
 sn = None
 
 _DOMAIN = api.env.domain
-_EXP_CRL_URI = ''.join(['http://ipa-ca.', _DOMAIN, '/ipa/crl/MasterCRL.bin'])
-_EXP_OCSP_URI = ''.join(['http://ipa-ca.', _DOMAIN, '/ca/ocsp'])
+_EXP_CRL_URI = "".join(["http://ipa-ca.", _DOMAIN, "/ipa/crl/MasterCRL.bin"])
+_EXP_OCSP_URI = "".join(["http://ipa-ca.", _DOMAIN, "/ca/ocsp"])
+
 
 def is_db_configured():
     """
     Raise an exception if we are testing against lite-server and the
     developer cert database is configured.
     """
-    aliasdir = api.env.dot_ipa + os.sep + 'alias' + os.sep + '.pwd'
+    aliasdir = api.env.dot_ipa + os.sep + "alias" + os.sep + ".pwd"
 
-    if (api.env.xmlrpc_uri == u'http://localhost:8888/ipa/xml' and
-       not os.path.isfile(aliasdir)):
-        pytest.skip('developer CA not configured in %s' % aliasdir)
+    if api.env.xmlrpc_uri == u"http://localhost:8888/ipa/xml" and not os.path.isfile(
+        aliasdir
+    ):
+        pytest.skip("developer CA not configured in %s" % aliasdir)
+
 
 # Test setup
 #
@@ -74,9 +77,10 @@ def is_db_configured():
 # The API tested depends on the value of ~/.ipa/default/ra_plugin when
 # running as the lite-server.
 
+
 class BaseCert(XMLRPC_test):
-    host_fqdn = u'ipatestcert.%s' % api.env.domain
-    service_princ = u'test/%s@%s' % (host_fqdn, api.env.realm)
+    host_fqdn = u"ipatestcert.%s" % api.env.domain
+    service_princ = u"test/%s@%s" % (host_fqdn, api.env.realm)
     certfile = None
     nssdb = None
     reqfile = None
@@ -84,10 +88,10 @@ class BaseCert(XMLRPC_test):
 
     @pytest.fixture(autouse=True, scope="class")
     def basecert_setup(self, request, xmlrpc_setup):
-        if 'cert_request' not in api.Command:
-            pytest.skip('cert_request not registered')
-        if 'cert_show' not in api.Command:
-            pytest.skip('cert_show not registered')
+        if "cert_request" not in api.Command:
+            pytest.skip("cert_request not registered")
+        if "cert_show" not in api.Command:
+            pytest.skip("cert_show not registered")
 
         is_db_configured()
 
@@ -99,21 +103,19 @@ class BaseCert(XMLRPC_test):
         self.certfile = os.path.join(secdir, "cert.crt")
         # Create our temporary NSS database
         self.nssdb.create_db()
-        self.subject = DN(('CN', self.host_fqdn), subject_base())
+        self.subject = DN(("CN", self.host_fqdn), subject_base())
 
         def fin():
             self.nssdb.close()
+
         request.addfinalizer(fin)
 
     def generateCSR(self, subject):
-        self.nssdb.run_certutil([
-            "-R", "-s", subject,
-            "-o", self.reqfile,
-            "-z", paths.GROUP,
-            "-a",
-        ])
+        self.nssdb.run_certutil(
+            ["-R", "-s", subject, "-o", self.reqfile, "-z", paths.GROUP, "-a",]
+        )
         with open(self.reqfile, "rb") as f:
-            return f.read().decode('ascii')
+            return f.read().decode("ascii")
 
 
 @pytest.mark.tier1
@@ -129,11 +131,11 @@ class test_cert(BaseCert):
         This should fail because the service principal doesn't exist
         """
         # First create the host that will use this policy
-        assert 'result' in api.Command['host_add'](self.host_fqdn, force=True)
+        assert "result" in api.Command["host_add"](self.host_fqdn, force=True)
 
         csr = self.generateCSR(str(self.subject))
         with pytest.raises(errors.NotFound):
-            api.Command['cert_request'](csr, principal=self.service_princ)
+            api.Command["cert_request"](csr, principal=self.service_princ)
 
     def test_0002_cert_add(self):
         """
@@ -143,28 +145,30 @@ class test_cert(BaseCert):
         global cert, sn
 
         csr = self.generateCSR(str(self.subject))
-        res = api.Command['cert_request'](csr, principal=self.service_princ, add=True)['result']
-        assert DN(res['subject']) == self.subject
-        assert 'cacn' in res
+        res = api.Command["cert_request"](csr, principal=self.service_princ, add=True)[
+            "result"
+        ]
+        assert DN(res["subject"]) == self.subject
+        assert "cacn" in res
         # save the cert for the service_show/find tests
-        cert = res['certificate'].encode('ascii')
+        cert = res["certificate"].encode("ascii")
         # save cert's SN for URI test
-        sn = res['serial_number']
+        sn = res["serial_number"]
 
     def test_0003_service_show(self):
         """
         Verify that service-show has the right certificate using service-show.
         """
-        res = api.Command['service_show'](self.service_princ)['result']
-        assert base64.b64encode(res['usercertificate'][0]) == cert
+        res = api.Command["service_show"](self.service_princ)["result"]
+        assert base64.b64encode(res["usercertificate"][0]) == cert
 
     def test_0004_service_find(self):
         """
         Verify that service-find has the right certificate using service-find.
         """
         # Assume there is only one service
-        res = api.Command['service_find'](self.service_princ)['result']
-        assert base64.b64encode(res[0]['usercertificate'][0]) == cert
+        res = api.Command["service_find"](self.service_princ)["result"]
+        assert base64.b64encode(res[0]["usercertificate"][0]) == cert
 
     def test_0005_cert_uris(self):
         """Test URI details and OCSP-URI in certificate.
@@ -173,9 +177,10 @@ class test_cert(BaseCert):
         """
         result = api.Command.cert_show(sn, out=unicode(self.certfile))
         with open(self.certfile, "rb") as f:
-            pem_cert = f.read().decode('ascii')
-        result = run([paths.OPENSSL, 'x509', '-text'],
-                     stdin=pem_cert, capture_output=True)
+            pem_cert = f.read().decode("ascii")
+        result = run(
+            [paths.OPENSSL, "x509", "-text"], stdin=pem_cert, capture_output=True
+        )
         assert _EXP_CRL_URI in result.output
         assert _EXP_OCSP_URI in result.output
 
@@ -186,20 +191,20 @@ class test_cert(BaseCert):
         global newcert
 
         csr = self.generateCSR(str(self.subject))
-        res = api.Command['cert_request'](csr, principal=self.service_princ)['result']
-        assert DN(res['subject']) == self.subject
+        res = api.Command["cert_request"](csr, principal=self.service_princ)["result"]
+        assert DN(res["subject"]) == self.subject
         # save the cert for the service_show/find tests
-        newcert = res['certificate'].encode('ascii')
+        newcert = res["certificate"].encode("ascii")
 
     def test_0007_service_show(self):
         """
         Verify the new certificate with service-show.
         """
-        res = api.Command['service_show'](self.service_princ)['result']
+        res = api.Command["service_show"](self.service_princ)["result"]
 
         # Both the old and the new certs should be listed as certificates now
         certs_encoded = (
-            base64.b64encode(usercert) for usercert in res['usercertificate']
+            base64.b64encode(usercert) for usercert in res["usercertificate"]
         )
         assert set(certs_encoded) == set([cert, newcert])
 
@@ -207,29 +212,29 @@ class test_cert(BaseCert):
         """
         Verify that cert-show shows CA of the certificate without --all
         """
-        res = api.Command['cert_show'](sn)['result']
-        assert 'cacn' in res
-        assert 'valid_not_before' in res
-        assert 'valid_not_after' in res
+        res = api.Command["cert_show"](sn)["result"]
+        assert "cacn" in res
+        assert "valid_not_before" in res
+        assert "valid_not_after" in res
 
     def test_0009_cert_find(self):
         """
         Verify that cert-find shows CA of the certificate without --all
         """
-        res = api.Command['cert_find'](min_serial_number=sn,
-                                       max_serial_number=sn)['result'][0]
-        assert 'cacn' in res
-        assert 'valid_not_before' in res
-        assert 'valid_not_after' in res
+        res = api.Command["cert_find"](min_serial_number=sn, max_serial_number=sn)[
+            "result"
+        ][0]
+        assert "cacn" in res
+        assert "valid_not_before" in res
+        assert "valid_not_after" in res
 
     def test_00010_san_in_cert(self):
         """
         Test if SAN extension is automatically added with default profile.
         """
         csr = self.generateCSR(str(self.subject))
-        res = api.Command[
-            'cert_request'](csr, principal=self.service_princ)['result']
-        assert 'san_dnsname' in res
+        res = api.Command["cert_request"](csr, principal=self.service_princ)["result"]
+        assert "san_dnsname" in res
 
     def test_00011_emails_are_valid(self):
         """
@@ -238,19 +243,21 @@ class test_cert(BaseCert):
         """
 
         from ipaserver.plugins.cert import _emails_are_valid
-        email_addrs = [u'any@EmAiL.CoM']
-        result = _emails_are_valid(email_addrs, [u'any@email.com'])
+
+        email_addrs = [u"any@EmAiL.CoM"]
+        result = _emails_are_valid(email_addrs, [u"any@email.com"])
         assert result
 
-        email_addrs = [u'any@EmAiL.CoM']
-        result = _emails_are_valid(email_addrs, [u'any@email.com',
-                                                 u'another@email.com'])
+        email_addrs = [u"any@EmAiL.CoM"]
+        result = _emails_are_valid(
+            email_addrs, [u"any@email.com", u"another@email.com"]
+        )
         assert result
 
-        result = _emails_are_valid([], [u'any@email.com'])
+        result = _emails_are_valid([], [u"any@email.com"])
         assert result
 
-        email_addrs = [u'invalidEmailAddress']
+        email_addrs = [u"invalidEmailAddress"]
         result = _emails_are_valid(email_addrs, [])
         assert not result
 
@@ -259,11 +266,11 @@ class test_cert(BaseCert):
         Clean up cert test data
         """
         # Now clean things up
-        api.Command['host_del'](self.host_fqdn)
+        api.Command["host_del"](self.host_fqdn)
 
         # Verify that the service is gone
-        res = api.Command['service_find'](self.service_princ)
-        assert res['count'] == 0
+        res = api.Command["service_find"](self.service_princ)
+        assert res["count"] == 0
 
 
 @pytest.mark.tier1
@@ -271,17 +278,18 @@ class test_cert_find(XMLRPC_test):
     """
     Test the `cert-find` command.
     """
+
     @pytest.fixture(autouse=True, scope="class")
     def certfind_setup(self, request, xmlrpc_setup):
-        if 'cert_find' not in api.Command:
-            pytest.skip('cert_find not registered')
+        if "cert_find" not in api.Command:
+            pytest.skip("cert_find not registered")
 
-        if api.env.ra_plugin != 'dogtag':
-            pytest.skip('cert_find for dogtag CA only')
+        if api.env.ra_plugin != "dogtag":
+            pytest.skip("cert_find for dogtag CA only")
 
         is_db_configured()
 
-    short = api.env.host.split('.')[0]
+    short = api.env.host.split(".")[0]
 
     def test_0001_find_all(self):
         """
@@ -290,44 +298,44 @@ class test_cert_find(XMLRPC_test):
         We don't know how many we'll get but there should be at least 10
         by default.
         """
-        res = api.Command['cert_find']()
-        assert 'count' in res and res['count'] >= 10
+        res = api.Command["cert_find"]()
+        assert "count" in res and res["count"] >= 10
 
     def test_0002_find_CA(self):
         """
         Search for the CA certificate.
         """
-        res = api.Command['cert_find'](subject=u'Certificate Authority')
-        assert 'count' in res and res['count'] == 1
+        res = api.Command["cert_find"](subject=u"Certificate Authority")
+        assert "count" in res and res["count"] == 1
 
     def test_0003_find_OCSP(self):
         """
         Search for the OCSP certificate.
         """
-        res = api.Command['cert_find'](subject=u'OCSP Subsystem')
-        assert 'count' in res
-        assert res['count'], "No OSCP certificate found"
+        res = api.Command["cert_find"](subject=u"OCSP Subsystem")
+        assert "count" in res
+        assert res["count"], "No OSCP certificate found"
 
     def test_0004_find_this_host(self):
         """
         Find all certificates for this IPA server
         """
-        res = api.Command['cert_find'](subject=api.env.host)
-        assert 'count' in res and res['count'] > 1
+        res = api.Command["cert_find"](subject=api.env.host)
+        assert "count" in res and res["count"] > 1
 
     def test_0005_find_this_host_exact(self):
         """
         Find all certificates for this IPA server (exact)
         """
-        res = api.Command['cert_find'](subject=api.env.host, exactly=True)
-        assert 'count' in res and res['count'] > 1
+        res = api.Command["cert_find"](subject=api.env.host, exactly=True)
+        assert "count" in res and res["count"] > 1
 
     def test_0006_find_this_short_host_exact(self):
         """
         Find all certificates for this IPA server short name (exact)
         """
-        res = api.Command['cert_find'](subject=self.short, exactly=True)
-        assert 'count' in res and res['count'] == 0
+        res = api.Command["cert_find"](subject=self.short, exactly=True)
+        assert "count" in res and res["count"] == 0
 
     # tests 0007 to 0016 removed
 
@@ -335,117 +343,107 @@ class test_cert_find(XMLRPC_test):
         """
         Find all certificates issued since 2008
         """
-        res = api.Command['cert_find'](issuedon_from=u'2008-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 10
+        res = api.Command["cert_find"](issuedon_from=u"2008-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 10
 
     def test_0018_find_through_issuedon(self):
         """
         Find all certificates issued through 2008
         """
-        res = api.Command['cert_find'](issuedon_to=u'2008-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 0
+        res = api.Command["cert_find"](issuedon_to=u"2008-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 0
 
     def test_0019_find_notvalid_before(self):
         """
         Find all certificates valid not before 2008
         """
-        res = api.Command['cert_find'](validnotbefore_from=u'2008-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 10
+        res = api.Command["cert_find"](validnotbefore_from=u"2008-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 10
 
     def test_0020_find_notvalid_before(self):
         """
         Find all certificates valid not before to 2100
         """
-        res = api.Command['cert_find'](validnotbefore_to=u'2100-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 10
+        res = api.Command["cert_find"](validnotbefore_to=u"2100-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 10
 
     def test_0021_find_notvalid_before(self):
         """
         Find all certificates valid not before 2100
         """
-        res = api.Command['cert_find'](validnotbefore_from=u'2100-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 0
+        res = api.Command["cert_find"](validnotbefore_from=u"2100-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 0
 
     def test_0022_find_notvalid_before(self):
         """
         Find all certificates valid not before to 2008
         """
-        res = api.Command['cert_find'](validnotbefore_to=u'2008-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 0
+        res = api.Command["cert_find"](validnotbefore_to=u"2008-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 0
 
     def test_0023_find_notvalid_after(self):
         """
         Find all certificates valid not after 2008
         """
-        res = api.Command['cert_find'](validnotafter_from=u'2008-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 10
+        res = api.Command["cert_find"](validnotafter_from=u"2008-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 10
 
     def test_0024_find_notvalid_after(self):
         """
         Find all certificates valid not after to 2100
         """
-        res = api.Command['cert_find'](validnotafter_to=u'2100-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 10
+        res = api.Command["cert_find"](validnotafter_to=u"2100-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 10
 
     def test_0025_find_notvalid_after(self):
         """
         Find all certificates valid not after 2100
         """
-        res = api.Command['cert_find'](validnotafter_from=u'2100-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 0
+        res = api.Command["cert_find"](validnotafter_from=u"2100-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 0
 
     def test_0026_find_notvalid_after(self):
         """
         Find all certificates valid not after to 2008
         """
-        res = api.Command['cert_find'](validnotafter_to=u'2008-01-01',
-                                       sizelimit=10)
-        assert 'count' in res and res['count'] == 0
+        res = api.Command["cert_find"](validnotafter_to=u"2008-01-01", sizelimit=10)
+        assert "count" in res and res["count"] == 0
 
     def test_0027_sizelimit_zero(self):
         """
         Search with a sizelimit of 0
         """
-        count_all = api.Command['cert_find']()['count']
-        res = api.Command['cert_find'](sizelimit=0)
-        assert 'count' in res and res['count'] == count_all
+        count_all = api.Command["cert_find"]()["count"]
+        res = api.Command["cert_find"](sizelimit=0)
+        assert "count" in res and res["count"] == count_all
 
     def test_0028_find_negative_size(self):
         """
         Search with a negative sizelimit
         """
         with pytest.raises(errors.ValidationError):
-            api.Command['cert_find'](sizelimit=-100)
+            api.Command["cert_find"](sizelimit=-100)
 
     def test_0029_search_for_notfound(self):
         """
         Search for a host that isn't there.
         """
-        res = api.Command['cert_find'](subject=u'notfound')
-        assert 'count' in res and res['count'] == 0
+        res = api.Command["cert_find"](subject=u"notfound")
+        assert "count" in res and res["count"] == 0
 
     def test_0030_search_for_testcerts(self):
         """
         Search for certs created in other tests
         """
-        res = api.Command['cert_find'](subject=u'ipatestcert.%s' % api.env.domain)
-        assert 'count' in res and res['count'] >= 1
+        res = api.Command["cert_find"](subject=u"ipatestcert.%s" % api.env.domain)
+        assert "count" in res and res["count"] >= 1
 
     def test_0031_search_on_invalid_date(self):
         """
         Search using invalid date format
         """
         with pytest.raises(errors.ConversionError):
-            api.Command['cert_find'](issuedon_from=u'xyz')
+            api.Command["cert_find"](issuedon_from=u"xyz")
 
 
 @pytest.mark.tier1
@@ -454,26 +452,27 @@ class test_cert_revocation(BaseCert):
     # create CSR, request cert, revoke cert, check cert attributes
     def revoke_cert(self, reason):
         # add host
-        assert 'result' in api.Command['host_add'](self.host_fqdn, force=True)
+        assert "result" in api.Command["host_add"](self.host_fqdn, force=True)
 
         # generate CSR, request certificate, obtain serial number
         self.csr = self.generateCSR(str(self.subject))
-        res = api.Command['cert_request'](self.csr,
-                                          principal=self.service_princ,
-                                          add=True, all=True)['result']
-        serial_number = res['serial_number']
+        res = api.Command["cert_request"](
+            self.csr, principal=self.service_princ, add=True, all=True
+        )["result"]
+        serial_number = res["serial_number"]
 
         # revoke created certificate
-        assert 'result' in api.Command['cert_revoke'](
-            serial_number, revocation_reason=reason)
+        assert "result" in api.Command["cert_revoke"](
+            serial_number, revocation_reason=reason
+        )
 
         # verify that certificate is revoked with correct reason
-        res2 = api.Command['cert_show'](serial_number, all=True)['result']
-        assert res2['revoked']
-        assert res2['revocation_reason'] == reason
+        res2 = api.Command["cert_show"](serial_number, all=True)["result"]
+        assert res2["revoked"]
+        assert res2["revocation_reason"] == reason
 
         # remove host
-        assert 'result' in api.Command['host_del'](self.host_fqdn)
+        assert "result" in api.Command["host_del"](self.host_fqdn)
 
     def test_revoke_with_reason_0(self):
         self.revoke_cert(0)

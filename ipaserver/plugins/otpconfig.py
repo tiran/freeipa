@@ -21,7 +21,8 @@ from ipalib import _, api, Int
 from ipalib.plugable import Registry
 from .baseldap import DN, LDAPObject, LDAPUpdate, LDAPRetrieve
 
-__doc__ = _("""
+__doc__ = _(
+    """
 OTP configuration
 
 Manage the default values that IPA uses for OTP tokens.
@@ -45,64 +46,71 @@ EXAMPLES:
 
  Change maximum HOTP synchronization window to 50:
    ipa hotpconfig-mod --hotp-sync-window=50
-""")
+"""
+)
 
 register = Registry()
 
-topic = 'otp'
+topic = "otp"
 
 
 @register()
 class otpconfig(LDAPObject):
-    object_name = _('OTP configuration options')
+    object_name = _("OTP configuration options")
     default_attributes = [
-        'ipatokentotpauthwindow',
-        'ipatokentotpsyncwindow',
-        'ipatokenhotpauthwindow',
-        'ipatokenhotpsyncwindow',
+        "ipatokentotpauthwindow",
+        "ipatokentotpsyncwindow",
+        "ipatokenhotpauthwindow",
+        "ipatokenhotpsyncwindow",
     ]
 
-    container_dn = DN(('cn', 'otp'), ('cn', 'etc'))
-    permission_filter_objectclasses = ['ipatokenotpconfig']
+    container_dn = DN(("cn", "otp"), ("cn", "etc"))
+    permission_filter_objectclasses = ["ipatokenotpconfig"]
     managed_permissions = {
-        'System: Read OTP Configuration': {
-            'replaces_global_anonymous_aci': True,
-            'ipapermbindruletype': 'all',
-            'ipapermright': {'read', 'search', 'compare'},
-            'ipapermdefaultattr': {
-                'ipatokentotpauthwindow', 'ipatokentotpsyncwindow',
-                'ipatokenhotpauthwindow', 'ipatokenhotpsyncwindow',
-                'cn',
+        "System: Read OTP Configuration": {
+            "replaces_global_anonymous_aci": True,
+            "ipapermbindruletype": "all",
+            "ipapermright": {"read", "search", "compare"},
+            "ipapermdefaultattr": {
+                "ipatokentotpauthwindow",
+                "ipatokentotpsyncwindow",
+                "ipatokenhotpauthwindow",
+                "ipatokenhotpsyncwindow",
+                "cn",
             },
         },
     }
 
-    label = _('OTP Configuration')
-    label_singular = _('OTP Configuration')
+    label = _("OTP Configuration")
+    label_singular = _("OTP Configuration")
 
     takes_params = (
-        Int('ipatokentotpauthwindow',
-            cli_name='totp_auth_window',
-            label=_('TOTP authentication Window'),
-            doc=_('TOTP authentication time variance (seconds)'),
+        Int(
+            "ipatokentotpauthwindow",
+            cli_name="totp_auth_window",
+            label=_("TOTP authentication Window"),
+            doc=_("TOTP authentication time variance (seconds)"),
             minvalue=5,
         ),
-        Int('ipatokentotpsyncwindow',
-            cli_name='totp_sync_window',
-            label=_('TOTP Synchronization Window'),
-            doc=_('TOTP synchronization time variance (seconds)'),
+        Int(
+            "ipatokentotpsyncwindow",
+            cli_name="totp_sync_window",
+            label=_("TOTP Synchronization Window"),
+            doc=_("TOTP synchronization time variance (seconds)"),
             minvalue=5,
         ),
-        Int('ipatokenhotpauthwindow',
-            cli_name='hotp_auth_window',
-            label=_('HOTP Authentication Window'),
-            doc=_('HOTP authentication skip-ahead'),
+        Int(
+            "ipatokenhotpauthwindow",
+            cli_name="hotp_auth_window",
+            label=_("HOTP Authentication Window"),
+            doc=_("HOTP authentication skip-ahead"),
             minvalue=1,
         ),
-        Int('ipatokenhotpsyncwindow',
-            cli_name='hotp_sync_window',
-            label=_('HOTP Synchronization Window'),
-            doc=_('HOTP synchronization skip-ahead'),
+        Int(
+            "ipatokenhotpsyncwindow",
+            cli_name="hotp_sync_window",
+            label=_("HOTP Synchronization Window"),
+            doc=_("HOTP synchronization skip-ahead"),
             minvalue=1,
         ),
     )
@@ -113,9 +121,9 @@ class otpconfig(LDAPObject):
 
 @register()
 class otpconfig_mod(LDAPUpdate):
-    __doc__ = _('Modify OTP configuration options.')
+    __doc__ = _("Modify OTP configuration options.")
 
 
 @register()
 class otpconfig_show(LDAPRetrieve):
-    __doc__ = _('Show the current OTP configuration.')
+    __doc__ = _("Show the current OTP configuration.")

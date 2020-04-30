@@ -33,7 +33,7 @@ WAIT_AFTER_UNINSTALL = WAIT_AFTER_INSTALL
 class TestNFS(IntegrationTest):
 
     num_clients = 3
-    topology = 'line'
+    topology = "line"
 
     def cleanup(self):
 
@@ -48,44 +48,47 @@ class TestNFS(IntegrationTest):
 
         nfssrv.run_command(["systemctl", "stop", "nfs-server"])
         nfssrv.run_command(["systemctl", "disable", "nfs-server"])
-        nfssrv.run_command([
-            "rm", "-f", "/etc/exports.d/krbnfs.exports",
-            "/etc/exports.d/stdnfs.exports"
-        ])
+        nfssrv.run_command(
+            [
+                "rm",
+                "-f",
+                "/etc/exports.d/krbnfs.exports",
+                "/etc/exports.d/stdnfs.exports",
+            ]
+        )
 
         nfssrv.run_command(["rm", "-rf", "/exports"])
 
-        self.master.run_command([
-            "ipa", "host-mod", automntclt.hostname,
-            "--location", "''"
-        ])
+        self.master.run_command(
+            ["ipa", "host-mod", automntclt.hostname, "--location", "''"]
+        )
         # not strictly necessary, but this exercises automountlocation-del
-        self.master.run_command([
-            "ipa", "automountlocation-del", "seattle"
-        ])
+        self.master.run_command(["ipa", "automountlocation-del", "seattle"])
         nfsclt.run_command(["systemctl", "restart", "nfs-utils"])
         nfssrv.run_command(["systemctl", "restart", "nfs-utils"])
 
     def test_prepare_users(self):
 
-        users = {
-            "athena": "p",
-            "euripides": "s"
-        }
-        temp_pass = 'temppass'
+        users = {"athena": "p", "euripides": "s"}
+        temp_pass = "temppass"
         for user in users:
-            self.master.run_command([
-                "ipa", "user-add",
-                "%s" % user, "--first", "%s" % user,
-                "--last", "%s" % users[user],
-                '--password'], stdin_text="%s\n%s\n" % (temp_pass, temp_pass)
+            self.master.run_command(
+                [
+                    "ipa",
+                    "user-add",
+                    "%s" % user,
+                    "--first",
+                    "%s" % user,
+                    "--last",
+                    "%s" % users[user],
+                    "--password",
+                ],
+                stdin_text="%s\n%s\n" % (temp_pass, temp_pass),
             )
             self.master.run_command(["kdestroy", "-A"])
             password = "Secret123"
             user_kinit = "%s\n%s\n%s\n" % (temp_pass, password, password)
-            self.master.run_command(
-                ['kinit', user], stdin_text=user_kinit
-            )
+            self.master.run_command(["kinit", user], stdin_text=user_kinit)
             self.master.run_command(["kdestroy", "-A"])
             tasks.kinit_admin(self.master)
 
@@ -94,13 +97,16 @@ class TestNFS(IntegrationTest):
         nfssrv = self.clients[0]
 
         # NFS keytab management
-        self.master.run_command([
-            "ipa", "service-add", "nfs/%s" % nfssrv.hostname
-        ])
-        nfssrv.run_command([
-            "ipa-getkeytab", "-p", "nfs/%s" % nfssrv.hostname,
-            "-k", "/etc/krb5.keytab"
-        ])
+        self.master.run_command(["ipa", "service-add", "nfs/%s" % nfssrv.hostname])
+        nfssrv.run_command(
+            [
+                "ipa-getkeytab",
+                "-p",
+                "nfs/%s" % nfssrv.hostname,
+                "-k",
+                "/etc/krb5.keytab",
+            ]
+        )
         nfssrv.run_command(["systemctl", "restart", "nfs-server"])
         nfssrv.run_command(["systemctl", "enable", "nfs-server"])
         time.sleep(WAIT_AFTER_INSTALL)
@@ -109,13 +115,11 @@ class TestNFS(IntegrationTest):
         exports = {
             "krbnfs": "*(sec=krb5p,rw)",
             "stdnfs": "*(ro)",
-            "home": "*(sec=krb5p,rw)"
+            "home": "*(sec=krb5p,rw)",
         }
         for export in exports:
-            exportpath = os.sep.join(('', basedir, export))
-            exportfile = os.sep.join((
-                '', 'etc', 'exports.d', "%s.exports" % export
-            ))
+            exportpath = os.sep.join(("", basedir, export))
+            exportfile = os.sep.join(("", "etc", "exports.d", "%s.exports" % export))
             exportline = " ".join((exportpath, exports[export]))
             nfssrv.run_command(["mkdir", "-p", exportpath])
             nfssrv.run_command(["chmod", "770", exportpath])
@@ -130,29 +134,40 @@ class TestNFS(IntegrationTest):
         nfsclt = self.clients[1]
 
         # for journalctl --since
-        since = time.strftime('%H:%M:%S')
+        since = time.strftime("%H:%M:%S")
         nfsclt.run_command(["systemctl", "restart", "rpc-gssd"])
         time.sleep(WAIT_AFTER_INSTALL)
         mountpoints = ("/mnt/krb", "/mnt/std", "/home")
         for mountpoint in mountpoints:
             nfsclt.run_command(["mkdir", "-p", mountpoint])
-        nfsclt.run_command([
-            "systemctl", "status", "gssproxy"
-        ])
-        nfsclt.run_command([
-            "systemctl", "status", "rpc-gssd"
-        ])
-        nfsclt.run_command([
-            "mount", "-t", "nfs4", "-o", "sec=krb5p,vers=4.0",
-            "%s:/exports/krbnfs" % nfssrv.hostname, "/mnt/krb", "-v"
-        ])
-        nfsclt.run_command([
-            "mount", "-t", "nfs4", "-o", "sec=krb5p,vers=4.0",
-            "%s:/exports/home" % nfssrv.hostname, "/home", "-v"
-        ])
+        nfsclt.run_command(["systemctl", "status", "gssproxy"])
+        nfsclt.run_command(["systemctl", "status", "rpc-gssd"])
+        nfsclt.run_command(
+            [
+                "mount",
+                "-t",
+                "nfs4",
+                "-o",
+                "sec=krb5p,vers=4.0",
+                "%s:/exports/krbnfs" % nfssrv.hostname,
+                "/mnt/krb",
+                "-v",
+            ]
+        )
+        nfsclt.run_command(
+            [
+                "mount",
+                "-t",
+                "nfs4",
+                "-o",
+                "sec=krb5p,vers=4.0",
+                "%s:/exports/home" % nfssrv.hostname,
+                "/home",
+                "-v",
+            ]
+        )
         error = "Unspecified GSS failure"
-        check_log = [
-            'journalctl', '-u', 'gssproxy', '--since={}'.format(since)]
+        check_log = ["journalctl", "-u", "gssproxy", "--since={}".format(since)]
         result = nfsclt.run_command(check_log)
         assert error not in (result.stdout_text, result.stderr_text)
 
@@ -164,33 +179,39 @@ class TestNFS(IntegrationTest):
         nfssrv = self.clients[0]
         automntclt = self.clients[2]
 
-        self.master.run_command([
-            "ipa", "automountlocation-add", "seattle"
-        ])
-        self.master.run_command([
-            "ipa", "automountmap-add", "seattle", "auto.home"
-        ])
-        self.master.run_command([
-            "ipa", "automountkey-add", "seattle", "auto.home",
-            "--key='*'", "--info=sec=krb5p,vers=4"
-            " 'rhel8-nfsserver0.laptop.example.org:/export/home/&'"
-        ])
-        self.master.run_command([
-            "ipa", "automountkey-add", "seattle", "auto.master",
-            "--key=/home", "--info=auto.home"
-        ])
+        self.master.run_command(["ipa", "automountlocation-add", "seattle"])
+        self.master.run_command(["ipa", "automountmap-add", "seattle", "auto.home"])
+        self.master.run_command(
+            [
+                "ipa",
+                "automountkey-add",
+                "seattle",
+                "auto.home",
+                "--key='*'",
+                "--info=sec=krb5p,vers=4"
+                " 'rhel8-nfsserver0.laptop.example.org:/export/home/&'",
+            ]
+        )
+        self.master.run_command(
+            [
+                "ipa",
+                "automountkey-add",
+                "seattle",
+                "auto.master",
+                "--key=/home",
+                "--info=auto.home",
+            ]
+        )
 
-        self.master.run_command([
-            "ipa", "host-mod", automntclt.hostname,
-            "--location", "seattle"
-        ])
+        self.master.run_command(
+            ["ipa", "host-mod", automntclt.hostname, "--location", "seattle"]
+        )
 
         # systemctl non-fatal errors will only be displayed
         # if ipa-client-automount is launched with --debug
-        result1 = automntclt.run_command([
-            'ipa-client-automount', '--location', 'seattle',
-            '-U', '--debug'
-        ])
+        result1 = automntclt.run_command(
+            ["ipa-client-automount", "--location", "seattle", "-U", "--debug"]
+        )
 
         time.sleep(WAIT_AFTER_INSTALL)
 
@@ -199,20 +220,28 @@ class TestNFS(IntegrationTest):
         #        Unit nfs-secure.service not found.
         # normal output:
         # stderr=
-        m1 = re.search(r'(?<=stderr\=Failed).+', result1.stderr_text)
+        m1 = re.search(r"(?<=stderr\=Failed).+", result1.stderr_text)
         # maybe re-use m1.group(0) if it exists.
         assert m1 is None
 
         # https://pagure.io/freeipa/issue/7918
         # check whether idmapd.conf was setup using the IPA domain
-        automntclt.run_command([
-            "grep", "Domain = %s" % self.master.domain.name, "/etc/idmapd.conf"
-        ])
+        automntclt.run_command(
+            ["grep", "Domain = %s" % self.master.domain.name, "/etc/idmapd.conf"]
+        )
 
-        automntclt.run_command([
-            "mount", "-t", "nfs4", "-o", "sec=krb5p,vers=4.0",
-            "%s:/exports/home" % nfssrv.hostname, "/home", "-v"
-        ])
+        automntclt.run_command(
+            [
+                "mount",
+                "-t",
+                "nfs4",
+                "-o",
+                "sec=krb5p,vers=4.0",
+                "%s:/exports/home" % nfssrv.hostname,
+                "/home",
+                "-v",
+            ]
+        )
 
         # TODO leverage users
 
@@ -220,20 +249,27 @@ class TestNFS(IntegrationTest):
 
         automntclt.run_command(["umount", "-a", "-t", "nfs4"])
 
-        result2 = automntclt.run_command([
-            'ipa-client-automount', '--uninstall', '-U', '--debug'
-        ])
-        m2 = re.search(r'(?<=stderr\=Failed).+', result2.stderr_text)
+        result2 = automntclt.run_command(
+            ["ipa-client-automount", "--uninstall", "-U", "--debug"]
+        )
+        m2 = re.search(r"(?<=stderr\=Failed).+", result2.stderr_text)
         assert m2 is None
 
         time.sleep(WAIT_AFTER_UNINSTALL)
 
         # https://pagure.io/freeipa/issue/7918
         # test for --idmap-domain DNS
-        automntclt.run_command([
-            'ipa-client-automount', '--location', 'default',
-            '-U', '--debug', "--idmap-domain", "DNS"
-        ])
+        automntclt.run_command(
+            [
+                "ipa-client-automount",
+                "--location",
+                "default",
+                "-U",
+                "--debug",
+                "--idmap-domain",
+                "DNS",
+            ]
+        )
 
         time.sleep(WAIT_AFTER_INSTALL)
 
@@ -244,29 +280,30 @@ class TestNFS(IntegrationTest):
         )
         assert result.returncode == 1
 
-        automntclt.run_command([
-            'ipa-client-automount', '--uninstall', '-U', '--debug'
-        ])
+        automntclt.run_command(["ipa-client-automount", "--uninstall", "-U", "--debug"])
 
         time.sleep(WAIT_AFTER_UNINSTALL)
 
         # https://pagure.io/freeipa/issue/7918
         # test for --idmap-domain exampledomain.net
         nfs_domain = "exampledomain.net"
-        automntclt.run_command([
-            'ipa-client-automount', '--location', 'default',
-            '-U', '--debug', "--idmap-domain", nfs_domain
-        ])
+        automntclt.run_command(
+            [
+                "ipa-client-automount",
+                "--location",
+                "default",
+                "-U",
+                "--debug",
+                "--idmap-domain",
+                nfs_domain,
+            ]
+        )
         # check whether idmapd.conf was setup using nfs_domain
-        automntclt.run_command([
-            "grep", "Domain = %s" % nfs_domain, "/etc/idmapd.conf"
-        ])
+        automntclt.run_command(["grep", "Domain = %s" % nfs_domain, "/etc/idmapd.conf"])
 
         time.sleep(WAIT_AFTER_INSTALL)
 
-        automntclt.run_command([
-            'ipa-client-automount', '--uninstall', '-U', '--debug'
-        ])
+        automntclt.run_command(["ipa-client-automount", "--uninstall", "-U", "--debug"])
 
         time.sleep(WAIT_AFTER_UNINSTALL)
 
@@ -276,7 +313,7 @@ class TestNFS(IntegrationTest):
 class TestIpaClientAutomountFileRestore(IntegrationTest):
 
     num_clients = 1
-    topology = 'line'
+    topology = "line"
 
     @classmethod
     def install(cls, mh):
@@ -286,65 +323,60 @@ class TestIpaClientAutomountFileRestore(IntegrationTest):
     def automountfile_restore_setup(self, request):
         def fin():
             tasks.uninstall_client(self.clients[0])
+
         request.addfinalizer(fin)
 
     def nsswitch_backup_restore(
-        self,
-        no_sssd=False,
+        self, no_sssd=False,
     ):
 
         # In order to get a more pure sum, one that ignores the Generated
         # header and any white space we have to do a bit of work...
-        sha256nsswitch_cmd = \
-            'egrep -v "Generated|^$" /etc/nsswitch.conf | sed "s/\\s//g" ' \
-            '| sort | sha256sum'
+        sha256nsswitch_cmd = (
+            'egrep -v "Generated|^$" /etc/nsswitch.conf | sed "s/\\s//g" '
+            "| sort | sha256sum"
+        )
 
         cmd = self.clients[0].run_command(sha256nsswitch_cmd)
         orig_sha256 = cmd.stdout_text
 
-        grep_automount_command = \
-            "grep automount /etc/nsswitch.conf | cut -d: -f2"
+        grep_automount_command = "grep automount /etc/nsswitch.conf | cut -d: -f2"
 
         tasks.install_client(self.master, self.clients[0])
         cmd = self.clients[0].run_command(grep_automount_command)
         after_ipa_client_install = cmd.stdout_text.split()
 
         if no_sssd:
-            ipa_client_automount_command = [
-                "ipa-client-automount", "--no-sssd", "-U"
-            ]
+            ipa_client_automount_command = ["ipa-client-automount", "--no-sssd", "-U"]
         else:
-            ipa_client_automount_command = [
-                "ipa-client-automount", "-U"
-            ]
+            ipa_client_automount_command = ["ipa-client-automount", "-U"]
         self.clients[0].run_command(ipa_client_automount_command)
         cmd = self.clients[0].run_command(grep_automount_command)
         after_ipa_client_automount = cmd.stdout_text.split()
         if no_sssd:
-            assert after_ipa_client_automount == ['files', 'ldap']
+            assert after_ipa_client_automount == ["files", "ldap"]
         else:
-            assert after_ipa_client_automount == ['sss', 'files']
+            assert after_ipa_client_automount == ["sss", "files"]
 
         cmd = self.clients[0].run_command(grep_automount_command)
         assert cmd.stdout_text.split() == after_ipa_client_automount
 
-        self.clients[0].run_command([
-            "ipa-client-automount", "--uninstall", "-U"
-        ])
+        self.clients[0].run_command(["ipa-client-automount", "--uninstall", "-U"])
 
         if not no_sssd:
             # https://pagure.io/freeipa/issue/8190
             # check that no ipa_automount_location is left in sssd.conf
             # also check for autofs_provider for good measure
-            grep_automount_in_sssdconf_cmd = \
-                "egrep ipa_automount_location\\|autofs_provider " \
-                "/etc/sssd/sssd.conf"
+            grep_automount_in_sssdconf_cmd = (
+                "egrep ipa_automount_location\\|autofs_provider " "/etc/sssd/sssd.conf"
+            )
             cmd = self.clients[0].run_command(
                 grep_automount_in_sssdconf_cmd, raiseonerr=False
             )
-            assert cmd.returncode == 1, \
-                "PG8190 regression found: ipa_automount_location still " \
+            assert cmd.returncode == 1, (
+                "PG8190 regression found: ipa_automount_location still "
                 "present in sssd.conf"
+            )
 
         cmd = self.clients[0].run_command(grep_automount_command)
         assert cmd.stdout_text.split() == after_ipa_client_install

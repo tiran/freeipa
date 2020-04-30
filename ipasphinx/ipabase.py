@@ -55,9 +55,7 @@ def parse_version_m4(filename=VERSION_M4):
                 defs[k] = v
 
     defs["IPA_NUM_VERSION"] = (
-        "{IPA_VERSION_MAJOR:d}"
-        "{IPA_VERSION_MINOR:02d}"
-        "{IPA_VERSION_RELEASE:02d}"
+        "{IPA_VERSION_MAJOR:d}" "{IPA_VERSION_MINOR:02d}" "{IPA_VERSION_RELEASE:02d}"
     ).format(**defs)
 
     defs["IPA_API_VERSION"] = (
@@ -100,10 +98,7 @@ def fake_ipaython_version(defs):
 
 
 def init_api(
-    context="doc",
-    domain="ipa.example",
-    server="server.ipa.example",
-    in_server=True,
+    context="doc", domain="ipa.example", server="server.ipa.example", in_server=True,
 ):
     import ipalib
 

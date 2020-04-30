@@ -62,7 +62,7 @@ class Connection(ReadOnly):
         self.conn = conn
         if not callable(disconnect):
             raise TypeError(
-               CALLABLE_ERROR % ('disconnect', disconnect, type(disconnect))
+                CALLABLE_ERROR % ("disconnect", disconnect, type(disconnect))
             )
         self.disconnect = disconnect
         lock(self)

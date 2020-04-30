@@ -17,47 +17,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-ENTITY = 'vault'
+ENTITY = "vault"
 
-PKEY = 'itest-user-vault'
+PKEY = "itest-user-vault"
 DATA = {
-    'pkey': PKEY,
-    'facet': 'user_search',
-    'add': [
-        ('radio', 'type', 'user'),
-        ('textbox', 'cn', PKEY),
-        ('textbox', 'description', 'test-desc')
+    "pkey": PKEY,
+    "facet": "user_search",
+    "add": [
+        ("radio", "type", "user"),
+        ("textbox", "cn", PKEY),
+        ("textbox", "description", "test-desc"),
     ],
-    'mod': [
-        ('textbox', 'description', 'test-desc-mod'),
-    ],
+    "mod": [("textbox", "description", "test-desc-mod"),],
 }
 
-PKEY2 = 'itest-service-vault'
+PKEY2 = "itest-service-vault"
 DATA2 = {
-    'pkey': PKEY2,
-    'facet': 'service_search',
-    'add': [
-        ('radio', 'type', 'service'),
+    "pkey": PKEY2,
+    "facet": "service_search",
+    "add": [
+        ("radio", "type", "service"),
         # service
-        ('textbox', 'cn', PKEY2),
-        ('textbox', 'description', 'test-desc')
+        ("textbox", "cn", PKEY2),
+        ("textbox", "description", "test-desc"),
     ],
-    'mod': [
-        ('textbox', 'description', 'test-desc-mod'),
-    ],
+    "mod": [("textbox", "description", "test-desc-mod"),],
 }
 
-PKEY3 = 'itest-shared-vault'
+PKEY3 = "itest-shared-vault"
 DATA3 = {
-    'pkey': PKEY3,
-    'facet': 'shared_search',
-    'add': [
-        ('radio', 'type', 'shared'),
-        ('textbox', 'cn', PKEY3),
-        ('textbox', 'description', 'test-desc')
+    "pkey": PKEY3,
+    "facet": "shared_search",
+    "add": [
+        ("radio", "type", "shared"),
+        ("textbox", "cn", PKEY3),
+        ("textbox", "description", "test-desc"),
     ],
-    'mod': [
-        ('textbox', 'description', 'test-desc-mod'),
-    ],
+    "mod": [("textbox", "description", "test-desc-mod"),],
 }

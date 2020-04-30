@@ -18,34 +18,36 @@ reasoning = "Topology plugin disabled due to domain level 0"
 
 
 def find_segment(master, replica):
-    result = master.run_command(['ipa', 'topologysegment-find',
-                                 DOMAIN_SUFFIX_NAME]).stdout_text
-    segment_re = re.compile(r'Left node: (?P<left>\S+)\n.*Right node: '
-                            r'(?P<right>\S+)\n')
+    result = master.run_command(
+        ["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME]
+    ).stdout_text
+    segment_re = re.compile(
+        r"Left node: (?P<left>\S+)\n.*Right node: " r"(?P<right>\S+)\n"
+    )
     allsegments = segment_re.findall(result)
     for segment in allsegments:
         if master.hostname in segment and replica.hostname in segment:
-            return '-to-'.join(segment)
+            return "-to-".join(segment)
     return None
 
 
 @pytest.mark.skipif(config.domain_level == 0, reason=reasoning)
 class TestTopologyOptions(IntegrationTest):
     num_replicas = 2
-    topology = 'star'
-    rawsegment_re = (r'Segment name: (?P<name>.*?)',
-                     r'\s+Left node: (?P<lnode>.*?)',
-                     r'\s+Right node: (?P<rnode>.*?)',
-                     r'\s+Connectivity: (?P<connectivity>\S+)')
+    topology = "star"
+    rawsegment_re = (
+        r"Segment name: (?P<name>.*?)",
+        r"\s+Left node: (?P<lnode>.*?)",
+        r"\s+Right node: (?P<rnode>.*?)",
+        r"\s+Connectivity: (?P<connectivity>\S+)",
+    )
     segment_re = re.compile("\n".join(rawsegment_re))
     noentries_re = re.compile(r"Number of entries returned (\d+)")
-    segmentnames_re = re.compile(r'.*Segment name: (\S+?)\n.*')
+    segmentnames_re = re.compile(r".*Segment name: (\S+?)\n.*")
 
     @classmethod
     def install(cls, mh):
-        tasks.install_topo(cls.topology, cls.master,
-                           cls.replicas[:-1],
-                           cls.clients)
+        tasks.install_topo(cls.topology, cls.master, cls.replicas[:-1], cls.clients)
 
     def tokenize_topologies(self, command_output):
         """
@@ -53,19 +55,20 @@ class TestTopologyOptions(IntegrationTest):
         segment hashes
         """
         segments = command_output.split("-----------------")[2]
-        raw_segments = segments.split('\n\n')
+        raw_segments = segments.split("\n\n")
         result = []
         for i in raw_segments:
             matched = self.segment_re.search(i)
             if matched:
-                result.append({'leftnode': matched.group('lnode'),
-                               'rightnode': matched.group('rnode'),
-                               'name': matched.group('name'),
-                               'connectivity': matched.group('connectivity')
-                               }
-                              )
+                result.append(
+                    {
+                        "leftnode": matched.group("lnode"),
+                        "rightnode": matched.group("rnode"),
+                        "name": matched.group("name"),
+                        "connectivity": matched.group("connectivity"),
+                    }
+                )
         return result
-
 
     def test_topology_updated_on_replica_install_remove(self):
         """
@@ -76,27 +79,34 @@ class TestTopologyOptions(IntegrationTest):
         _Replication_topology_should_be_saved_in_the_LDAP_tree
         """
         tasks.kinit_admin(self.master)
-        result1 = self.master.run_command(['ipa', 'topologysegment-find',
-                                           DOMAIN_SUFFIX_NAME]).stdout_text
+        result1 = self.master.run_command(
+            ["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME]
+        ).stdout_text
         segment_name = self.segmentnames_re.findall(result1)[0]
-        assert(self.master.hostname in segment_name), (
-            "Segment %s does not contain master hostname" % segment_name)
-        assert(self.replicas[0].hostname in segment_name), (
-            "Segment %s does not contain replica hostname" % segment_name)
-        tasks.install_replica(self.master, self.replicas[1], setup_ca=False,
-                              setup_dns=False)
+        assert self.master.hostname in segment_name, (
+            "Segment %s does not contain master hostname" % segment_name
+        )
+        assert self.replicas[0].hostname in segment_name, (
+            "Segment %s does not contain replica hostname" % segment_name
+        )
+        tasks.install_replica(
+            self.master, self.replicas[1], setup_ca=False, setup_dns=False
+        )
         # We need to make sure topology information is consistent across all
         # replicas
-        result2 = self.master.run_command(['ipa', 'topologysegment-find',
-                                           DOMAIN_SUFFIX_NAME])
-        result3 = self.replicas[0].run_command(['ipa', 'topologysegment-find',
-                                                DOMAIN_SUFFIX_NAME])
-        result4 = self.replicas[1].run_command(['ipa', 'topologysegment-find',
-                                                DOMAIN_SUFFIX_NAME])
+        result2 = self.master.run_command(
+            ["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME]
+        )
+        result3 = self.replicas[0].run_command(
+            ["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME]
+        )
+        result4 = self.replicas[1].run_command(
+            ["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME]
+        )
         segments = self.tokenize_topologies(result2.stdout_text)
-        assert(len(segments) == 2), "Unexpected number of segments found"
+        assert len(segments) == 2, "Unexpected number of segments found"
         assert_deepequal(result2.stdout_text, result3.stdout_text)
-        assert_deepequal(result3.stdout_text,  result4.stdout_text)
+        assert_deepequal(result3.stdout_text, result4.stdout_text)
         # Now let's check that uninstalling the replica will update the topology
         # info on the rest of replicas.
         # first step of uninstallation is removal of the replica on other
@@ -104,10 +114,11 @@ class TestTopologyOptions(IntegrationTest):
         # possible, but not reliable - some data might not be replicated.
         tasks.clean_replication_agreement(self.master, self.replicas[1])
         tasks.uninstall_master(self.replicas[1])
-        result5 = self.master.run_command(['ipa', 'topologysegment-find',
-                                           DOMAIN_SUFFIX_NAME])
+        result5 = self.master.run_command(
+            ["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME]
+        )
         num_entries = self.noentries_re.search(result5.stdout_text).group(1)
-        assert(num_entries == "1"), "Incorrect number of entries displayed"
+        assert num_entries == "1", "Incorrect number of entries displayed"
 
     def test_add_remove_segment(self):
         """
@@ -118,18 +129,19 @@ class TestTopologyOptions(IntegrationTest):
         """
         tasks.kinit_admin(self.master)
         # Install the second replica
-        tasks.install_replica(self.master, self.replicas[1], setup_ca=False,
-                              setup_dns=False)
+        tasks.install_replica(
+            self.master, self.replicas[1], setup_ca=False, setup_dns=False
+        )
         # turn a star into a ring
-        segment, err = tasks.create_segment(self.master,
-                                            self.replicas[0],
-                                            self.replicas[1])
+        segment, err = tasks.create_segment(
+            self.master, self.replicas[0], self.replicas[1]
+        )
         assert err == "", err
         # Make sure the new segment is shown by `ipa topologysegment-find`
-        result1 = self.master.run_command(['ipa', 'topologysegment-find',
-                                           DOMAIN_SUFFIX_NAME]).stdout_text
-        assert(segment['name'] in result1), (
-            "%s: segment not found" % segment['name'])
+        result1 = self.master.run_command(
+            ["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME]
+        ).stdout_text
+        assert segment["name"] in result1, "%s: segment not found" % segment["name"]
         # Remove master <-> replica2 segment and make sure that the changes get
         # there through replica1
         # Since segment name can be one of master-to-replica2 or
@@ -142,17 +154,20 @@ class TestTopologyOptions(IntegrationTest):
         # segment that was deleted on master
         master_ldap = self.master.ldap_connect()
         tasks.wait_for_replication(master_ldap)
-        result3 = self.replicas[0].run_command(['ipa', 'topologysegment-find',
-                                               DOMAIN_SUFFIX_NAME]).stdout_text
-        assert(deleteme not in result3), "%s: segment still exists" % deleteme
+        result3 = (
+            self.replicas[0]
+            .run_command(["ipa", "topologysegment-find", DOMAIN_SUFFIX_NAME])
+            .stdout_text
+        )
+        assert deleteme not in result3, "%s: segment still exists" % deleteme
         # Create test data on master and make sure it gets all the way down to
         # replica2 through replica1
-        self.master.run_command(['ipa', 'user-add', 'someuser',
-                                 '--first', 'test',
-                                 '--last', 'user'])
+        self.master.run_command(
+            ["ipa", "user-add", "someuser", "--first", "test", "--last", "user"]
+        )
         tasks.wait_for_replication(master_ldap)
-        result4 = self.replicas[1].run_command(['ipa', 'user-find'])
-        assert('someuser' in result4.stdout_text), 'User not found: someuser'
+        result4 = self.replicas[1].run_command(["ipa", "user-find"])
+        assert "someuser" in result4.stdout_text, "User not found: someuser"
         # We end up having a line topology: master <-> replica1 <-> replica2
 
     def test_remove_the_only_connection(self):
@@ -163,14 +178,13 @@ class TestTopologyOptions(IntegrationTest):
         """
         text = "Removal of Segment disconnects topology"
         error1 = "The system should not have let you remove the segment"
-        error2 = "Wrong error message thrown during segment removal: \"%s\""
+        error2 = 'Wrong error message thrown during segment removal: "%s"'
         replicas = (self.replicas[0].hostname, self.replicas[1].hostname)
 
         returncode, error = tasks.destroy_segment(self.master, "%s-to-%s" % replicas)
         assert returncode != 0, error1
         assert error.count(text) == 1, error2 % error
-        _newseg, err = tasks.create_segment(
-            self.master, self.master, self.replicas[1])
+        _newseg, err = tasks.create_segment(self.master, self.master, self.replicas[1])
         assert err == "", err
         returncode, error = tasks.destroy_segment(self.master, "%s-to-%s" % replicas)
         assert returncode == 0, error
@@ -179,10 +193,10 @@ class TestTopologyOptions(IntegrationTest):
 @pytest.mark.skipif(config.domain_level == 0, reason=reasoning)
 class TestCASpecificRUVs(IntegrationTest):
     num_replicas = 2
-    topology = 'star'
-    username = 'testuser'
-    user_firstname = 'test'
-    user_lastname = 'user'
+    topology = "star"
+    username = "testuser"
+    user_firstname = "test"
+    user_lastname = "user"
 
     def test_delete_ruvs(self):
         """
@@ -191,41 +205,60 @@ class TestCASpecificRUVs(IntegrationTest):
         """
         replica = self.replicas[0]
         master = self.master
-        res1 = master.run_command(['ipa-replica-manage', 'list-ruv', '-p',
-                                  master.config.dirman_password])
-        assert(res1.stdout_text.count(replica.hostname) == 2 and
-               "Certificate Server Replica"
-               " Update Vectors" in res1.stdout_text), (
-               "CA-specific RUVs are not displayed")
+        res1 = master.run_command(
+            ["ipa-replica-manage", "list-ruv", "-p", master.config.dirman_password]
+        )
+        assert (
+            res1.stdout_text.count(replica.hostname) == 2
+            and "Certificate Server Replica" " Update Vectors" in res1.stdout_text
+        ), "CA-specific RUVs are not displayed"
         ruvid_re = re.compile(r".*%s:389: (\d+).*" % replica.hostname)
         replica_ruvs = ruvid_re.findall(res1.stdout_text)
         # Find out the number of RUVids
-        assert(len(replica_ruvs) == 2), (
-            "The output should display 2 RUV ids of the selected replica")
+        assert (
+            len(replica_ruvs) == 2
+        ), "The output should display 2 RUV ids of the selected replica"
 
         # Block replication to preserve replica-specific RUVs
-        dashed_domain = master.domain.realm.replace(".", '-')
+        dashed_domain = master.domain.realm.replace(".", "-")
         dirsrv_service = "dirsrv@%s.service" % dashed_domain
-        replica.run_command(['systemctl', 'stop', dirsrv_service])
+        replica.run_command(["systemctl", "stop", dirsrv_service])
         try:
-            master.run_command(['ipa-replica-manage', 'clean-ruv',
-                                replica_ruvs[1], '-p',
-                                master.config.dirman_password, '-f'])
-            res2 = master.run_command(['ipa-replica-manage',
-                                       'list-ruv', '-p',
-                                       master.config.dirman_password])
+            master.run_command(
+                [
+                    "ipa-replica-manage",
+                    "clean-ruv",
+                    replica_ruvs[1],
+                    "-p",
+                    master.config.dirman_password,
+                    "-f",
+                ]
+            )
+            res2 = master.run_command(
+                ["ipa-replica-manage", "list-ruv", "-p", master.config.dirman_password]
+            )
 
-            assert(res2.stdout_text.count(replica.hostname) == 1), (
-                "CA RUV of the replica is still displayed")
-            master.run_command(['ipa-replica-manage', 'clean-ruv',
-                                replica_ruvs[0], '-p',
-                                master.config.dirman_password, '-f'])
-            res3 = master.run_command(['ipa-replica-manage', 'list-ruv', '-p',
-                                       master.config.dirman_password])
-            assert(replica.hostname not in res3.stdout_text), (
-                "replica's RUV is still displayed")
+            assert (
+                res2.stdout_text.count(replica.hostname) == 1
+            ), "CA RUV of the replica is still displayed"
+            master.run_command(
+                [
+                    "ipa-replica-manage",
+                    "clean-ruv",
+                    replica_ruvs[0],
+                    "-p",
+                    master.config.dirman_password,
+                    "-f",
+                ]
+            )
+            res3 = master.run_command(
+                ["ipa-replica-manage", "list-ruv", "-p", master.config.dirman_password]
+            )
+            assert (
+                replica.hostname not in res3.stdout_text
+            ), "replica's RUV is still displayed"
         finally:
-            replica.run_command(['systemctl', 'start', dirsrv_service])
+            replica.run_command(["systemctl", "start", dirsrv_service])
 
     def test_replica_uninstall_deletes_ruvs(self):
         """
@@ -235,20 +268,31 @@ class TestCASpecificRUVs(IntegrationTest):
         """
         master = self.master
         replica = self.replicas[1]
-        res1 = master.run_command(['ipa-replica-manage', 'list-ruv', '-p',
-                                  master.config.dirman_password]).stdout_text
-        assert(res1.count(replica.hostname) == 2), (
+        res1 = master.run_command(
+            ["ipa-replica-manage", "list-ruv", "-p", master.config.dirman_password]
+        ).stdout_text
+        assert res1.count(replica.hostname) == 2, (
             "Did not find proper number of replica hostname (%s) occurrencies"
-            " in the command output: %s" % (replica.hostname, res1))
+            " in the command output: %s" % (replica.hostname, res1)
+        )
 
-        master.run_command(['ipa-replica-manage', 'del', replica.hostname,
-                            '-p', master.config.dirman_password])
+        master.run_command(
+            [
+                "ipa-replica-manage",
+                "del",
+                replica.hostname,
+                "-p",
+                master.config.dirman_password,
+            ]
+        )
         tasks.uninstall_master(replica)
         # ipa-replica-manage del launches a clean-ruv task which is
         # ASYNCHRONOUS
         # wait for the task to finish before checking list-ruv
         tasks.wait_for_cleanallruv_tasks(self.master.ldap_connect())
-        res2 = master.run_command(['ipa-replica-manage', 'list-ruv', '-p',
-                                  master.config.dirman_password]).stdout_text
-        assert(replica.hostname not in res2), (
-            "Replica RUVs were not clean during replica uninstallation")
+        res2 = master.run_command(
+            ["ipa-replica-manage", "list-ruv", "-p", master.config.dirman_password]
+        ).stdout_text
+        assert (
+            replica.hostname not in res2
+        ), "Replica RUVs were not clean during replica uninstallation"

@@ -27,48 +27,47 @@ import pytest
 
 
 ENTITIES = [
-    'group',
-    'user',
-    'host',
-    'hostgroup',
-    'netgroup',
-    'service',
-    'dnszone',
-    'dnsforwardzone',
+    "group",
+    "user",
+    "host",
+    "hostgroup",
+    "netgroup",
+    "service",
+    "dnszone",
+    "dnsforwardzone",
     # TODO: dnsrecord
-    'dnsconfig',
-    'cert',
-    'otptoken',
-    'radiusproxy',
-    'realmdomains',
-    'hbacrule',
-    'hbacsvc',
-    'hbacsvcgroup',
-    'hbactest',
-    'sudorule',
-    'sudocmd',
-    'sudocmdgroup',
-    'automountlocation',
+    "dnsconfig",
+    "cert",
+    "otptoken",
+    "radiusproxy",
+    "realmdomains",
+    "hbacrule",
+    "hbacsvc",
+    "hbacsvcgroup",
+    "hbactest",
+    "sudorule",
+    "sudocmd",
+    "sudocmdgroup",
+    "automountlocation",
     # TODO: add nested maps, keys
-    'pwpolicy',
-    'krbtpolicy',
-    'selinuxusermap',
-    'automember',
+    "pwpolicy",
+    "krbtpolicy",
+    "selinuxusermap",
+    "automember",
     # TODO: add different types
-    'role',
-    'privilege',
-    'permission',
-    'selfservice',
-    'delegation',
-    'idrange',
-    'config',
+    "role",
+    "privilege",
+    "permission",
+    "selfservice",
+    "delegation",
+    "idrange",
+    "config",
     # TODO: add conditional
 ]
 
 
 @pytest.mark.tier1
 class test_navigation(UI_driver):
-
     @screenshot
     def test_url_navigation(self):
         """
@@ -79,13 +78,11 @@ class test_navigation(UI_driver):
 
         unsupported = []
         if not self.has_dns():
-            unsupported.extend([
-                               'dnszone',
-                               'dnsforwardzone',
-                               'dnsconfig',
-                               ])
+            unsupported.extend(
+                ["dnszone", "dnsforwardzone", "dnsconfig",]
+            )
         if not self.has_ca():
-            unsupported.append('cert')
+            unsupported.append("cert")
 
         entities = [e for e in ENTITIES if e not in unsupported]
 
@@ -106,76 +103,75 @@ class test_navigation(UI_driver):
 
         # Identity
         # don't start by users (default)
-        self.navigate_by_menu('identity/group_search', False)
+        self.navigate_by_menu("identity/group_search", False)
         # navigate on the side bar
-        self.click_on_link('User Groups')
-        self.click_on_link('Host Groups')
-        self.navigate_by_menu('identity/user_search', False)
-        self.navigate_by_menu('identity/host', False)
-        self.navigate_by_menu('identity/service', False)
-        self.navigate_by_menu('identity/idview', False)
-        self.navigate_by_menu('identity/automember', False)
-        self.navigate_by_menu('identity/automember/amhostgroup')
-        self.navigate_by_menu('identity/automember/amgroup')
+        self.click_on_link("User Groups")
+        self.click_on_link("Host Groups")
+        self.navigate_by_menu("identity/user_search", False)
+        self.navigate_by_menu("identity/host", False)
+        self.navigate_by_menu("identity/service", False)
+        self.navigate_by_menu("identity/idview", False)
+        self.navigate_by_menu("identity/automember", False)
+        self.navigate_by_menu("identity/automember/amhostgroup")
+        self.navigate_by_menu("identity/automember/amgroup")
 
         # Policy
-        self.navigate_by_menu('policy')
-        self.navigate_by_menu('policy/hbac', False)
-        self.navigate_by_menu('policy/hbac/hbacsvc', False)
-        self.navigate_by_menu('policy/hbac/hbacrule')
-        self.navigate_by_menu('policy/hbac/hbacsvcgroup')
-        self.navigate_by_menu('policy/hbac/hbactest')
-        self.navigate_by_menu('policy/sudo', False)
-        self.navigate_by_menu('policy/sudo/sudorule', False)
-        self.navigate_by_menu('policy/sudo/sudocmd')
-        self.navigate_by_menu('policy/sudo/sudocmdgroup')
-        self.navigate_by_menu('policy/selinuxusermap', False)
-        self.navigate_by_menu('policy/pwpolicy', False)
-        self.navigate_by_menu('policy/krbtpolicy', False)
+        self.navigate_by_menu("policy")
+        self.navigate_by_menu("policy/hbac", False)
+        self.navigate_by_menu("policy/hbac/hbacsvc", False)
+        self.navigate_by_menu("policy/hbac/hbacrule")
+        self.navigate_by_menu("policy/hbac/hbacsvcgroup")
+        self.navigate_by_menu("policy/hbac/hbactest")
+        self.navigate_by_menu("policy/sudo", False)
+        self.navigate_by_menu("policy/sudo/sudorule", False)
+        self.navigate_by_menu("policy/sudo/sudocmd")
+        self.navigate_by_menu("policy/sudo/sudocmdgroup")
+        self.navigate_by_menu("policy/selinuxusermap", False)
+        self.navigate_by_menu("policy/pwpolicy", False)
+        self.navigate_by_menu("policy/krbtpolicy", False)
 
         # Authentication
-        self.navigate_by_menu('authentication')
-        self.navigate_by_menu('authentication/radiusproxy', False)
-        self.navigate_by_menu('authentication/otptoken', False)
+        self.navigate_by_menu("authentication")
+        self.navigate_by_menu("authentication/radiusproxy", False)
+        self.navigate_by_menu("authentication/otptoken", False)
         if self.has_ca():
-            self.navigate_by_menu('authentication/cert_search', False)
+            self.navigate_by_menu("authentication/cert_search", False)
         else:
-            self.assert_menu_item('authentication/cert_search', False)
+            self.assert_menu_item("authentication/cert_search", False)
 
         # Network Services
-        self.navigate_by_menu('network_services')
-        self.navigate_by_menu('network_services/automount')
+        self.navigate_by_menu("network_services")
+        self.navigate_by_menu("network_services/automount")
         if self.has_dns():
-            self.navigate_by_menu('network_services/dns/dnsconfig', True)
-            self.navigate_by_menu('network_services/dns', False)
-            self.navigate_by_menu('network_services/dns/dnszone', False)
-            self.navigate_by_menu('network_services/dns/dnsforwardzone')
+            self.navigate_by_menu("network_services/dns/dnsconfig", True)
+            self.navigate_by_menu("network_services/dns", False)
+            self.navigate_by_menu("network_services/dns/dnszone", False)
+            self.navigate_by_menu("network_services/dns/dnsforwardzone")
         else:
-            self.assert_menu_item('network_services/dns', False)
+            self.assert_menu_item("network_services/dns", False)
 
         # IPA Server
-        self.navigate_by_menu('ipaserver')
-        self.navigate_by_menu('ipaserver/rbac', False)
-        self.navigate_by_menu('ipaserver/rbac/privilege', False)
-        self.navigate_by_menu('ipaserver/rbac/role')
-        self.navigate_by_menu('ipaserver/rbac/permission')
-        self.navigate_by_menu('ipaserver/rbac/selfservice')
-        self.navigate_by_menu('ipaserver/rbac/delegation')
-        self.navigate_by_menu('ipaserver/idrange', False)
-        self.navigate_by_menu('ipaserver/realmdomains', False)
+        self.navigate_by_menu("ipaserver")
+        self.navigate_by_menu("ipaserver/rbac", False)
+        self.navigate_by_menu("ipaserver/rbac/privilege", False)
+        self.navigate_by_menu("ipaserver/rbac/role")
+        self.navigate_by_menu("ipaserver/rbac/permission")
+        self.navigate_by_menu("ipaserver/rbac/selfservice")
+        self.navigate_by_menu("ipaserver/rbac/delegation")
+        self.navigate_by_menu("ipaserver/idrange", False)
+        self.navigate_by_menu("ipaserver/realmdomains", False)
         if self.has_trusts():
-            self.navigate_by_menu('ipaserver/trusts', False)
-            self.navigate_by_menu('ipaserver/trusts/trust', False)
-            self.navigate_by_menu('ipaserver/trusts/trustconfig')
+            self.navigate_by_menu("ipaserver/trusts", False)
+            self.navigate_by_menu("ipaserver/trusts/trust", False)
+            self.navigate_by_menu("ipaserver/trusts/trustconfig")
         else:
-            self.assert_menu_item('ipaserver/trusts', False)
-        self.navigate_by_menu('ipaserver/config', False)
-
+            self.assert_menu_item("ipaserver/trusts", False)
+        self.navigate_by_menu("ipaserver/config", False)
 
     def assert_e_url(self, url, e):
         """
         Assert correct url for entity
         """
         if not self.driver.current_url.startswith(url):
-            msg = 'Invalid url for: %s' % e
+            msg = "Invalid url for: %s" % e
             raise AssertionError(msg)

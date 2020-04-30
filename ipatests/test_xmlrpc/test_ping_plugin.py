@@ -33,21 +33,23 @@ from ipatests.util import assert_equal, Fuzzy
 @pytest.mark.tier1
 class TestPing(XMLRPC_test):
     """Test functionality of the `ipalib/plugins/ping.py` module."""
+
     tracker = Tracker()
 
     def test_ping(self):
         """Ping the server."""
-        result = self.tracker.run_command('ping')
-        exp = {'summary': Fuzzy('IPA server version .*. API version .*')}
+        result = self.tracker.run_command("ping")
+        exp = {"summary": Fuzzy("IPA server version .*. API version .*")}
         assert_equal(result, exp)
 
     def test_ping_with_argument(self):
         """Try to ping with an argument."""
-        with raises_exact(errors.ZeroArgumentError(name='ping')):
-            self.tracker.run_command('ping', ['argument'])
+        with raises_exact(errors.ZeroArgumentError(name="ping")):
+            self.tracker.run_command("ping", ["argument"])
 
     def test_ping_with_option(self):
         """Try to ping with an option."""
-        with raises_exact(errors.OptionError(
-                _('Unknown option: %(option)s'), option='bad_arg')):
-            self.tracker.run_command('ping', bad_arg=True)
+        with raises_exact(
+            errors.OptionError(_("Unknown option: %(option)s"), option="bad_arg")
+        ):
+            self.tracker.run_command("ping", bad_arg=True)

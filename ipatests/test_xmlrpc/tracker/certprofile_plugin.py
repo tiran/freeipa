@@ -20,27 +20,28 @@ class CertprofileTracker(Tracker):
     """Tracker class for certprofile plugin.
     """
 
-    retrieve_keys = {
-        'dn', 'cn', 'description', 'ipacertprofilestoreissued'
-    }
-    retrieve_all_keys = retrieve_keys | {'objectclass'}
-    create_keys = retrieve_keys | {'objectclass'}
-    update_keys = retrieve_keys - {'dn'}
+    retrieve_keys = {"dn", "cn", "description", "ipacertprofilestoreissued"}
+    retrieve_all_keys = retrieve_keys | {"objectclass"}
+    create_keys = retrieve_keys | {"objectclass"}
+    update_keys = retrieve_keys - {"dn"}
     managedby_keys = retrieve_keys
     allowedto_keys = retrieve_keys
 
-    def __init__(self, name, store=False, desc='dummy description',
-                 profile=None, default_version=None):
-        super(CertprofileTracker, self).__init__(
-            default_version=default_version
-        )
+    def __init__(
+        self,
+        name,
+        store=False,
+        desc="dummy description",
+        profile=None,
+        default_version=None,
+    ):
+        super(CertprofileTracker, self).__init__(default_version=default_version)
 
         self.store = store
         self.description = desc
         self._profile_path = profile
 
-        self.dn = DN(('cn', name), 'cn=certprofiles', 'cn=ca',
-                     self.api.env.basedn)
+        self.dn = DN(("cn", name), "cn=certprofiles", "cn=ca", self.api.env.basedn)
 
     @property
     def profile(self):
@@ -50,10 +51,9 @@ class CertprofileTracker(Tracker):
         if os.path.isabs(self._profile_path):
             path = self._profile_path
         else:
-            path = os.path.join(os.path.dirname(__file__),
-                                self._profile_path)
+            path = os.path.join(os.path.dirname(__file__), self._profile_path)
 
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             content = f.read()
         return unicode(content)
 
@@ -66,20 +66,28 @@ class CertprofileTracker(Tracker):
             extra_lines = []
 
         if not self.profile:
-            raise RuntimeError('Tracker object without path to profile '
-                               'cannot be used to create profile entry.')
+            raise RuntimeError(
+                "Tracker object without path to profile "
+                "cannot be used to create profile entry."
+            )
 
-        return self.make_command('certprofile_import', self.name,
-                                 description=self.description,
-                                 ipacertprofilestoreissued=self.store,
-                                 file=u'\n'.join([self.profile] + extra_lines))
+        return self.make_command(
+            "certprofile_import",
+            self.name,
+            description=self.description,
+            ipacertprofilestoreissued=self.store,
+            file=u"\n".join([self.profile] + extra_lines),
+        )
 
     def check_create(self, result):
-        assert_deepequal(dict(
-            value=self.name,
-            summary=u'Imported profile "{}"'.format(self.name),
-            result=dict(self.filter_attrs(self.create_keys))
-        ), result)
+        assert_deepequal(
+            dict(
+                value=self.name,
+                summary=u'Imported profile "{}"'.format(self.name),
+                result=dict(self.filter_attrs(self.create_keys)),
+            ),
+            result,
+        )
 
     def track_create(self):
         self.attrs = dict(
@@ -87,23 +95,27 @@ class CertprofileTracker(Tracker):
             cn=[self.name],
             description=[self.description],
             ipacertprofilestoreissued=[unicode(self.store).upper()],
-            objectclass=objectclasses.certprofile
+            objectclass=objectclasses.certprofile,
         )
         self.exists = True
 
     def make_delete_command(self):
-        return self.make_command('certprofile_del', self.name)
+        return self.make_command("certprofile_del", self.name)
 
     def check_delete(self, result):
-        assert_deepequal(dict(
-            value=[self.name],  # correctly a list?
-            summary=u'Deleted profile "{}"'.format(self.name),
-            result=dict(failed=[]),
-        ), result)
+        assert_deepequal(
+            dict(
+                value=[self.name],  # correctly a list?
+                summary=u'Deleted profile "{}"'.format(self.name),
+                result=dict(failed=[]),
+            ),
+            result,
+        )
 
     def make_retrieve_command(self, all=False, raw=False, **options):
-        return self.make_command('certprofile_show', self.name, all=all,
-                                 raw=raw, **options)
+        return self.make_command(
+            "certprofile_show", self.name, all=all, raw=raw, **options
+        )
 
     def check_retrieve(self, result, all=False, raw=False):
         if all:
@@ -111,14 +123,10 @@ class CertprofileTracker(Tracker):
         else:
             expected = self.filter_attrs(self.retrieve_keys)
 
-        assert_deepequal(dict(
-            value=self.name,
-            summary=None,
-            result=expected,
-        ), result)
+        assert_deepequal(dict(value=self.name, summary=None, result=expected,), result)
 
     def make_find_command(self, *args, **kwargs):
-        return self.make_command('certprofile_find', *args, **kwargs)
+        return self.make_command("certprofile_find", *args, **kwargs)
 
     def check_find(self, result, all=False, raw=False):
         if all:
@@ -126,19 +134,25 @@ class CertprofileTracker(Tracker):
         else:
             expected = self.filter_attrs(self.retrieve_keys)
 
-        assert_deepequal(dict(
-            count=1,
-            truncated=False,
-            summary=u'1 profile matched',
-            result=[expected]
-        ), result)
+        assert_deepequal(
+            dict(
+                count=1,
+                truncated=False,
+                summary=u"1 profile matched",
+                result=[expected],
+            ),
+            result,
+        )
 
     def make_update_command(self, updates):
-        return self.make_command('certprofile_mod', self.name, **updates)
+        return self.make_command("certprofile_mod", self.name, **updates)
 
     def check_update(self, result, extra_keys=()):
-        assert_deepequal(dict(
-            value=self.name,
-            summary=u'Modified Certificate Profile "{}"'.format(self.name),
-            result=self.filter_attrs(self.update_keys | set(extra_keys))
-        ), result)
+        assert_deepequal(
+            dict(
+                value=self.name,
+                summary=u'Modified Certificate Profile "{}"'.format(self.name),
+                result=self.filter_attrs(self.update_keys | set(extra_keys)),
+            ),
+            result,
+        )

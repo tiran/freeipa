@@ -16,12 +16,11 @@ import six
 
 from ipapython import admintool
 from ipapython.ipa_log_manager import standard_logging_setup
-from ipapython.ipautil import (CheckedIPAddress, CheckedIPAddressLoopback,
-                               private_ccache)
+from ipapython.ipautil import CheckedIPAddress, CheckedIPAddressLoopback, private_ccache
 
 from . import core, common
 
-__all__ = ['install_tool', 'uninstall_tool']
+__all__ = ["install_tool", "uninstall_tool"]
 
 if six.PY3:
     long = int
@@ -32,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_usage(configurable_class):
-    usage = '%prog [options]'
+    usage = "%prog [options]"
 
     for owner_cls, name in configurable_class.knobs():
         knob_cls = getattr(owner_cls, name)
@@ -42,23 +41,30 @@ def _get_usage(configurable_class):
             elif knob_cls.cli_names:
                 metavar = knob_cls.cli_names[0].upper()
             else:
-                metavar = name.replace('_', '-').upper()
+                metavar = name.replace("_", "-").upper()
 
             try:
                 knob_cls.default
             except AttributeError:
-                fmt = ' {}'
+                fmt = " {}"
             else:
-                fmt = ' [{}]'
+                fmt = " [{}]"
 
             usage += fmt.format(metavar)
 
     return usage
 
 
-def install_tool(configurable_class, command_name, log_file_name,
-                 debug_option=False, verbose=False, console_format=None,
-                 use_private_ccache=True, uninstall_log_file_name=None):
+def install_tool(
+    configurable_class,
+    command_name,
+    log_file_name,
+    debug_option=False,
+    verbose=False,
+    console_format=None,
+    use_private_ccache=True,
+    uninstall_log_file_name=None,
+):
     """
     Some commands represent multiple related tools, e.g.
     ``ipa-server-install`` and ``ipa-server-install --uninstall`` would be
@@ -86,7 +92,7 @@ def install_tool(configurable_class, command_name, log_file_name,
         uninstall_kwargs = None
 
     return type(
-        'install_tool({0})'.format(configurable_class.__name__),
+        "install_tool({0})".format(configurable_class.__name__),
         (InstallTool,),
         dict(
             configurable_class=configurable_class,
@@ -98,14 +104,20 @@ def install_tool(configurable_class, command_name, log_file_name,
             console_format=console_format,
             uninstall_kwargs=uninstall_kwargs,
             use_private_ccache=use_private_ccache,
-        )
+        ),
     )
 
 
-def uninstall_tool(configurable_class, command_name, log_file_name,
-                   debug_option=False, verbose=False, console_format=None):
+def uninstall_tool(
+    configurable_class,
+    command_name,
+    log_file_name,
+    debug_option=False,
+    verbose=False,
+    console_format=None,
+):
     return type(
-        'uninstall_tool({0})'.format(configurable_class.__name__),
+        "uninstall_tool({0})".format(configurable_class.__name__),
         (UninstallTool,),
         dict(
             configurable_class=configurable_class,
@@ -115,7 +127,7 @@ def uninstall_tool(configurable_class, command_name, log_file_name,
             debug_option=debug_option,
             verbose=verbose,
             console_format=console_format,
-        )
+        ),
     )
 
 
@@ -136,10 +148,11 @@ class ConfigureTool(admintool.AdminTool):
 
         if issubclass(transformed_cls, common.Interactive):
             parser.add_option(
-                '-U', '--unattended',
-                dest='unattended',
+                "-U",
+                "--unattended",
+                dest="unattended",
                 default=False,
-                action='store_true',
+                action="store_true",
                 help="unattended (un)installation never prompts the user",
             )
 
@@ -157,7 +170,8 @@ class ConfigureTool(admintool.AdminTool):
                 opt_group = groups[group_cls]
             except KeyError:
                 opt_group = groups[group_cls] = optparse.OptionGroup(
-                        parser, "{0} options".format(group_cls.description))
+                    parser, "{0} options".format(group_cls.description)
+                )
                 parser.add_option_group(opt_group)
 
             knob_type = knob_cls.type
@@ -172,42 +186,41 @@ class ConfigureTool(admintool.AdminTool):
 
             kwargs = dict()
             if knob_scalar_type is NoneType:
-                kwargs['type'] = None
-                kwargs['const'] = True
-                kwargs['default'] = False
+                kwargs["type"] = None
+                kwargs["const"] = True
+                kwargs["default"] = False
             elif knob_scalar_type is str:
-                kwargs['type'] = 'string'
+                kwargs["type"] = "string"
             elif knob_scalar_type is int:
-                kwargs['type'] = 'int'
+                kwargs["type"] = "int"
             elif knob_scalar_type is long:
-                kwargs['type'] = 'long'
+                kwargs["type"] = "long"
             elif knob_scalar_type is CheckedIPAddressLoopback:
-                kwargs['type'] = 'ip_with_loopback'
+                kwargs["type"] = "ip_with_loopback"
             elif knob_scalar_type is CheckedIPAddress:
-                kwargs['type'] = 'ip'
+                kwargs["type"] = "ip"
             elif issubclass(knob_scalar_type, enum.Enum):
-                kwargs['type'] = 'choice'
-                kwargs['choices'] = [i.value for i in knob_scalar_type]
-                kwargs['metavar'] = "{{{0}}}".format(
-                                                ",".join(kwargs['choices']))
+                kwargs["type"] = "choice"
+                kwargs["choices"] = [i.value for i in knob_scalar_type]
+                kwargs["metavar"] = "{{{0}}}".format(",".join(kwargs["choices"]))
             else:
-                kwargs['type'] = 'constructor'
-                kwargs['constructor'] = knob_scalar_type
-            kwargs['dest'] = name
+                kwargs["type"] = "constructor"
+                kwargs["constructor"] = knob_scalar_type
+            kwargs["dest"] = name
             if issubclass(knob_type, list):
-                if kwargs['type'] is None:
-                    kwargs['action'] = 'append_const'
+                if kwargs["type"] is None:
+                    kwargs["action"] = "append_const"
                 else:
-                    kwargs['action'] = 'append'
+                    kwargs["action"] = "append"
             else:
-                if kwargs['type'] is None:
-                    kwargs['action'] = 'store_const'
+                if kwargs["type"] is None:
+                    kwargs["action"] = "store_const"
                 else:
-                    kwargs['action'] = 'store'
+                    kwargs["action"] = "store"
             if knob_cls.sensitive:
-                kwargs['sensitive'] = True
+                kwargs["sensitive"] = True
             if knob_cls.cli_metavar:
-                kwargs['metavar'] = knob_cls.cli_metavar
+                kwargs["metavar"] = knob_cls.cli_metavar
 
             if not positional:
                 cli_info = (
@@ -215,14 +228,12 @@ class ConfigureTool(admintool.AdminTool):
                     (True, knob_cls.cli_deprecated_names),
                 )
             else:
-                cli_info = (
-                    (knob_cls.deprecated, (None,)),
-                )
+                cli_info = ((knob_cls.deprecated, (None,)),)
             for hidden, cli_names in cli_info:
                 opt_strs = []
                 for cli_name in cli_names:
                     if cli_name is None:
-                        cli_name = '--{}'.format(name.replace('_', '-'))
+                        cli_name = "--{}".format(name.replace("_", "-"))
                     opt_strs.append(cli_name)
                 if not opt_strs:
                     continue
@@ -232,14 +243,9 @@ class ConfigureTool(admintool.AdminTool):
                 else:
                     help = optparse.SUPPRESS_HELP
 
-                opt_group.add_option(
-                    *opt_strs,
-                    help=help,
-                    **kwargs
-                )
+                opt_group.add_option(*opt_strs, help=help, **kwargs)
 
-        super(ConfigureTool, cls).add_options(parser,
-                                              debug_option=cls.debug_option)
+        super(ConfigureTool, cls).add_options(parser, debug_option=cls.debug_option)
 
     def __init__(self, options, args):
         super(ConfigureTool, self).__init__(options, args)
@@ -257,9 +263,11 @@ class ConfigureTool(admintool.AdminTool):
         fake_option_parser = optparse.OptionParser()
         self.add_options(fake_option_parser, True)
 
-        fake_option_map = {option.dest: option
-                           for group in fake_option_parser.option_groups
-                           for option in group.option_list}
+        fake_option_map = {
+            option.dest: option
+            for group in fake_option_parser.option_groups
+            for option in group.option_list
+        }
 
         for index, name in enumerate(self.positional_arguments):
             try:
@@ -268,10 +276,9 @@ class ConfigureTool(admintool.AdminTool):
                 break
 
             fake_option = fake_option_map[name]
-            fake_option.process('argument {}'.format(index + 1),
-                                value,
-                                self.options,
-                                self.option_parser)
+            fake_option.process(
+                "argument {}".format(index + 1), value, self.options, self.option_parser
+            )
 
     def validate_options(self, needs_root=True):
         super(ConfigureTool, self).validate_options(needs_root=needs_root)
@@ -279,7 +286,7 @@ class ConfigureTool(admintool.AdminTool):
         if self.args:
             self.option_parser.error("Too many arguments provided")
 
-    def _setup_logging(self, log_file_mode='w', no_file=False):
+    def _setup_logging(self, log_file_mode="w", no_file=False):
         if no_file:
             log_file_name = None
         elif self.options.log_file:
@@ -287,14 +294,15 @@ class ConfigureTool(admintool.AdminTool):
         else:
             log_file_name = self.log_file_name
         standard_logging_setup(
-           log_file_name,
-           verbose=self.verbose,
-           debug=self.options.verbose,
-           console_format=self.console_format)
+            log_file_name,
+            verbose=self.verbose,
+            debug=self.options.verbose,
+            console_format=self.console_format,
+        )
         if log_file_name:
-            logger.debug('Logging to %s', log_file_name)
+            logger.debug("Logging to %s", log_file_name)
         elif not no_file:
-            logger.debug('Not logging to a file')
+            logger.debug("Not logging to a file")
 
     def init_configurator(self):
         """Executes transformation, getting a flattened Installer object
@@ -310,9 +318,11 @@ class ConfigureTool(admintool.AdminTool):
             if value is not None:
                 kwargs[name] = value
 
-        if (issubclass(self.configurable_class, common.Interactive) and
-                not self.options.unattended):
-            kwargs['interactive'] = True
+        if (
+            issubclass(self.configurable_class, common.Interactive)
+            and not self.options.unattended
+        ):
+            kwargs["interactive"] = True
 
         try:
             return transformed_cls(**kwargs)
@@ -321,7 +331,7 @@ class ConfigureTool(admintool.AdminTool):
             try:
                 index = self.positional_arguments.index(e.name)
             except ValueError:
-                cli_name = knob_cls.cli_names[0] or e.name.replace('_', '-')
+                cli_name = knob_cls.cli_names[0] or e.name.replace("_", "-")
                 desc = "option {0}".format(cli_name)
             else:
                 desc = "argument {0}".format(index + 1)
@@ -358,12 +368,14 @@ class InstallTool(ConfigureTool):
 
         if cls.uninstall_kwargs is not None:
             parser.add_option(
-                '--uninstall',
-                dest='uninstall',
+                "--uninstall",
+                dest="uninstall",
                 default=False,
-                action='store_true',
-                help=("uninstall an existing installation. The uninstall can "
-                      "be run with --unattended option"),
+                action="store_true",
+                help=(
+                    "uninstall an existing installation. The uninstall can "
+                    "be run with --unattended option"
+                ),
             )
 
     @classmethod

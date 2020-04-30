@@ -11,8 +11,7 @@ import logging
 from . import core
 from .util import from_
 
-__all__ = ['step', 'Installable', 'Interactive', 'installer',
-           'uninstaller']
+__all__ = ["step", "Installable", "Interactive", "installer", "uninstaller"]
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +45,12 @@ class Installable(core.Configurable):
             return self._install()
 
     def _install(self):
-        assert not hasattr(super(Installable, self), '_install')
+        assert not hasattr(super(Installable, self), "_install")
 
         return super(Installable, self)._configure()
 
     def _uninstall(self):
-        assert not hasattr(super(Installable, self), '_uninstall')
+        assert not hasattr(super(Installable, self), "_uninstall")
 
         return super(Installable, self)._configure()
 
@@ -59,7 +58,7 @@ class Installable(core.Configurable):
 class Step(Installable):
     @property
     def parent(self):
-        raise AttributeError('parent')
+        raise AttributeError("parent")
 
     def _install(self):
         for unused in self._installer(self.parent):
@@ -90,9 +89,9 @@ class Interactive(core.Configurable):
 def installer(cls):
     class Installer(cls, Installable):
         def __init__(self, **kwargs):
-            super(Installer, self).__init__(uninstalling=False,
-                                            **kwargs)
-    Installer.__name__ = 'installer({0})'.format(cls.__name__)
+            super(Installer, self).__init__(uninstalling=False, **kwargs)
+
+    Installer.__name__ = "installer({0})".format(cls.__name__)
 
     return Installer
 
@@ -100,8 +99,8 @@ def installer(cls):
 def uninstaller(cls):
     class Uninstaller(cls, Installable):
         def __init__(self, **kwargs):
-            super(Uninstaller, self).__init__(uninstalling=True,
-                                              **kwargs)
-    Uninstaller.__name__ = 'uninstaller({0})'.format(cls.__name__)
+            super(Uninstaller, self).__init__(uninstalling=True, **kwargs)
+
+    Uninstaller.__name__ = "uninstaller({0})".format(cls.__name__)
 
     return Uninstaller

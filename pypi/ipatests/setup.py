@@ -9,18 +9,14 @@ ipatests is not yet available as PyPI package.
 from os.path import abspath, dirname
 import sys
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # include ../../ for ipasetup.py
     sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
     from ipasetup import ipasetup  # noqa: E402
 
     ipasetup(
-        name='ipatests',
-        doc = __doc__,
-        packages=[
-            "ipatests",
-        ],
-        install_requires=[
-            "ipaclient",
-        ]
+        name="ipatests",
+        doc=__doc__,
+        packages=["ipatests",],
+        install_requires=["ipaclient",],
     )

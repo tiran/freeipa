@@ -28,14 +28,14 @@ from ipapython.ipa_log_manager import Formatter
 
 
 def pytest_configure(config):
-    plugin = config.pluginmanager.getplugin('BeakerLibPlugin')
+    plugin = config.pluginmanager.getplugin("BeakerLibPlugin")
     if plugin:
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.DEBUG)
 
         handler = BeakerLibLogHandler(plugin.run_beakerlib_command)
         handler.setLevel(logging.INFO)
-        handler.setFormatter(Formatter('[%(name)s] %(message)s'))
+        handler.setFormatter(Formatter("[%(name)s] %(message)s"))
         root_logger.addHandler(handler)
 
 
@@ -46,10 +46,10 @@ class BeakerLibLogHandler(logging.Handler):
 
     def emit(self, record):
         command = {
-            'DEBUG': 'rlLogDebug',
-            'INFO': 'rlLogInfo',
-            'WARNING': 'rlLogWarning',
-            'ERROR': 'rlLogError',
-            'CRITICAL': 'rlLogFatal',
-        }.get(record.levelname, 'rlLog')
+            "DEBUG": "rlLogDebug",
+            "INFO": "rlLogInfo",
+            "WARNING": "rlLogWarning",
+            "ERROR": "rlLogError",
+            "CRITICAL": "rlLogFatal",
+        }.get(record.levelname, "rlLog")
         self.beakerlib_command([command, self.format(record)])

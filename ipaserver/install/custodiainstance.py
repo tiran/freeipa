@@ -28,13 +28,13 @@ logger = logging.getLogger(__name__)
 
 class CustodiaModes(enum.Enum):
     # peer must have a CA
-    CA_PEER = 'Custodia CA peer'
+    CA_PEER = "Custodia CA peer"
     # peer must have a CA, KRA preferred
-    KRA_PEER = 'Custodia KRA peer'
+    KRA_PEER = "Custodia KRA peer"
     # any master will do
-    MASTER_PEER = 'Custodia master peer'
+    MASTER_PEER = "Custodia master peer"
     # local instance (first master)
-    FIRST_MASTER = 'Custodia on first master'
+    FIRST_MASTER = "Custodia on first master"
 
 
 def get_custodia_instance(config, mode):
@@ -64,7 +64,8 @@ def get_custodia_instance(config, mode):
     assert isinstance(mode, CustodiaModes)
     logger.debug(
         "Custodia client for '%r' with promotion %s.",
-        mode, 'yes' if mode != CustodiaModes.FIRST_MASTER else 'no'
+        mode,
+        "yes" if mode != CustodiaModes.FIRST_MASTER else "no",
     )
     if mode == CustodiaModes.CA_PEER:
         # In case we install replica with CA, prefer CA host as source for
@@ -86,9 +87,7 @@ def get_custodia_instance(config, mode):
         logger.info("Custodia uses '%s' as master peer.", custodia_peer)
 
     return CustodiaInstance(
-        host_name=config.host_name,
-        realm=config.realm_name,
-        custodia_peer=custodia_peer
+        host_name=config.host_name, realm=config.realm_name, custodia_peer=custodia_peer
     )
 
 
@@ -109,7 +108,7 @@ class CustodiaInstance(SimpleServiceInstance):
             return "ldap://{}".format(self.custodia_peer)
 
     def __config_file(self):
-        template_file = os.path.basename(self.config_file) + '.template'
+        template_file = os.path.basename(self.config_file) + ".template"
         template = os.path.join(paths.USR_SHARE_IPA_DIR, template_file)
         httpd_info = pwd.getpwnam(constants.HTTPD_USER)
         sub_dict = dict(
@@ -119,7 +118,7 @@ class CustodiaInstance(SimpleServiceInstance):
             IPA_CUSTODIA_AUDIT_LOG=paths.IPA_CUSTODIA_AUDIT_LOG,
             LDAP_URI=ipaldap.realm_to_ldapi_uri(self.realm),
             UID=httpd_info.pw_uid,
-            GID=httpd_info.pw_gid
+            GID=httpd_info.pw_gid,
         )
         conf = ipautil.template_file(template, sub_dict)
         with open(self.config_file, "w") as f:
@@ -127,43 +126,41 @@ class CustodiaInstance(SimpleServiceInstance):
             ipautil.flush_sync(f)
 
     def create_instance(self):
-        if self.ldap_uri.startswith('ldapi://'):
+        if self.ldap_uri.startswith("ldapi://"):
             # local case, ensure container exists
-            self.step("Making sure custodia container exists",
-                      self.__create_container)
+            self.step("Making sure custodia container exists", self.__create_container)
 
         self.step("Generating ipa-custodia config file", self.__config_file)
         self.step("Generating ipa-custodia keys", self.__gen_keys)
         super(CustodiaInstance, self).create_instance(
-            gensvc_name='KEYS',
+            gensvc_name="KEYS",
             fqdn=self.fqdn,
             ldap_suffix=ipautil.realm_to_suffix(self.realm),
-            realm=self.realm
+            realm=self.realm,
         )
-        sysupgrade.set_upgrade_state('custodia', 'installed', True)
+        sysupgrade.set_upgrade_state("custodia", "installed", True)
 
     def uninstall(self):
         super(CustodiaInstance, self).uninstall()
-        keystore = IPAKEMKeys({
-            'server_keys': self.server_keys,
-            'ldap_uri': self.ldap_uri
-        })
+        keystore = IPAKEMKeys(
+            {"server_keys": self.server_keys, "ldap_uri": self.ldap_uri}
+        )
         keystore.remove_server_keys_file()
         ipautil.remove_file(self.config_file)
-        sysupgrade.set_upgrade_state('custodia', 'installed', False)
+        sysupgrade.set_upgrade_state("custodia", "installed", False)
 
     def __gen_keys(self):
-        keystore = IPAKEMKeys({
-            'server_keys': self.server_keys,
-            'ldap_uri': self.ldap_uri
-        })
+        keystore = IPAKEMKeys(
+            {"server_keys": self.server_keys, "ldap_uri": self.ldap_uri}
+        )
         keystore.generate_server_keys()
 
     def upgrade_instance(self):
         installed = sysupgrade.get_upgrade_state("custodia", "installed")
         if installed:
-            if (not os.path.isfile(self.server_keys)
-                    or not os.path.isfile(self.config_file)):
+            if not os.path.isfile(self.server_keys) or not os.path.isfile(
+                self.config_file
+            ):
                 logger.warning(
                     "Custodia server keys or config are missing, forcing "
                     "reinstallation of ipa-custodia."
@@ -192,11 +189,11 @@ class CustodiaInstance(SimpleServiceInstance):
         """
 
         sub_dict = {
-            'SUFFIX': self.suffix,
+            "SUFFIX": self.suffix,
         }
 
         updater = ldapupdate.LDAPUpdate(sub_dict=sub_dict)
-        updater.update([os.path.join(paths.UPDATES_DIR, '73-custodia.update')])
+        updater.update([os.path.join(paths.UPDATES_DIR, "73-custodia.update")])
 
     def import_ra_key(self):
         cli = self._get_custodia_client()
@@ -204,17 +201,20 @@ class CustodiaInstance(SimpleServiceInstance):
         # reasons (old servers expect you to ask for ra/ipaCert during
         # replication as they store the RA agent cert in an NSS database
         # with this nickname)
-        cli.fetch_key('ra/ipaCert')
+        cli.fetch_key("ra/ipaCert")
 
     def import_dm_password(self):
         cli = self._get_custodia_client()
-        cli.fetch_key('dm/DMHash')
+        cli.fetch_key("dm/DMHash")
 
     def _wait_keys(self):
         timeout = api.env.replication_wait_timeout
         deadline = int(time.time()) + timeout
-        logger.debug("Waiting up to %s seconds to see our keys "
-                     "appear on host %s", timeout, self.ldap_uri)
+        logger.debug(
+            "Waiting up to %s seconds to see our keys " "appear on host %s",
+            timeout,
+            self.ldap_uri,
+        )
 
         konn = KEMLdap(self.ldap_uri)
         saved_e = None
@@ -228,13 +228,11 @@ class CustodiaInstance(SimpleServiceInstance):
                     # message in installer output,
                     print(
                         "  Waiting for keys to appear on host: {}, please "
-                        "wait until this has completed.".format(
-                            self.ldap_uri)
+                        "wait until this has completed.".format(self.ldap_uri)
                     )
                 # log only once for the same error
                 if not isinstance(e, type(saved_e)):
-                    logger.debug(
-                        "Transient error getting keys: '%s'", e)
+                    logger.debug("Transient error getting keys: '%s'", e)
                     saved_e = e
                 if int(time.time()) > deadline:
                     raise RuntimeError("Timed out trying to obtain keys.")
@@ -248,69 +246,85 @@ class CustodiaInstance(SimpleServiceInstance):
         self._wait_keys()
 
         return CustodiaClient(
-            client_service='host@{}'.format(self.fqdn),
-            keyfile=self.server_keys, keytab=paths.KRB5_KEYTAB,
-            server=self.custodia_peer, realm=self.realm
+            client_service="host@{}".format(self.fqdn),
+            keyfile=self.server_keys,
+            keytab=paths.KRB5_KEYTAB,
+            server=self.custodia_peer,
+            realm=self.realm,
         )
 
     def _get_keys(self, cacerts_file, cacerts_pwd, data):
         # Fetch all needed certs one by one, then combine them in a single
         # PKCS12 file
-        prefix = data['prefix']
-        certlist = data['list']
+        prefix = data["prefix"]
+        certlist = data["list"]
         cli = self._get_custodia_client()
 
         with NSSDatabase(None) as tmpdb:
             tmpdb.create_db()
             # Cert file password
-            crtpwfile = os.path.join(tmpdb.secdir, 'crtpwfile')
-            with open(crtpwfile, 'w+') as f:
+            crtpwfile = os.path.join(tmpdb.secdir, "crtpwfile")
+            with open(crtpwfile, "w+") as f:
                 f.write(cacerts_pwd)
 
             for nickname in certlist:
                 value = cli.fetch_key(os.path.join(prefix, nickname), False)
                 v = json_decode(value)
-                pk12pwfile = os.path.join(tmpdb.secdir, 'pk12pwfile')
-                with open(pk12pwfile, 'w+') as f:
-                    f.write(v['export password'])
-                pk12file = os.path.join(tmpdb.secdir, 'pk12file')
-                with open(pk12file, 'wb') as f:
-                    f.write(b64decode(v['pkcs12 data']))
-                tmpdb.run_pk12util([
-                    '-k', tmpdb.pwd_file,
-                    '-n', nickname,
-                    '-i', pk12file,
-                    '-w', pk12pwfile
-                ])
+                pk12pwfile = os.path.join(tmpdb.secdir, "pk12pwfile")
+                with open(pk12pwfile, "w+") as f:
+                    f.write(v["export password"])
+                pk12file = os.path.join(tmpdb.secdir, "pk12file")
+                with open(pk12file, "wb") as f:
+                    f.write(b64decode(v["pkcs12 data"]))
+                tmpdb.run_pk12util(
+                    [
+                        "-k",
+                        tmpdb.pwd_file,
+                        "-n",
+                        nickname,
+                        "-i",
+                        pk12file,
+                        "-w",
+                        pk12pwfile,
+                    ]
+                )
 
             # Add CA certificates
             self.export_ca_certs_nssdb(tmpdb, True)
 
             # Now that we gathered all certs, re-export
-            ipautil.run([
-                paths.PKCS12EXPORT,
-                '-d', tmpdb.secdir,
-                '-p', tmpdb.pwd_file,
-                '-w', crtpwfile,
-                '-o', cacerts_file
-            ])
+            ipautil.run(
+                [
+                    paths.PKCS12EXPORT,
+                    "-d",
+                    tmpdb.secdir,
+                    "-p",
+                    tmpdb.pwd_file,
+                    "-w",
+                    crtpwfile,
+                    "-o",
+                    cacerts_file,
+                ]
+            )
 
     def get_ca_keys(self, cacerts_file, cacerts_pwd):
-        certlist = ['caSigningCert cert-pki-ca',
-                    'ocspSigningCert cert-pki-ca',
-                    'auditSigningCert cert-pki-ca',
-                    'subsystemCert cert-pki-ca']
-        data = {'prefix': 'ca',
-                'list': certlist}
+        certlist = [
+            "caSigningCert cert-pki-ca",
+            "ocspSigningCert cert-pki-ca",
+            "auditSigningCert cert-pki-ca",
+            "subsystemCert cert-pki-ca",
+        ]
+        data = {"prefix": "ca", "list": certlist}
         self._get_keys(cacerts_file, cacerts_pwd, data)
 
     def get_kra_keys(self, cacerts_file, cacerts_pwd):
-        certlist = ['auditSigningCert cert-pki-kra',
-                    'storageCert cert-pki-kra',
-                    'subsystemCert cert-pki-ca',
-                    'transportCert cert-pki-kra']
-        data = {'prefix': 'ca',
-                'list': certlist}
+        certlist = [
+            "auditSigningCert cert-pki-kra",
+            "storageCert cert-pki-kra",
+            "subsystemCert cert-pki-ca",
+            "transportCert cert-pki-kra",
+        ]
+        data = {"prefix": "ca", "list": certlist}
         self._get_keys(cacerts_file, cacerts_pwd, data)
 
     def __start(self):

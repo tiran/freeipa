@@ -42,12 +42,14 @@ class idrange_add(MethodOverride):
         # it can be also set using --setattr or --addattr, in these cases
         # we will not prompt, but raise an ValidationError later
 
-        dom_sid_set = any(dom_id in kw for dom_id in
-                          ('ipanttrusteddomainname', 'ipanttrusteddomainsid'))
+        dom_sid_set = any(
+            dom_id in kw
+            for dom_id in ("ipanttrusteddomainname", "ipanttrusteddomainsid")
+        )
 
-        rid_base = kw.get('ipabaserid', None)
-        secondary_rid_base = kw.get('ipasecondarybaserid', None)
-        range_type = kw.get('iparangetype', None)
+        rid_base = kw.get("ipabaserid", None)
+        secondary_rid_base = kw.get("ipasecondarybaserid", None)
+        range_type = kw.get("iparangetype", None)
 
         def set_from_prompt(param):
             value = self.prompt_param(self.params[param])
@@ -58,32 +60,32 @@ class idrange_add(MethodOverride):
             # This is a trusted range
 
             # Prompt for RID base if domain SID / name was given
-            if rid_base is None and range_type != u'ipa-ad-trust-posix':
-                set_from_prompt('ipabaserid')
+            if rid_base is None and range_type != u"ipa-ad-trust-posix":
+                set_from_prompt("ipabaserid")
 
         else:
             # This is a local range
             # Find out whether ipa-adtrust-install has been ran
-            adtrust_is_enabled = api.Command['adtrust_is_enabled']()['result']
+            adtrust_is_enabled = api.Command["adtrust_is_enabled"]()["result"]
 
             if adtrust_is_enabled:
                 # If ipa-adtrust-install has been ran, all local ranges
                 # require both RID base and secondary RID base
 
                 if rid_base is None:
-                    set_from_prompt('ipabaserid')
+                    set_from_prompt("ipabaserid")
 
                 if secondary_rid_base is None:
-                    set_from_prompt('ipasecondarybaserid')
+                    set_from_prompt("ipasecondarybaserid")
 
             else:
                 # This is a local range on a server with no adtrust support
 
                 # Prompt for secondary RID base only if RID base was given
                 if rid_base is not None and secondary_rid_base is None:
-                    set_from_prompt('ipasecondarybaserid')
+                    set_from_prompt("ipasecondarybaserid")
 
                 # Symetrically, prompt for RID base if secondary RID base was
                 # given
                 if rid_base is None and secondary_rid_base is not None:
-                    set_from_prompt('ipabaserid')
+                    set_from_prompt("ipabaserid")

@@ -21,10 +21,10 @@ from pki.client import PKIConnection
 from pki.system import SystemStatusClient
 from requests.exceptions import ConnectionError, Timeout, RequestException
 
-logger = logging.getLogger('ipa-pki-wait-running')
+logger = logging.getLogger("ipa-pki-wait-running")
 
 # check the CA subsystem. All pki-tomcatd instances in IPA have a CA
-SUBSYSTEM = 'ca'
+SUBSYSTEM = "ca"
 # time out for TCP connection attempts
 CONNECTION_TIMEOUT = 1.0
 
@@ -32,7 +32,7 @@ EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
 
-if hasattr(time, 'monotonic'):
+if hasattr(time, "monotonic"):
     curtime = time.monotonic
 else:
     curtime = time.time
@@ -41,11 +41,9 @@ else:
 def check_installed(subsystem):
     """Check if the subsystem is configured
     """
-    catalina_base = os.environ.get(
-        'CATALINA_BASE', '/var/lib/pki/pki-tomcat'
-    )
+    catalina_base = os.environ.get("CATALINA_BASE", "/var/lib/pki/pki-tomcat")
     # /var/lib/pki/pki-tomcat/conf -> /etc/pki/pki-tomcat
-    cs_cfg = os.path.join(catalina_base, 'conf', subsystem, 'CS.cfg')
+    cs_cfg = os.path.join(catalina_base, "conf", subsystem, "CS.cfg")
     if os.path.isfile(cs_cfg):
         logger.debug("File %s exists.", cs_cfg)
         return True
@@ -57,13 +55,13 @@ def check_installed(subsystem):
 def get_conn(hostname, subsystem):
     """Create a connection object
     """
-    conn = PKIConnection(
-        hostname=hostname,
-        subsystem=subsystem
-    )
+    conn = PKIConnection(hostname=hostname, subsystem=subsystem)
     logger.info(
         "Created connection %s://%s:%s/%s",
-        conn.protocol, conn.hostname, conn.port, conn.subsystem
+        conn.protocol,
+        conn.hostname,
+        conn.port,
+        conn.subsystem,
     )
     return conn
 
@@ -82,9 +80,7 @@ def get_status(conn, timeout):
 
 def main():
     if not check_installed(SUBSYSTEM):
-        logger.info(
-            "subsystem %s is not installed, exiting", SUBSYSTEM
-        )
+        logger.info("subsystem %s is not installed, exiting", SUBSYSTEM)
         sys.exit(EXIT_SUCCESS)
 
     # bootstrap ipalib.api to parse config file
@@ -101,13 +97,12 @@ def main():
         except RequestException as e:
             logger.error("Request failed unexpectedly, %s ", e)
         else:
-            if status == 'running':
+            if status == "running":
                 logger.info("Success, subsystem %s is running!", SUBSYSTEM)
                 sys.exit(EXIT_SUCCESS)
             elif error is not None:
                 logger.info(
-                    "Subsystem %s failed with error '%s', giving up!",
-                    SUBSYSTEM, error
+                    "Subsystem %s failed with error '%s', giving up!", SUBSYSTEM, error
                 )
                 sys.exit(EXIT_FAILURE)
             else:
@@ -117,15 +112,10 @@ def main():
         time.sleep(1)
 
     # giving up
-    logger.error(
-        "Reached end of wait timeout %s, giving up", timeout
-    )
+    logger.error("Reached end of wait timeout %s, giving up", timeout)
     sys.exit(EXIT_FAILURE)
 
 
-if __name__ == '__main__':
-    logging.basicConfig(
-        format='%(name)s: %(message)s',
-        level=logging.INFO
-    )
+if __name__ == "__main__":
+    logging.basicConfig(format="%(name)s: %(message)s", level=logging.INFO)
     main()

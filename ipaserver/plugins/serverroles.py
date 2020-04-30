@@ -45,9 +45,7 @@ import six
 from ipalib import errors, _
 from ipalib.backend import Backend
 from ipalib.plugable import Registry
-from ipaserver.servroles import (
-    attribute_instances, ENABLED, HIDDEN, role_instances
-)
+from ipaserver.servroles import attribute_instances, ENABLED, HIDDEN, role_instances
 from ipaserver.servroles import SingleValuedServerAttribute
 
 
@@ -68,11 +66,9 @@ class serverroles(Backend):
     def __init__(self, api_instance):
         super(serverroles, self).__init__(api_instance)
 
-        self.role_names = {
-            obj.name.lower(): obj for obj in role_instances}
+        self.role_names = {obj.name.lower(): obj for obj in role_instances}
 
-        self.attributes = {
-            attr.attr_name: attr for attr in attribute_instances}
+        self.attributes = {attr.attr_name: attr for attr in attribute_instances}
 
     def _get_role(self, role_name):
         key = role_name.lower()
@@ -81,7 +77,8 @@ class serverroles(Backend):
             return self.role_names[key]
         except KeyError:
             raise errors.NotFound(
-                reason=_("{role}: role not found").format(role=role_name))
+                reason=_("{role}: role not found").format(role=role_name)
+            )
 
     def _get_masters(self, role_name, include_hidden):
         result = {}
@@ -89,16 +86,14 @@ class serverroles(Backend):
         role_states = role.status(self.api, server=None)
 
         enabled_masters = [
-            r[u'server_server'] for r in role_states if
-            r[u'status'] == ENABLED
+            r[u"server_server"] for r in role_states if r[u"status"] == ENABLED
         ]
         if enabled_masters:
             result.update({role.attr_name: enabled_masters})
 
         if include_hidden and role.attr_name_hidden is not None:
             hidden_masters = [
-                r[u'server_server'] for r in role_states if
-                r[u'status'] == HIDDEN
+                r[u"server_server"] for r in role_states if r[u"status"] == HIDDEN
             ]
             if hidden_masters:
                 result.update({role.attr_name_hidden: hidden_masters})
@@ -108,17 +103,19 @@ class serverroles(Backend):
     def _get_assoc_attributes(self, role_name):
         role = self._get_role(role_name)
         assoc_attributes = {
-            name: attr for name, attr in self.attributes.items() if
-            attr.associated_role is role}
+            name: attr
+            for name, attr in self.attributes.items()
+            if attr.associated_role is role
+        }
 
         if not assoc_attributes:
             raise NotImplementedError(
-                "Role {} has no associated attribute to set".format(role.name))
+                "Role {} has no associated attribute to set".format(role.name)
+            )
 
         return assoc_attributes
 
-    def server_role_search(self, server_server=None, role_servrole=None,
-                           status=None):
+    def server_role_search(self, server_server=None, role_servrole=None, status=None):
         if role_servrole is None:
             found_roles = self.role_names.values()
         else:
@@ -134,13 +131,12 @@ class serverroles(Backend):
             result.extend(role_status)
 
         if status is not None:
-            return [r for r in result if r[u'status'] == status]
+            return [r for r in result if r[u"status"] == status]
 
         return result
 
     def server_role_retrieve(self, server_server, role_servrole):
-        return self._get_role(role_servrole).status(
-            self.api, server=server_server)
+        return self._get_role(role_servrole).status(self.api, server=server_server)
 
     def config_retrieve(self, servrole, include_hidden=True):
         result = self._get_masters(servrole, include_hidden=include_hidden)
@@ -169,10 +165,10 @@ class serverroles(Backend):
                 # in a SingleValuedServerAttribute. The set method expects
                 # a list containing a single value.
                 # We need to convert value to a list containing value
-                if isinstance(self.attributes[attr],
-                              SingleValuedServerAttribute):
+                if isinstance(self.attributes[attr], SingleValuedServerAttribute):
                     value = [value]
                 self.attributes[attr].set(self.api, value)
             except KeyError:
                 raise errors.NotFound(
-                    reason=_('{attr}: no such attribute').format(attr=attr))
+                    reason=_("{attr}: no such attribute").format(attr=attr)
+                )

@@ -19,12 +19,14 @@ import warnings
 # Don't import any ipa modules here so tracemalloc can trace memory usage.
 
 import gssapi
+
 # pylint: disable=import-error
 from werkzeug.contrib.profiler import ProfilerMiddleware
 from werkzeug.exceptions import NotFound
 from werkzeug.serving import run_simple
 from werkzeug.utils import redirect, append_slash_redirect
 from werkzeug.wsgi import DispatcherMiddleware, SharedDataMiddleware
+
 # pylint: enable=import-error
 
 logger = logging.getLogger(os.path.basename(__file__))
@@ -33,19 +35,21 @@ logger = logging.getLogger(os.path.basename(__file__))
 BASEDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 STATIC_FILES = {
-    '/ipa/ui': os.path.join(BASEDIR, 'install/ui'),
-    '/ipa/ui/js': os.path.join(BASEDIR, 'install/ui/src'),
-    '/ipa/ui/js/dojo': os.path.join(BASEDIR, 'install/ui/build/dojo'),
-    '/ipa/ui/fonts': '/usr/share/fonts',
+    "/ipa/ui": os.path.join(BASEDIR, "install/ui"),
+    "/ipa/ui/js": os.path.join(BASEDIR, "install/ui/src"),
+    "/ipa/ui/js/dojo": os.path.join(BASEDIR, "install/ui/build/dojo"),
+    "/ipa/ui/fonts": "/usr/share/fonts",
 }
 
 
-def display_tracemalloc(snapshot, key_type='lineno', limit=10):
-    snapshot = snapshot.filter_traces((
-        tracemalloc.Filter(False, "<frozen importlib._bootstrap*"),
-        tracemalloc.Filter(False, "<unknown>"),
-        tracemalloc.Filter(False, "*/idna/*.py"),
-    ))
+def display_tracemalloc(snapshot, key_type="lineno", limit=10):
+    snapshot = snapshot.filter_traces(
+        (
+            tracemalloc.Filter(False, "<frozen importlib._bootstrap*"),
+            tracemalloc.Filter(False, "<unknown>"),
+            tracemalloc.Filter(False, "*/idna/*.py"),
+        )
+    )
     top_stats = snapshot.statistics(key_type)
 
     print("Top {} lines".format(limit))
@@ -53,11 +57,14 @@ def display_tracemalloc(snapshot, key_type='lineno', limit=10):
         frame = stat.traceback[0]
         # replace "/path/to/module/file.py" with "module/file.py"
         filename = os.sep.join(frame.filename.split(os.sep)[-2:])
-        print("#{}: {}:{}: {:.1f} KiB".format(
-            index, filename, frame.lineno, stat.size // 1024))
+        print(
+            "#{}: {}:{}: {:.1f} KiB".format(
+                index, filename, frame.lineno, stat.size // 1024
+            )
+        )
         line = linecache.getline(frame.filename, frame.lineno).strip()
         if line:
-            print('    {}'.format(line))
+            print("    {}".format(line))
 
     other = top_stats[limit:]
     if other:
@@ -77,11 +84,11 @@ def get_ccname():
     """
     from ipalib import krb_utils
 
-    ccname = os.environ.get('KRB5CCNAME')
+    ccname = os.environ.get("KRB5CCNAME")
     if ccname is None:
         raise ValueError("KRB5CCNAME env var is not set.")
     scheme, location = krb_utils.krb5_parse_ccache(ccname)
-    if scheme != 'FILE':  # MEMORY makes no sense
+    if scheme != "FILE":  # MEMORY makes no sense
         raise ValueError("Unsupported KRB5CCNAME scheme {}".format(scheme))
     if not os.path.isfile(location):
         raise ValueError("KRB5CCNAME file '{}' does not exit".format(location))
@@ -91,17 +98,15 @@ def get_ccname():
 class KRBCheater:
     """Add KRB5CCNAME and GSS_NAME to WSGI environ
     """
+
     def __init__(self, app, ccname):
         self.app = app
         self.ccname = ccname
-        self.creds = gssapi.Credentials(
-            usage='initiate',
-            store={'ccache': ccname}
-        )
+        self.creds = gssapi.Credentials(usage="initiate", store={"ccache": ccname})
 
     def __call__(self, environ, start_response):
-        environ['KRB5CCNAME'] = self.ccname
-        environ['GSS_NAME'] = self.creds.name
+        environ["KRB5CCNAME"] = self.ccname
+        environ["GSS_NAME"] = self.creds.name
         return self.app(environ, start_response)
 
 
@@ -131,10 +136,11 @@ class StaticFilesMiddleware(SharedDataMiddleware):
                 path = directory
             # use index.html for directory views
             if os.path.isdir(path):
-                path = os.path.join(path, 'index.html')
+                path = os.path.join(path, "index.html")
             if os.path.isfile(path):
                 return os.path.basename(path), self._opener(path)
             return None, None
+
         return loader
 
 
@@ -148,42 +154,35 @@ def init_api(ccname):
     importdir = os.path.dirname(os.path.dirname(os.path.abspath(ipalib_file)))
     if importdir != BASEDIR:
         warnings.warn(
-            "ipalib was imported from '{}' instead of '{}'!".format(
-                importdir, BASEDIR),
-            RuntimeWarning
+            "ipalib was imported from '{}' instead of '{}'!".format(importdir, BASEDIR),
+            RuntimeWarning,
         )
 
     parser = optparse.OptionParser()
 
     parser.add_option(
-        '--dev',
-        help='Run WebUI in development mode',
+        "--dev",
+        help="Run WebUI in development mode",
         default=True,
-        action='store_false',
-        dest='prod',
+        action="store_false",
+        dest="prod",
     )
     parser.add_option(
-        '--host',
-        help='Listen on address HOST (default 127.0.0.1)',
-        default='127.0.0.1',
+        "--host",
+        help="Listen on address HOST (default 127.0.0.1)",
+        default="127.0.0.1",
     )
     parser.add_option(
-        '--port',
-        help='Listen on PORT (default 8888)',
-        default=8888,
-        type='int',
+        "--port", help="Listen on PORT (default 8888)", default=8888, type="int",
     )
     parser.add_option(
-        '--enable-profiler',
+        "--enable-profiler",
         help="Path to WSGI profiler directory or '-' for stderr",
         default=None,
-        type='str',
+        type="str",
     )
     parser.add_option(
-        '--enable-tracemalloc',
-        help="Enable memory tracer",
-        default=0,
-        type='int',
+        "--enable-tracemalloc", help="Enable memory tracer", default=0, type="int",
     )
 
     api.env.in_server = True
@@ -191,18 +190,18 @@ def init_api(ccname):
     # workaround for RefererError in rpcserver
     api.env.in_tree = True
     # workaround: AttributeError: locked: cannot set ldap2.time_limit to None
-    api.env.mode = 'production'
+    api.env.mode = "production"
 
     start_time = time.time()
     # pylint: disable=unused-variable
-    options, args = api.bootstrap_with_global_options(parser, context='lite')
+    options, args = api.bootstrap_with_global_options(parser, context="lite")
     api.env._merge(
         lite_port=options.port,
         lite_host=options.host,
         webui_prod=options.prod,
         lite_profiler=options.enable_profiler,
         lite_tracemalloc=options.enable_tracemalloc,
-        lite_pem=api.env._join('dot_ipa', 'lite.pem'),
+        lite_pem=api.env._join("dot_ipa", "lite.pem"),
     )
     api.finalize()
     api_time = time.time()
@@ -220,8 +219,11 @@ def init_api(ccname):
             ldap2.connect(ccache=ccname)
     except NetworkError as e:
         logger.error("Unable to connect to LDAP: %s", e)
-        logger.error("lite-server needs a working LDAP connect. Did you "
-                     "configure ldap_uri in '%s'?", api.env.conf_default)
+        logger.error(
+            "lite-server needs a working LDAP connect. Did you "
+            "configure ldap_uri in '%s'?",
+            api.env.conf_default,
+        )
         sys.exit(2)
     else:
         # prefetch schema
@@ -238,33 +240,37 @@ def init_api(ccname):
 def redirect_ui(app):
     """Redirects for UI
     """
+
     def wsgi(environ, start_response):
-        path_info = environ['PATH_INFO']
-        if path_info in {'/', '/ipa', '/ipa/'}:
-            response = redirect('/ipa/ui/')
+        path_info = environ["PATH_INFO"]
+        if path_info in {"/", "/ipa", "/ipa/"}:
+            response = redirect("/ipa/ui/")
             return response(environ, start_response)
         # Redirect to append slash to some routes
-        if path_info in {'/ipa/ui', '/ipa/ui/test'}:
+        if path_info in {"/ipa/ui", "/ipa/ui/test"}:
             response = append_slash_redirect(environ)
             return response(environ, start_response)
-        if path_info == '/favicon.ico':
-            response = redirect('/ipa/ui/favicon.ico')
+        if path_info == "/favicon.ico":
+            response = redirect("/ipa/ui/favicon.ico")
             return response(environ, start_response)
         return app(environ, start_response)
+
     return wsgi
 
 
 def main():
     # workaround, start tracing IPA imports and API init ASAP
-    if any('--enable-tracemalloc' in arg for arg in sys.argv):
+    if any("--enable-tracemalloc" in arg for arg in sys.argv):
         tracemalloc.start()
 
     try:
         ccname = get_ccname()
     except ValueError as e:
         print("ERROR:", e, file=sys.stderr)
-        print("\nliteserver requires a KRB5CCNAME env var and "
-              "a valid Kerberos TGT:\n", file=sys.stderr)
+        print(
+            "\nliteserver requires a KRB5CCNAME env var and " "a valid Kerberos TGT:\n",
+            file=sys.stderr,
+        )
         print("    export KRB5CCNAME=~/.ipa/ccache", file=sys.stderr)
         print("    kinit\n", file=sys.stderr)
         sys.exit(1)
@@ -286,19 +292,17 @@ def main():
         ctx = None
 
     app = NotFound()
-    app = DispatcherMiddleware(app, {
-        '/ipa': KRBCheater(api.Backend.wsgi_dispatch, ccname),
-    })
+    app = DispatcherMiddleware(
+        app, {"/ipa": KRBCheater(api.Backend.wsgi_dispatch, ccname),}
+    )
 
     # only profile api calls
-    if api.env.lite_profiler == '-':
-        print('Profiler enable, stats are written to stderr.')
+    if api.env.lite_profiler == "-":
+        print("Profiler enable, stats are written to stderr.")
         app = ProfilerMiddleware(app, stream=sys.stderr, restrictions=(30,))
     elif api.env.lite_profiler:
         profile_dir = os.path.abspath(api.env.lite_profiler)
-        print("Profiler enable, profiles are stored in '{}'.".format(
-            profile_dir
-        ))
+        print("Profiler enable, profiles are stored in '{}'.".format(profile_dir))
         app = ProfilerMiddleware(app, profile_dir=profile_dir)
 
     if api.env.lite_tracemalloc:
@@ -319,5 +323,6 @@ def main():
         # use_evalex=not api.env.webui_prod,
     )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

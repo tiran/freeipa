@@ -17,9 +17,6 @@ class ConnCheckInterface(service.ServiceAdminInstallInterface):
     remote master.
     """
 
-    skip_conncheck = knob(
-        None,
-        description="skip connection check to remote master",
-    )
+    skip_conncheck = knob(None, description="skip connection check to remote master",)
     skip_conncheck = enroll_only(skip_conncheck)
     skip_conncheck = replica_install_only(skip_conncheck)

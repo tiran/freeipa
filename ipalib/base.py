@@ -109,7 +109,7 @@ class ReadOnly:
         After the instance has been locked, attempting to set or delete an
         attribute will raise an AttributeError.
         """
-        assert self.__locked is False, '__lock__() can only be called once'
+        assert self.__locked is False, "__lock__() can only be called once"
         self.__locked = True
 
     def __islocked__(self):
@@ -128,9 +128,7 @@ class ReadOnly:
         :param value: Value to assign to attribute.
         """
         if self.__locked:
-            raise AttributeError(
-                SET_ERROR % (self.__class__.__name__, name, value)
-            )
+            raise AttributeError(SET_ERROR % (self.__class__.__name__, name, value))
         return object.__setattr__(self, name, value)
 
     def __delattr__(self, name):
@@ -142,9 +140,7 @@ class ReadOnly:
         :param name: Name of attribute to delete.
         """
         if self.__locked:
-            raise AttributeError(
-                DEL_ERROR % (self.__class__.__name__, name)
-            )
+            raise AttributeError(DEL_ERROR % (self.__class__.__name__, name))
         return object.__delattr__(self, name)
 
 
@@ -171,9 +167,9 @@ def lock(instance):
 
     :param instance: The instance of `ReadOnly` (or similar) to lock.
     """
-    assert instance.__islocked__() is False, 'already locked: %r' % instance
+    assert instance.__islocked__() is False, "already locked: %r" % instance
     instance.__lock__()
-    assert instance.__islocked__() is True, 'failed to lock: %r' % instance
+    assert instance.__islocked__() is True, "failed to lock: %r" % instance
     return instance
 
 
@@ -197,9 +193,9 @@ def islocked(instance):
 
     :param instance: The instance of `ReadOnly` (or similar) to interrogate.
     """
-    assert (
-        hasattr(instance, '__lock__') and callable(instance.__lock__)
-    ), 'no __lock__() method: %r' % instance
+    assert hasattr(instance, "__lock__") and callable(instance.__lock__), (
+        "no __lock__() method: %r" % instance
+    )
     return instance.__islocked__()
 
 
@@ -237,13 +233,9 @@ def check_name(name):
     :param name: Identifier to test.
     """
     if type(name) is not str:
-        raise TypeError(
-            TYPE_ERROR % ('name', str, name, type(name))
-        )
+        raise TypeError(TYPE_ERROR % ("name", str, name, type(name)))
     if re.match(NAME_REGEX, name) is None:
-        raise ValueError(
-            NAME_ERROR % (NAME_REGEX, name)
-        )
+        raise ValueError(NAME_ERROR % (NAME_REGEX, name))
     return name
 
 
@@ -391,31 +383,28 @@ class NameSpace(ReadOnly):
     examples, see the `plugable.API` and the `frontend.Command` classes.
     """
 
-    def __init__(self, members, sort=True, name_attr='name'):
+    def __init__(self, members, sort=True, name_attr="name"):
         """
         :param members: An iterable providing the members.
         :param sort: Whether to sort the members by member name.
         """
         if type(sort) is not bool:
-            raise TypeError(
-                TYPE_ERROR % ('sort', bool, sort, type(sort))
-            )
+            raise TypeError(TYPE_ERROR % ("sort", bool, sort, type(sort)))
         self.__sort = sort
         if sort:
-            self.__members = tuple(
-                sorted(members, key=lambda m: getattr(m, name_attr))
-            )
+            self.__members = tuple(sorted(members, key=lambda m: getattr(m, name_attr)))
         else:
             self.__members = tuple(members)
         self.__names = tuple(getattr(m, name_attr) for m in self.__members)
         self.__map = dict()
         for member in self.__members:
-            name = check_name(getattr(member,  name_attr))
+            name = check_name(getattr(member, name_attr))
             if name in self.__map:
-                raise AttributeError(OVERRIDE_ERROR %
-                    (self.__class__.__name__, name, self.__map[name], member)
+                raise AttributeError(
+                    OVERRIDE_ERROR
+                    % (self.__class__.__name__, name, self.__map[name], member)
                 )
-            assert not hasattr(self, name), 'Ouch! Has attribute %r' % name
+            assert not hasattr(self, name), "Ouch! Has attribute %r" % name
             self.__map[name] = member
             setattr(self, name, member)
         lock(self)
@@ -456,7 +445,7 @@ class NameSpace(ReadOnly):
         """
         Return ``True`` if namespace has a member named ``name``.
         """
-        name = getattr(name, '__name__', name)
+        name = getattr(name, "__name__", name)
         return name in self.__map
 
     def __getitem__(self, key):
@@ -465,14 +454,14 @@ class NameSpace(ReadOnly):
 
         :param key: The name or index of a member, or a slice object.
         """
-        key = getattr(key, '__name__',  key)
+        key = getattr(key, "__name__", key)
         if isinstance(key, str):
             return self.__map[key]
         if type(key) in (int, slice):
             return self.__members[key]
         raise TypeError(
-            TYPE_ERROR % ('key', (str, int, slice, 'object with __name__'),
-                          key, type(key))
+            TYPE_ERROR
+            % ("key", (str, int, slice, "object with __name__"), key, type(key))
         )
 
     def __repr__(self):
@@ -481,15 +470,10 @@ class NameSpace(ReadOnly):
         """
         cnt = len(self)
         if cnt == 1:
-            m = 'member'
+            m = "member"
         else:
-            m = 'members'
-        return '%s(<%d %s>, sort=%r)' % (
-            self.__class__.__name__,
-            cnt,
-            m,
-            self.__sort,
-        )
+            m = "members"
+        return "%s(<%d %s>, sort=%r)" % (self.__class__.__name__, cnt, m, self.__sort,)
 
     def __todict__(self):
         """

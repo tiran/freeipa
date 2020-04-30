@@ -40,17 +40,17 @@ class update_upload_cacrt(Updater):
 
     def execute(self, **options):
         serverid = realm_to_serverid(self.api.env.realm)
-        db = certs.CertDB(self.api.env.realm,
-                          nssdir=dsinstance.config_dirname(serverid))
+        db = certs.CertDB(
+            self.api.env.realm, nssdir=dsinstance.config_dirname(serverid)
+        )
         ca_cert = None
 
-        ca_enabled = self.api.Command.ca_is_enabled()['result']
+        ca_enabled = self.api.Command.ca_is_enabled()["result"]
         if ca_enabled:
             ca_nickname = certdb.get_ca_nickname(self.api.env.realm)
             ca_subject = certstore.get_ca_subject(
-                self.api.Backend.ldap2,
-                self.api.env.container_ca,
-                self.api.env.basedn)
+                self.api.Backend.ldap2, self.api.env.container_ca, self.api.env.basedn
+            )
         else:
             ca_nickname = None
             server_certs = db.find_server_certs()
@@ -77,22 +77,26 @@ class update_upload_cacrt(Updater):
                 trust_flags = certdb.IPA_CA_TRUST_FLAGS
             trust, _ca, eku = certstore.trust_flags_to_key_policy(trust_flags)
 
-            dn = DN(('cn', nickname), ('cn', 'certificates'), ('cn', 'ipa'),
-                    ('cn','etc'), self.api.env.basedn)
+            dn = DN(
+                ("cn", nickname),
+                ("cn", "certificates"),
+                ("cn", "ipa"),
+                ("cn", "etc"),
+                self.api.env.basedn,
+            )
             entry = ldap.make_entry(dn)
 
             try:
                 certstore.init_ca_entry(entry, cert, nickname, trust, eku)
             except Exception as e:
-                logger.warning("Failed to create entry for %s: %s",
-                               nickname, e)
+                logger.warning("Failed to create entry for %s: %s", nickname, e)
                 continue
             if nickname == ca_nickname:
                 ca_cert = cert
-                config = entry.setdefault('ipaConfigString', [])
+                config = entry.setdefault("ipaConfigString", [])
                 if ca_enabled:
-                    config.append('ipaCa')
-                config.append('compatCA')
+                    config.append("ipaCa")
+                config.append("compatCA")
 
             try:
                 ldap.add_entry(entry)
@@ -104,30 +108,31 @@ class update_upload_cacrt(Updater):
                         pass
 
         if ca_cert:
-            dn = DN(('cn', 'CACert'), ('cn', 'ipa'), ('cn','etc'),
-                    self.api.env.basedn)
+            dn = DN(("cn", "CACert"), ("cn", "ipa"), ("cn", "etc"), self.api.env.basedn)
             try:
                 entry = ldap.get_entry(dn)
             except errors.NotFound:
                 entry = ldap.make_entry(dn)
-                entry['objectclass'] = ['nsContainer', 'pkiCA']
-                entry.single_value['cn'] = 'CAcert'
-                entry.single_value['cACertificate;binary'] = ca_cert
+                entry["objectclass"] = ["nsContainer", "pkiCA"]
+                entry.single_value["cn"] = "CAcert"
+                entry.single_value["cACertificate;binary"] = ca_cert
                 ldap.add_entry(entry)
             else:
                 force_write = False
                 try:
-                    _cert_bin = entry['cACertificate;binary']
+                    _cert_bin = entry["cACertificate;binary"]
                 except ValueError:
                     # BZ 1644874
                     # sometimes the cert is badly stored, twice encoded
                     # force write to fix the value
-                    logger.debug('Fixing the value of cACertificate;binary '
-                                 'in entry %s', entry.dn)
+                    logger.debug(
+                        "Fixing the value of cACertificate;binary " "in entry %s",
+                        entry.dn,
+                    )
                     force_write = True
 
-                if force_write or b'' in entry['cACertificate;binary']:
-                    entry.single_value['cACertificate;binary'] = ca_cert
+                if force_write or b"" in entry["cACertificate;binary"]:
+                    entry.single_value["cACertificate;binary"] = ca_cert
                     ldap.update_entry(entry)
 
         return False, []

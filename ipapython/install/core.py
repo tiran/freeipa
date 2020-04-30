@@ -17,20 +17,28 @@ import six
 from . import util
 from .util import from_
 
-__all__ = ['InvalidStateError', 'KnobValueError', 'Property', 'knob',
-           'Configurable', 'group', 'Component', 'Composite']
+__all__ = [
+    "InvalidStateError",
+    "KnobValueError",
+    "Property",
+    "knob",
+    "Configurable",
+    "group",
+    "Component",
+    "Composite",
+]
 
 NoneType = type(None)
 builtin_type = type
 
 # Configurable states
-_VALIDATE_PENDING = 'VALIDATE_PENDING'
-_VALIDATE_RUNNING = 'VALIDATE_RUNNING'
-_EXECUTE_PENDING = 'EXECUTE_PENDING'
-_EXECUTE_RUNNING = 'EXECUTE_RUNNING'
-_STOPPED = 'STOPPED'
-_FAILED = 'FAILED'
-_CLOSED = 'CLOSED'
+_VALIDATE_PENDING = "VALIDATE_PENDING"
+_VALIDATE_RUNNING = "VALIDATE_RUNNING"
+_EXECUTE_PENDING = "EXECUTE_PENDING"
+_EXECUTE_RUNNING = "EXECUTE_RUNNING"
+_STOPPED = "STOPPED"
+_FAILED = "FAILED"
+_CLOSED = "CLOSED"
 
 _missing = object()
 _counter = itertools.count()
@@ -67,7 +75,7 @@ class PropertyBase(six.with_metaclass(util.InnerClassMeta, object)):
 
     @property
     def default(self):
-        raise AttributeError('default')
+        raise AttributeError("default")
 
     def __init__(self, outer):
         pass
@@ -101,9 +109,9 @@ class PropertyBase(six.with_metaclass(util.InnerClassMeta, object)):
 def Property(default=_missing):
     class_dict = {}
     if default is not _missing:
-        class_dict['default'] = default
+        class_dict["default"] = default
 
-    return util.InnerClassMeta('Property', (PropertyBase,), class_dict)
+    return util.InnerClassMeta("Property", (PropertyBase,), class_dict)
 
 
 class KnobBase(PropertyBase):
@@ -127,14 +135,14 @@ class KnobBase(PropertyBase):
 
     @classmethod
     def is_cli_positional(cls):
-        return all(n is not None and not n.startswith('-')
-                   for n in cls.cli_names)
+        return all(n is not None and not n.startswith("-") for n in cls.cli_names)
 
     @classmethod
     def default_getter(cls, func):
         @property
         def default(self):
             return func(self.outer)
+
         cls.default = default
 
         return cls
@@ -144,15 +152,25 @@ class KnobBase(PropertyBase):
         def validate(self, value):
             func(self.outer, value)
             super(cls, self).validate(value)
+
         cls.validate = validate
 
         return cls
 
 
-def _knob(type=_missing, default=_missing, bases=_missing, _order=_missing,
-          sensitive=_missing, deprecated=_missing, description=_missing,
-          group=_missing, cli_names=_missing, cli_deprecated_names=_missing,
-          cli_metavar=_missing):
+def _knob(
+    type=_missing,
+    default=_missing,
+    bases=_missing,
+    _order=_missing,
+    sensitive=_missing,
+    deprecated=_missing,
+    description=_missing,
+    group=_missing,
+    cli_names=_missing,
+    cli_deprecated_names=_missing,
+    cli_metavar=_missing,
+):
     if type is None:
         type = NoneType
 
@@ -173,42 +191,37 @@ def _knob(type=_missing, default=_missing, bases=_missing, _order=_missing,
 
     class_dict = {}
     if type is not _missing:
-        class_dict['type'] = type
+        class_dict["type"] = type
     if default is not _missing:
-        class_dict['default'] = default
+        class_dict["default"] = default
     if _order is not _missing:
-        class_dict['_order'] = _order
+        class_dict["_order"] = _order
     if sensitive is not _missing:
-        class_dict['sensitive'] = sensitive
+        class_dict["sensitive"] = sensitive
     if deprecated is not _missing:
-        class_dict['deprecated'] = deprecated
+        class_dict["deprecated"] = deprecated
     if description is not _missing:
-        class_dict['description'] = description
+        class_dict["description"] = description
     if group is not _missing:
-        class_dict['group'] = group
+        class_dict["group"] = group
     if cli_names is not _missing:
-        class_dict['cli_names'] = cli_names
+        class_dict["cli_names"] = cli_names
     if cli_deprecated_names is not _missing:
-        class_dict['cli_deprecated_names'] = cli_deprecated_names
+        class_dict["cli_deprecated_names"] = cli_deprecated_names
     if cli_metavar is not _missing:
-        class_dict['cli_metavar'] = cli_metavar
+        class_dict["cli_metavar"] = cli_metavar
 
-    return util.InnerClassMeta('Knob', bases, class_dict)
+    return util.InnerClassMeta("Knob", bases, class_dict)
 
 
 def knob(type, default=_missing, **kwargs):
     """
     Define a new knob.
     """
-    return _knob(
-        type, default,
-        _order=next(_counter),
-        **kwargs
-    )
+    return _knob(type, default, _order=next(_counter), **kwargs)
 
 
-def extend_knob(base, default=_missing, bases=_missing, group=_missing,
-                **kwargs):
+def extend_knob(base, default=_missing, bases=_missing, group=_missing, **kwargs):
     """
     Extend an existing knob.
     """
@@ -218,13 +231,7 @@ def extend_knob(base, default=_missing, bases=_missing, group=_missing,
     if group is _missing:
         group = staticmethod(base.group)
 
-    return _knob(
-        _missing, default,
-        bases=bases,
-        _order=_missing,
-        group=group,
-        **kwargs
-    )
+    return _knob(_missing, default, bases=bases, _order=_missing, group=group, **kwargs)
 
 
 class Configurable(six.with_metaclass(abc.ABCMeta, object)):
@@ -240,7 +247,7 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
         Iterate over properties defined for the configurable.
         """
 
-        assert not hasattr(super(Configurable, cls), 'properties')
+        assert not hasattr(super(Configurable, cls), "properties")
 
         seen = set()
 
@@ -273,7 +280,7 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
 
     @classmethod
     def group(cls):
-        assert not hasattr(super(Configurable, cls), 'group')
+        assert not hasattr(super(Configurable, cls), "group")
 
     def __init__(self, **kwargs):
         """
@@ -282,7 +289,7 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
 
         cls = self.__class__
         for owner_cls, name in cls.properties():
-            if name.startswith('_'):
+            if name.startswith("_"):
                 continue
             prop_cls = getattr(owner_cls, name)
             if not isinstance(prop_cls, type):
@@ -298,7 +305,7 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
                 setattr(self, name, value)
 
         for owner_cls, name in cls.knobs():
-            if name.startswith('_'):
+            if name.startswith("_"):
                 continue
             if not isinstance(self, owner_cls):
                 continue
@@ -319,18 +326,20 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
                 "{0}() got {1} unexpected keyword arguments: {2}".format(
                     type(self).__name__,
                     len(extra),
-                    ', '.join(repr(name) for name in extra)))
+                    ", ".join(repr(name) for name in extra),
+                )
+            )
 
         self._reset()
 
     def _reset(self):
-        assert not hasattr(super(Configurable, self), '_reset')
+        assert not hasattr(super(Configurable, self), "_reset")
 
         self.__state = _VALIDATE_PENDING
         self.__gen = util.run_generator_with_yield_from(self._configure())
 
     def _get_components(self):
-        assert not hasattr(super(Configurable, self), '_get_components')
+        assert not hasattr(super(Configurable, self), "_get_components")
 
         raise TypeError("{0} is not composite".format(self))
 
@@ -343,7 +352,7 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
         Coroutine which defines the logic of the configurable.
         """
 
-        assert not hasattr(super(Configurable, self), '_configure')
+        assert not hasattr(super(Configurable, self), "_configure")
 
         self.__transition(_VALIDATE_RUNNING, _EXECUTE_PENDING)
 
@@ -373,9 +382,9 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
         Coroutine which runs the validation part of the configurable.
         """
 
-        return self.__runner(_VALIDATE_PENDING,
-                             _VALIDATE_RUNNING,
-                             self._handle_validate_exception)
+        return self.__runner(
+            _VALIDATE_PENDING, _VALIDATE_RUNNING, self._handle_validate_exception
+        )
 
     def execute(self):
         """
@@ -394,9 +403,9 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
         Coroutine which runs the execution part of the configurable.
         """
 
-        return self.__runner(_EXECUTE_PENDING,
-                             _EXECUTE_RUNNING,
-                             self._handle_execute_exception)
+        return self.__runner(
+            _EXECUTE_PENDING, _EXECUTE_RUNNING, self._handle_execute_exception
+        )
 
     def done(self):
         """
@@ -445,18 +454,16 @@ class Configurable(six.with_metaclass(abc.ABCMeta, object)):
                 step = lambda: next(self.__gen)
 
     def _handle_exception(self, exc_info):
-        assert not hasattr(super(Configurable, self), '_handle_exception')
+        assert not hasattr(super(Configurable, self), "_handle_exception")
 
         six.reraise(*exc_info)
 
     def _handle_validate_exception(self, exc_info):
-        assert not hasattr(super(Configurable, self),
-                           '_handle_validate_exception')
+        assert not hasattr(super(Configurable, self), "_handle_validate_exception")
         self._handle_exception(exc_info)
 
     def _handle_execute_exception(self, exc_info):
-        assert not hasattr(super(Configurable, self),
-                           '_handle_execute_exception')
+        assert not hasattr(super(Configurable, self), "_handle_execute_exception")
         self._handle_exception(exc_info)
 
     def __transition(self, from_state, to_state):
@@ -520,9 +527,9 @@ class ComponentBase(six.with_metaclass(ComponentMeta, Configurable)):
 
 def Component(cls):
     class_dict = {}
-    class_dict['_order'] = next(_counter)
+    class_dict["_order"] = next(_counter)
 
-    return ComponentMeta('Component', (ComponentBase, cls), class_dict)
+    return ComponentMeta("Component", (ComponentBase, cls), class_dict)
 
 
 class Composite(Configurable):
@@ -563,12 +570,15 @@ class Composite(Configurable):
                         if name not in owner_dict[owner_cls]:
                             owner_dict[owner_cls].append(name)
                     elif not issubclass(last_knob_cls, knob_cls):
-                        raise TypeError("{0}.knobs(): conflicting definitions "
-                                        "of '{1}' in {2} and {3}".format(
-                                            cls.__name__,
-                                            name,
-                                            last_owner_cls.__name__,
-                                            owner_cls.__name__))
+                        raise TypeError(
+                            "{0}.knobs(): conflicting definitions "
+                            "of '{1}' in {2} and {3}".format(
+                                cls.__name__,
+                                name,
+                                last_owner_cls.__name__,
+                                owner_cls.__name__,
+                            )
+                        )
 
         for owner_cls in sorted(owner_dict, key=_class_key):
             for name in owner_dict[owner_cls]:
@@ -576,7 +586,7 @@ class Composite(Configurable):
 
     @classmethod
     def components(cls):
-        assert not hasattr(super(Composite, cls), 'components')
+        assert not hasattr(super(Composite, cls), "components")
 
         seen = set()
 
@@ -646,8 +656,7 @@ class Composite(Configurable):
 
         yield from_(super(Composite, self)._configure())
 
-        execute = [(c, c._executor()) for c in self.__components
-            if not c.done()]
+        execute = [(c, c._executor()) for c in self.__components if not c.done()]
         while True:
             new_execute = []
             for child, executor in execute:

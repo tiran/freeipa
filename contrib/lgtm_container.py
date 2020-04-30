@@ -7,16 +7,17 @@ $ docker build -t lgtm .
 import os
 import yaml
 
-LGTM_YML = os.path.join(os.path.dirname(__file__), '..', '.lgtm.yml')
+LGTM_YML = os.path.join(os.path.dirname(__file__), "..", ".lgtm.yml")
 
 
 def main():
     with open(LGTM_YML) as f:
         cfg = yaml.safe_load(f)
 
-    python = cfg['extraction']['python']
+    python = cfg["extraction"]["python"]
 
-    print("""\
+    print(
+        """\
     FROM ubuntu:bionic
     RUN apt-get update && \
         apt-get install -y {dpkg} python3-venv && \
@@ -27,10 +28,11 @@ def main():
     ADD . /freeipa
     RUN cd /freeipa && ./autogen.sh --with-ipaplatform=debian
     """.format(
-        dpkg=' '.join(python['prepare']['packages']),
-        pypkg=' '.join(python['python_setup']['requirements'])
-    ))
+            dpkg=" ".join(python["prepare"]["packages"]),
+            pypkg=" ".join(python["python_setup"]["requirements"]),
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

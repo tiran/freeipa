@@ -13,7 +13,8 @@ from __future__ import absolute_import
 from ipaplatform.base.paths import BasePathNamespace
 import sysconfig
 
-MULTIARCH = sysconfig.get_config_var('MULTIARCH')
+MULTIARCH = sysconfig.get_config_var("MULTIARCH")
+
 
 class DebianPathNamespace(BasePathNamespace):
     BIN_HOSTNAMECTL = "/usr/bin/hostnamectl"
@@ -82,7 +83,9 @@ class DebianPathNamespace(BasePathNamespace):
     PAM_KRB5_SO = "/usr/lib/{0}/security/pam_krb5.so".format(MULTIARCH)
     LIB_SYSTEMD_SYSTEMD_DIR = "/lib/systemd/system/"
     LIBEXEC_CERTMONGER_DIR = "/usr/lib/certmonger"
-    DOGTAG_IPA_CA_RENEW_AGENT_SUBMIT = "/usr/lib/certmonger/dogtag-ipa-ca-renew-agent-submit"
+    DOGTAG_IPA_CA_RENEW_AGENT_SUBMIT = (
+        "/usr/lib/certmonger/dogtag-ipa-ca-renew-agent-submit"
+    )
     DOGTAG_IPA_RENEW_AGENT_SUBMIT = "/usr/lib/certmonger/dogtag-ipa-renew-agent-submit"
     CERTMONGER_DOGTAG_SUBMIT = "/usr/lib/certmonger/dogtag-submit"
     IPA_SERVER_GUARD = "/usr/lib/certmonger/ipa-server-guard"
@@ -114,8 +117,9 @@ class DebianPathNamespace(BasePathNamespace):
     OPENDNSSEC_KASP_DB = "/var/lib/opendnssec/db/kasp.db"
     IPA_ODS_EXPORTER_CCACHE = "/var/lib/opendnssec/tmp/ipa-ods-exporter.ccache"
     IPA_CUSTODIA_SOCKET = "/run/apache2/ipa-custodia.sock"
-    IPA_CUSTODIA_AUDIT_LOG = '/var/log/ipa-custodia.audit.log'
+    IPA_CUSTODIA_AUDIT_LOG = "/var/log/ipa-custodia.audit.log"
     IPA_CUSTODIA_HANDLER = "/usr/lib/ipa/custodia"
     WSGI_PREFIX_DIR = "/run/apache2/wsgi"
+
 
 paths = DebianPathNamespace()

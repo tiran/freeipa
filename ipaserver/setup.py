@@ -23,26 +23,26 @@ Python-level packaging using setuptools
 from os.path import abspath, dirname
 import sys
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # include ../ for ipasetup.py
     sys.path.append(dirname(dirname(abspath(__file__))))
     from ipasetup import ipasetup  # noqa: E402
 
     ipasetup(
-        name='ipaserver',
+        name="ipaserver",
         doc=__doc__,
-        package_dir={'ipaserver': ''},
+        package_dir={"ipaserver": ""},
         packages=[
-            'ipaserver',
-            'ipaserver.advise',
-            'ipaserver.advise.plugins',
-            'ipaserver.dnssec',
-            'ipaserver.plugins',
-            'ipaserver.secrets',
-            'ipaserver.secrets.handlers',
-            'ipaserver.install',
-            'ipaserver.install.plugins',
-            'ipaserver.install.server',
+            "ipaserver",
+            "ipaserver.advise",
+            "ipaserver.advise.plugins",
+            "ipaserver.dnssec",
+            "ipaserver.plugins",
+            "ipaserver.secrets",
+            "ipaserver.secrets.handlers",
+            "ipaserver.install",
+            "ipaserver.install.plugins",
+            "ipaserver.install.server",
         ],
         install_requires=[
             "cryptography",
@@ -66,12 +66,8 @@ if __name__ == '__main__':
             "python-ldap",
         ],
         entry_points={
-            'custodia.authorizers': [
-                'IPAKEMKeys = ipaserver.secrets.kem:IPAKEMKeys',
-            ],
-            'custodia.stores': [
-                'IPASecStore = ipaserver.secrets.store:IPASecStore',
-            ],
+            "custodia.authorizers": ["IPAKEMKeys = ipaserver.secrets.kem:IPAKEMKeys",],
+            "custodia.stores": ["IPASecStore = ipaserver.secrets.store:IPASecStore",],
         },
         extras_require={
             # These packages are currently not available on PyPI.
@@ -79,5 +75,5 @@ if __name__ == '__main__':
             "hbactest": ["pyhbac"],
             "install": ["SSSDConfig"],
             "trust": ["pysss_murmur", "pysss_nss_idmap"],
-        }
+        },
     )

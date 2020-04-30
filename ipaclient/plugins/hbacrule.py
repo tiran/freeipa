@@ -23,23 +23,19 @@ from ipalib.plugable import Registry
 register = Registry()
 
 
-#@register()
+# @register()
 class hbacrule_add_accesstime(MethodOverride):
     def output_for_cli(self, textui, result, cn, **options):
         textui.print_name(self.name)
         textui.print_dashed(
-            'Added access time "%s" to HBAC rule "%s"' % (
-                options['accesstime'], cn
-            )
+            'Added access time "%s" to HBAC rule "%s"' % (options["accesstime"], cn)
         )
 
 
-#@register()
+# @register()
 class hbacrule_remove_accesstime(MethodOverride):
     def output_for_cli(self, textui, result, cn, **options):
         textui.print_name(self.name)
         textui.print_dashed(
-            'Removed access time "%s" from HBAC rule "%s"' % (
-                options['accesstime'], cn
-            )
+            'Removed access time "%s" from HBAC rule "%s"' % (options["accesstime"], cn)
         )

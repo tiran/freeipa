@@ -40,6 +40,7 @@ class test_ReadOnly(ClassChecker):
     """
     Test the `ipalib.base.ReadOnly` class
     """
+
     _cls = base.ReadOnly
 
     def test_lock(self):
@@ -50,9 +51,9 @@ class test_ReadOnly(ClassChecker):
         assert o._ReadOnly__locked is False
         o.__lock__()
         assert o._ReadOnly__locked is True
-        e = raises(AssertionError, o.__lock__) # Can only be locked once
-        assert str(e) == '__lock__() can only be called once'
-        assert o._ReadOnly__locked is True # This should still be True
+        e = raises(AssertionError, o.__lock__)  # Can only be locked once
+        assert str(e) == "__lock__() can only be called once"
+        assert o._ReadOnly__locked is True  # This should still be True
 
     def test_islocked(self):
         """
@@ -68,29 +69,29 @@ class test_ReadOnly(ClassChecker):
         Test the `ipalib.base.ReadOnly.__setattr__` method.
         """
         o = self.cls()
-        o.attr1 = 'Hello, world!'
-        assert o.attr1 == 'Hello, world!'
+        o.attr1 = "Hello, world!"
+        assert o.attr1 == "Hello, world!"
         o.__lock__()
-        for name in ('attr1', 'attr2'):
-            e = raises(AttributeError, setattr, o, name, 'whatever')
-            assert str(e) == SET_ERROR % ('ReadOnly', name, 'whatever')
-        assert o.attr1 == 'Hello, world!'
+        for name in ("attr1", "attr2"):
+            e = raises(AttributeError, setattr, o, name, "whatever")
+            assert str(e) == SET_ERROR % ("ReadOnly", name, "whatever")
+        assert o.attr1 == "Hello, world!"
 
     def test_delattr(self):
         """
         Test the `ipalib.base.ReadOnly.__delattr__` method.
         """
         o = self.cls()
-        o.attr1 = 'Hello, world!'
-        o.attr2 = 'How are you?'
-        assert o.attr1 == 'Hello, world!'
-        assert o.attr2 == 'How are you?'
+        o.attr1 = "Hello, world!"
+        o.attr2 = "How are you?"
+        assert o.attr1 == "Hello, world!"
+        assert o.attr2 == "How are you?"
         del o.attr1
-        assert not hasattr(o, 'attr1')
+        assert not hasattr(o, "attr1")
         o.__lock__()
-        e = raises(AttributeError, delattr, o, 'attr2')
-        assert str(e) == DEL_ERROR % ('ReadOnly', 'attr2')
-        assert o.attr2 == 'How are you?'
+        e = raises(AttributeError, delattr, o, "attr2")
+        assert str(e) == DEL_ERROR % ("ReadOnly", "attr2")
+        assert o.attr2 == "How are you?"
 
 
 def test_lock():
@@ -105,31 +106,36 @@ def test_lock():
     assert f(o) is o
     assert o.__islocked__() is True
     e = raises(AssertionError, f, o)
-    assert str(e) == 'already locked: %r' % o
+    assert str(e) == "already locked: %r" % o
 
     # Test with another class implemented locking protocol:
     class Lockable:
         __locked = False
+
         def __lock__(self):
             self.__locked = True
+
         def __islocked__(self):
             return self.__locked
+
     o = Lockable()
     assert o.__islocked__() is False
     assert f(o) is o
     assert o.__islocked__() is True
     e = raises(AssertionError, f, o)
-    assert str(e) == 'already locked: %r' % o
+    assert str(e) == "already locked: %r" % o
 
     # Test with a class incorrectly implementing the locking protocol:
     class Broken:
         def __lock__(self):
             pass
+
         def __islocked__(self):
             return False
+
     o = Broken()
     e = raises(AssertionError, f, o)
-    assert str(e) == 'failed to lock: %r' % o
+    assert str(e) == "failed to lock: %r" % o
 
 
 def test_islocked():
@@ -147,10 +153,13 @@ def test_islocked():
     # Test with another class implemented locking protocol:
     class Lockable:
         __locked = False
+
         def __lock__(self):
             self.__locked = True
+
         def __islocked__(self):
             return self.__locked
+
     o = Lockable()
     assert f(o) is False
     o.__lock__()
@@ -159,11 +168,13 @@ def test_islocked():
     # Test with a class incorrectly implementing the locking protocol:
     class Broken:
         __lock__ = False
+
         def __islocked__(self):
             return False
+
     o = Broken()
     e = raises(AssertionError, f, o)
-    assert str(e) == 'no __lock__() method: %r' % o
+    assert str(e) == "no __lock__() method: %r" % o
 
 
 def test_check_name():
@@ -172,18 +183,18 @@ def test_check_name():
     """
     f = base.check_name
     okay = [
-        'user_add',
-        'stuff2junk',
-        'sixty9',
+        "user_add",
+        "stuff2junk",
+        "sixty9",
     ]
     nope = [
-        '_user_add',
-        '__user_add',
-        'user_add_',
-        'user_add__',
-        '_user_add_',
-        '__user_add__',
-        '60nine',
+        "_user_add",
+        "__user_add",
+        "user_add_",
+        "user_add__",
+        "_user_add_",
+        "__user_add__",
+        "60nine",
     ]
     for name in okay:
         assert name is f(name)
@@ -192,9 +203,9 @@ def test_check_name():
             bad_value = unicode(name)
         else:
             bad_type = bytes
-            bad_value = name.encode('ascii')
+            bad_value = name.encode("ascii")
         e = raises(TypeError, f, bad_value)
-        assert str(e) == TYPE_ERROR % ('name', str, bad_value, bad_type)
+        assert str(e) == TYPE_ERROR % ("name", str, bad_value, bad_type)
     for name in nope:
         e = raises(ValueError, f, name)
         assert str(e) == NAME_ERROR % (NAME_REGEX, name)
@@ -204,7 +215,7 @@ def test_check_name():
 
 
 def membername(i):
-    return 'member%03d' % i
+    return "member%03d" % i
 
 
 class DummyMember:
@@ -221,6 +232,7 @@ class test_NameSpace(ClassChecker):
     """
     Test the `ipalib.base.NameSpace` class.
     """
+
     _cls = base.NameSpace
 
     def new(self, count, sort=True):
@@ -249,13 +261,16 @@ class test_NameSpace(ClassChecker):
 
         # Test that TypeError is raised if sort is not a bool:
         e = raises(TypeError, self.cls, [], sort=None)
-        assert str(e) == TYPE_ERROR % ('sort', bool, None, type(None))
+        assert str(e) == TYPE_ERROR % ("sort", bool, None, type(None))
 
         # Test that AttributeError is raised with duplicate member name:
         members = gen_members(0, 1, 2, 1, 3)
         e = raises(AttributeError, self.cls, members)
         assert str(e) == OVERRIDE_ERROR % (
-            'NameSpace', membername(1), members[1], members[3]
+            "NameSpace",
+            membername(1),
+            members[1],
+            members[3],
         )
 
     def test_len(self):
@@ -317,7 +332,7 @@ class test_NameSpace(ClassChecker):
             # Test str keys:
             for m in members:
                 assert o[m.name] is m
-            e = raises(KeyError, o.__getitem__, 'nope')
+            e = raises(KeyError, o.__getitem__, "nope")
 
             # Test int indexes:
             for i in range(cnt):
@@ -344,8 +359,11 @@ class test_NameSpace(ClassChecker):
             # Test that TypeError is raised with wrong type
             e = raises(TypeError, o.__getitem__, 3.0)
             assert str(e) == TYPE_ERROR % (
-                'key', (str, int, slice, 'object with __name__'),
-                3.0, float)
+                "key",
+                (str, int, slice, "object with __name__"),
+                3.0,
+                float,
+            )
 
     def test_repr(self):
         """
@@ -355,11 +373,9 @@ class test_NameSpace(ClassChecker):
             for sort in (True, False):
                 o, _members = self.new(cnt, sort=sort)
                 if cnt == 1:
-                    assert repr(o) == \
-                        'NameSpace(<%d member>, sort=%r)' % (cnt, sort)
+                    assert repr(o) == "NameSpace(<%d member>, sort=%r)" % (cnt, sort)
                 else:
-                    assert repr(o) == \
-                        'NameSpace(<%d members>, sort=%r)' % (cnt, sort)
+                    assert repr(o) == "NameSpace(<%d members>, sort=%r)" % (cnt, sort)
 
     def test_todict(self):
         """

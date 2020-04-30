@@ -45,7 +45,10 @@ from cryptography import utils as crypto_utils
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import (
-    Encoding, PublicFormat, PrivateFormat, load_pem_private_key
+    Encoding,
+    PublicFormat,
+    PrivateFormat,
+    load_pem_private_key,
 )
 import pyasn1
 import pyasn1.error
@@ -64,24 +67,25 @@ PEM = 0
 DER = 1
 
 PEM_CERT_REGEX = re.compile(
-    b'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',
-    re.DOTALL)
+    b"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", re.DOTALL
+)
 PEM_PRIV_REGEX = re.compile(
-    b'-----BEGIN(?: ENCRYPTED)?(?: (?:RSA|DSA|DH|EC))? PRIVATE KEY-----.*?'
-    b'-----END(?: ENCRYPTED)?(?: (?:RSA|DSA|DH|EC))? PRIVATE KEY-----',
-    re.DOTALL)
+    b"-----BEGIN(?: ENCRYPTED)?(?: (?:RSA|DSA|DH|EC))? PRIVATE KEY-----.*?"
+    b"-----END(?: ENCRYPTED)?(?: (?:RSA|DSA|DH|EC))? PRIVATE KEY-----",
+    re.DOTALL,
+)
 
-EKU_SERVER_AUTH = '1.3.6.1.5.5.7.3.1'
-EKU_CLIENT_AUTH = '1.3.6.1.5.5.7.3.2'
-EKU_CODE_SIGNING = '1.3.6.1.5.5.7.3.3'
-EKU_EMAIL_PROTECTION = '1.3.6.1.5.5.7.3.4'
-EKU_PKINIT_CLIENT_AUTH = '1.3.6.1.5.2.3.4'
-EKU_PKINIT_KDC = '1.3.6.1.5.2.3.5'
-EKU_ANY = '2.5.29.37.0'
-EKU_PLACEHOLDER = '1.3.6.1.4.1.3319.6.10.16'
+EKU_SERVER_AUTH = "1.3.6.1.5.5.7.3.1"
+EKU_CLIENT_AUTH = "1.3.6.1.5.5.7.3.2"
+EKU_CODE_SIGNING = "1.3.6.1.5.5.7.3.3"
+EKU_EMAIL_PROTECTION = "1.3.6.1.5.5.7.3.4"
+EKU_PKINIT_CLIENT_AUTH = "1.3.6.1.5.2.3.4"
+EKU_PKINIT_KDC = "1.3.6.1.5.2.3.5"
+EKU_ANY = "2.5.29.37.0"
+EKU_PLACEHOLDER = "1.3.6.1.4.1.3319.6.10.16"
 
-SAN_UPN = '1.3.6.1.4.1.311.20.2.3'
-SAN_KRB5PRINCIPALNAME = '1.3.6.1.5.2.2'
+SAN_UPN = "1.3.6.1.4.1.311.20.2.3"
+SAN_KRB5PRINCIPALNAME = "1.3.6.1.5.2.2"
 
 
 @crypto_utils.register_interface(crypto_x509.Certificate)
@@ -90,6 +94,7 @@ class IPACertificate:
     A proxy class wrapping a python-cryptography certificate representation for
     FreeIPA purposes
     """
+
     def __init__(self, cert, backend=None):
         """
         :param cert: A python-cryptography Certificate object
@@ -101,25 +106,26 @@ class IPACertificate:
         # initialize the certificate fields
         # we have to do it this way so that some systems don't explode since
         # some field types encode-decoding is not strongly defined
-        self._subject = self.__get_der_field('subject')
-        self._issuer = self.__get_der_field('issuer')
-        self._serial_number = self.__get_der_field('serialNumber')
+        self._subject = self.__get_der_field("subject")
+        self._issuer = self.__get_der_field("issuer")
+        self._serial_number = self.__get_der_field("serialNumber")
 
     def __getstate__(self):
         state = {
-            '_cert': self.public_bytes(Encoding.DER),
-            '_subject': self.subject_bytes,
-            '_issuer': self.issuer_bytes,
-            '_serial_number': self._serial_number,
+            "_cert": self.public_bytes(Encoding.DER),
+            "_subject": self.subject_bytes,
+            "_issuer": self.issuer_bytes,
+            "_serial_number": self._serial_number,
         }
         return state
 
     def __setstate__(self, state):
-        self._subject = state['_subject']
-        self._issuer = state['_issuer']
-        self._issuer = state['_serial_number']
+        self._subject = state["_subject"]
+        self._issuer = state["_issuer"]
+        self._issuer = state["_serial_number"]
         self._cert = crypto_x509.load_der_x509_certificate(
-            state['_cert'], backend=default_backend())
+            state["_cert"], backend=default_backend()
+        )
 
     def __eq__(self, other):
         """
@@ -128,9 +134,8 @@ class IPACertificate:
         :param other: either cryptography.Certificate or IPACertificate or
                       bytes representing a DER-formatted certificate
         """
-        if (isinstance(other, (crypto_x509.Certificate, IPACertificate))):
-            return (self.public_bytes(Encoding.DER) ==
-                    other.public_bytes(Encoding.DER))
+        if isinstance(other, (crypto_x509.Certificate, IPACertificate)):
+            return self.public_bytes(Encoding.DER) == other.public_bytes(Encoding.DER)
         elif isinstance(other, bytes):
             return self.public_bytes(Encoding.DER) == other
         else:
@@ -154,13 +159,13 @@ class IPACertificate:
         ext = rfc2459.Extension()
         # TODO: this does not have to be so weird, pyasn1 now has codecs
         # which are capable of providing python-native types
-        ext['extnID'] = univ.ObjectIdentifier(oid)
-        ext['critical'] = univ.Boolean(critical)
-        if pyasn1.__version__.startswith('0.3'):
+        ext["extnID"] = univ.ObjectIdentifier(oid)
+        ext["critical"] = univ.Boolean(critical)
+        if pyasn1.__version__.startswith("0.3"):
             # pyasn1 <= 0.3.7 needs explicit encoding
             # see https://pagure.io/freeipa/issue/7685
             value = encoder.encode(univ.OctetString(value))
-        ext['extnValue'] = univ.Any(value)
+        ext["extnValue"] = univ.Any(value)
         ext = encoder.encode(ext)
         return ext
 
@@ -272,13 +277,15 @@ class IPACertificate:
     @property
     def public_key_info_bytes(self):
         return self._cert.public_key().public_bytes(
-            encoding=Encoding.DER, format=PublicFormat.SubjectPublicKeyInfo)
+            encoding=Encoding.DER, format=PublicFormat.SubjectPublicKeyInfo
+        )
 
     @property
     def extended_key_usage(self):
         try:
             ext_key_usage = self._cert.extensions.get_extension_for_oid(
-                crypto_x509.oid.ExtensionOID.EXTENDED_KEY_USAGE).value
+                crypto_x509.oid.ExtensionOID.EXTENDED_KEY_USAGE
+            ).value
         except crypto_x509.ExtensionNotFound:
             return None
 
@@ -294,7 +301,7 @@ class IPACertificate:
         for i, oid in enumerate(sorted(eku)):
             ekurfc[i] = univ.ObjectIdentifier(oid)
         ekurfc = encoder.encode(ekurfc)
-        return self.__encode_extension('2.5.29.37', EKU_ANY not in eku, ekurfc)
+        return self.__encode_extension("2.5.29.37", EKU_ANY not in eku, ekurfc)
 
     @property
     def san_general_names(self):
@@ -324,14 +331,15 @@ class IPACertificate:
         gns = self.__pyasn1_get_san_general_names()
 
         GENERAL_NAME_CONSTRUCTORS = {
-            'rfc822Name': lambda x: crypto_x509.RFC822Name(unicode(x)),
-            'dNSName': lambda x: crypto_x509.DNSName(unicode(x)),
-            'directoryName': _pyasn1_to_cryptography_directoryname,
-            'registeredID': _pyasn1_to_cryptography_registeredid,
-            'iPAddress': _pyasn1_to_cryptography_ipaddress,
-            'uniformResourceIdentifier':
-                lambda x: crypto_x509.UniformResourceIdentifier(unicode(x)),
-            'otherName': _pyasn1_to_cryptography_othername,
+            "rfc822Name": lambda x: crypto_x509.RFC822Name(unicode(x)),
+            "dNSName": lambda x: crypto_x509.DNSName(unicode(x)),
+            "directoryName": _pyasn1_to_cryptography_directoryname,
+            "registeredID": _pyasn1_to_cryptography_registeredid,
+            "iPAddress": _pyasn1_to_cryptography_ipaddress,
+            "uniformResourceIdentifier": lambda x: crypto_x509.UniformResourceIdentifier(
+                unicode(x)
+            ),
+            "otherName": _pyasn1_to_cryptography_othername,
         }
 
         result = []
@@ -339,21 +347,20 @@ class IPACertificate:
         for gn in gns:
             gn_type = gn.getName()
             if gn_type in GENERAL_NAME_CONSTRUCTORS:
-                result.append(
-                    GENERAL_NAME_CONSTRUCTORS[gn_type](gn.getComponent()))
+                result.append(GENERAL_NAME_CONSTRUCTORS[gn_type](gn.getComponent()))
 
         return result
 
     def __pyasn1_get_san_general_names(self):
         # pyasn1 returns None when the key is not present in the certificate
         # but we need an iterable
-        extensions = self.__get_pyasn1_field('extensions') or []
-        OID_SAN = univ.ObjectIdentifier('2.5.29.17')
+        extensions = self.__get_pyasn1_field("extensions") or []
+        OID_SAN = univ.ObjectIdentifier("2.5.29.17")
         gns = []
         for ext in extensions:
-            if ext['extnID'] == OID_SAN:
-                der = ext['extnValue']
-                if pyasn1.__version__.startswith('0.3'):
+            if ext["extnID"] == OID_SAN:
+                der = ext["extnValue"]
+                if pyasn1.__version__.startswith("0.3"):
                     # pyasn1 <= 0.3.7 needs explicit unwrap of ANY container
                     # see https://pagure.io/freeipa/issue/7685
                     der = decoder.decode(der, asn1Spec=univ.OctetString())[0]
@@ -367,7 +374,7 @@ class IPACertificate:
         result = []
 
         for gn in gns:
-            if gn.getName() == 'dNSName':
+            if gn.getName() == "dNSName":
                 result.append(unicode(gn.getComponent()))
 
         return result
@@ -375,19 +382,19 @@ class IPACertificate:
     def match_hostname(self, hostname):
         match_cert = {}
 
-        match_cert['subject'] = match_subject = []
+        match_cert["subject"] = match_subject = []
         for rdn in self._cert.subject.rdns:
             match_rdn = []
             for ava in rdn:
                 if ava.oid == crypto_x509.oid.NameOID.COMMON_NAME:
-                    match_rdn.append(('commonName', ava.value))
+                    match_rdn.append(("commonName", ava.value))
             match_subject.append(match_rdn)
 
         values = self.san_a_label_dns_names
         if values:
-            match_cert['subjectAltName'] = match_san = []
+            match_cert["subjectAltName"] = match_san = []
             for value in values:
-                match_san.append(('DNS', value))
+                match_san.append(("DNS", value))
 
         ssl.match_hostname(match_cert, DNSName(hostname).ToASCII())
 
@@ -436,7 +443,7 @@ def load_certificate_from_file(filename):
 
     Returns a python-cryptography ``Certificate`` object.
     """
-    with open(filename, mode='rb') as f:
+    with open(filename, mode="rb") as f:
         return load_pem_x509_certificate(f.read())
 
 
@@ -457,7 +464,7 @@ def load_certificate_list_from_file(filename):
     Return a list of python-cryptography ``Certificate`` objects.
 
     """
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         return load_certificate_list(f.read())
 
 
@@ -476,16 +483,17 @@ def load_private_key_list(data, password=None):
     for match in re.finditer(PEM_PRIV_REGEX, data):
         if re.search(b"ENCRYPTED", match.group()) is not None:
             if password is None:
-                raise RuntimeError("Password is required for the encrypted "
-                                   "keys in the bundle.")
+                raise RuntimeError(
+                    "Password is required for the encrypted " "keys in the bundle."
+                )
             # Load private key as encrypted
             priv_keys.append(
-                load_pem_private_key(match.group(), password,
-                                     backend=crypto_backend))
+                load_pem_private_key(match.group(), password, backend=crypto_backend)
+            )
         else:
             priv_keys.append(
-                load_pem_private_key(match.group(), None,
-                                     backend=crypto_backend))
+                load_pem_private_key(match.group(), None, backend=crypto_backend)
+            )
 
     return priv_keys
 
@@ -498,9 +506,8 @@ def pkcs7_to_certs(data, datatype=PEM):
     """
     if datatype == PEM:
         match = re.match(
-            br'-----BEGIN PKCS7-----(.*?)-----END PKCS7-----',
-            data,
-            re.DOTALL)
+            br"-----BEGIN PKCS7-----(.*?)-----END PKCS7-----", data, re.DOTALL
+        )
         if not match:
             raise ValueError("not a valid PKCS#7 PEM")
 
@@ -510,17 +517,18 @@ def pkcs7_to_certs(data, datatype=PEM):
     if tail:
         raise ValueError("not a valid PKCS#7 message")
 
-    if content_info['contentType'] != rfc2315.signedData:
+    if content_info["contentType"] != rfc2315.signedData:
         raise ValueError("not a PKCS#7 signed data message")
 
-    signed_data, tail = decoder.decode(bytes(content_info['content']),
-                                       rfc2315.SignedData())
+    signed_data, tail = decoder.decode(
+        bytes(content_info["content"]), rfc2315.SignedData()
+    )
     if tail:
         raise ValueError("not a valid PKCS#7 signed data message")
 
     result = []
 
-    for certificate in signed_data['certificates']:
+    for certificate in signed_data["certificates"]:
         certificate = encoder.encode(certificate)
         certificate = load_der_x509_certificate(certificate)
         result.append(certificate)
@@ -556,7 +564,7 @@ def write_certificate(cert, filename):
     """
 
     try:
-        with open(filename, 'wb') as fp:
+        with open(filename, "wb") as fp:
             fp.write(cert.public_bytes(Encoding.PEM))
     except (IOError, OSError) as e:
         raise errors.FileError(reason=str(e))
@@ -571,7 +579,7 @@ def write_certificate_list(certs, filename, mode=None):
     """
 
     try:
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             if mode is not None:
                 os.fchmod(f.fileno(), mode)
             for cert in certs:
@@ -594,47 +602,60 @@ def write_pem_private_key(priv_key, filename, passwd=None):
     else:
         enc_alg = serialization.NoEncryption()
     try:
-        with open(filename, 'wb') as fp:
+        with open(filename, "wb") as fp:
             os.fchmod(fp.fileno(), 0o600)
-            fp.write(priv_key.private_bytes(
-                Encoding.PEM,
-                PrivateFormat.PKCS8,
-                encryption_algorithm=enc_alg))
+            fp.write(
+                priv_key.private_bytes(
+                    Encoding.PEM, PrivateFormat.PKCS8, encryption_algorithm=enc_alg
+                )
+            )
     except (IOError, OSError) as e:
         raise errors.FileError(reason=str(e))
 
 
 class _PrincipalName(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('name-type', univ.Integer().subtype(
-            explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))
+        namedtype.NamedType(
+            "name-type",
+            univ.Integer().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0)
+            ),
         ),
-        namedtype.NamedType('name-string', univ.SequenceOf(char.GeneralString()).subtype(
-            explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))
+        namedtype.NamedType(
+            "name-string",
+            univ.SequenceOf(char.GeneralString()).subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1)
+            ),
         ),
     )
 
 
 class _KRB5PrincipalName(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('realm', char.GeneralString().subtype(
-            explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))
+        namedtype.NamedType(
+            "realm",
+            char.GeneralString().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0)
+            ),
         ),
-        namedtype.NamedType('principalName', _PrincipalName().subtype(
-            explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))
+        namedtype.NamedType(
+            "principalName",
+            _PrincipalName().subtype(
+                explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1)
+            ),
         ),
     )
 
 
 def _decode_krb5principalname(data):
     principal = decoder.decode(data, asn1Spec=_KRB5PrincipalName())[0]
-    realm = (unicode(principal['realm']).replace('\\', '\\\\')
-                                        .replace('@', '\\@'))
-    name = principal['principalName']['name-string']
-    name = u'/'.join(unicode(n).replace('\\', '\\\\')
-                               .replace('/', '\\/')
-                               .replace('@', '\\@') for n in name)
-    name = u'%s@%s' % (name, realm)
+    realm = unicode(principal["realm"]).replace("\\", "\\\\").replace("@", "\\@")
+    name = principal["principalName"]["name-string"]
+    name = u"/".join(
+        unicode(n).replace("\\", "\\\\").replace("/", "\\/").replace("@", "\\@")
+        for n in name
+    )
+    name = u"%s@%s" % (name, realm)
     return name
 
 
@@ -647,8 +668,7 @@ class KRB5PrincipalName(crypto_x509.general_name.OtherName):
 class UPN(crypto_x509.general_name.OtherName):
     def __init__(self, type_id, value):
         super(UPN, self).__init__(type_id, value)
-        self.name = unicode(
-            decoder.decode(value, asn1Spec=char.UTF8String())[0])
+        self.name = unicode(decoder.decode(value, asn1Spec=char.UTF8String())[0])
 
 
 OTHERNAME_CLASS_MAP = {
@@ -666,8 +686,8 @@ def process_othernames(gns):
     for gn in gns:
         if isinstance(gn, crypto_x509.general_name.OtherName):
             cls = OTHERNAME_CLASS_MAP.get(
-                gn.type_id.dotted_string,
-                crypto_x509.general_name.OtherName)
+                gn.type_id.dotted_string, crypto_x509.general_name.OtherName
+            )
             yield cls(gn.type_id, gn.value)
         else:
             yield gn
@@ -680,8 +700,8 @@ def _pyasn1_to_cryptography_directoryname(dn):
     for rdn in dn.getComponent():
         for ava in rdn:
             attr = crypto_x509.NameAttribute(
-                _pyasn1_to_cryptography_oid(ava['type']),
-                unicode(decoder.decode(ava['value'])[0])
+                _pyasn1_to_cryptography_oid(ava["type"]),
+                unicode(decoder.decode(ava["value"])[0]),
             )
             attrs.append(attr)
 
@@ -693,14 +713,12 @@ def _pyasn1_to_cryptography_registeredid(oid):
 
 
 def _pyasn1_to_cryptography_ipaddress(octet_string):
-    return crypto_x509.IPAddress(
-        ipaddress.ip_address(bytes(octet_string)))
+    return crypto_x509.IPAddress(ipaddress.ip_address(bytes(octet_string)))
 
 
 def _pyasn1_to_cryptography_othername(on):
     return crypto_x509.OtherName(
-        _pyasn1_to_cryptography_oid(on['type-id']),
-        bytes(on['value'])
+        _pyasn1_to_cryptography_oid(on["type-id"]), bytes(on["value"])
     )
 
 
@@ -717,17 +735,17 @@ def chunk(size, s):
     Works on character strings only.
 
     """
-    return (u''.join(span) for span in six.moves.zip(*[iter(s)] * size))
+    return (u"".join(span) for span in six.moves.zip(*[iter(s)] * size))
 
 
 def add_colons(s):
     """Add colons between each nibble pair in a hex string."""
-    return u':'.join(chunk(2, s))
+    return u":".join(chunk(2, s))
 
 
 def to_hex_with_colons(bs):
     """Convert bytes to a hex string with colons."""
-    return add_colons(binascii.hexlify(bs).decode('utf-8'))
+    return add_colons(binascii.hexlify(bs).decode("utf-8"))
 
 
 class UTC(datetime.tzinfo):
@@ -750,8 +768,8 @@ def format_datetime(t):
 
 
 class ExternalCAType(enum.Enum):
-    GENERIC = 'generic'
-    MS_CS = 'ms-cs'
+    GENERIC = "generic"
+    MS_CS = "ms-cs"
 
 
 class ExternalCAProfile:
@@ -766,6 +784,7 @@ class ExternalCAProfile:
     Subclasses MUST set ``valid_for``.
 
     """
+
     def __init__(self, s=None):
         self.unparsed_input = s
 
@@ -789,9 +808,9 @@ class ExternalCAProfile:
         # argument is required, and is used to determine which
         # subclass to construct
         if s is None:
-            raise ValueError('string argument is required')
+            raise ValueError("string argument is required")
 
-        parts = s.split(':')
+        parts = s.split(":")
 
         try:
             # Is the first part on OID?
@@ -823,6 +842,7 @@ class MSCSTemplate(ExternalCAProfile):
     Subclass constructors MUST set asn1obj.
 
     """
+
     valid_for = set([ExternalCAType.MS_CS.value])
 
     ext_oid = None  # extension OID, as a Python str
@@ -847,14 +867,16 @@ class MSCSTemplateV1(MSCSTemplate):
     But note that a bare BMPString is used in practice.
 
     """
+
     ext_oid = "1.3.6.1.4.1.311.20.2"
 
     def __init__(self, s):
         super(MSCSTemplateV1, self).__init__(s)
-        parts = s.split(':')
+        parts = s.split(":")
         if len(parts) > 1:
             raise ValueError(
-                "Cannot specify certificate template version when using name.")
+                "Cannot specify certificate template version when using name."
+            )
         self.asn1obj = char.BMPString(str(parts[0]))
 
 
@@ -874,36 +896,38 @@ class MSCSTemplateV2(MSCSTemplate):
         TemplateVersion ::= INTEGER (0..4294967295)
 
     """
+
     ext_oid = "1.3.6.1.4.1.311.21.7"
 
     @staticmethod
     def check_version_in_range(desc, n):
-        if n < 0 or n >= 2**32:
+        if n < 0 or n >= 2 ** 32:
             raise ValueError(
-                "Template {} version must be in range 0..4294967295"
-                .format(desc))
+                "Template {} version must be in range 0..4294967295".format(desc)
+            )
 
     def __init__(self, s):
         super(MSCSTemplateV2, self).__init__(s)
 
-        parts = s.split(':')
+        parts = s.split(":")
 
         obj = CertificateTemplateV2()
         if len(parts) < 2 or len(parts) > 3:
             raise ValueError(
                 "Incorrect template specification; required format is: "
-                "<oid>:<majorVersion>[:<minorVersion>]")
+                "<oid>:<majorVersion>[:<minorVersion>]"
+            )
         try:
-            obj['templateID'] = univ.ObjectIdentifier(parts[0])
+            obj["templateID"] = univ.ObjectIdentifier(parts[0])
 
             major = int(parts[1])
             self.check_version_in_range("major", major)
-            obj['templateMajorVersion'] = major
+            obj["templateMajorVersion"] = major
 
             if len(parts) > 2:
                 minor = int(parts[2])
                 self.check_version_in_range("minor", minor)
-                obj['templateMinorVersion'] = int(parts[2])
+                obj["templateMinorVersion"] = int(parts[2])
 
         except pyasn1.error.PyAsn1Error:
             raise ValueError("Could not parse certificate template specifier.")
@@ -912,7 +936,7 @@ class MSCSTemplateV2(MSCSTemplate):
 
 class CertificateTemplateV2(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('templateID', univ.ObjectIdentifier()),
-        namedtype.NamedType('templateMajorVersion', univ.Integer()),
-        namedtype.OptionalNamedType('templateMinorVersion', univ.Integer())
+        namedtype.NamedType("templateID", univ.ObjectIdentifier()),
+        namedtype.NamedType("templateMajorVersion", univ.Integer()),
+        namedtype.OptionalNamedType("templateMinorVersion", univ.Integer()),
     )

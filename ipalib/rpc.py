@@ -52,8 +52,13 @@ import six
 
 from ipalib.backend import Connectible
 from ipalib.constants import LDAP_GENERALIZED_TIME_FORMAT
-from ipalib.errors import (public_errors, UnknownError, NetworkError,
-                           XMLRPCMarshallError, JSONError)
+from ipalib.errors import (
+    public_errors,
+    UnknownError,
+    NetworkError,
+    XMLRPCMarshallError,
+    JSONError,
+)
 from ipalib import errors, capabilities
 from ipalib.request import context, Connection
 from ipalib.x509 import Encoding as x509_Encoding
@@ -63,9 +68,16 @@ from ipapython.cookie import Cookie
 from ipapython.dnsutil import DNSName, query_srv
 from ipalib.text import _
 from ipalib.util import create_https_connection
-from ipalib.krb_utils import KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN, KRB5KRB_AP_ERR_TKT_EXPIRED, \
-                             KRB5_FCC_PERM, KRB5_FCC_NOFILE, KRB5_CC_FORMAT, \
-                             KRB5_REALM_CANT_RESOLVE, KRB5_CC_NOTFOUND, get_principal
+from ipalib.krb_utils import (
+    KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN,
+    KRB5KRB_AP_ERR_TKT_EXPIRED,
+    KRB5_FCC_PERM,
+    KRB5_FCC_NOFILE,
+    KRB5_CC_FORMAT,
+    KRB5_REALM_CANT_RESOLVE,
+    KRB5_CC_NOTFOUND,
+    get_principal,
+)
 from ipapython.dn import DN
 from ipapython.kerberos import Principal
 from ipalib.capabilities import VERSION_WITHOUT_CAPABILITIES
@@ -74,12 +86,32 @@ from ipalib import api
 # The XMLRPC client is in  "six.moves.xmlrpc_client", but pylint
 # cannot handle that
 try:
-    from xmlrpclib import (Binary, Fault, DateTime, dumps, loads, ServerProxy,
-            Transport, ProtocolError, MININT, MAXINT)
+    from xmlrpclib import (
+        Binary,
+        Fault,
+        DateTime,
+        dumps,
+        loads,
+        ServerProxy,
+        Transport,
+        ProtocolError,
+        MININT,
+        MAXINT,
+    )
 except ImportError:
     # pylint: disable=import-error
-    from xmlrpc.client import (Binary, Fault, DateTime, dumps, loads, ServerProxy,
-            Transport, ProtocolError, MININT, MAXINT)
+    from xmlrpc.client import (
+        Binary,
+        Fault,
+        DateTime,
+        dumps,
+        loads,
+        ServerProxy,
+        Transport,
+        ProtocolError,
+        MININT,
+        MAXINT,
+    )
 
 # pylint: disable=import-error
 if six.PY3:
@@ -94,50 +126,53 @@ if six.PY3:
 
 logger = logging.getLogger(__name__)
 
-COOKIE_NAME = 'ipa_session'
-CCACHE_COOKIE_KEY = 'X-IPA-Session-Cookie'
+COOKIE_NAME = "ipa_session"
+CCACHE_COOKIE_KEY = "X-IPA-Session-Cookie"
 
 errors_by_code = dict((e.errno, e) for e in public_errors)
 
 
 def update_persistent_client_session_data(principal, data):
-    '''
+    """
     Given a principal create or update the session data for that
     principal in the persistent secure storage.
 
     Raises ValueError if unable to perform the action for any reason.
-    '''
+    """
 
     try:
         session_storage.store_data(principal, CCACHE_COOKIE_KEY, data)
     except Exception as e:
         raise ValueError(str(e))
 
+
 def read_persistent_client_session_data(principal):
-    '''
+    """
     Given a principal return the stored session data for that
     principal from the persistent secure storage.
 
     Raises ValueError if unable to perform the action for any reason.
-    '''
+    """
 
     try:
         return session_storage.get_data(principal, CCACHE_COOKIE_KEY)
     except Exception as e:
         raise ValueError(str(e))
 
+
 def delete_persistent_client_session_data(principal):
-    '''
+    """
     Given a principal remove the session data for that
     principal from the persistent secure storage.
 
     Raises ValueError if unable to perform the action for any reason.
-    '''
+    """
 
     try:
         session_storage.remove_data(principal, CCACHE_COOKIE_KEY)
     except Exception as e:
         raise ValueError(str(e))
+
 
 def xml_wrap(value, version):
     """
@@ -163,9 +198,7 @@ def xml_wrap(value, version):
     if type(value) in (list, tuple):
         return tuple(xml_wrap(v, version) for v in value)
     if isinstance(value, dict):
-        return dict(
-            (k, xml_wrap(v, version)) for (k, v) in value.items()
-        )
+        return dict((k, xml_wrap(v, version)) for (k, v) in value.items())
     if type(value) is bytes:
         return Binary(value)
     if type(value) is Decimal:
@@ -178,14 +211,14 @@ def xml_wrap(value, version):
 
     # Encode datetime.datetime objects as xmlrpc.client.DateTime objects
     if isinstance(value, datetime.datetime):
-        if capabilities.client_has_capability(version, 'datetime_values'):
+        if capabilities.client_has_capability(version, "datetime_values"):
             return DateTime(value)
         else:
             return value.strftime(LDAP_GENERALIZED_TIME_FORMAT)
 
     if isinstance(value, DNSName):
-        if capabilities.client_has_capability(version, 'dns_name_values'):
-            return {'__dns_name__': unicode(value)}
+        if capabilities.client_has_capability(version, "dns_name_values"):
+            return {"__dns_name__": unicode(value)}
         else:
             return unicode(value)
 
@@ -193,18 +226,16 @@ def xml_wrap(value, version):
         return unicode(value)
 
     if isinstance(value, crypto_x509.Certificate):
-        return base64.b64encode(
-            value.public_bytes(x509_Encoding.DER)).decode('ascii')
+        return base64.b64encode(value.public_bytes(x509_Encoding.DER)).decode("ascii")
 
     if isinstance(value, crypto_x509.CertificateSigningRequest):
-        return base64.b64encode(
-            value.public_bytes(x509_Encoding.DER)).decode('ascii')
+        return base64.b64encode(value.public_bytes(x509_Encoding.DER)).decode("ascii")
 
     assert type(value) in (unicode, float, int, bool, type(None))
     return value
 
 
-def xml_unwrap(value, encoding='UTF-8'):
+def xml_unwrap(value, encoding="UTF-8"):
     """
     Unwrap all ``xmlrpc.Binary``, decode all ``str`` into ``unicode``.
 
@@ -232,12 +263,10 @@ def xml_unwrap(value, encoding='UTF-8'):
     elif isinstance(value, (list, tuple)):
         return tuple(xml_unwrap(v, encoding) for v in value)
     elif isinstance(value, dict):
-        if '__dns_name__' in value:
-            return DNSName(value['__dns_name__'])
+        if "__dns_name__" in value:
+            return DNSName(value["__dns_name__"])
         else:
-            return dict(
-                (k, xml_unwrap(v, encoding)) for (k, v) in value.items()
-            )
+            return dict((k, xml_unwrap(v, encoding)) for (k, v) in value.items())
     elif isinstance(value, Binary):
         assert type(value.data) is bytes
         return value.data
@@ -247,8 +276,7 @@ def xml_unwrap(value, encoding='UTF-8'):
     raise TypeError(value)
 
 
-def xml_dumps(params, version, methodname=None, methodresponse=False,
-              encoding='UTF-8'):
+def xml_dumps(params, version, methodname=None, methodresponse=False, encoding="UTF-8"):
     """
     Encode an XML-RPC data packet, transparently wraping ``params``.
 
@@ -271,7 +299,8 @@ def xml_dumps(params, version, methodname=None, methodresponse=False,
         params = xml_wrap(params, version)
     else:
         assert isinstance(params, Fault)
-    return dumps(params,
+    return dumps(
+        params,
         methodname=methodname,
         methodresponse=methodresponse,
         encoding=encoding,
@@ -308,7 +337,8 @@ class _JSONPrimer(dict):
 
     :see: _ipa_obj_hook
     """
-    __slots__ = ('version', '_cap_datetime', '_cap_dnsname')
+
+    __slots__ = ("version", "_cap_datetime", "_cap_dnsname")
 
     _identity = object()
 
@@ -317,24 +347,26 @@ class _JSONPrimer(dict):
         self.version = version
         self._cap_datetime = None
         self._cap_dnsname = None
-        self.update({
-            unicode: _identity,
-            bool: _identity,
-            int: _identity,
-            type(None): _identity,
-            float: _identity,
-            Decimal: unicode,
-            DN: str,
-            Principal: unicode,
-            DNSName: self._enc_dnsname,
-            datetime.datetime: self._enc_datetime,
-            bytes: self._enc_bytes,
-            list: self._enc_list,
-            tuple: self._enc_list,
-            dict: self._enc_dict,
-            crypto_x509.Certificate: self._enc_certificate,
-            crypto_x509.CertificateSigningRequest: self._enc_certificate,
-        })
+        self.update(
+            {
+                unicode: _identity,
+                bool: _identity,
+                int: _identity,
+                type(None): _identity,
+                float: _identity,
+                Decimal: unicode,
+                DN: str,
+                Principal: unicode,
+                DNSName: self._enc_dnsname,
+                datetime.datetime: self._enc_datetime,
+                bytes: self._enc_bytes,
+                list: self._enc_list,
+                tuple: self._enc_list,
+                dict: self._enc_dict,
+                crypto_x509.Certificate: self._enc_certificate,
+                crypto_x509.CertificateSigningRequest: self._enc_certificate,
+            }
+        )
 
     def __missing__(self, typ):
         # walk MRO to find best match
@@ -357,30 +389,28 @@ class _JSONPrimer(dict):
     def _enc_datetime(self, val):
         cap = self._cap_datetime
         if cap is None:
-            cap = capabilities.client_has_capability(self.version,
-                                                     'datetime_values')
+            cap = capabilities.client_has_capability(self.version, "datetime_values")
             self._cap_datetime = cap
         if cap:
-            return {'__datetime__': val.strftime(LDAP_GENERALIZED_TIME_FORMAT)}
+            return {"__datetime__": val.strftime(LDAP_GENERALIZED_TIME_FORMAT)}
         else:
             return val.strftime(LDAP_GENERALIZED_TIME_FORMAT)
 
     def _enc_dnsname(self, val):
         cap = self._cap_dnsname
         if cap is None:
-            cap = capabilities.client_has_capability(self.version,
-                                                     'dns_name_values')
+            cap = capabilities.client_has_capability(self.version, "dns_name_values")
             self._cap_dnsname = cap
         if cap:
-            return {'__dns_name__': unicode(val)}
+            return {"__dns_name__": unicode(val)}
         else:
             return unicode(val)
 
     def _enc_bytes(self, val):
         encoded = base64.b64encode(val)
         if not six.PY2:
-            encoded = encoded.decode('ascii')
-        return {'__base64__': encoded}
+            encoded = encoded.decode("ascii")
+        return {"__base64__": encoded}
 
     def _enc_list(self, val, _identity=_identity):
         result = []
@@ -423,13 +453,14 @@ def _ipa_obj_hook(dct, _iteritems=six.iteritems, _list=list):
 
     :see: _JSONPrimer
     """
-    if '__base64__' in dct:
-        return base64.b64decode(dct['__base64__'])
-    elif '__datetime__' in dct:
-        return datetime.datetime.strptime(dct['__datetime__'],
-                                          LDAP_GENERALIZED_TIME_FORMAT)
-    elif '__dns_name__' in dct:
-        return DNSName(dct['__dns_name__'])
+    if "__base64__" in dct:
+        return base64.b64decode(dct["__base64__"])
+    elif "__datetime__" in dct:
+        return datetime.datetime.strptime(
+            dct["__datetime__"], LDAP_GENERALIZED_TIME_FORMAT
+        )
+    elif "__dns_name__" in dct:
+        return DNSName(dct["__dns_name__"])
     else:
         # XXX tests assume tuples. Is this really necessary?
         for k, v in _iteritems(dct):
@@ -447,19 +478,19 @@ def json_decode_binary(val):
     :see: _ipa_obj_hook, _JSONPrimer
     """
     if isinstance(val, bytes):
-        val = val.decode('utf-8')
+        val = val.decode("utf-8")
 
     return json.loads(val, object_hook=_ipa_obj_hook)
 
 
-def decode_fault(e, encoding='UTF-8'):
+def decode_fault(e, encoding="UTF-8"):
     assert isinstance(e, Fault)
     if isinstance(e.faultString, bytes):
         return Fault(e.faultCode, e.faultString.decode(encoding))
     return e
 
 
-def xml_loads(data, encoding='UTF-8'):
+def xml_loads(data, encoding="UTF-8"):
     """
     Decode the XML-RPC packet in ``data``, transparently unwrapping its params.
 
@@ -497,24 +528,25 @@ class DummyParser:
         self.data.append(data)
 
     def close(self):
-        return b''.join(self.data)
+        return b"".join(self.data)
 
 
 class MultiProtocolTransport(Transport):
     """Transport that handles both XML-RPC and JSON"""
+
     def __init__(self, *args, **kwargs):
         Transport.__init__(self)
-        self.protocol = kwargs.get('protocol', None)
+        self.protocol = kwargs.get("protocol", None)
 
     def getparser(self):
-        if self.protocol == 'json':
+        if self.protocol == "json":
             parser = DummyParser()
             return parser, parser
         else:
             return Transport.getparser(self)
 
     def send_content(self, connection, request_body):
-        if self.protocol == 'json':
+        if self.protocol == "json":
             connection.putheader("Content-Type", "application/json")
         else:
             connection.putheader("Content-Type", "text/xml")
@@ -528,33 +560,28 @@ class MultiProtocolTransport(Transport):
 
 class LanguageAwareTransport(MultiProtocolTransport):
     """Transport sending Accept-Language header"""
+
     def get_host_info(self, host):
-        host, extra_headers, x509 = MultiProtocolTransport.get_host_info(
-            self, host)
+        host, extra_headers, x509 = MultiProtocolTransport.get_host_info(self, host)
 
         try:
-            lang = locale.setlocale(
-                locale.LC_MESSAGES, ''
-            ).split('.')[0].lower()
+            lang = locale.setlocale(locale.LC_MESSAGES, "").split(".")[0].lower()
         except locale.Error:
             # fallback to default locale
-            lang = 'en_us'
+            lang = "en_us"
 
         if not isinstance(extra_headers, list):
             extra_headers = []
 
-        extra_headers.append(
-            ('Accept-Language', lang.replace('_', '-'))
-        )
-        extra_headers.append(
-            ('Referer', 'https://%s/ipa/xml' % str(host))
-        )
+        extra_headers.append(("Accept-Language", lang.replace("_", "-")))
+        extra_headers.append(("Referer", "https://%s/ipa/xml" % str(host)))
 
         return (host, extra_headers, x509)
 
 
 class SSLTransport(LanguageAwareTransport):
     """Handles an HTTPS transaction to an XML-RPC server."""
+
     def make_connection(self, host):
         host, self._extra_headers, _x509 = self.get_host_info(host)
 
@@ -563,10 +590,12 @@ class SSLTransport(LanguageAwareTransport):
             return self._connection[1]
 
         conn = create_https_connection(
-            host, 443,
-            getattr(context, 'ca_certfile', None),
+            host,
+            443,
+            getattr(context, "ca_certfile", None),
             tls_version_min=api.env.tls_version_min,
-            tls_version_max=api.env.tls_version_max)
+            tls_version_max=api.env.tls_version_max,
+        )
 
         conn.connect()
         logger.debug("New HTTP connection (%s)", host)
@@ -579,8 +608,11 @@ class KerbTransport(SSLTransport):
     """
     Handles Kerberos Negotiation authentication to an XML-RPC server.
     """
-    flags = [gssapi.RequirementFlag.mutual_authentication,
-             gssapi.RequirementFlag.out_of_sequence_detection]
+
+    flags = [
+        gssapi.RequirementFlag.mutual_authentication,
+        gssapi.RequirementFlag.out_of_sequence_detection,
+    ]
 
     def __init__(self, *args, **kwargs):
         SSLTransport.__init__(self, *args, **kwargs)
@@ -625,25 +657,27 @@ class KerbTransport(SSLTransport):
             self._extra_headers = []
 
         # Remove any existing Cookie first
-        self._remove_extra_header('Cookie')
+        self._remove_extra_header("Cookie")
         if use_cookie:
-            session_cookie = getattr(context, 'session_cookie', None)
+            session_cookie = getattr(context, "session_cookie", None)
             if session_cookie:
-                self._extra_headers.append(('Cookie', session_cookie))
+                self._extra_headers.append(("Cookie", session_cookie))
                 return
 
         # Set the remote host principal
         host = self._get_host()
-        service = self.service + "@" + host.split(':')[0]
+        service = self.service + "@" + host.split(":")[0]
 
         try:
             creds = None
             if self.ccache:
-                creds = gssapi.Credentials(usage='initiate',
-                                           store={'ccache': self.ccache})
+                creds = gssapi.Credentials(
+                    usage="initiate", store={"ccache": self.ccache}
+                )
             name = gssapi.Name(service, gssapi.NameType.hostbased_service)
-            self._sec_context = gssapi.SecurityContext(creds=creds, name=name,
-                                                       flags=self.flags)
+            self._sec_context = gssapi.SecurityContext(
+                creds=creds, name=name, flags=self.flags
+            )
             response = self._sec_context.step()
         except gssapi.exceptions.GSSError as e:
             self._handle_exception(e, service=service)
@@ -652,29 +686,33 @@ class KerbTransport(SSLTransport):
 
     def _set_auth_header(self, token):
         # Remove any existing authorization header first
-        self._remove_extra_header('Authorization')
+        self._remove_extra_header("Authorization")
 
         if token:
             self._extra_headers.append(
-                ('Authorization', 'negotiate %s' % base64.b64encode(token).decode('ascii'))
+                (
+                    "Authorization",
+                    "negotiate %s" % base64.b64encode(token).decode("ascii"),
+                )
             )
 
     def _auth_complete(self, response):
         if self._sec_context:
-            header = response.getheader('www-authenticate', '')
+            header = response.getheader("www-authenticate", "")
             token = None
-            for field in header.split(','):
-                k, _dummy, v = field.strip().partition(' ')
-                if k.lower() == 'negotiate':
+            for field in header.split(","):
+                k, _dummy, v = field.strip().partition(" ")
+                if k.lower() == "negotiate":
                     try:
-                        token = base64.b64decode(v.encode('ascii'))
+                        token = base64.b64decode(v.encode("ascii"))
                         break
                     # b64decode raises TypeError on invalid input
                     except (TypeError, UnicodeError):
                         pass
             if not token:
                 raise errors.KerberosError(
-                    message=u"No valid Negotiate header in server response")
+                    message=u"No valid Negotiate header in server response"
+                )
             token = self._sec_context.step(token=token)
             if self._sec_context.complete:
                 self._sec_context = None
@@ -725,9 +763,8 @@ class KerbTransport(SSLTransport):
                             continue
 
                     raise ProtocolError(
-                        host + handler,
-                        response.status, response.reason,
-                        response.msg)
+                        host + handler, response.status, response.reason, response.msg
+                    )
 
                 self.verbose = verbose
                 if not self._auth_complete(response):
@@ -744,11 +781,11 @@ class KerbTransport(SSLTransport):
         except BaseException as e:
             # Unexpected exception may leave connections in a bad state.
             self.close()
-            logger.debug("HTTP connection destroyed (%s)",
-                         host, exc_info=True)
+            logger.debug("HTTP connection destroyed (%s)", host, exc_info=True)
             raise
 
     if six.PY3:
+
         def __send_request(self, connection, host, handler, request_body, debug):
             # Based on xmlrpc.client.Transport.send_request
             headers = self._extra_headers[:]
@@ -766,7 +803,7 @@ class KerbTransport(SSLTransport):
             return connection
 
     # Find all occurrences of the expiry component
-    expiry_re = re.compile(r'.*?(&expiry=\d+).*?')
+    expiry_re = re.compile(r".*?(&expiry=\d+).*?")
 
     def _slice_session_cookie(self, session_cookie):
         # Keep only the cookie value and strip away all other info.
@@ -776,11 +813,11 @@ class KerbTransport(SSLTransport):
         http_cookie = session_cookie.http_cookie()
         # We also remove the "expiry" part from the data which is not required
         for exp in self.expiry_re.findall(http_cookie):
-            http_cookie = http_cookie.replace(exp, '')
+            http_cookie = http_cookie.replace(exp, "")
         return http_cookie
 
     def store_session_cookie(self, cookie_header):
-        '''
+        """
         Given the contents of a Set-Cookie header scan the header and
         extract each cookie contained within until the session cookie
         is located. Examine the session cookie if the domain and path
@@ -798,15 +835,14 @@ class KerbTransport(SSLTransport):
             request_url
                 The URL of the HTTP request.
 
-        '''
+        """
 
         if cookie_header is None:
             return
 
-        principal = getattr(context, 'principal', None)
-        request_url = getattr(context, 'request_url', None)
-        logger.debug("received Set-Cookie (%s)'%s'", type(cookie_header),
-                     cookie_header)
+        principal = getattr(context, "principal", None)
+        request_url = getattr(context, "request_url", None)
+        logger.debug("received Set-Cookie (%s)'%s'", type(cookie_header), cookie_header)
 
         if not isinstance(cookie_header, list):
             cookie_header = [cookie_header]
@@ -815,24 +851,23 @@ class KerbTransport(SSLTransport):
         session_cookie = None
         try:
             for cookie in cookie_header:
-                session_cookie = (
-                    Cookie.get_named_cookie_from_string(
-                        cookie, COOKIE_NAME, request_url,
-                        timestamp=datetime.datetime.utcnow())
-                    )
+                session_cookie = Cookie.get_named_cookie_from_string(
+                    cookie,
+                    COOKIE_NAME,
+                    request_url,
+                    timestamp=datetime.datetime.utcnow(),
+                )
                 if session_cookie is not None:
                     break
         except Exception as e:
-            logger.error("unable to parse cookie header '%s': %s",
-                         cookie_header, e)
+            logger.error("unable to parse cookie header '%s': %s", cookie_header, e)
             return
 
         if session_cookie is None:
             return
 
         cookie_string = self._slice_session_cookie(session_cookie)
-        logger.debug("storing cookie '%s' for principal %s",
-                     cookie_string, principal)
+        logger.debug("storing cookie '%s' for principal %s", cookie_string, principal)
         try:
             update_persistent_client_session_data(principal, cookie_string)
         except Exception as e:
@@ -841,9 +876,9 @@ class KerbTransport(SSLTransport):
 
     def parse_response(self, response):
         if six.PY2:
-            header = response.msg.getheaders('Set-Cookie')
+            header = response.msg.getheaders("Set-Cookie")
         else:
-            header = response.msg.get_all('Set-Cookie')
+            header = response.msg.get_all("Set-Cookie")
         self.store_session_cookie(header)
         return SSLTransport.parse_response(self, response)
 
@@ -853,9 +888,12 @@ class DelegatedKerbTransport(KerbTransport):
     Handles Kerberos Negotiation authentication and TGT delegation to an
     XML-RPC server.
     """
-    flags = [gssapi.RequirementFlag.delegate_to_peer,
-             gssapi.RequirementFlag.mutual_authentication,
-             gssapi.RequirementFlag.out_of_sequence_detection]
+
+    flags = [
+        gssapi.RequirementFlag.delegate_to_peer,
+        gssapi.RequirementFlag.mutual_authentication,
+        gssapi.RequirementFlag.out_of_sequence_detection,
+    ]
 
 
 class RPCClient(Connectible):
@@ -876,10 +914,11 @@ class RPCClient(Connectible):
         Create a list of urls consisting of the available IPA servers.
         """
         # the configured URL defines what we use for the discovered servers
-        (_scheme, _netloc, path, _params, _query, _fragment
-            ) = urllib.parse.urlparse(rpc_uri)
+        (_scheme, _netloc, path, _params, _query, _fragment) = urllib.parse.urlparse(
+            rpc_uri
+        )
         servers = []
-        name = '_ldap._tcp.%s.' % self.env.domain
+        name = "_ldap._tcp.%s." % self.env.domain
 
         try:
             answers = query_srv(name)
@@ -888,7 +927,7 @@ class RPCClient(Connectible):
 
         for answer in answers:
             server = str(answer.target).rstrip(".")
-            servers.append('https://%s%s' % (ipautil.format_netloc(server), path))
+            servers.append("https://%s%s" % (ipautil.format_netloc(server), path))
 
         # make sure the configured master server is there just once and
         # it is the first one.
@@ -899,12 +938,12 @@ class RPCClient(Connectible):
         return servers
 
     def get_session_cookie_from_persistent_storage(self, principal):
-        '''
+        """
         Retrieves the session cookie for the given principal from the
         persistent secure storage. Returns None if not found or unable
         to retrieve the session cookie for any reason, otherwise
         returns a Cookie object containing the session cookie.
-        '''
+        """
 
         # Get the session data, it should contain a cookie string
         # (possibly with more than one cookie).
@@ -912,26 +951,24 @@ class RPCClient(Connectible):
             cookie_string = read_persistent_client_session_data(principal)
             if cookie_string is None:
                 return None
-            cookie_string = cookie_string.decode('utf-8')
+            cookie_string = cookie_string.decode("utf-8")
         except Exception as e:
-            logger.debug('Error reading client session data: %s', e)
+            logger.debug("Error reading client session data: %s", e)
             return None
 
         # Search for the session cookie within the cookie string
         try:
             session_cookie = Cookie.get_named_cookie_from_string(
-                cookie_string, COOKIE_NAME,
-                timestamp=datetime.datetime.utcnow())
+                cookie_string, COOKIE_NAME, timestamp=datetime.datetime.utcnow()
+            )
         except Exception as e:
-            logger.debug(
-                'Error retrieving cookie from the persistent storage: %s',
-                e)
+            logger.debug("Error retrieving cookie from the persistent storage: %s", e)
             return None
 
         return session_cookie
 
     def apply_session_cookie(self, url):
-        '''
+        """
         Attempt to load a session cookie for the current principal
         from the persistent secure storage. If the cookie is
         successfully loaded adjust the input url's to point to the
@@ -951,28 +988,32 @@ class RPCClient(Connectible):
                 A cookie string to be inserted into the Cookie header
                 of the HTPP request.
 
-        '''
+        """
 
         original_url = url
-        principal = getattr(context, 'principal', None)
+        principal = getattr(context, "principal", None)
 
         session_cookie = self.get_session_cookie_from_persistent_storage(principal)
         if session_cookie is None:
-            logger.debug("failed to find session_cookie in persistent storage "
-                         "for principal '%s'",
-                         principal)
+            logger.debug(
+                "failed to find session_cookie in persistent storage "
+                "for principal '%s'",
+                principal,
+            )
             return original_url
         else:
-            logger.debug("found session_cookie in persistent storage for "
-                         "principal '%s', cookie: '%s'",
-                         principal, session_cookie)
+            logger.debug(
+                "found session_cookie in persistent storage for "
+                "principal '%s', cookie: '%s'",
+                principal,
+                session_cookie,
+            )
 
         # Decide if we should send the cookie to the server
         try:
             session_cookie.http_return_ok(original_url)
         except Cookie.Expired as e:
-            logger.debug("deleting session data for principal '%s': %s",
-                         principal, e)
+            logger.debug("deleting session data for principal '%s': %s", principal, e)
             try:
                 delete_persistent_client_session_data(principal)
             except Exception as e:
@@ -987,21 +1028,27 @@ class RPCClient(Connectible):
 
         # O.K. session_cookie is valid to be returned, stash it away where it will will
         # get included in a HTTP Cookie headed sent to the server.
-        logger.debug("setting session_cookie into context '%s'",
-                     session_cookie.http_cookie())
-        setattr(context, 'session_cookie', session_cookie.http_cookie())
+        logger.debug(
+            "setting session_cookie into context '%s'", session_cookie.http_cookie()
+        )
+        setattr(context, "session_cookie", session_cookie.http_cookie())
 
         # Form the session URL by substituting the session path into the original URL
-        scheme, netloc, path, params, query, fragment = urllib.parse.urlparse(original_url)
+        scheme, netloc, path, params, query, fragment = urllib.parse.urlparse(
+            original_url
+        )
         path = self.session_path
         # urlencode *can* take one argument
         # pylint: disable=too-many-function-args
-        session_url = urllib.parse.urlunparse((scheme, netloc, path, params, query, fragment))
+        session_url = urllib.parse.urlunparse(
+            (scheme, netloc, path, params, query, fragment)
+        )
 
         return session_url
 
-    def create_connection(self, ccache=None, verbose=None, fallback=None,
-                          delegate=None, ca_certfile=None):
+    def create_connection(
+        self, ccache=None, verbose=None, fallback=None, delegate=None, ca_certfile=None
+    ):
         if verbose is None:
             verbose = self.api.env.verbose
         if fallback is None:
@@ -1015,13 +1062,13 @@ class RPCClient(Connectible):
         rpc_uri = self.env[self.env_rpc_uri_key]
         try:
             principal = get_principal(ccache_name=ccache)
-            stored_principal = getattr(context, 'principal', None)
+            stored_principal = getattr(context, "principal", None)
             if principal != stored_principal:
                 try:
-                    delattr(context, 'session_cookie')
+                    delattr(context, "session_cookie")
                 except AttributeError:
                     pass
-            setattr(context, 'principal', principal)
+            setattr(context, "principal", principal)
             # We have a session cookie, try using the session URI to see if it
             # is still valid
             if not delegate:
@@ -1031,28 +1078,25 @@ class RPCClient(Connectible):
             pass
         urls = self.get_url_list(rpc_uri)
 
-        proxy_kw = {
-            'allow_none': True,
-            'encoding': 'UTF-8',
-            'verbose': verbose
-        }
+        proxy_kw = {"allow_none": True, "encoding": "UTF-8", "verbose": verbose}
 
         for url in urls:
             # should we get ProtocolError (=> error in HTTP response) and
             # 401 (=> Unauthorized), we'll be re-trying with new session
             # cookies several times
             for _try_num in range(0, 5):
-                if url.startswith('https://'):
+                if url.startswith("https://"):
                     if delegate:
                         transport_class = DelegatedKerbTransport
                     else:
                         transport_class = KerbTransport
                 else:
                     transport_class = LanguageAwareTransport
-                proxy_kw['transport'] = transport_class(
-                    protocol=self.protocol, service='HTTP', ccache=ccache)
-                logger.debug('trying %s', url)
-                setattr(context, 'request_url', url)
+                proxy_kw["transport"] = transport_class(
+                    protocol=self.protocol, service="HTTP", ccache=ccache
+                )
+                logger.debug("trying %s", url)
+                setattr(context, "request_url", url)
                 serverproxy = self.server_proxy_class(url, **proxy_kw)
                 if len(urls) == 1:
                     # if we have only 1 server and then let the
@@ -1060,7 +1104,7 @@ class RPCClient(Connectible):
                     # must handle a 401 but we save a ping.
                     return serverproxy
                 try:
-                    command = getattr(serverproxy, 'ping')
+                    command = getattr(serverproxy, "ping")
                     try:
                         command([], {})
                     except Fault as e:
@@ -1070,9 +1114,7 @@ class RPCClient(Connectible):
                             raise error(message=e.faultString)
                         else:
                             raise UnknownError(
-                                code=e.faultCode,
-                                error=e.faultString,
-                                server=url,
+                                code=e.faultCode, error=e.faultString, server=url,
                             )
                     # We don't care about the response, just that we got one
                     return serverproxy
@@ -1082,9 +1124,9 @@ class RPCClient(Connectible):
                     raise
                 # pylint: enable=try-except-raise
                 except ProtocolError as e:
-                    if hasattr(context, 'session_cookie') and e.errcode == 401:
+                    if hasattr(context, "session_cookie") and e.errcode == 401:
                         # Unauthorized. Remove the session and try again.
-                        delattr(context, 'session_cookie')
+                        delattr(context, "session_cookie")
                         try:
                             delete_persistent_client_session_data(principal)
                         except Exception:
@@ -1096,21 +1138,20 @@ class RPCClient(Connectible):
                     if not fallback:
                         raise
                     else:
-                        logger.info(
-                            'Connection to %s failed with %s', url, e)
+                        logger.info("Connection to %s failed with %s", url, e)
                     # try the next url
                     break
                 except Exception as e:
                     if not fallback:
                         raise
                     else:
-                        logger.info(
-                            'Connection to %s failed with %s', url, e)
+                        logger.info("Connection to %s failed with %s", url, e)
                     # try the next url
                     break
         # finished all tries but no serverproxy was found
-        raise NetworkError(uri=_('any of the configured servers'),
-                           error=', '.join(urls))
+        raise NetworkError(
+            uri=_("any of the configured servers"), error=", ".join(urls)
+        )
 
     def destroy_connection(self):
         conn = getattr(context, self.id, None)
@@ -1135,7 +1176,7 @@ class RPCClient(Connectible):
         :param args: Positional arguments to pass to remote command.
         :param kw: Keyword arguments to pass to remote command.
         """
-        server = getattr(context, 'request_url', None)
+        server = getattr(context, "request_url", None)
         command = getattr(self.conn, name)
         params = [args, kw]
 
@@ -1143,46 +1184,56 @@ class RPCClient(Connectible):
         # each time should we be getting UNAUTHORIZED error from the server
         max_tries = 5
         for try_num in range(0, max_tries):
-            logger.debug("[try %d]: Forwarding '%s' to %s server '%s'",
-                         try_num + 1, name, self.protocol, server)
+            logger.debug(
+                "[try %d]: Forwarding '%s' to %s server '%s'",
+                try_num + 1,
+                name,
+                self.protocol,
+                server,
+            )
             try:
                 return self._call_command(command, params)
             except Fault as e:
                 e = decode_fault(e)
-                logger.debug('Caught fault %d from server %s: %s', e.faultCode,
-                             server, e.faultString)
+                logger.debug(
+                    "Caught fault %d from server %s: %s",
+                    e.faultCode,
+                    server,
+                    e.faultString,
+                )
                 if e.faultCode in errors_by_code:
                     error = errors_by_code[e.faultCode]
                     raise error(message=e.faultString)
                 raise UnknownError(
-                    code=e.faultCode,
-                    error=e.faultString,
-                    server=server,
+                    code=e.faultCode, error=e.faultString, server=server,
                 )
             except ProtocolError as e:
                 # By catching a 401 here we can detect the case where we have
                 # a single IPA server and the session is invalid. Otherwise
                 # we always have to do a ping().
-                session_cookie = getattr(context, 'session_cookie', None)
+                session_cookie = getattr(context, "session_cookie", None)
                 if session_cookie and e.errcode == 401:
                     # Unauthorized. Remove the session and try again.
-                    delattr(context, 'session_cookie')
+                    delattr(context, "session_cookie")
                     try:
-                        principal = getattr(context, 'principal', None)
+                        principal = getattr(context, "principal", None)
                         delete_persistent_client_session_data(principal)
                     except Exception as e2:
                         # This shouldn't happen if we have a session
                         # but it isn't fatal.
-                        logger.debug("Error trying to remove persisent "
-                                     "session data: %s", e2)
+                        logger.debug(
+                            "Error trying to remove persisent " "session data: %s", e2
+                        )
 
                     # Create a new serverproxy with the non-session URI
                     serverproxy = self.create_connection(
-                        os.environ.get('KRB5CCNAME'), self.env.verbose,
-                        self.env.fallback, self.env.delegate)
+                        os.environ.get("KRB5CCNAME"),
+                        self.env.verbose,
+                        self.env.fallback,
+                        self.env.delegate,
+                    )
 
-                    setattr(context, self.id,
-                            Connection(serverproxy, self.disconnect))
+                    setattr(context, self.id, Connection(serverproxy, self.disconnect))
                     # try to connect again with the new session cookie
                     continue
                 raise NetworkError(uri=server, error=e.errmsg)
@@ -1191,18 +1242,18 @@ class RPCClient(Connectible):
             except (OverflowError, TypeError) as e:
                 raise XMLRPCMarshallError(error=str(e))
         raise NetworkError(
-            uri=server,
-            error=_("Exceeded number of tries to forward a request."))
+            uri=server, error=_("Exceeded number of tries to forward a request.")
+        )
 
 
 class xmlclient(RPCClient):
-    session_path = '/ipa/session/xml'
+    session_path = "/ipa/session/xml"
     server_proxy_class = ServerProxy
-    protocol = 'xml'
-    env_rpc_uri_key = 'xmlrpc_uri'
+    protocol = "xml"
+    env_rpc_uri_key = "xmlrpc_uri"
 
     def _call_command(self, command, params):
-        version = params[1].get('version', VERSION_WITHOUT_CAPABILITIES)
+        version = params[1].get("version", VERSION_WITHOUT_CAPABILITIES)
         params = xml_wrap(params, version)
         result = command(*params)
         return xml_unwrap(result)
@@ -1217,7 +1268,7 @@ class JSONServerProxy:
         self.__handler = split_uri.path
         self.__transport = transport
 
-        assert encoding == 'UTF-8'
+        assert encoding == "UTF-8"
         assert allow_none
         self.__verbose = verbose
 
@@ -1228,28 +1279,24 @@ class JSONServerProxy:
 
     def __request(self, name, args):
         print_json = self.__verbose >= 2
-        payload = {'method': unicode(name), 'params': args, 'id': 0}
-        version = args[1].get('version', VERSION_WITHOUT_CAPABILITIES)
-        payload = json_encode_binary(
-            payload, version, pretty_print=print_json)
+        payload = {"method": unicode(name), "params": args, "id": 0}
+        version = args[1].get("version", VERSION_WITHOUT_CAPABILITIES)
+        payload = json_encode_binary(payload, version, pretty_print=print_json)
 
         if print_json:
-            logger.info(
-                'Request: %s',
-                payload
-            )
+            logger.info("Request: %s", payload)
 
         response = self.__transport.request(
             self.__host,
             self.__handler,
-            payload.encode('utf-8'),
+            payload.encode("utf-8"),
             verbose=self.__verbose >= 3,
         )
 
         if print_json:
             logger.info(
-                'Response: %s',
-                json.dumps(json.loads(response), sort_keys=True, indent=4)
+                "Response: %s",
+                json.dumps(json.loads(response), sort_keys=True, indent=4),
             )
 
         try:
@@ -1257,31 +1304,32 @@ class JSONServerProxy:
         except ValueError as e:
             raise JSONError(error=str(e))
 
-        error = response.get('error')
+        error = response.get("error")
         if error:
             try:
-                error_class = errors_by_code[error['code']]
+                error_class = errors_by_code[error["code"]]
             except KeyError:
                 raise UnknownError(
-                    code=error.get('code'),
-                    error=error.get('message'),
+                    code=error.get("code"),
+                    error=error.get("message"),
                     server=self.__host,
                 )
             else:
-                kw = error.get('data', {})
-                kw['message'] = error['message']
+                kw = error.get("data", {})
+                kw["message"] = error["message"]
                 raise error_class(**kw)
 
-        return response['result']
+        return response["result"]
 
     def __getattr__(self, name):
         def _call(*args):
             return self.__request(name, args)
+
         return _call
 
 
 class jsonclient(RPCClient):
-    session_path = '/ipa/session/json'
+    session_path = "/ipa/session/json"
     server_proxy_class = JSONServerProxy
-    protocol = 'json'
-    env_rpc_uri_key = 'jsonrpc_uri'
+    protocol = "json"
+    env_rpc_uri_key = "jsonrpc_uri"

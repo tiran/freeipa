@@ -113,14 +113,15 @@ from ipalib.base import check_name
 from ipalib.plugable import ReadOnly, lock
 from ipalib.errors import ConversionError, RequirementError, ValidationError
 from ipalib.errors import (
-    PasswordMismatch, Base64DecodeError, CertificateFormatError,
-    CertificateOperationError
+    PasswordMismatch,
+    Base64DecodeError,
+    CertificateFormatError,
+    CertificateOperationError,
 )
 from ipalib.constants import TYPE_ERROR, CALLABLE_ERROR, LDAP_GENERALIZED_TIME_FORMAT
 from ipalib.text import Gettext, FixMe
 from ipalib.util import json_serialize, validate_idna_domain
-from ipalib.x509 import (
-    load_der_x509_certificate, IPACertificate, default_backend)
+from ipalib.x509 import load_der_x509_certificate, IPACertificate, default_backend
 from ipalib.util import strip_csr_header, apirepr
 from ipapython import kerberos
 from ipapython.dn import DN
@@ -135,6 +136,7 @@ def _is_null(value):
         return False
     else:
         return True
+
 
 if six.PY3:
     unicode = str
@@ -217,30 +219,23 @@ class DefaultFrom(ReadOnly):
         :param keys: Optional keys used for source values.
         """
         if not callable(callback):
-            raise TypeError(
-                CALLABLE_ERROR % ('callback', callback, type(callback))
-            )
+            raise TypeError(CALLABLE_ERROR % ("callback", callback, type(callback)))
         self.callback = callback
         if len(keys) == 0:
             fc = callback.__code__
-            if fc.co_flags & 0x0c:
+            if fc.co_flags & 0x0C:
                 raise ValueError("callback: variable-length argument list not allowed")
-            self.keys = fc.co_varnames[:fc.co_argcount]
+            self.keys = fc.co_varnames[: fc.co_argcount]
         else:
             self.keys = keys
         for key in self.keys:
             if type(key) is not str:
-                raise TypeError(
-                    TYPE_ERROR % ('keys', str, key, type(key))
-                )
+                raise TypeError(TYPE_ERROR % ("keys", str, key, type(key)))
         lock(self)
 
     def __repr__(self):
         args = tuple(repr(k) for k in self.keys)
-        return '%s(%s)' % (
-            self.__class__.__name__,
-            ', '.join(args)
-        )
+        return "%s(%s)" % (self.__class__.__name__, ", ".join(args))
 
     def __call__(self, **kw):
         """
@@ -295,13 +290,11 @@ def parse_param_spec(spec):
     :param spec: A spec string.
     """
     if type(spec) is not str:
-        raise TypeError(
-            TYPE_ERROR % ('spec', str, spec, type(spec))
-        )
+        raise TypeError(TYPE_ERROR % ("spec", str, spec, type(spec)))
     _map = {
-        '?': dict(required=False, multivalue=False),
-        '*': dict(required=False, multivalue=True),
-        '+': dict(required=True, multivalue=True),
+        "?": dict(required=False, multivalue=False),
+        "*": dict(required=False, multivalue=True),
+        "+": dict(required=True, multivalue=True),
     }
     end = spec[-1]
     if end in _map:
@@ -310,6 +303,7 @@ def parse_param_spec(spec):
 
 
 __messages = set()
+
 
 def _(message):
     __messages.add(message)
@@ -399,42 +393,41 @@ class Param(ReadOnly):
     # (direct) subclass must *always* override this class attribute.
     # If multiple types are permitted, set `type` to the canonical type and
     # `allowed_types` to a tuple of all allowed types.
-    type = type(None) # Ouch, this wont be very useful in the real world!
+    type = type(None)  # Ouch, this wont be very useful in the real world!
 
     # Subclasses should override this with something more specific:
-    type_error = _('incorrect type')
+    type_error = _("incorrect type")
 
     # _convert_scalar operates only on scalar values
-    scalar_error = _('Only one value is allowed')
+    scalar_error = _("Only one value is allowed")
 
     password = False
 
     kwargs = (
-        ('cli_name', str, None),
-        ('cli_short_name', str, None),
-        ('deprecated_cli_aliases', frozenset, frozenset()),
-        ('label', (str, Gettext), None),
-        ('doc', (str, Gettext), None),
-        ('required', bool, True),
-        ('multivalue', bool, False),
-        ('primary_key', bool, False),
-        ('normalizer', callable, None),
-        ('default_from', DefaultFrom, None),
-        ('autofill', bool, False),
-        ('query', bool, False),
-        ('attribute', bool, False),
-        ('include', frozenset, None),
-        ('exclude', frozenset, None),
-        ('flags', frozenset, frozenset()),
-        ('hint', (str, Gettext), None),
-        ('alwaysask', bool, False),
-        ('sortorder', int, 2), # see finalize()
-        ('option_group', unicode, None),
-        ('cli_metavar', str, None),
-        ('no_convert', bool, False),
-        ('deprecated', bool, False),
-        ('confirm', bool, True),
-
+        ("cli_name", str, None),
+        ("cli_short_name", str, None),
+        ("deprecated_cli_aliases", frozenset, frozenset()),
+        ("label", (str, Gettext), None),
+        ("doc", (str, Gettext), None),
+        ("required", bool, True),
+        ("multivalue", bool, False),
+        ("primary_key", bool, False),
+        ("normalizer", callable, None),
+        ("default_from", DefaultFrom, None),
+        ("autofill", bool, False),
+        ("query", bool, False),
+        ("attribute", bool, False),
+        ("include", frozenset, None),
+        ("exclude", frozenset, None),
+        ("flags", frozenset, frozenset()),
+        ("hint", (str, Gettext), None),
+        ("alwaysask", bool, False),
+        ("sortorder", int, 2),  # see finalize()
+        ("option_group", unicode, None),
+        ("cli_metavar", str, None),
+        ("no_convert", bool, False),
+        ("deprecated", bool, False),
+        ("confirm", bool, True),
         # The 'default' kwarg gets appended in Param.__init__():
         # ('default', self.type, None),
     )
@@ -448,21 +441,21 @@ class Param(ReadOnly):
         # Merge in kw from parse_param_spec():
         (name, kw_from_spec) = parse_param_spec(name)
         check_name(name)
-        if 'required' not in kw:
-            kw['required'] = kw_from_spec['required']
-        if 'multivalue' not in kw:
-            kw['multivalue'] = kw_from_spec['multivalue']
+        if "required" not in kw:
+            kw["required"] = kw_from_spec["required"]
+        if "multivalue" not in kw:
+            kw["multivalue"] = kw_from_spec["multivalue"]
 
         # Add 'default' to self.kwargs
-        if kw.get('multivalue', True):
-            self.kwargs += (('default', tuple, None),)
+        if kw.get("multivalue", True):
+            self.kwargs += (("default", tuple, None),)
         else:
-            self.kwargs += (('default', self.type, None),)
+            self.kwargs += (("default", self.type, None),)
 
         # Wrap 'default_from' in a DefaultFrom if not already:
-        df = kw.get('default_from')
+        df = kw.get("default_from")
         if callable(df) and not isinstance(df, DefaultFrom):
-            kw['default_from'] = DefaultFrom(df)
+            kw["default_from"] = DefaultFrom(df)
 
         # Perform type validation on kw:
         for (key, kind, default) in self.kwargs:
@@ -474,72 +467,67 @@ class Param(ReadOnly):
                     elif type(value) is str:
                         value = kind([value])
                 if kind is callable and not callable(value):
-                    raise TypeError(
-                        CALLABLE_ERROR % (key, value, type(value))
-                    )
-                elif (isinstance(kind, (type, tuple)) and
-                      not isinstance(value, kind)):
-                    raise TypeError(
-                        TYPE_ERROR % (key, kind, value, type(value))
-                    )
+                    raise TypeError(CALLABLE_ERROR % (key, value, type(value)))
+                elif isinstance(kind, (type, tuple)) and not isinstance(value, kind):
+                    raise TypeError(TYPE_ERROR % (key, kind, value, type(value)))
                 kw[key] = value
-            elif key not in ('required', 'multivalue'):
+            elif key not in ("required", "multivalue"):
                 kw.pop(key, None)
 
         # We keep these values to use in __repr__():
-        if kw['required']:
-            if kw['multivalue']:
-                self.param_spec = name + '+'
+        if kw["required"]:
+            if kw["multivalue"]:
+                self.param_spec = name + "+"
             else:
                 self.param_spec = name
         else:
-            if kw['multivalue']:
-                self.param_spec = name + '*'
+            if kw["multivalue"]:
+                self.param_spec = name + "*"
             else:
-                self.param_spec = name + '?'
+                self.param_spec = name + "?"
         self.__kw = dict(kw)
-        del self.__kw['required']
-        del self.__kw['multivalue']
+        del self.__kw["required"]
+        del self.__kw["multivalue"]
 
         self.name = name
-        self.nice = '%s(%r)' % (self.__class__.__name__, self.param_spec)
+        self.nice = "%s(%r)" % (self.__class__.__name__, self.param_spec)
 
         # Make sure no unknown kw were given:
         assert all(isinstance(t, type) for t in self.allowed_types)
         if not set(t[0] for t in self.kwargs).issuperset(self.__kw):
             extra = set(kw) - set(t[0] for t in self.kwargs)
             raise TypeError(
-                '%s: takes no such kwargs: %s' % (self.nice,
-                    ', '.join(repr(k) for k in sorted(extra))
-                )
+                "%s: takes no such kwargs: %s"
+                % (self.nice, ", ".join(repr(k) for k in sorted(extra)))
             )
 
         # We keep this copy with merged values also to use when cloning:
         self.__clonekw = dict(kw)
 
         # Merge in default for 'cli_name', label, doc if not given:
-        if kw.get('cli_name') is None:
-            kw['cli_name'] = self.name
+        if kw.get("cli_name") is None:
+            kw["cli_name"] = self.name
 
-        if kw.get('cli_metavar') is None:
-            kw['cli_metavar'] = self.__class__.__name__.upper()
+        if kw.get("cli_metavar") is None:
+            kw["cli_metavar"] = self.__class__.__name__.upper()
 
-        if kw.get('label') is None:
-            kw['label'] = FixMe(self.name)
+        if kw.get("label") is None:
+            kw["label"] = FixMe(self.name)
 
-        if kw.get('doc') is None:
-            kw['doc'] = kw['label']
+        if kw.get("doc") is None:
+            kw["doc"] = kw["label"]
 
         # Add in class rules:
         class_rules = []
         for (key, kind, default) in self.kwargs:
             value = kw.get(key, default)
             if hasattr(self, key):
-                raise ValueError('kwarg %r conflicts with attribute on %s' % (
-                    key, self.__class__.__name__)
+                raise ValueError(
+                    "kwarg %r conflicts with attribute on %s"
+                    % (key, self.__class__.__name__)
                 )
             setattr(self, key, value)
-            rule_name = '_rule_%s' % key
+            rule_name = "_rule_%s" % key
             if value is not None and hasattr(self, rule_name):
                 class_rules.append(getattr(self, rule_name))
         check_name(self.cli_name)
@@ -547,11 +535,8 @@ class Param(ReadOnly):
         # Check that only 'include' or 'exclude' was provided:
         if None not in (self.include, self.exclude):
             raise ValueError(
-                '%s: cannot have both %s=%r and %s=%r' % (
-                    self.nice,
-                    'include', self.include,
-                    'exclude', self.exclude,
-                )
+                "%s: cannot have both %s=%r and %s=%r"
+                % (self.nice, "include", self.include, "exclude", self.exclude,)
             )
 
         # Check that all the rules are callable
@@ -565,14 +550,14 @@ class Param(ReadOnly):
         for rule in self.all_rules:
             if not callable(rule):
                 raise TypeError(
-                    '%s: rules must be callable; got %r' % (self.nice, rule)
+                    "%s: rules must be callable; got %r" % (self.nice, rule)
                 )
 
         # Check that cli_short_name is only 1 character long:
         if not (self.cli_short_name is None or len(self.cli_short_name) == 1):
             raise ValueError(
-                '%s: cli_short_name can only be a single character: %s' % (
-                    self.nice, self.cli_short_name)
+                "%s: cli_short_name can only be a single character: %s"
+                % (self.nice, self.cli_short_name)
             )
 
         # And we're done.
@@ -582,10 +567,7 @@ class Param(ReadOnly):
         """
         Return an expresion that could construct this `Param` instance.
         """
-        return '%s(%s)' % (
-            self.__class__.__name__,
-            ', '.join(self.__repr_iter())
-        )
+        return "%s(%s)" % (self.__class__.__name__, ", ".join(self.__repr_iter()))
 
     def __repr_iter(self):
         yield repr(self.param_spec)
@@ -593,18 +575,18 @@ class Param(ReadOnly):
             yield rule.__name__
         for key in sorted(self.__kw):
             value = self.__kw[key]
-            if callable(value) and hasattr(value, '__name__'):
+            if callable(value) and hasattr(value, "__name__"):
                 value = value.__name__
             elif isinstance(value, int):
                 value = str(value)
             elif isinstance(value, (tuple, set, frozenset)):
                 value = apirepr(list(value))
-            elif key == 'cli_name':
+            elif key == "cli_name":
                 # always represented as native string
                 value = repr(value)
             else:
                 value = apirepr(value)
-            yield '%s=%s' % (key, value)
+            yield "%s=%s" % (key, value)
 
     def __call__(self, value, **kw):
         """
@@ -634,7 +616,7 @@ class Param(ReadOnly):
         """
         for key in sorted(self.__kw):
             value = self.__kw[key]
-            if callable(value) and hasattr(value, '__name__'):
+            if callable(value) and hasattr(value, "__name__"):
                 value = value.__name__
             yield (key, value)
 
@@ -690,9 +672,9 @@ class Param(ReadOnly):
         just the value of ``env.context``.
         """
         if self.include is not None:
-            return (env.context in self.include)
+            return env.context in self.include
         if self.exclude is not None:
-            return (env.context not in self.exclude)
+            return env.context not in self.exclude
         return True
 
     def safe_value(self, value):
@@ -713,7 +695,7 @@ class Param(ReadOnly):
         u'Some arbitrary value'
         """
         if self.password and value is not None:
-            return u'********'
+            return u"********"
         return value
 
     def clone(self, **overrides):
@@ -763,9 +745,7 @@ class Param(ReadOnly):
             if type(value) not in (tuple, list):
                 value = (value,)
         if self.multivalue:  # pylint: disable=using-constant-test
-            return tuple(
-                self._normalize_scalar(v) for v in value
-            )
+            return tuple(self._normalize_scalar(v) for v in value)
         else:
             return self._normalize_scalar(value)
 
@@ -831,6 +811,7 @@ class Param(ReadOnly):
         if not self.no_convert:
             convert = self._convert_scalar
         else:
+
             def convert(value):
                 if isinstance(value, unicode):
                     return value
@@ -841,9 +822,7 @@ class Param(ReadOnly):
         if self.multivalue:  # pylint: disable=using-constant-test
             if type(value) not in (tuple, list):
                 value = (value,)
-            values = tuple(
-                convert(v) for v in value if not _is_null(v)
-            )
+            values = tuple(convert(v) for v in value if not _is_null(v))
             if len(values) == 0:
                 return
             return values
@@ -867,19 +846,18 @@ class Param(ReadOnly):
         :param supplied: True if this parameter was supplied explicitly.
         """
         if value is None:
-            if self.required or (supplied and 'nonempty' in self.flags):
+            if self.required or (supplied and "nonempty" in self.flags):
                 raise RequirementError(name=self.name)
             return
         if self.deprecated:  # pylint: disable=using-constant-test
-            raise ValidationError(name=self.get_param_name(),
-                                  error=_('this option is deprecated'))
+            raise ValidationError(
+                name=self.get_param_name(), error=_("this option is deprecated")
+            )
         if self.multivalue:  # pylint: disable=using-constant-test
             if type(value) is not tuple:
-                raise TypeError(
-                    TYPE_ERROR % ('value', tuple, value, type(value))
-                )
+                raise TypeError(TYPE_ERROR % ("value", tuple, value, type(value)))
             if len(value) < 1:
-                raise ValueError('value: empty tuple must be converted to None')
+                raise ValueError("value: empty tuple must be converted to None")
             for v in value:
                 self._validate_scalar(v)
         else:
@@ -890,9 +868,7 @@ class Param(ReadOnly):
             if isinstance(value, t):
                 break
         else:
-            raise TypeError(
-                TYPE_ERROR % (self.name, self.type, value, type(value))
-            )
+            raise TypeError(TYPE_ERROR % (self.name, self.type, value, type(value)))
         for rule in self.all_rules:
             error = rule(ugettext, value)
             if error is not None:
@@ -970,16 +946,16 @@ class Param(ReadOnly):
             if isinstance(getattr(self, a), frozenset):
                 json_dict[a] = list(getattr(self, a, []))
             else:
-                val = getattr(self, a, '')
+                val = getattr(self, a, "")
                 if val is None:
                     # ignore 'not set' because lack of their presence is
                     # the information itself
                     continue
                 json_dict[a] = json_serialize(val)
 
-        json_dict['class'] = self.__class__.__name__
-        json_dict['name'] = self.name
-        json_dict['type'] = self.type.__name__
+        json_dict["class"] = self.__class__.__name__
+        json_dict["name"] = self.name
+        json_dict["type"] = self.type.__name__
 
         return json_dict
 
@@ -990,13 +966,13 @@ class Bool(Param):
     """
 
     type = bool
-    type_error = _('must be True or False')
+    type_error = _("must be True or False")
 
     # FIXME: This my quick hack to get some UI stuff working, change these defaults
     #   --jderose 2009-08-28
     kwargs = Param.kwargs + (
-        ('truths', frozenset, frozenset([1, u'1', True, u'true', u'TRUE'])),
-        ('falsehoods', frozenset, frozenset([0, u'0', False, u'false', u'FALSE'])),
+        ("truths", frozenset, frozenset([1, u"1", True, u"true", u"TRUE"])),
+        ("falsehoods", frozenset, frozenset([0, u"0", False, u"false", u"FALSE"])),
     )
 
     def _convert_scalar(self, value, index=None):
@@ -1012,8 +988,7 @@ class Bool(Param):
         if value in self.falsehoods:
             return False
         if type(value) in (tuple, list):
-            raise ConversionError(name=self.name,
-                                  error=ugettext(self.scalar_error))
+            raise ConversionError(name=self.name, error=ugettext(self.scalar_error))
         raise ConversionError(name=self.name, error=ugettext(self.type_error))
 
 
@@ -1048,14 +1023,12 @@ class Flag(Bool):
     """
 
     def __init__(self, name, *rules, **kw):
-        kw['autofill'] = True
-        if 'default' not in kw:
-            kw['default'] = False
-        if type(kw['default']) is not bool:
-            default = kw['default']
-            raise TypeError(
-                TYPE_ERROR % ('default', bool, default, type(default))
-            )
+        kw["autofill"] = True
+        if "default" not in kw:
+            kw["default"] = False
+        if type(kw["default"]) is not bool:
+            default = kw["default"]
+            raise TypeError(TYPE_ERROR % ("default", bool, default, type(default)))
         super(Flag, self).__init__(name, *rules, **kw)
 
 
@@ -1076,8 +1049,7 @@ class Number(Param):
             except ValueError:
                 pass
         if type(value) in (tuple, list):
-            raise ConversionError(name=self.name,
-                                  error=ugettext(self.scalar_error))
+            raise ConversionError(name=self.name, error=ugettext(self.scalar_error))
         raise ConversionError(name=self.name, error=ugettext(self.type_error))
 
 
@@ -1088,11 +1060,11 @@ class Int(Number):
 
     type = int
     allowed_types = (int,)
-    type_error = _('must be an integer')
+    type_error = _("must be an integer")
 
     kwargs = Param.kwargs + (
-        ('minvalue', int, int(MININT)),
-        ('maxvalue', int, int(MAXINT)),
+        ("minvalue", int, int(MININT)),
+        ("maxvalue", int, int(MAXINT)),
     )
 
     @staticmethod
@@ -1104,9 +1076,9 @@ class Int(Number):
             return int(value)
 
         if type(value) is unicode:
-            if u'.' in value:
+            if u"." in value:
                 return int(float(value))
-            if six.PY3 and re.match('0[0-9]+', value):
+            if six.PY3 and re.match("0[0-9]+", value):
                 # 0-prefixed octal format
                 return int(value, 8)
             return int(value, 0)
@@ -1116,10 +1088,12 @@ class Int(Number):
     def __init__(self, name, *rules, **kw):
         super(Int, self).__init__(name, *rules, **kw)
 
-        if (self.minvalue > self.maxvalue) and (self.minvalue is not None and self.maxvalue is not None):
+        if (self.minvalue > self.maxvalue) and (
+            self.minvalue is not None and self.maxvalue is not None
+        ):
             raise ValueError(
-                '%s: minvalue > maxvalue (minvalue=%r, maxvalue=%r)' % (
-                    self.nice, self.minvalue, self.maxvalue)
+                "%s: minvalue > maxvalue (minvalue=%r, maxvalue=%r)"
+                % (self.nice, self.minvalue, self.maxvalue)
             )
 
     def _convert_scalar(self, value, index=None):
@@ -1129,8 +1103,9 @@ class Int(Number):
         try:
             return Int.convert_int(value)
         except ValueError:
-            raise ConversionError(name=self.get_param_name(),
-                                  error=ugettext(self.type_error))
+            raise ConversionError(
+                name=self.get_param_name(), error=ugettext(self.type_error)
+            )
 
     def _rule_minvalue(self, _, value):
         """
@@ -1138,9 +1113,7 @@ class Int(Number):
         """
         assert isinstance(value, int)
         if value < self.minvalue:
-            return _('must be at least %(minvalue)d') % dict(
-                minvalue=self.minvalue,
-            )
+            return _("must be at least %(minvalue)d") % dict(minvalue=self.minvalue,)
         else:
             return None
 
@@ -1150,9 +1123,7 @@ class Int(Number):
         """
         assert isinstance(value, int)
         if value > self.maxvalue:
-            return _('can be at most %(maxvalue)d') % dict(
-                maxvalue=self.maxvalue,
-            )
+            return _("can be at most %(maxvalue)d") % dict(maxvalue=self.maxvalue,)
         else:
             return None
 
@@ -1168,21 +1139,21 @@ class Decimal(Number):
     """
 
     type = decimal.Decimal
-    type_error = _('must be a decimal number')
+    type_error = _("must be a decimal number")
 
     kwargs = Param.kwargs + (
-        ('minvalue', decimal.Decimal, None),
-        ('maxvalue', decimal.Decimal, None),
+        ("minvalue", decimal.Decimal, None),
+        ("maxvalue", decimal.Decimal, None),
         # round Decimal to given precision
-        ('precision', int, None),
+        ("precision", int, None),
         # when False, number is normalized to non-exponential form
-        ('exponential', bool, False),
+        ("exponential", bool, False),
         # set of allowed decimal number classes
-        ('numberclass', tuple, ('-Normal', '+Zero', '+Normal')),
+        ("numberclass", tuple, ("-Normal", "+Zero", "+Normal")),
     )
 
     def __init__(self, name, *rules, **kw):
-        for kwparam in ('minvalue', 'maxvalue', 'default'):
+        for kwparam in ("minvalue", "maxvalue", "default"):
             value = kw.get(kwparam)
             if value is None:
                 continue
@@ -1191,22 +1162,24 @@ class Decimal(Number):
                     value = decimal.Decimal(value)
                 except Exception as e:
                     raise ValueError(
-                       '%s: cannot parse kwarg %s: %s' % (
-                        name, kwparam, str(e)))
+                        "%s: cannot parse kwarg %s: %s" % (name, kwparam, str(e))
+                    )
                 kw[kwparam] = value
 
         super(Decimal, self).__init__(name, *rules, **kw)
 
-        if (self.minvalue is not None and
-                self.maxvalue is not None and
-                self.minvalue > self.maxvalue):
+        if (
+            self.minvalue is not None
+            and self.maxvalue is not None
+            and self.minvalue > self.maxvalue
+        ):
             raise ValueError(
-                '%s: minvalue > maxvalue (minvalue=%s, maxvalue=%s)' % (
-                    self.nice, self.minvalue, self.maxvalue)
+                "%s: minvalue > maxvalue (minvalue=%s, maxvalue=%s)"
+                % (self.nice, self.minvalue, self.maxvalue)
             )
 
         if self.precision is not None and self.precision < 0:
-            raise ValueError('%s: precision must be at least 0' % self.nice)
+            raise ValueError("%s: precision must be at least 0" % self.nice)
 
     def _rule_minvalue(self, _, value):
         """
@@ -1214,9 +1187,7 @@ class Decimal(Number):
         """
         assert type(value) is decimal.Decimal
         if value < self.minvalue:
-            return _('must be at least %(minvalue)s') % dict(
-                minvalue=self.minvalue,
-            )
+            return _("must be at least %(minvalue)s") % dict(minvalue=self.minvalue,)
         else:
             return None
 
@@ -1226,21 +1197,21 @@ class Decimal(Number):
         """
         assert type(value) is decimal.Decimal
         if value > self.maxvalue:
-            return _('can be at most %(maxvalue)s') % dict(
-                maxvalue=self.maxvalue,
-            )
+            return _("can be at most %(maxvalue)s") % dict(maxvalue=self.maxvalue,)
         else:
             return None
 
     def _enforce_numberclass(self, value):
         numberclass = value.number_class()
         if numberclass not in self.numberclass:
-            raise ValidationError(name=self.get_param_name(),
-                    error=_("number class '%(cls)s' is not included in a list "
-                            "of allowed number classes: %(allowed)s") \
-                            % dict(cls=numberclass,
-                                   allowed=u', '.join(self.numberclass))
+            raise ValidationError(
+                name=self.get_param_name(),
+                error=_(
+                    "number class '%(cls)s' is not included in a list "
+                    "of allowed number classes: %(allowed)s"
                 )
+                % dict(cls=numberclass, allowed=u", ".join(self.numberclass)),
+            )
 
     def _enforce_precision(self, value):
         assert type(value) is decimal.Decimal
@@ -1249,8 +1220,7 @@ class Decimal(Number):
             try:
                 value = value.quantize(quantize_exp)
             except decimal.DecimalException as e:
-                raise ConversionError(name=self.get_param_name(),
-                                      error=unicode(e))
+                raise ConversionError(name=self.get_param_name(), error=unicode(e))
         return value
 
     def _remove_exponent(self, value):
@@ -1259,12 +1229,13 @@ class Decimal(Number):
         if not self.exponential:
             try:
                 # adopted from http://docs.python.org/library/decimal.html
-                value = value.quantize(decimal.Decimal(1)) \
-                        if value == value.to_integral() \
-                        else value.normalize()
+                value = (
+                    value.quantize(decimal.Decimal(1))
+                    if value == value.to_integral()
+                    else value.normalize()
+                )
             except decimal.DecimalException as e:
-                raise ConversionError(name=self.get_param_name(),
-                                      error=unicode(e))
+                raise ConversionError(name=self.get_param_name(), error=unicode(e))
 
         return value
 
@@ -1284,8 +1255,7 @@ class Decimal(Number):
             try:
                 value = decimal.Decimal(value)
             except decimal.DecimalException as e:
-                raise ConversionError(name=self.get_param_name(),
-                                      error=unicode(e))
+                raise ConversionError(name=self.get_param_name(), error=unicode(e))
 
         if isinstance(value, decimal.Decimal):
             return self._test_and_normalize(value)
@@ -1298,6 +1268,7 @@ class Decimal(Number):
 
         return super(Decimal, self)._normalize_scalar(value)
 
+
 class Data(Param):
     """
     Base class for the `Bytes` and `Str` parameters.
@@ -1308,10 +1279,10 @@ class Data(Param):
     """
 
     kwargs = Param.kwargs + (
-        ('minlength', int, None),
-        ('maxlength', int, None),
-        ('length', int, None),
-        ('pattern_errmsg', (str,), None),
+        ("minlength", int, None),
+        ("maxlength", int, None),
+        ("length", int, None),
+        ("pattern_errmsg", (str,), None),
     )
 
     re = None
@@ -1321,33 +1292,32 @@ class Data(Param):
         super(Data, self).__init__(name, *rules, **kw)
 
         if not (
-            self.length is None or
-            (self.minlength is None and self.maxlength is None)
+            self.length is None or (self.minlength is None and self.maxlength is None)
         ):
             raise ValueError(
-                '%s: cannot mix length with minlength or maxlength' % self.nice
+                "%s: cannot mix length with minlength or maxlength" % self.nice
             )
 
         if self.minlength is not None and self.minlength < 1:
             raise ValueError(
-                '%s: minlength must be >= 1; got %r' % (self.nice, self.minlength)
+                "%s: minlength must be >= 1; got %r" % (self.nice, self.minlength)
             )
 
         if self.maxlength is not None and self.maxlength < 1:
             raise ValueError(
-                '%s: maxlength must be >= 1; got %r' % (self.nice, self.maxlength)
+                "%s: maxlength must be >= 1; got %r" % (self.nice, self.maxlength)
             )
 
         if None not in (self.minlength, self.maxlength):
             if self.minlength > self.maxlength:
                 raise ValueError(
-                    '%s: minlength > maxlength (minlength=%r, maxlength=%r)' % (
-                        self.nice, self.minlength, self.maxlength)
+                    "%s: minlength > maxlength (minlength=%r, maxlength=%r)"
+                    % (self.nice, self.minlength, self.maxlength)
                 )
             elif self.minlength == self.maxlength:
                 raise ValueError(
-                    '%s: minlength == maxlength; use length=%d instead' % (
-                        self.nice, self.minlength)
+                    "%s: minlength == maxlength; use length=%d instead"
+                    % (self.nice, self.minlength)
                 )
 
     def _rule_pattern(self, _, value):
@@ -1379,17 +1349,15 @@ class Bytes(Data):
     """
 
     type = bytes
-    type_error = _('must be binary data')
-    kwargs = Data.kwargs + (
-        ('pattern', (bytes,), None),
-    )
+    type_error = _("must be binary data")
+    kwargs = Data.kwargs + (("pattern", (bytes,), None),)
 
     def __init__(self, name, *rules, **kw):
-        if kw.get('pattern', None) is None:
+        if kw.get("pattern", None) is None:
             self.re = None
         else:
-            self.re = re.compile(kw['pattern'])
-        self.re_errmsg = kw.get('pattern_errmsg', None)
+            self.re = re.compile(kw["pattern"])
+        self.re_errmsg = kw.get("pattern_errmsg", None)
         super(Bytes, self).__init__(name, *rules, **kw)
 
     def _rule_minlength(self, _, value):
@@ -1398,7 +1366,7 @@ class Bytes(Data):
         """
         assert type(value) is bytes
         if len(value) < self.minlength:
-            return _('must be at least %(minlength)d bytes') % dict(
+            return _("must be at least %(minlength)d bytes") % dict(
                 minlength=self.minlength,
             )
         else:
@@ -1410,7 +1378,7 @@ class Bytes(Data):
         """
         assert type(value) is bytes
         if len(value) > self.maxlength:
-            return _('can be at most %(maxlength)d bytes') % dict(
+            return _("can be at most %(maxlength)d bytes") % dict(
                 maxlength=self.maxlength,
             )
         else:
@@ -1422,9 +1390,7 @@ class Bytes(Data):
         """
         assert type(value) is bytes
         if len(value) != self.length:
-            return _('must be exactly %(length)d bytes') % dict(
-                length=self.length,
-            )
+            return _("must be exactly %(length)d bytes") % dict(length=self.length,)
         else:
             return None
 
@@ -1439,7 +1405,7 @@ class Bytes(Data):
 
 class Certificate(Param):
     type = crypto_x509.Certificate
-    type_error = _('must be a certificate')
+    type_error = _("must be a certificate")
     allowed_types = (IPACertificate, bytes, unicode)
 
     def _convert_scalar(self, value, index=None):
@@ -1449,7 +1415,7 @@ class Certificate(Param):
         """
         if isinstance(value, bytes):
             try:
-                value = value.decode('ascii')
+                value = value.decode("ascii")
             except UnicodeDecodeError:
                 # value is possibly a DER-encoded certificate
                 pass
@@ -1475,7 +1441,7 @@ class Certificate(Param):
 
 class CertificateSigningRequest(Param):
     type = crypto_x509.CertificateSigningRequest
-    type_error = _('must be a certificate signing request')
+    type_error = _("must be a certificate signing request")
     allowed_types = (crypto_x509.CertificateSigningRequest, bytes, unicode)
 
     def __extract_der_from_input(self, value):
@@ -1491,7 +1457,7 @@ class CertificateSigningRequest(Param):
             DER, in which case we would just return input
         """
         try:
-            value.decode('utf-8')
+            value.decode("utf-8")
         except UnicodeDecodeError:
             # possibly DER-encoded CSR or something similar
             return value
@@ -1509,20 +1475,19 @@ class CertificateSigningRequest(Param):
         """
         if isinstance(value, unicode):
             try:
-                value = value.encode('ascii')
+                value = value.encode("ascii")
             except UnicodeDecodeError:
-                raise CertificateOperationError('not a valid CSR')
+                raise CertificateOperationError("not a valid CSR")
 
         if isinstance(value, bytes):
             # try to extract DER from whatever we got
             value = self.__extract_der_from_input(value)
             try:
-                value = crypto_x509.load_der_x509_csr(
-                    value, backend=default_backend())
+                value = crypto_x509.load_der_x509_csr(value, backend=default_backend())
             except ValueError as e:
                 raise CertificateOperationError(
-                    error=_("Failure decoding Certificate Signing Request:"
-                            " %s") % e)
+                    error=_("Failure decoding Certificate Signing Request:" " %s") % e
+                )
 
         return super(CertificateSigningRequest, self)._convert_scalar(value)
 
@@ -1540,19 +1505,19 @@ class Str(Data):
     """
 
     kwargs = Data.kwargs + (
-        ('pattern', (str,), None),
-        ('noextrawhitespace', bool, True),
+        ("pattern", (str,), None),
+        ("noextrawhitespace", bool, True),
     )
 
     type = unicode
-    type_error = _('must be Unicode text')
+    type_error = _("must be Unicode text")
 
     def __init__(self, name, *rules, **kw):
-        if kw.get('pattern', None) is None:
+        if kw.get("pattern", None) is None:
             self.re = None
         else:
-            self.re = re.compile(kw['pattern'], re.UNICODE)
-        self.re_errmsg = kw.get('pattern_errmsg', None)
+            self.re = re.compile(kw["pattern"], re.UNICODE)
+        self.re_errmsg = kw.get("pattern_errmsg", None)
         super(Str, self).__init__(name, *rules, **kw)
 
     def _convert_scalar(self, value, index=None):
@@ -1564,8 +1529,7 @@ class Str(Data):
         if type(value) in (int, float, decimal.Decimal):
             return self.type(value)
         if type(value) in (tuple, list):
-            raise ConversionError(name=self.name,
-                                  error=ugettext(self.scalar_error))
+            raise ConversionError(name=self.name, error=ugettext(self.scalar_error))
         raise ConversionError(name=self.name, error=ugettext(self.type_error))
 
     def _rule_noextrawhitespace(self, _, value):
@@ -1576,7 +1540,7 @@ class Str(Data):
         if self.noextrawhitespace is False:
             return None
         if len(value) != len(value.strip()):
-            return _('Leading and trailing spaces are not allowed')
+            return _("Leading and trailing spaces are not allowed")
         else:
             return None
 
@@ -1586,7 +1550,7 @@ class Str(Data):
         """
         assert type(value) is unicode
         if len(value) < self.minlength:
-            return _('must be at least %(minlength)d characters') % dict(
+            return _("must be at least %(minlength)d characters") % dict(
                 minlength=self.minlength,
             )
         else:
@@ -1598,7 +1562,7 @@ class Str(Data):
         """
         assert type(value) is unicode
         if len(value) > self.maxlength:
-            return _('can be at most %(maxlength)d characters') % dict(
+            return _("can be at most %(maxlength)d characters") % dict(
                 maxlength=self.maxlength,
             )
         else:
@@ -1610,7 +1574,7 @@ class Str(Data):
         """
         assert type(value) is unicode
         if len(value) != self.length:
-            return _('must be exactly %(length)d characters') % dict(
+            return _("must be exactly %(length)d characters") % dict(
                 length=self.length,
             )
         else:
@@ -1618,6 +1582,7 @@ class Str(Data):
 
     def sort_key(self, value):
         return value.lower()
+
 
 class IA5Str(Str):
     """
@@ -1631,9 +1596,10 @@ class IA5Str(Str):
         if isinstance(value, str):
             for char in value:
                 if ord(char) > 127:
-                    raise ConversionError(name=self.get_param_name(),
-                        error=_('The character %(char)r is not allowed.') %
-                            dict(char=char,)
+                    raise ConversionError(
+                        name=self.get_param_name(),
+                        error=_("The character %(char)r is not allowed.")
+                        % dict(char=char,),
                     )
         return super(IA5Str, self)._convert_scalar(value)
 
@@ -1659,33 +1625,29 @@ class Enum(Param):
     Base class for parameters with enumerable values.
     """
 
-    kwargs = Param.kwargs + (
-        ('values', tuple, tuple()),
-    )
+    kwargs = Param.kwargs + (("values", tuple, tuple()),)
 
     def __init__(self, name, *rules, **kw):
-        kw['cli_metavar'] = str([str(v) for v in kw.get('values', tuple())])
+        kw["cli_metavar"] = str([str(v) for v in kw.get("values", tuple())])
         super(Enum, self).__init__(name, *rules, **kw)
         for (i, v) in enumerate(self.values):
             if type(v) not in self.allowed_types:
-                n = '%s values[%d]' % (self.nice, i)
-                raise TypeError(
-                    TYPE_ERROR % (n, self.type, v, type(v))
-                )
+                n = "%s values[%d]" % (self.nice, i)
+                raise TypeError(TYPE_ERROR % (n, self.type, v, type(v)))
 
         if len(self.values) < 1:
-            raise ValueError(
-                '%s: list of values must not be empty' % self.nice)
+            raise ValueError("%s: list of values must not be empty" % self.nice)
 
     def _rule_values(self, _, value, **kw):
         if value not in self.values:
             if len(self.values) == 1:
                 return _("must be '%(value)s'") % dict(value=self.values[0])
             else:
-                values = u', '.join("'%s'" % value for value in self.values)
-                return _('must be one of %(values)s') % dict(values=values)
+                values = u", ".join("'%s'" % value for value in self.values)
+                return _("must be one of %(values)s") % dict(values=values)
         else:
             return None
+
 
 class BytesEnum(Enum):
     """
@@ -1729,8 +1691,9 @@ class IntEnum(Enum):
         try:
             return Int.convert_int(value)
         except ValueError:
-            raise ConversionError(name=self.get_param_name(),
-                                  error=ugettext(self.type_error))
+            raise ConversionError(
+                name=self.get_param_name(), error=ugettext(self.type_error)
+            )
 
 
 class Any(Param):
@@ -1755,22 +1718,24 @@ class File(Str):
 
     Accepts file names and loads their content into the parameter value.
     """
-    open_mode = 'r'
+
+    open_mode = "r"
     kwargs = Data.kwargs + (
         # valid for CLI, other backends (e.g. webUI) can ignore this
-        ('stdin_if_missing', bool, False),
-        ('noextrawhitespace', bool, False),
+        ("stdin_if_missing", bool, False),
+        ("noextrawhitespace", bool, False),
     )
 
 
 class BinaryFile(Bytes):
     """Binary file parameter type
     """
-    open_mode = 'rb'
+
+    open_mode = "rb"
     kwargs = Data.kwargs + (
         # valid for CLI, other backends (e.g. webUI) can ignore this
-        ('stdin_if_missing', bool, False),
-        ('noextrawhitespace', bool, False),
+        ("stdin_if_missing", bool, False),
+        ("noextrawhitespace", bool, False),
     )
 
 
@@ -1791,20 +1756,21 @@ class DateTime(Param):
     Refer to the `man strftime` for the explanations for the %Y,%m,%d,%H.%M,%S.
     """
 
-    accepted_formats = [LDAP_GENERALIZED_TIME_FORMAT,  # generalized time
-                        '%Y-%m-%dT%H:%M:%SZ',  # ISO 8601, second precision
-                        '%Y-%m-%dT%H:%MZ',     # ISO 8601, minute precision
-                        '%Y-%m-%dZ',           # ISO 8601, date only
-                        '%Y-%m-%d %H:%M:%SZ',  # non-ISO 8601, second precision
-                        '%Y-%m-%d %H:%MZ']     # non-ISO 8601, minute precision
-
+    accepted_formats = [
+        LDAP_GENERALIZED_TIME_FORMAT,  # generalized time
+        "%Y-%m-%dT%H:%M:%SZ",  # ISO 8601, second precision
+        "%Y-%m-%dT%H:%MZ",  # ISO 8601, minute precision
+        "%Y-%m-%dZ",  # ISO 8601, date only
+        "%Y-%m-%d %H:%M:%SZ",  # non-ISO 8601, second precision
+        "%Y-%m-%d %H:%MZ",
+    ]  # non-ISO 8601, minute precision
 
     type = datetime.datetime
-    type_error = _('must be datetime value')
+    type_error = _("must be datetime value")
 
     def _convert_scalar(self, value, index=None):
         if isinstance(value, str):
-            if value == u'now':
+            if value == u"now":
                 time = datetime.datetime.utcnow()
                 return time
             else:
@@ -1818,11 +1784,11 @@ class DateTime(Param):
             # If we get here, the strptime call did not succeed for any
             # the accepted formats, therefore raise error
 
-            error = (_("does not match any of accepted formats: ") +
-                      (', '.join(self.accepted_formats)))
+            error = _("does not match any of accepted formats: ") + (
+                ", ".join(self.accepted_formats)
+            )
 
-            raise ConversionError(name=self.get_param_name(),
-                                  error=error)
+            raise ConversionError(name=self.get_param_name(), error=error)
 
         return super(DateTime, self)._convert_scalar(value)
 
@@ -1834,125 +1800,126 @@ class AccessTime(Str):
     Accepts values conforming to generalizedTime as defined in RFC 4517
     section 3.3.13 without time zone information.
     """
+
     def _check_HHMM(self, t):
         if len(t) != 4:
-            raise ValueError('HHMM must be exactly 4 characters long')
+            raise ValueError("HHMM must be exactly 4 characters long")
         if not t.isnumeric():
-            raise ValueError('HHMM non-numeric')
+            raise ValueError("HHMM non-numeric")
         hh = int(t[0:2])
         if hh < 0 or hh > 23:
-            raise ValueError('HH out of range')
+            raise ValueError("HH out of range")
         mm = int(t[2:4])
         if mm < 0 or mm > 59:
-            raise ValueError('MM out of range')
+            raise ValueError("MM out of range")
 
     def _check_dotw(self, t):
         if t.isnumeric():
             value = int(t)
             if value < 1 or value > 7:
-                raise ValueError('day of the week out of range')
-        elif t not in ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'):
-            raise ValueError('invalid day of the week')
+                raise ValueError("day of the week out of range")
+        elif t not in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"):
+            raise ValueError("invalid day of the week")
 
     def _check_dotm(self, t, month_num=1, year=4):
         if not t.isnumeric():
-            raise ValueError('day of the month non-numeric')
+            raise ValueError("day of the month non-numeric")
         value = int(t)
         if month_num in (1, 3, 5, 7, 8, 10, 12):
             if value < 1 or value > 31:
-                raise ValueError('day of the month out of range')
+                raise ValueError("day of the month out of range")
         elif month_num in (4, 6, 9, 11):
             if value < 1 or value > 30:
-                raise ValueError('day of the month out of range')
+                raise ValueError("day of the month out of range")
         elif month_num == 2:
             if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
                 if value < 1 or value > 29:
-                    raise ValueError('day of the month out of range')
+                    raise ValueError("day of the month out of range")
             else:
                 if value < 1 or value > 28:
-                    raise ValueError('day of the month out of range')
+                    raise ValueError("day of the month out of range")
 
     def _check_wotm(self, t):
         if not t.isnumeric():
-            raise ValueError('week of the month non-numeric')
+            raise ValueError("week of the month non-numeric")
         value = int(t)
         if value < 1 or value > 6:
-            raise ValueError('week of the month out of range')
+            raise ValueError("week of the month out of range")
 
     def _check_woty(self, t):
         if not t.isnumeric():
-            raise ValueError('week of the year non-numeric')
+            raise ValueError("week of the year non-numeric")
         value = int(t)
         if value < 1 or value > 52:
-            raise ValueError('week of the year out of range')
+            raise ValueError("week of the year out of range")
 
     def _check_doty(self, t):
         if not t.isnumeric():
-            raise ValueError('day of the year non-numeric')
+            raise ValueError("day of the year non-numeric")
         value = int(t)
         if value < 1 or value > 365:
-            raise ValueError('day of the year out of range')
+            raise ValueError("day of the year out of range")
 
     def _check_month_num(self, t):
         if not t.isnumeric():
-            raise ValueError('month number non-numeric')
+            raise ValueError("month number non-numeric")
         value = int(t)
         if value < 1 or value > 12:
-            raise ValueError('month number out of range')
+            raise ValueError("month number out of range")
 
     def _check_interval(self, t, check_func):
-        intervals = t.split(',')
+        intervals = t.split(",")
         for i in intervals:
             if not i:
-                raise ValueError('invalid time range')
-            values = i.split('-')
+                raise ValueError("invalid time range")
+            values = i.split("-")
             if len(values) > 2:
-                raise ValueError('invalid time range')
+                raise ValueError("invalid time range")
             for v in values:
                 check_func(v)
             if len(values) == 2:
                 if int(values[0]) > int(values[1]):
-                    raise ValueError('invalid time range')
+                    raise ValueError("invalid time range")
 
     def _check_W_spec(self, ts, index):
-        if ts[index] != 'day':
-            raise ValueError('invalid week specifier')
+        if ts[index] != "day":
+            raise ValueError("invalid week specifier")
         index += 1
         self._check_interval(ts[index], self._check_dotw)
         return index
 
     def _check_M_spec(self, ts, index):
-        if ts[index] == 'week':
+        if ts[index] == "week":
             self._check_interval(ts[index + 1], self._check_wotm)
             index = self._check_W_spec(ts, index + 2)
-        elif ts[index] == 'day':
+        elif ts[index] == "day":
             index += 1
             self._check_interval(ts[index], self._check_dotm)
         else:
-            raise ValueError('invalid month specifier')
+            raise ValueError("invalid month specifier")
         return index
 
     def _check_Y_spec(self, ts, index):
-        if ts[index] == 'month':
+        if ts[index] == "month":
             index += 1
             self._check_interval(ts[index], self._check_month_num)
             index = self._check_M_spec(ts, index + 1)
-        elif ts[index] == 'week':
+        elif ts[index] == "week":
             self._check_interval(ts[index + 1], self._check_woty)
             index = self._check_W_spec(ts, index + 2)
-        elif ts[index] == 'day':
+        elif ts[index] == "day":
             index += 1
             self._check_interval(ts[index], self._check_doty)
         else:
-            raise ValueError('invalid year specifier')
+            raise ValueError("invalid year specifier")
         return index
 
     def _check_generalized(self, t):
         assert type(t) is unicode
         if len(t) not in (10, 12, 14):
-            raise ValueError('incomplete generalized time')
+            raise ValueError("incomplete generalized time")
         if not t.isnumeric():
-            raise ValueError('time non-numeric')
+            raise ValueError("time non-numeric")
         # don't check year value, with time travel and all :)
         self._check_month_num(t[4:6])
         year_num = int(t[0:4])
@@ -1961,38 +1928,42 @@ class AccessTime(Str):
         if len(t) >= 12:
             self._check_HHMM(t[8:12])
         else:
-            self._check_HHMM('%s00' % t[8:10])
+            self._check_HHMM("%s00" % t[8:10])
         if len(t) == 14:
             s = int(t[12:14])
             if s < 0 or s > 60:
-                raise ValueError('seconds out of range')
+                raise ValueError("seconds out of range")
 
     def _check(self, time):
         ts = time.split()
-        if ts[0] == 'absolute':
+        if ts[0] == "absolute":
             if len(ts) != 4:
-                raise ValueError('invalid format, must be \'absolute generalizedTime ~ generalizedTime\'')
+                raise ValueError(
+                    "invalid format, must be 'absolute generalizedTime ~ generalizedTime'"
+                )
             self._check_generalized(ts[1])
-            if ts[2] != '~':
-                raise ValueError('invalid time range separator')
+            if ts[2] != "~":
+                raise ValueError("invalid time range separator")
             self._check_generalized(ts[3])
             if int(ts[1]) >= int(ts[3]):
-                raise ValueError('invalid time range')
-        elif ts[0] == 'periodic':
+                raise ValueError("invalid time range")
+        elif ts[0] == "periodic":
             index = None
-            if ts[1] == 'yearly':
+            if ts[1] == "yearly":
                 index = self._check_Y_spec(ts, 2)
-            elif ts[1] == 'monthly':
+            elif ts[1] == "monthly":
                 index = self._check_M_spec(ts, 2)
-            elif ts[1] == 'weekly':
+            elif ts[1] == "weekly":
                 index = self._check_W_spec(ts, 2)
-            elif ts[1] == 'daily':
+            elif ts[1] == "daily":
                 index = 1
             if index is None:
-                raise ValueError('period must be yearly, monthy or daily, got \'%s\'' % ts[1])
+                raise ValueError(
+                    "period must be yearly, monthy or daily, got '%s'" % ts[1]
+                )
             self._check_interval(ts[index + 1], self._check_HHMM)
         else:
-            raise ValueError('time neither absolute or periodic')
+            raise ValueError("time neither absolute or periodic")
 
     def _rule_required(self, _, value):
         try:
@@ -2001,7 +1972,7 @@ class AccessTime(Str):
             raise ValidationError(name=self.get_param_name(), error=e.args[0])
         except IndexError:
             raise ValidationError(
-                name=self.get_param_name(), error=ugettext('incomplete time value')
+                name=self.get_param_name(), error=ugettext("incomplete time value")
             )
 
 
@@ -2016,14 +1987,12 @@ class DNParam(Param):
             return value
 
         if type(value) in (tuple, list):
-            raise ConversionError(name=self.name,
-                                  error=ugettext(self.scalar_error))
+            raise ConversionError(name=self.name, error=ugettext(self.scalar_error))
 
         try:
             dn = DN(value)
         except Exception as e:
-            raise ConversionError(name=self.get_param_name(),
-                                  error=ugettext(e))
+            raise ConversionError(name=self.get_param_name(), error=ugettext(e))
         return dn
 
 
@@ -2063,9 +2032,7 @@ def create_param(spec):
     if isinstance(spec, Param):
         return spec
     if type(spec) is not str:
-        raise TypeError(
-            TYPE_ERROR % ('spec', (str, Param), spec, type(spec))
-        )
+        raise TypeError(TYPE_ERROR % ("spec", (str, Param), spec, type(spec)))
     return Str(spec)
 
 
@@ -2077,26 +2044,25 @@ class DNSNameParam(Param):
         (makes it absolute from unicode input)
     :only_relative a domain name has to be relative
     """
+
     type = DNSName
-    type_error = _('must be DNS name')
+    type_error = _("must be DNS name")
     kwargs = Param.kwargs + (
-        ('only_absolute', bool, False),
-        ('only_relative', bool, False),
+        ("only_absolute", bool, False),
+        ("only_relative", bool, False),
     )
 
     def __init__(self, name, *rules, **kw):
         super(DNSNameParam, self).__init__(name, *rules, **kw)
         if self.only_absolute and self.only_relative:
-            raise ValueError('%s: cannot be both absolute and relative' %
-                             self.nice)
+            raise ValueError("%s: cannot be both absolute and relative" % self.nice)
 
     def _convert_scalar(self, value, index=None):
         if isinstance(value, unicode):
             try:
                 validate_idna_domain(value)
             except ValueError as e:
-                raise ConversionError(name=self.get_param_name(),
-                                      error=unicode(e))
+                raise ConversionError(name=self.get_param_name(), error=unicode(e))
             value = DNSName(value)
 
             if self.only_absolute and not value.is_absolute():
@@ -2106,13 +2072,13 @@ class DNSNameParam(Param):
 
     def _rule_only_absolute(self, _, value):
         if self.only_absolute and not value.is_absolute():
-            return _('must be absolute')
+            return _("must be absolute")
         else:
             return None
 
     def _rule_only_relative(self, _, value):
         if self.only_relative and value.is_absolute():
-            return _('must be relative')
+            return _("must be relative")
         else:
             return None
 
@@ -2132,10 +2098,8 @@ class Principal(Param):
     """
 
     type = kerberos.Principal
-    type_error = _('must be Kerberos principal')
-    kwargs = Param.kwargs + (
-        ('require_service', bool, False),
-    )
+    type_error = _("must be Kerberos principal")
+    kwargs = Param.kwargs + (("require_service", bool, False),)
 
     @property
     def allowed_types(self):
@@ -2148,14 +2112,13 @@ class Principal(Param):
             except ValueError:
                 raise ConversionError(
                     name=self.get_param_name(),
-                    error=_("Malformed principal: '%(value)s'") % dict(
-                        value=value))
+                    error=_("Malformed principal: '%(value)s'") % dict(value=value),
+                )
 
         return super(Principal, self)._convert_scalar(value)
 
     def _rule_require_service(self, _, value):
         if self.require_service and not value.is_service:
             raise ValidationError(
-                name=self.get_param_name(),
-                error=_("Service principal is required")
+                name=self.get_param_name(), error=_("Service principal is required")
             )

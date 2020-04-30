@@ -54,13 +54,19 @@ from ipaplatform import services
 from ipaplatform.tasks import tasks
 from ipaplatform.constants import constants
 from ipaplatform.paths import paths
-from ipalib.util import (validate_zonemgr_str, normalize_zonemgr,
-                         get_dns_forward_zone_update_policy,
-                         get_dns_reverse_zone_update_policy,
-                         normalize_zone, get_reverse_zone_default,
-                         zone_is_reverse, validate_dnssec_global_forwarder,
-                         DNSSECSignatureMissingError, EDNS0UnsupportedError,
-                         UnresolvableRecordError)
+from ipalib.util import (
+    validate_zonemgr_str,
+    normalize_zonemgr,
+    get_dns_forward_zone_update_policy,
+    get_dns_reverse_zone_update_policy,
+    normalize_zone,
+    get_reverse_zone_default,
+    zone_is_reverse,
+    validate_dnssec_global_forwarder,
+    DNSSECSignatureMissingError,
+    EDNS0UnsupportedError,
+    UnresolvableRecordError,
+)
 
 if six.PY3:
     unicode = str
@@ -68,31 +74,29 @@ if six.PY3:
 logger = logging.getLogger(__name__)
 
 named_conf_section_ipa_start_re = re.compile(r'\s*dyndb\s+"ipa"\s+"[^"]+"\s+{')
-named_conf_section_options_start_re = re.compile(r'\s*options\s+{')
-named_conf_section_end_re = re.compile('};')
-named_conf_arg_ipa_re = re.compile(
-    r'(?P<indent>\s*)(?P<name>\S+)\s"(?P<value>[^"]+)";')
+named_conf_section_options_start_re = re.compile(r"\s*options\s+{")
+named_conf_section_end_re = re.compile("};")
+named_conf_arg_ipa_re = re.compile(r'(?P<indent>\s*)(?P<name>\S+)\s"(?P<value>[^"]+)";')
 named_conf_arg_options_re = re.compile(
-    r'(?P<indent>\s*)(?P<name>\S+)\s+"(?P<value>[^"]+)"\s*;')
-named_conf_arg_ipa_template = "%(indent)s%(name)s \"%(value)s\";\n"
-named_conf_arg_options_template = "%(indent)s%(name)s \"%(value)s\";\n"
+    r'(?P<indent>\s*)(?P<name>\S+)\s+"(?P<value>[^"]+)"\s*;'
+)
+named_conf_arg_ipa_template = '%(indent)s%(name)s "%(value)s";\n'
+named_conf_arg_options_template = '%(indent)s%(name)s "%(value)s";\n'
 # non string args for options section
 named_conf_arg_options_re_nonstr = re.compile(
-    r'(?P<indent>\s*)(?P<name>\S+)\s+(?P<value>[^"]+)\s*;')
+    r'(?P<indent>\s*)(?P<name>\S+)\s+(?P<value>[^"]+)\s*;'
+)
 named_conf_arg_options_template_nonstr = "%(indent)s%(name)s %(value)s;\n"
 # include directive
 named_conf_include_re = re.compile(r'\s*include\s+"(?P<path>)"\s*;')
-named_conf_include_template = "include \"%(path)s\";\n"
+named_conf_include_template = 'include "%(path)s";\n'
 
 NAMED_SECTION_OPTIONS = "options"
 NAMED_SECTION_IPA = "ipa"
 
 
 def create_reverse():
-    return ipautil.user_input(
-        "Do you want to search for missing reverse zones?",
-        True
-    )
+    return ipautil.user_input("Do you want to search for missing reverse zones?", True)
 
 
 def named_conf_exists():
@@ -101,7 +105,7 @@ def named_conf_exists():
 
     """
     try:
-        with open(paths.NAMED_CONF, 'r') as named_fd:
+        with open(paths.NAMED_CONF, "r") as named_fd:
             lines = named_fd.readlines()
     except IOError:
         return False
@@ -129,7 +133,7 @@ def named_conf_get_directive(name, section=NAMED_SECTION_IPA, str_val=True):
     else:
         raise NotImplementedError('Section "%s" is not supported' % section)
 
-    with open(paths.NAMED_CONF, 'r') as f:
+    with open(paths.NAMED_CONF, "r") as f:
         target_section = False
         for line in f:
             if named_conf_section_start_re.match(line):
@@ -142,13 +146,12 @@ def named_conf_get_directive(name, section=NAMED_SECTION_IPA, str_val=True):
             if target_section:
                 match = named_conf_arg_re.match(line)
 
-                if match and name == match.group('name'):
-                    return match.group('value')
+                if match and name == match.group("name"):
+                    return match.group("value")
     return None
 
 
-def named_conf_set_directive(name, value, section=NAMED_SECTION_IPA,
-                             str_val=True):
+def named_conf_set_directive(name, value, section=NAMED_SECTION_IPA, str_val=True):
     """
     Set configuration option in bind-dyndb-ldap section of named.conf.
 
@@ -178,7 +181,7 @@ def named_conf_set_directive(name, value, section=NAMED_SECTION_IPA,
     else:
         raise NotImplementedError('Section "%s" is not supported' % section)
 
-    with open(paths.NAMED_CONF, 'r') as f:
+    with open(paths.NAMED_CONF, "r") as f:
         target_section = False
         matched = False
         last_indent = "\t"
@@ -186,13 +189,11 @@ def named_conf_set_directive(name, value, section=NAMED_SECTION_IPA,
             if named_conf_section_start_re.match(line):
                 target_section = True
             if named_conf_section_end_re.match(line):
-                if target_section and not matched and \
-                        value is not None:
+                if target_section and not matched and value is not None:
                     # create a new conf
-                    new_conf = named_conf_arg_template \
-                            % dict(indent=last_indent,
-                                   name=name,
-                                   value=value)
+                    new_conf = named_conf_arg_template % dict(
+                        indent=last_indent, name=name, value=value
+                    )
                     new_lines.append(new_conf)
                 target_section = False
 
@@ -200,22 +201,21 @@ def named_conf_set_directive(name, value, section=NAMED_SECTION_IPA,
                 match = named_conf_arg_re.match(line)
 
                 if match:
-                    last_indent = match.group('indent')
-                    if name == match.group('name'):
+                    last_indent = match.group("indent")
+                    if name == match.group("name"):
                         matched = True
                         if value is not None:
                             if not isinstance(value, str):
                                 value = str(value)
-                            new_conf = named_conf_arg_template \
-                                    % dict(indent=last_indent,
-                                           name=name,
-                                           value=value)
+                            new_conf = named_conf_arg_template % dict(
+                                indent=last_indent, name=name, value=value
+                            )
                             new_lines.append(new_conf)
                         continue
             new_lines.append(line)
 
     # write new configuration
-    with open(paths.NAMED_CONF, 'w') as f:
+    with open(paths.NAMED_CONF, "w") as f:
         f.write("".join(new_lines))
 
 
@@ -225,10 +225,10 @@ def named_conf_include_exists(path):
     :param path: path in include directive
     :return: True if include exists, else False
     """
-    with open(paths.NAMED_CONF, 'r') as f:
+    with open(paths.NAMED_CONF, "r") as f:
         for line in f:
             match = named_conf_include_re.match(line)
-            if match and path == match.group('path'):
+            if match and path == match.group("path"):
                 return True
 
     return False
@@ -239,8 +239,8 @@ def named_conf_add_include(path):
     append include at the end of file
     :param path: path to be insert to include directive
     """
-    with open(paths.NAMED_CONF, 'a') as f:
-        f.write(named_conf_include_template % {'path': path})
+    with open(paths.NAMED_CONF, "a") as f:
+        f.write(named_conf_include_template % {"path": path})
 
 
 def dns_container_exists(suffix):
@@ -248,7 +248,7 @@ def dns_container_exists(suffix):
     Test whether the dns container exists.
     """
     assert isinstance(suffix, DN)
-    return api.Backend.ldap2.entry_exists(DN(('cn', 'dns'), suffix))
+    return api.Backend.ldap2.entry_exists(DN(("cn", "dns"), suffix))
 
 
 def dns_zone_exists(name, api=api):
@@ -265,13 +265,13 @@ def dns_zone_exists(name, api=api):
 
 def get_reverse_record_name(zone, ip_address):
     ip = netaddr.IPAddress(ip_address)
-    rev = '.' + normalize_zone(zone)
-    fullrev = '.' + normalize_zone(ip.reverse_dns)
+    rev = "." + normalize_zone(zone)
+    fullrev = "." + normalize_zone(ip.reverse_dns)
 
     if not fullrev.endswith(rev):
         raise ValueError("IP address does not match reverse zone")
 
-    return fullrev[1:-len(rev)]
+    return fullrev[1 : -len(rev)]
 
 
 def verify_reverse_zone(zone, ip_address):
@@ -290,7 +290,7 @@ def find_reverse_zone(ip_address, api=api):
     while len(zone) > 0:
         if dns_zone_exists(zone, api):
             return zone
-        zone = zone.partition('.')[2]
+        zone = zone.partition(".")[2]
 
     return None
 
@@ -307,7 +307,7 @@ def named_add_ext_conf_file(src, dest, t_params={}):
         ipa_ext_txt = ipautil.template_file(src, t_params)
         gid = pwd.getpwnam(constants.NAMED_USER).pw_gid
 
-        with open(dest, 'w') as ipa_ext:
+        with open(dest, "w") as ipa_ext:
             os.fchmod(ipa_ext.fileno(), 0o640)
             os.fchown(ipa_ext.fileno(), 0, gid)
             ipa_ext.write(ipa_ext_txt)
@@ -317,19 +317,19 @@ def named_add_ext_conf_file(src, dest, t_params={}):
 
 def read_reverse_zone(default, ip_address, allow_zone_overlap=False):
     while True:
-        zone = ipautil.user_input("Please specify the reverse zone name", default=default)
+        zone = ipautil.user_input(
+            "Please specify the reverse zone name", default=default
+        )
         if not zone:
             return None
         if not verify_reverse_zone(zone, ip_address):
-            logger.error("Invalid reverse zone %s for IP address %s",
-                         zone, ip_address)
+            logger.error("Invalid reverse zone %s for IP address %s", zone, ip_address)
             continue
         if not allow_zone_overlap:
             try:
                 dnsutil.check_zone_overlap(zone, raise_on_error=False)
             except dnsutil.DNSZoneAlreadyExists as e:
-                logger.error("Reverse zone %s will not be used: %s",
-                             zone, e)
+                logger.error("Reverse zone %s will not be used: %s", zone, e)
                 continue
         break
 
@@ -348,17 +348,27 @@ def get_auto_reverse_zones(ip_addresses, allow_zone_overlap=False):
             try:
                 dnsutil.check_zone_overlap(default_reverse)
             except ValueError as e:
-                logger.info("Reverse zone %s for IP address %s already exists",
-                            default_reverse, ip)
-                logger.debug('%s', e)
+                logger.info(
+                    "Reverse zone %s for IP address %s already exists",
+                    default_reverse,
+                    ip,
+                )
+                logger.debug("%s", e)
                 continue
         auto_zones.append((ip, default_reverse))
     return auto_zones
 
 
-def add_zone(name, zonemgr=None, dns_backup=None, ns_hostname=None,
-             update_policy=None, force=False, skip_overlap_check=False,
-             api=api):
+def add_zone(
+    name,
+    zonemgr=None,
+    dns_backup=None,
+    ns_hostname=None,
+    update_policy=None,
+    force=False,
+    skip_overlap_check=False,
+    api=api,
+):
 
     # always normalize zones
     name = normalize_zone(name)
@@ -370,28 +380,30 @@ def add_zone(name, zonemgr=None, dns_backup=None, ns_hostname=None,
             update_policy = get_dns_forward_zone_update_policy(api.env.realm)
 
     if zonemgr is None:
-        zonemgr = 'hostmaster.%s' % name
+        zonemgr = "hostmaster.%s" % name
 
     if ns_hostname:
         ns_hostname = normalize_zone(ns_hostname)
         ns_hostname = unicode(ns_hostname)
 
     try:
-        api.Command.dnszone_add(unicode(name),
-                                idnssoamname=ns_hostname,
-                                idnssoarname=unicode(zonemgr),
-                                idnsallowdynupdate=True,
-                                idnsupdatepolicy=unicode(update_policy),
-                                idnsallowquery=u'any',
-                                idnsallowtransfer=u'none',
-                                skip_overlap_check=skip_overlap_check,
-                                force=force)
+        api.Command.dnszone_add(
+            unicode(name),
+            idnssoamname=ns_hostname,
+            idnssoarname=unicode(zonemgr),
+            idnsallowdynupdate=True,
+            idnsupdatepolicy=unicode(update_policy),
+            idnsallowquery=u"any",
+            idnsallowtransfer=u"none",
+            skip_overlap_check=skip_overlap_check,
+            force=force,
+        )
     except (errors.DuplicateEntry, errors.EmptyModlist):
         pass
 
 
 def add_rr(zone, name, type, rdata, dns_backup=None, api=api, **kwargs):
-    addkw = {'%srecord' % str(type.lower()): unicode(rdata)}
+    addkw = {"%srecord" % str(type.lower()): unicode(rdata)}
     addkw.update(kwargs)
     try:
         api.Command.dnsrecord_add(unicode(zone), unicode(name), **addkw)
@@ -416,12 +428,11 @@ def add_ptr_rr(zone, ip_address, fqdn, dns_backup=None, api=api):
 
 def add_ns_rr(zone, hostname, dns_backup=None, force=True, api=api):
     hostname = normalize_zone(hostname)
-    add_rr(zone, "@", "NS", hostname, dns_backup=dns_backup,
-           force=force, api=api)
+    add_rr(zone, "@", "NS", hostname, dns_backup=dns_backup, force=force, api=api)
 
 
 def del_rr(zone, name, type, rdata, api=api):
-    delkw = { '%srecord' % str(type.lower()) : unicode(rdata) }
+    delkw = {"%srecord" % str(type.lower()): unicode(rdata)}
     try:
         api.Command.dnsrecord_del(unicode(zone), unicode(name), **delkw)
     except (errors.NotFound, errors.AttrValueNotFound, errors.EmptyModlist):
@@ -437,14 +448,14 @@ def del_fwd_rr(zone, host, ip_address, api=api):
 
 
 def del_ns_rr(zone, name, rdata, api=api):
-    del_rr(zone, name, 'NS', rdata, api=api)
+    del_rr(zone, name, "NS", rdata, api=api)
 
 
 def get_rr(zone, name, type, api=api):
-    rectype = '%srecord' % unicode(type.lower())
+    rectype = "%srecord" % unicode(type.lower())
     ret = api.Command.dnsrecord_find(unicode(zone), unicode(name))
-    if ret['count'] > 0:
-        for r in ret['result']:
+    if ret["count"] > 0:
+        for r in ret["result"]:
             if rectype in r:
                 return r[rectype]
 
@@ -469,9 +480,9 @@ def zonemgr_callback(option, opt_str, value, parser):
         else:
             try:
                 # IDNA support requires unicode
-                encoding = getattr(sys.stdin, 'encoding', None)
+                encoding = getattr(sys.stdin, "encoding", None)
                 if encoding is None:
-                    encoding = 'utf-8'
+                    encoding = "utf-8"
 
                 # value is of a string type in both py2 and py3
                 if not isinstance(value, unicode):
@@ -482,21 +493,21 @@ def zonemgr_callback(option, opt_str, value, parser):
                 # FIXME we can do this in better way
                 # https://fedorahosted.org/freeipa/ticket/4804
                 # decode to proper stderr encoding
-                stderr_encoding = getattr(sys.stderr, 'encoding', None)
+                stderr_encoding = getattr(sys.stderr, "encoding", None)
                 if stderr_encoding is None:
-                    stderr_encoding = 'utf-8'
+                    stderr_encoding = "utf-8"
                 error = unicode(e).encode(stderr_encoding)
                 parser.error(b"invalid zonemgr: " + error)
 
     parser.values.zonemgr = value
 
 
-def check_reverse_zones(ip_addresses, reverse_zones, options, unattended,
-                        search_reverse_zones=False):
+def check_reverse_zones(
+    ip_addresses, reverse_zones, options, unattended, search_reverse_zones=False
+):
     checked_reverse_zones = []
 
-    if (not options.no_reverse and not reverse_zones
-            and not options.auto_reverse):
+    if not options.no_reverse and not reverse_zones and not options.auto_reverse:
         if unattended:
             options.no_reverse = True
         else:
@@ -517,7 +528,7 @@ def check_reverse_zones(ip_addresses, reverse_zones, options, unattended,
                 if unattended:
                     raise ScriptError(msg)
                 else:
-                    logger.warning('%s', msg)
+                    logger.warning("%s", msg)
                 continue
         checked_reverse_zones.append(normalize_zone(rz))
 
@@ -535,16 +546,18 @@ def check_reverse_zones(ip_addresses, reverse_zones, options, unattended,
             ips_missing_reverse.append(ip)
 
     # create reverse zone for IP addresses that does not have one
-    for (ip, rz) in get_auto_reverse_zones(ips_missing_reverse,
-                                           options.allow_zone_overlap):
+    for (ip, rz) in get_auto_reverse_zones(
+        ips_missing_reverse, options.allow_zone_overlap
+    ):
         if options.auto_reverse:
             logger.info("Reverse zone %s will be created", rz)
             checked_reverse_zones.append(rz)
         elif unattended:
             logger.warning("Missing reverse record for IP address %s", ip)
         else:
-            if ipautil.user_input("Do you want to create reverse zone for IP "
-                                  "%s" % ip, True):
+            if ipautil.user_input(
+                "Do you want to create reverse zone for IP " "%s" % ip, True
+            ):
                 rz = read_reverse_zone(rz, str(ip), options.allow_zone_overlap)
                 checked_reverse_zones.append(rz)
 
@@ -560,23 +573,31 @@ def check_forwarders(dns_forwarders):
             validate_dnssec_global_forwarder(forwarder)
         except DNSSECSignatureMissingError as e:
             forwarders_dnssec_valid = False
-            logger.warning("DNS server %s does not support DNSSEC: %s",
-                           forwarder, e)
-            logger.warning("Please fix forwarder configuration to enable "
-                           "DNSSEC support.\n"
-                           "(For BIND 9 add directive \"dnssec-enable yes;\" "
-                           "to \"options {}\")")
+            logger.warning("DNS server %s does not support DNSSEC: %s", forwarder, e)
+            logger.warning(
+                "Please fix forwarder configuration to enable "
+                "DNSSEC support.\n"
+                '(For BIND 9 add directive "dnssec-enable yes;" '
+                'to "options {}")'
+            )
             print("DNS server %s: %s" % (forwarder, e))
             print("Please fix forwarder configuration to enable DNSSEC support.")
-            print("(For BIND 9 add directive \"dnssec-enable yes;\" to \"options {}\")")
+            print('(For BIND 9 add directive "dnssec-enable yes;" to "options {}")')
         except EDNS0UnsupportedError as e:
             forwarders_dnssec_valid = False
-            logger.warning("DNS server %s does not support ENDS0 "
-                           "(RFC 6891): %s", forwarder, e)
-            logger.warning("Please fix forwarder configuration. "
-                           "DNSSEC support cannot be enabled without EDNS0")
-            print(("WARNING: DNS server %s does not support EDNS0 "
-                   "(RFC 6891): %s" % (forwarder, e)))
+            logger.warning(
+                "DNS server %s does not support ENDS0 " "(RFC 6891): %s", forwarder, e
+            )
+            logger.warning(
+                "Please fix forwarder configuration. "
+                "DNSSEC support cannot be enabled without EDNS0"
+            )
+            print(
+                (
+                    "WARNING: DNS server %s does not support EDNS0 "
+                    "(RFC 6891): %s" % (forwarder, e)
+                )
+            )
         except UnresolvableRecordError as e:
             logger.error("DNS server %s: %s", forwarder, e)
             raise RuntimeError("DNS server %s: %s" % (forwarder, e))
@@ -598,15 +619,12 @@ def ensure_dnsserver_container_exists(ldap, api_instance, logger=logger):
 
     entry = ldap.make_entry(
         DN(api_instance.env.container_dnsservers, api_instance.env.basedn),
-        {
-            u'objectclass': [u'top', u'nsContainer'],
-            u'cn': [u'servers']
-        }
+        {u"objectclass": [u"top", u"nsContainer"], u"cn": [u"servers"]},
     )
     try:
         ldap.add_entry(entry)
     except errors.DuplicateEntry:
-        logger.debug('cn=servers,cn=dns container already exists')
+        logger.debug("cn=servers,cn=dns container already exists")
 
 
 class DnsBackup:
@@ -624,8 +642,10 @@ class DnsBackup:
             self.service.backup_state("dns_zone_%s" % zone_id, zone)
 
         (zone_id, record_id) = self.zones[zone]
-        self.service.backup_state("dns_record_%s_%s" % (zone_id, record_id),
-                                  "%s %s %s" % (record_type, host, rdata))
+        self.service.backup_state(
+            "dns_record_%s_%s" % (zone_id, record_id),
+            "%s %s %s" % (record_type, host, rdata),
+        )
         self.zones[zone] = (zone_id, record_id + 1)
 
     def clear_records(self, have_ldap):
@@ -647,7 +667,7 @@ class DnsBackup:
                 if have_ldap:
                     type, host, rdata = dns_record.split(" ", 2)
                     try:
-                        delkw = { '%srecord' % str(type.lower()) : unicode(rdata) }
+                        delkw = {"%srecord" % str(type.lower()): unicode(rdata)}
                         api.Command.dnsrecord_del(unicode(zone), unicode(host), **delkw)
                     except Exception:
                         pass
@@ -664,8 +684,8 @@ class BindInstance(service.Service):
             fstore=fstore,
             api=api,
             service_user=constants.NAMED_USER,
-            service_prefix=u'DNS',
-            keytab=paths.NAMED_KEYTAB
+            service_prefix=u"DNS",
+            keytab=paths.NAMED_KEYTAB,
         )
         self.dns_backup = DnsBackup(self)
         self.domain = None
@@ -674,14 +694,23 @@ class BindInstance(service.Service):
         self.forwarders = None
         self.sub_dict = None
         self.reverse_zones = []
-        self.named_regular = services.service('named-regular', api)
+        self.named_regular = services.service("named-regular", api)
 
-    suffix = ipautil.dn_attribute_property('_suffix')
+    suffix = ipautil.dn_attribute_property("_suffix")
 
-    def setup(self, fqdn, ip_addresses, realm_name, domain_name, forwarders,
-              forward_policy, reverse_zones,
-              named_user=constants.NAMED_USER, zonemgr=None,
-              no_dnssec_validation=False):
+    def setup(
+        self,
+        fqdn,
+        ip_addresses,
+        realm_name,
+        domain_name,
+        forwarders,
+        forward_policy,
+        reverse_zones,
+        named_user=constants.NAMED_USER,
+        zonemgr=None,
+        no_dnssec_validation=False,
+    ):
         self.service_user = named_user
         self.fqdn = fqdn
         self.ip_addresses = ip_addresses
@@ -692,10 +721,10 @@ class BindInstance(service.Service):
         self.host = fqdn.split(".")[0]
         self.suffix = ipautil.realm_to_suffix(self.realm)
         self.reverse_zones = reverse_zones
-        self.no_dnssec_validation=no_dnssec_validation
+        self.no_dnssec_validation = no_dnssec_validation
 
         if not zonemgr:
-            self.zonemgr = 'hostmaster.%s' % normalize_zone(self.domain)
+            self.zonemgr = "hostmaster.%s" % normalize_zone(self.domain)
         else:
             self.zonemgr = normalize_zonemgr(zonemgr)
 
@@ -720,18 +749,14 @@ class BindInstance(service.Service):
 
     def create_file_with_system_records(self):
         system_records = IPASystemRecords(self.api, all_servers=True)
-        text = u'\n'.join(
-            IPASystemRecords.records_list_from_zone(
-                system_records.get_base_records()
-            )
+        text = u"\n".join(
+            IPASystemRecords.records_list_from_zone(system_records.get_base_records())
         )
         with tempfile.NamedTemporaryFile(
-                mode="w", prefix="ipa.system.records.",
-                suffix=".db", delete=False
+            mode="w", prefix="ipa.system.records.", suffix=".db", delete=False
         ) as f:
             f.write(text)
-            print("Please add records in this file to your DNS system:",
-                  f.name)
+            print("Please add records in this file to your DNS system:", f.name)
 
     def create_instance(self):
 
@@ -763,14 +788,15 @@ class BindInstance(service.Service):
 
         self.step("setting up kerberos principal", self.__setup_principal)
         self.step("setting up named.conf", self.__setup_named_conf)
-        self.step("setting up server configuration",
-            self.__setup_server_configuration)
+        self.step("setting up server configuration", self.__setup_server_configuration)
 
         # named has to be started after softhsm initialization
         # self.step("restarting named", self.__start)
 
         self.step("configuring named to start on boot", self.__enable)
-        self.step("changing resolv.conf to point to ourselves", self.__setup_resolv_conf)
+        self.step(
+            "changing resolv.conf to point to ourselves", self.__setup_resolv_conf
+        )
         self.start_creation()
 
     def start_named(self):
@@ -790,13 +816,12 @@ class BindInstance(service.Service):
     def __enable(self):
         if self.get_state("enabled") is None:
             self.backup_state("enabled", self.is_running())
-            self.backup_state("named-regular-enabled",
-                              self.named_regular.is_running())
+            self.backup_state("named-regular-enabled", self.named_regular.is_running())
         # We do not let the system start IPA components on its own,
         # Instead we reply on the IPA init script to start only enabled
         # components as found in our LDAP configuration tree
         try:
-            self.ldap_configure('DNS', self.fqdn, None, self.suffix)
+            self.ldap_configure("DNS", self.fqdn, None, self.suffix)
         except errors.DuplicateEntry:
             # service already exists (forced DNS reinstall)
             # don't crash, just report error
@@ -805,8 +830,7 @@ class BindInstance(service.Service):
         # disable named, we need to run named-pkcs11 only
         if self.get_state("named-regular-running") is None:
             # first time store status
-            self.backup_state("named-regular-running",
-                              self.named_regular.is_running())
+            self.backup_state("named-regular-running", self.named_regular.is_running())
         try:
             self.named_regular.stop()
         except Exception as e:
@@ -819,9 +843,7 @@ class BindInstance(service.Service):
 
     def __setup_sub_dict(self):
         if paths.NAMED_CRYPTO_POLICY_FILE is not None:
-            crypto_policy = 'include "{}";'.format(
-                paths.NAMED_CRYPTO_POLICY_FILE
-            )
+            crypto_policy = 'include "{}";'.format(paths.NAMED_CRYPTO_POLICY_FILE)
         else:
             crypto_policy = "// not available"
 
@@ -850,17 +872,19 @@ class BindInstance(service.Service):
     def __fix_dns_privilege_members(self):
         ldap = self.api.Backend.ldap2
 
-        cn = 'Update PBAC memberOf %s' % time.time()
-        task_dn = DN(('cn', cn), ('cn', 'memberof task'), ('cn', 'tasks'),
-                     ('cn', 'config'))
+        cn = "Update PBAC memberOf %s" % time.time()
+        task_dn = DN(
+            ("cn", cn), ("cn", "memberof task"), ("cn", "tasks"), ("cn", "config")
+        )
         basedn = DN(self.api.env.container_privilege, self.api.env.basedn)
         entry = ldap.make_entry(
             task_dn,
-            objectclass=['top', 'extensibleObject'],
+            objectclass=["top", "extensibleObject"],
             cn=[cn],
             basedn=[basedn],
-            filter=['(objectclass=*)'],
-            ttl=[10])
+            filter=["(objectclass=*)"],
+            ttl=[10],
+        )
         ldap.add_entry(entry)
 
         start_time = time.time()
@@ -869,17 +893,23 @@ class BindInstance(service.Service):
                 task = ldap.get_entry(task_dn)
             except errors.NotFound:
                 break
-            if 'nstaskexitcode' in task:
+            if "nstaskexitcode" in task:
                 break
             time.sleep(1)
             if time.time() > (start_time + 60):
-                raise errors.TaskTimeout(task='memberof', task_dn=task_dn)
+                raise errors.TaskTimeout(task="memberof", task_dn=task_dn)
 
     def __setup_zone(self):
         # Always use force=True as named is not set up yet
-        add_zone(self.domain, self.zonemgr, dns_backup=self.dns_backup,
-                 ns_hostname=self.api.env.host, force=True,
-                 skip_overlap_check=True, api=self.api)
+        add_zone(
+            self.domain,
+            self.zonemgr,
+            dns_backup=self.dns_backup,
+            ns_hostname=self.api.env.host,
+            force=True,
+            skip_overlap_check=True,
+            api=self.api,
+        )
 
         add_rr(self.domain, "_kerberos", "TXT", self.realm, api=self.api)
 
@@ -887,18 +917,23 @@ class BindInstance(service.Service):
         # add NS record to all zones
         ns_hostname = normalize_zone(self.api.env.host)
         result = self.api.Command.dnszone_find()
-        for zone in result['result']:
-            zone = unicode(zone['idnsname'][0])  # we need unicode due to backup
+        for zone in result["result"]:
+            zone = unicode(zone["idnsname"][0])  # we need unicode due to backup
             logger.debug("adding self NS to zone %s apex", zone)
-            add_ns_rr(zone, ns_hostname, self.dns_backup, force=True,
-                      api=self.api)
+            add_ns_rr(zone, ns_hostname, self.dns_backup, force=True, api=self.api)
 
     def __setup_reverse_zone(self):
         # Always use force=True as named is not set up yet
         for reverse_zone in self.reverse_zones:
-            add_zone(reverse_zone, self.zonemgr, ns_hostname=self.api.env.host,
-                     dns_backup=self.dns_backup, force=True,
-                     skip_overlap_check=True, api=self.api)
+            add_zone(
+                reverse_zone,
+                self.zonemgr,
+                ns_hostname=self.api.env.host,
+                dns_backup=self.dns_backup,
+                force=True,
+                skip_overlap_check=True,
+                api=self.api,
+            )
 
     def __add_master_records(self, fqdn, addrs):
         host, zone = fqdn.split(".", 1)
@@ -910,8 +945,11 @@ class BindInstance(service.Service):
             if dns_zone_exists(zone, api=self.api):
                 add_fwd_rr(zone, host, addr, self.api)
             else:
-                logger.debug("Skip adding record %s to a zone %s "
-                             "not managed by IPA", addr, zone)
+                logger.debug(
+                    "Skip adding record %s to a zone %s " "not managed by IPA",
+                    addr,
+                    zone,
+                )
 
             reverse_zone = find_reverse_zone(addr, self.api)
             if reverse_zone:
@@ -923,10 +961,13 @@ class BindInstance(service.Service):
     def __add_others(self):
         entries = api.Backend.ldap2.get_entries(
             DN(api.env.container_masters, self.suffix),
-            api.Backend.ldap2.SCOPE_ONELEVEL, None, ['dn'])
+            api.Backend.ldap2.SCOPE_ONELEVEL,
+            None,
+            ["dn"],
+        )
 
         for entry in entries:
-            fqdn = entry.dn[0]['cn']
+            fqdn = entry.dn[0]["cn"]
             if fqdn == self.fqdn:
                 continue
 
@@ -944,8 +985,12 @@ class BindInstance(service.Service):
         p = self.move_service(self.principal)
         if p is None:
             # the service has already been moved, perhaps we're doing a DNS reinstall
-            dns_principal = DN(('krbprincipalname', self.principal),
-                               ('cn', 'services'), ('cn', 'accounts'), self.suffix)
+            dns_principal = DN(
+                ("krbprincipalname", self.principal),
+                ("cn", "services"),
+                ("cn", "accounts"),
+                self.suffix,
+            )
         else:
             dns_principal = p
 
@@ -958,29 +1003,35 @@ class BindInstance(service.Service):
         # it can host the memberof attribute, then also add it to the
         # dnsserver role group, this way the DNS is allowed to perform
         # DNS Updates
-        dns_group = DN(('cn', 'DNS Servers'), ('cn', 'privileges'), ('cn', 'pbac'), self.suffix)
-        mod = [(ldap.MOD_ADD, 'member', dns_principal)]
+        dns_group = DN(
+            ("cn", "DNS Servers"), ("cn", "privileges"), ("cn", "pbac"), self.suffix
+        )
+        mod = [(ldap.MOD_ADD, "member", dns_principal)]
 
         try:
             api.Backend.ldap2.modify_s(dns_group, mod)
         except ldap.TYPE_OR_VALUE_EXISTS:
             pass
         except Exception as e:
-            logger.critical("Could not modify principal's %s entry: %s",
-                            dns_principal, str(e))
+            logger.critical(
+                "Could not modify principal's %s entry: %s", dns_principal, str(e)
+            )
             raise
 
         # bind-dyndb-ldap persistent search feature requires both size and time
         # limit-free connection
-        mod = [(ldap.MOD_REPLACE, 'nsTimeLimit', '-1'),
-               (ldap.MOD_REPLACE, 'nsSizeLimit', '-1'),
-               (ldap.MOD_REPLACE, 'nsIdleTimeout', '-1'),
-               (ldap.MOD_REPLACE, 'nsLookThroughLimit', '-1')]
+        mod = [
+            (ldap.MOD_REPLACE, "nsTimeLimit", "-1"),
+            (ldap.MOD_REPLACE, "nsSizeLimit", "-1"),
+            (ldap.MOD_REPLACE, "nsIdleTimeout", "-1"),
+            (ldap.MOD_REPLACE, "nsLookThroughLimit", "-1"),
+        ]
         try:
             api.Backend.ldap2.modify_s(dns_principal, mod)
         except Exception as e:
-            logger.critical("Could not set principal's %s LDAP limits: %s",
-                            dns_principal, str(e))
+            logger.critical(
+                "Could not set principal's %s LDAP limits: %s", dns_principal, str(e)
+            )
             raise
 
     def __setup_named_conf(self):
@@ -989,26 +1040,25 @@ class BindInstance(service.Service):
 
         named_txt = ipautil.template_file(
             os.path.join(paths.USR_SHARE_IPA_DIR, "bind.named.conf.template"),
-            self.sub_dict)
-        named_fd = open(paths.NAMED_CONF, 'w')
+            self.sub_dict,
+        )
+        named_fd = open(paths.NAMED_CONF, "w")
         named_fd.seek(0)
         named_fd.truncate(0)
         named_fd.write(named_txt)
         named_fd.close()
 
-        named_add_ext_conf_file(paths.NAMED_CUSTOM_CFG_SRC,
-                                paths.NAMED_CUSTOM_CONFIG)
+        named_add_ext_conf_file(paths.NAMED_CUSTOM_CFG_SRC, paths.NAMED_CUSTOM_CONFIG)
 
         if self.no_dnssec_validation:
             # disable validation
-            named_conf_set_directive("dnssec-validation", "no",
-                                     section=NAMED_SECTION_OPTIONS,
-                                     str_val=False)
+            named_conf_set_directive(
+                "dnssec-validation", "no", section=NAMED_SECTION_OPTIONS, str_val=False
+            )
 
         # prevent repeated upgrade on new installs
         sysupgrade.set_upgrade_state(
-            'named.conf',
-            'forward_policy_conflict_with_empty_zones_handled', True
+            "named.conf", "forward_policy_conflict_with_empty_zones_handled", True
         )
 
     def __setup_server_configuration(self):
@@ -1025,12 +1075,12 @@ class BindInstance(service.Service):
             self.api.Command.dnsserver_mod(
                 self.fqdn,
                 idnsforwarders=[unicode(f) for f in self.forwarders],
-                idnsforwardpolicy=unicode(self.forward_policy)
+                idnsforwardpolicy=unicode(self.forward_policy),
             )
         except errors.EmptyModlist:
             pass
 
-        sysupgrade.set_upgrade_state('dns', 'server_config_to_ldap', True)
+        sysupgrade.set_upgrade_state("dns", "server_config_to_ldap", True)
 
     def __setup_resolv_conf(self):
         searchdomains = [self.domain]
@@ -1043,11 +1093,9 @@ class BindInstance(service.Service):
                 nameservers.append("::1")
 
         try:
-            tasks.configure_dns_resolver(
-                nameservers, searchdomains, fstore=self.fstore
-            )
+            tasks.configure_dns_resolver(nameservers, searchdomains, fstore=self.fstore)
         except IOError as e:
-            logger.error('Could not update DNS config: %s', e)
+            logger.error("Could not update DNS config: %s", e)
         else:
             # python DNS might have global resolver cached in this variable
             # we have to re-initialize it because resolv.conf has changed
@@ -1057,8 +1105,9 @@ class BindInstance(service.Service):
         installutils.check_entropy()
         ipautil.run([paths.GENERATE_RNDC_KEY])
 
-    def add_master_dns_records(self, fqdn, ip_addresses, realm_name, domain_name,
-                               reverse_zones):
+    def add_master_dns_records(
+        self, fqdn, ip_addresses, realm_name, domain_name, reverse_zones
+    ):
         self.fqdn = fqdn
         self.ip_addresses = ip_addresses
         self.realm = realm_name
@@ -1067,7 +1116,7 @@ class BindInstance(service.Service):
         self.suffix = ipautil.realm_to_suffix(self.realm)
         self.reverse_zones = reverse_zones
         self.first_instance = False
-        self.zonemgr = 'hostmaster.%s' % self.domain
+        self.zonemgr = "hostmaster.%s" % self.domain
 
         self.__add_self()
 
@@ -1081,15 +1130,15 @@ class BindInstance(service.Service):
         if not cnames:
             return
 
-        logger.info('Removing IPA CA CNAME records')
+        logger.info("Removing IPA CA CNAME records")
 
         # create CNAME to FQDN mapping
         cname_fqdn = {}
         for cname in cnames:
-            if cname.endswith('.'):
+            if cname.endswith("."):
                 fqdn = cname[:-1]
             else:
-                fqdn = '%s.%s' % (cname, domain_name)
+                fqdn = "%s.%s" % (cname, domain_name)
             cname_fqdn[cname] = fqdn
 
         # get FQDNs of all IPA masters
@@ -1104,7 +1153,8 @@ class BindInstance(service.Service):
             if fqdn not in masters:
                 logger.warning(
                     "Cannot remove IPA CA CNAME please remove them manually "
-                    "if necessary")
+                    "if necessary"
+                )
                 return
 
         # delete all CNAMEs
@@ -1128,8 +1178,7 @@ class BindInstance(service.Service):
             rzone = find_reverse_zone(rdata)
             if rzone is not None:
                 record = get_reverse_record_name(rzone, rdata)
-                del_rr(rzone, record, "PTR", normalize_zone(fqdn),
-                       api=self.api)
+                del_rr(rzone, record, "PTR", normalize_zone(fqdn), api=self.api)
         self.update_system_records()
 
     def remove_server_ns_records(self, fqdn):
@@ -1141,27 +1190,26 @@ class BindInstance(service.Service):
 
         # find all NS records pointing to this server
         search_kw = {}
-        search_kw['nsrecord'] = ns_rdata
+        search_kw["nsrecord"] = ns_rdata
         attr_filter = ldap.make_filter(search_kw, rules=ldap.MATCH_ALL)
-        attributes = ['idnsname', 'objectclass']
+        attributes = ["idnsname", "objectclass"]
         dn = DN(self.api.env.container_dns, self.api.env.basedn)
 
-        entries, _truncated = ldap.find_entries(
-            attr_filter, attributes, base_dn=dn)
+        entries, _truncated = ldap.find_entries(attr_filter, attributes, base_dn=dn)
 
         # remove records
         if entries:
             logger.debug("Removing all NS records pointing to %s:", ns_rdata)
 
         for entry in entries:
-            if 'idnszone' in entry['objectclass']:
+            if "idnszone" in entry["objectclass"]:
                 # zone record
-                zone = entry.single_value['idnsname']
+                zone = entry.single_value["idnsname"]
                 logger.debug("zone record %s", zone)
-                del_ns_rr(zone, u'@', ns_rdata, api=self.api)
+                del_ns_rr(zone, u"@", ns_rdata, api=self.api)
             else:
                 zone = entry.dn[1].value  # get zone from DN
-                record = entry.single_value['idnsname']
+                record = entry.single_value["idnsname"]
                 logger.debug("record %s in zone %s", record, zone)
                 del_ns_rr(zone, record, ns_rdata, api=self.api)
 
@@ -1171,19 +1219,19 @@ class BindInstance(service.Service):
         try:
             (
                 (_ipa_rec, failed_ipa_rec),
-                (_loc_rec, failed_loc_rec)
+                (_loc_rec, failed_loc_rec),
             ) = system_records.update_dns_records()
         except IPADomainIsNotManagedByIPAError:
             logger.error(
-                "IPA domain is not managed by IPA, please update records "
-                "manually")
+                "IPA domain is not managed by IPA, please update records " "manually"
+            )
         else:
             if failed_ipa_rec or failed_loc_rec:
                 logger.error("Update of following records failed:")
                 for attr in (failed_ipa_rec, failed_loc_rec):
                     for rname, node, error in attr:
                         for record in IPASystemRecords.records_list_from_node(
-                                rname, node
+                            rname, node
                         ):
                             logger.error("%s (%s)", record, error)
 
@@ -1195,9 +1243,9 @@ class BindInstance(service.Service):
         result = self.api.Command.dnsconfig_show()
 
         global_conf_set = any(
-            param.name in result['result'] for param in
-            self.api.Object['dnsconfig'].params() if
-            u'virtual_attribute' not in param.flags
+            param.name in result["result"]
+            for param in self.api.Object["dnsconfig"].params()
+            if u"virtual_attribute" not in param.flags
         )
 
         if not global_conf_set:
@@ -1207,11 +1255,14 @@ class BindInstance(service.Service):
             return
 
         print("Global DNS configuration in LDAP server is not empty")
-        print("The following configuration options override local settings in named.conf:")
+        print(
+            "The following configuration options override local settings in named.conf:"
+        )
         print("")
         textui = ipalib.cli.textui(self.api)
-        self.api.Command.dnsconfig_show.output_for_cli(textui, result, None,
-                                                       reverse=False)
+        self.api.Command.dnsconfig_show.output_for_cli(
+            textui, result, None, reverse=False
+        )
 
     def is_configured(self):
         """
@@ -1234,7 +1285,7 @@ class BindInstance(service.Service):
         try:
             self.fstore.restore_file(paths.NAMED_CONF)
         except ValueError as error:
-            logger.debug('%s', error)
+            logger.debug("%s", error)
 
         try:
             tasks.unconfigure_dns_resolver(fstore=self.fstore)

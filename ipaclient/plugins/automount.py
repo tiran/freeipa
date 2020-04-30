@@ -36,18 +36,18 @@ if six.PY3:
 
 register = Registry()
 
-DEFAULT_MAPS = (u'auto.direct', )
-DEFAULT_KEYS = (u'/-', )
+DEFAULT_MAPS = (u"auto.direct",)
+DEFAULT_KEYS = (u"/-",)
 
 
 @register(no_fail=True)
 class _fake_automountlocation(Object):
-    name = 'automountlocation'
+    name = "automountlocation"
 
 
 @register(no_fail=True)
 class _fake_automountlocation_show(Method):
-    name = 'automountlocation_show'
+    name = "automountlocation_show"
     NO_CLI = True
 
 
@@ -55,8 +55,10 @@ class _fake_automountlocation_show(Method):
 class automountlocation_tofiles(MethodOverride):
     @classmethod
     def __NO_CLI_getter(cls):
-        return (api.Command.get_plugin('automountlocation_show') is
-                _fake_automountlocation_show)
+        return (
+            api.Command.get_plugin("automountlocation_show")
+            is _fake_automountlocation_show
+        )
 
     NO_CLI = classproperty(__NO_CLI_getter)
 
@@ -65,69 +67,63 @@ class automountlocation_tofiles(MethodOverride):
         return self.api.Command.automountlocation_show.api_version
 
     def output_for_cli(self, textui, result, *keys, **options):
-        maps = result['result']['maps']
-        keys = result['result']['keys']
-        orphanmaps = result['result']['orphanmaps']
-        orphankeys = result['result']['orphankeys']
+        maps = result["result"]["maps"]
+        keys = result["result"]["keys"]
+        orphanmaps = result["result"]["orphanmaps"]
+        orphankeys = result["result"]["orphankeys"]
 
-        textui.print_plain('/etc/auto.master:')
+        textui.print_plain("/etc/auto.master:")
         for m in maps:
-            if m['automountinformation'][0].startswith('-'):
+            if m["automountinformation"][0].startswith("-"):
                 textui.print_plain(
-                    '%s\t%s' % (
-                        m['automountkey'][0], m['automountinformation'][0]
-                    )
+                    "%s\t%s" % (m["automountkey"][0], m["automountinformation"][0])
                 )
             else:
                 textui.print_plain(
-                    '%s\t/etc/%s' % (
-                        m['automountkey'][0], m['automountinformation'][0]
-                    )
+                    "%s\t/etc/%s" % (m["automountkey"][0], m["automountinformation"][0])
                 )
         for m in maps:
-            if m['automountinformation'][0].startswith('-'):
+            if m["automountinformation"][0].startswith("-"):
                 continue
-            info = m['automountinformation'][0]
-            textui.print_plain('---------------------------')
-            textui.print_plain('/etc/%s:' % info)
+            info = m["automountinformation"][0]
+            textui.print_plain("---------------------------")
+            textui.print_plain("/etc/%s:" % info)
             for k in keys[info]:
                 textui.print_plain(
-                    '%s\t%s' % (
-                        k['automountkey'][0], k['automountinformation'][0]
-                    )
+                    "%s\t%s" % (k["automountkey"][0], k["automountinformation"][0])
                 )
 
-        textui.print_plain('')
-        textui.print_plain(_('maps not connected to /etc/auto.master:'))
+        textui.print_plain("")
+        textui.print_plain(_("maps not connected to /etc/auto.master:"))
         for m in orphanmaps:
-            textui.print_plain('---------------------------')
-            textui.print_plain('/etc/%s:' % m['automountmapname'])
+            textui.print_plain("---------------------------")
+            textui.print_plain("/etc/%s:" % m["automountmapname"])
             for k in orphankeys:
-                if len(k) == 0: continue
-                dn = DN(k[0]['dn'])
-                if dn['automountmapname'] == m['automountmapname'][0]:
+                if len(k) == 0:
+                    continue
+                dn = DN(k[0]["dn"])
+                if dn["automountmapname"] == m["automountmapname"][0]:
                     textui.print_plain(
-                        '%s\t%s' % (
-                            k[0]['automountkey'][0], k[0]['automountinformation'][0]
-                        )
+                        "%s\t%s"
+                        % (k[0]["automountkey"][0], k[0]["automountinformation"][0])
                     )
 
 
 @register()
 class automountlocation_import(Command):
-    __doc__ = _('Import automount files for a specific location.')
+    __doc__ = _("Import automount files for a specific location.")
 
     takes_args = (
-        Str('masterfile',
-            label=_('Master file'),
-            doc=_('Automount master file.'),
-        ),
+        Str("masterfile", label=_("Master file"), doc=_("Automount master file."),),
     )
 
     takes_options = (
-        Flag('continue?',
-             cli_name='continue',
-             doc=_('Continuous operation mode. Errors are reported but the process continues.'),
+        Flag(
+            "continue?",
+            cli_name="continue",
+            doc=_(
+                "Continuous operation mode. Errors are reported but the process continues."
+            ),
         ),
     )
 
@@ -139,13 +135,13 @@ class automountlocation_import(Command):
 
     def __read_mapfile(self, filename):
         try:
-            fp = open(filename, 'r')
+            fp = open(filename, "r")
             map = fp.readlines()
             fp.close()
         except IOError as e:
             if e.errno == 2:
                 raise errors.NotFound(
-                    reason=_('File %(file)s not found') % {'file': filename}
+                    reason=_("File %(file)s not found") % {"file": filename}
                 )
             else:
                 raise
@@ -156,17 +152,23 @@ class automountlocation_import(Command):
         The basic idea is to read the master file and create all the maps
         we need, then read each map file and add all the keys for the map.
         """
-        self.api.Command['automountlocation_show'](args[0])
+        self.api.Command["automountlocation_show"](args[0])
 
-        result = {'maps':[], 'keys':[], 'skipped':[], 'duplicatekeys':[], 'duplicatemaps':[]}
+        result = {
+            "maps": [],
+            "keys": [],
+            "skipped": [],
+            "duplicatekeys": [],
+            "duplicatemaps": [],
+        }
         maps = {}
         master = self.__read_mapfile(args[1])
         for m in master:
-            if m.startswith('#'):
+            if m.startswith("#"):
                 continue
             m = m.rstrip()
-            if m.startswith('+'):
-                result['skipped'].append([m,args[1]])
+            if m.startswith("+"):
+                result["skipped"].append([m, args[1]])
                 continue
             if len(m) == 0:
                 continue
@@ -174,44 +176,45 @@ class automountlocation_import(Command):
             if len(am) < 2:
                 continue
 
-            if am[1].startswith('/'):
-                mapfile = am[1].replace('"','')
+            if am[1].startswith("/"):
+                mapfile = am[1].replace('"', "")
                 am[1] = os.path.basename(am[1])
                 maps[am[1]] = mapfile
 
             # Add a new key to the auto.master map for the new map file
             try:
-                api.Command['automountkey_add'](
-                            args[0],
-                            u'auto.master',
-                            automountkey=unicode(am[0]),
-                            automountinformation=unicode(' '.join(am[1:])))
-                result['keys'].append([am[0], u'auto.master'])
+                api.Command["automountkey_add"](
+                    args[0],
+                    u"auto.master",
+                    automountkey=unicode(am[0]),
+                    automountinformation=unicode(" ".join(am[1:])),
+                )
+                result["keys"].append([am[0], u"auto.master"])
             except errors.DuplicateEntry:
                 if unicode(am[0]) in DEFAULT_KEYS:
                     # ignore conflict when the key was pre-created by the framework
                     pass
-                elif options.get('continue', False):
-                    result['duplicatekeys'].append(am[0])
+                elif options.get("continue", False):
+                    result["duplicatekeys"].append(am[0])
                 else:
                     raise errors.DuplicateEntry(
-                        message=_('key %(key)s already exists') % dict(
-                            key=am[0]))
+                        message=_("key %(key)s already exists") % dict(key=am[0])
+                    )
             # Add the new map
-            if not am[1].startswith('-'):
+            if not am[1].startswith("-"):
                 try:
-                    api.Command['automountmap_add'](args[0], unicode(am[1]))
-                    result['maps'].append(am[1])
+                    api.Command["automountmap_add"](args[0], unicode(am[1]))
+                    result["maps"].append(am[1])
                 except errors.DuplicateEntry:
                     if unicode(am[1]) in DEFAULT_MAPS:
                         # ignore conflict when the map was pre-created by the framework
                         pass
-                    elif options.get('continue', False):
-                        result['duplicatemaps'].append(am[0])
+                    elif options.get("continue", False):
+                        result["duplicatemaps"].append(am[0])
                     else:
                         raise errors.DuplicateEntry(
-                            message=_('map %(map)s already exists') % dict(
-                                map=am[1]))
+                            message=_("map %(map)s already exists") % dict(map=am[1])
+                        )
 
         # Now iterate over the map files and add the keys. To handle
         # continuation lines I'll make a pass through it to skip comments
@@ -219,85 +222,72 @@ class automountlocation_import(Command):
         for m in maps:
             map = self.__read_mapfile(maps[m])
             lines = []
-            cont = ''
+            cont = ""
             for x in map:
-                if x.startswith('#'):
+                if x.startswith("#"):
                     continue
                 x = x.rstrip()
-                if x.startswith('+'):
-                    result['skipped'].append([m, maps[m]])
+                if x.startswith("+"):
+                    result["skipped"].append([m, maps[m]])
                     continue
                 if len(x) == 0:
                     continue
                 if x.endswith("\\"):
-                    cont = cont + x[:-1] + ' '
+                    cont = cont + x[:-1] + " "
                 else:
                     lines.append(cont + x)
-                    cont=''
+                    cont = ""
             for x in lines:
                 am = x.split(None)
-                key = unicode(am[0].replace('"',''))
+                key = unicode(am[0].replace('"', ""))
                 try:
-                    api.Command['automountkey_add'](
-                            args[0],
-                            unicode(m),
-                            automountkey=key,
-                            automountinformation=unicode(' '.join(am[1:])))
-                    result['keys'].append([key,m])
+                    api.Command["automountkey_add"](
+                        args[0],
+                        unicode(m),
+                        automountkey=key,
+                        automountinformation=unicode(" ".join(am[1:])),
+                    )
+                    result["keys"].append([key, m])
                 except errors.DuplicateEntry as e:
-                    if options.get('continue', False):
-                        result['duplicatekeys'].append(am[0])
+                    if options.get("continue", False):
+                        result["duplicatekeys"].append(am[0])
                     else:
                         raise e
 
         return dict(result=result)
 
     def output_for_cli(self, textui, result, *keys, **options):
-        maps = result['result']['maps']
-        keys = result['result']['keys']
-        duplicatemaps = result['result']['duplicatemaps']
-        duplicatekeys = result['result']['duplicatekeys']
-        skipped = result['result']['skipped']
+        maps = result["result"]["maps"]
+        keys = result["result"]["keys"]
+        duplicatemaps = result["result"]["duplicatemaps"]
+        duplicatekeys = result["result"]["duplicatekeys"]
+        skipped = result["result"]["skipped"]
 
-        textui.print_plain(_('Imported maps:'))
+        textui.print_plain(_("Imported maps:"))
         for m in maps:
-            textui.print_plain(
-                _('Added %(map)s') % dict(map=m)
-            )
-        textui.print_plain('')
+            textui.print_plain(_("Added %(map)s") % dict(map=m))
+        textui.print_plain("")
 
-        textui.print_plain(_('Imported keys:'))
+        textui.print_plain(_("Imported keys:"))
         for k in keys:
-            textui.print_plain(
-                _('Added %(src)s to %(dst)s') % dict(
-                    src=k[0], dst=k[1]
-                )
-            )
-        textui.print_plain('')
+            textui.print_plain(_("Added %(src)s to %(dst)s") % dict(src=k[0], dst=k[1]))
+        textui.print_plain("")
 
         if len(skipped) > 0:
-            textui.print_plain(_('Ignored keys:'))
+            textui.print_plain(_("Ignored keys:"))
             for k in skipped:
                 textui.print_plain(
-                    _('Ignored %(src)s to %(dst)s') % dict(
-                        src=k[0], dst=k[1]
-                    )
+                    _("Ignored %(src)s to %(dst)s") % dict(src=k[0], dst=k[1])
                 )
 
-
-        if options.get('continue', False) and len(duplicatemaps) > 0:
-            textui.print_plain('')
-            textui.print_plain(_('Duplicate maps skipped:'))
+        if options.get("continue", False) and len(duplicatemaps) > 0:
+            textui.print_plain("")
+            textui.print_plain(_("Duplicate maps skipped:"))
             for m in duplicatemaps:
-                textui.print_plain(
-                    _('Skipped %(map)s') % dict(map=m)
-                )
+                textui.print_plain(_("Skipped %(map)s") % dict(map=m))
 
-
-        if options.get('continue', False) and len(duplicatekeys) > 0:
-            textui.print_plain('')
-            textui.print_plain(_('Duplicate keys skipped:'))
+        if options.get("continue", False) and len(duplicatekeys) > 0:
+            textui.print_plain("")
+            textui.print_plain(_("Duplicate keys skipped:"))
             for k in duplicatekeys:
-                textui.print_plain(
-                    _('Skipped %(key)s') % dict(key=k)
-                )
+                textui.print_plain(_("Skipped %(key)s") % dict(key=k))

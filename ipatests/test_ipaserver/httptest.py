@@ -30,30 +30,32 @@ class Unauthorized_HTTP_test:
     Base class for simple HTTP request tests executed against URI
     with no required authorization
     """
-    app_uri = ''
+
+    app_uri = ""
     host = api.env.host
     cacert = api.env.tls_ca_cert
-    content_type = 'application/x-www-form-urlencoded'
-    accept_language = 'en-us'
+    content_type = "application/x-www-form-urlencoded"
+    accept_language = "en-us"
 
-    def send_request(self, method='POST', params=None):
+    def send_request(self, method="POST", params=None):
         """
         Send a request to HTTP server
 
         :param key When not None, overrides default app_uri
         """
         if params is not None:
-            if self.content_type == 'application/x-www-form-urlencoded':
+            if self.content_type == "application/x-www-form-urlencoded":
                 # urlencode *can* take two arguments
                 # pylint: disable=too-many-function-args
                 params = urllib.parse.urlencode(params, True)
-        url = 'https://' + self.host + self.app_uri
+        url = "https://" + self.host + self.app_uri
 
-        headers = {'Content-Type': self.content_type,
-                   'Accept-Language': self.accept_language,
-                   'Referer': url}
+        headers = {
+            "Content-Type": self.content_type,
+            "Accept-Language": self.accept_language,
+            "Referer": url,
+        }
 
-        conn = util.create_https_connection(
-                self.host, cafile=self.cacert)
+        conn = util.create_https_connection(self.host, cafile=self.cacert)
         conn.request(method, self.app_uri, params, headers)
         return conn.getresponse()

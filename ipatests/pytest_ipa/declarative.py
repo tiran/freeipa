@@ -22,25 +22,27 @@
 
 def pytest_generate_tests(metafunc):
     """Generates Declarative tests"""
-    if 'declarative_test_definition' in metafunc.fixturenames:
+    if "declarative_test_definition" in metafunc.fixturenames:
         tests = []
         descriptions = []
         for i, test in enumerate(metafunc.cls.tests):
             if callable(test):
-                description = '%s: %s' % (
+                description = "%s: %s" % (
                     str(i).zfill(4),
                     test.__name__,  # test is not a dict. pylint: disable=E1103
                 )
             else:
-                description = '%s: %s: %s' % (str(i).zfill(4),
-                                              test['command'][0],
-                                              test.get('desc', ''))
+                description = "%s: %s: %s" % (
+                    str(i).zfill(4),
+                    test["command"][0],
+                    test.get("desc", ""),
+                )
                 test = dict(test)
-                test['nice'] = description
+                test["nice"] = description
             tests.append(test)
             descriptions.append(description)
         metafunc.parametrize(
-            ['index', 'declarative_test_definition'],
+            ["index", "declarative_test_definition"],
             enumerate(tests),
             ids=descriptions,
         )

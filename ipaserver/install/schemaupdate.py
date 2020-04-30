@@ -32,11 +32,11 @@ from ipaserver.install import installutils
 SCHEMA_ELEMENT_CLASSES = (
     # All schema model classes this tool can modify
     # Depends on order, attributes first, then objectclasses
-    ('attributetypes', ldap.schema.models.AttributeType),
-    ('objectclasses', ldap.schema.models.ObjectClass),
+    ("attributetypes", ldap.schema.models.AttributeType),
+    ("objectclasses", ldap.schema.models.ObjectClass),
 )
 
-ORIGIN = 'IPA v%s' % ipapython.version.VERSION
+ORIGIN = "IPA v%s" % ipapython.version.VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def _get_oid_dependency_order(schema, cls):
 
     :return [set(1st-tree-level), set(2nd-tree-level), ...]
     """
-    top_node = '_'
+    top_node = "_"
     ordered_oid_groups = []
 
     tree = schema.tree(cls)  # tree structure of schema
@@ -83,7 +83,9 @@ def _get_oid_dependency_order(schema, cls):
     return ordered_oid_groups
 
 
-def update_schema(schema_files, ldapi=False, dm_password=None,):
+def update_schema(
+    schema_files, ldapi=False, dm_password=None,
+):
     """Update schema to match the given ldif files
 
     Schema elements present in the LDIF files but missing from the DS schema
@@ -105,26 +107,29 @@ def update_schema(schema_files, ldapi=False, dm_password=None,):
     """
     SCHEMA_ELEMENT_CLASSES_KEYS = [x[0] for x in SCHEMA_ELEMENT_CLASSES]
 
-    conn = connect(ldapi=ldapi, dm_password=dm_password,
-                   realm=api.env.realm,
-                   fqdn=installutils.get_fqdn())
+    conn = connect(
+        ldapi=ldapi,
+        dm_password=dm_password,
+        realm=api.env.realm,
+        fqdn=installutils.get_fqdn(),
+    )
 
     old_schema = conn.schema
 
-
-    schema_entry = conn.get_entry(DN(('cn', 'schema')),
-                                  SCHEMA_ELEMENT_CLASSES_KEYS)
+    schema_entry = conn.get_entry(DN(("cn", "schema")), SCHEMA_ELEMENT_CLASSES_KEYS)
 
     modified = False
 
     # The exact representation the DS gives us for each OID
     # (for debug logging)
-    old_entries_by_oid = {cls(attr).oid: attr.decode('utf-8')
-                          for (attrname, cls) in SCHEMA_ELEMENT_CLASSES
-                          for attr in schema_entry[attrname]}
+    old_entries_by_oid = {
+        cls(attr).oid: attr.decode("utf-8")
+        for (attrname, cls) in SCHEMA_ELEMENT_CLASSES
+        for attr in schema_entry[attrname]
+    }
 
     for filename in schema_files:
-        logger.debug('Processing schema LDIF file %s', filename)
+        logger.debug("Processing schema LDIF file %s", filename)
         url = "file://{}".format(filename)
         _dn, new_schema = ldap.schema.subentry.urlfetch(url)
 
@@ -147,12 +152,12 @@ def update_schema(schema_files, ldapi=False, dm_password=None,):
 
                         if old_obj:
                             old_attr = old_entries_by_oid.get(oid)
-                            logger.debug('Replace: %s', old_attr)
-                            logger.debug('   with: %s', value)
+                            logger.debug("Replace: %s", old_attr)
+                            logger.debug("   with: %s", value)
                         else:
-                            logger.debug('Add: %s', value)
+                            logger.debug("Add: %s", value)
 
-                        new_elements.append(value.encode('utf-8'))
+                        new_elements.append(value.encode("utf-8"))
 
                 modified = modified or new_elements
                 schema_entry[attrname].extend(new_elements)
@@ -161,12 +166,11 @@ def update_schema(schema_files, ldapi=False, dm_password=None,):
                 # so updates must be executed with groups of independent OIDs
                 if new_elements:
                     modlist = schema_entry.generate_modlist()
-                    logger.debug("Schema modlist:\n%s",
-                                 pprint.pformat(modlist))
+                    logger.debug("Schema modlist:\n%s", pprint.pformat(modlist))
                     conn.update_entry(schema_entry)
 
     if not modified:
-        logger.debug('Not updating schema')
+        logger.debug("Not updating schema")
 
     return modified
 
@@ -177,7 +181,7 @@ def add_x_origin(element):
     # Note that python-ldap drops X-ORIGIN when it parses schema elements,
     # so we need to resort to string manipulation
     element = str(element)
-    if 'X-ORIGIN' not in element:
-        assert element[-2:] == ' )'
+    if "X-ORIGIN" not in element:
+        assert element[-2:] == " )"
         element = element[:-1] + "X-ORIGIN '%s' )" % ORIGIN
     return element

@@ -11,8 +11,8 @@ register = Registry()
 class PermissionMethodOverride(MethodOverride):
     def get_options(self):
         for option in super(PermissionMethodOverride, self).get_options():
-            if option.name == 'ipapermright':
-                option = option.clone(deprecated_cli_aliases={'permissions'})
+            if option.name == "ipapermright":
+                option = option.clone(deprecated_cli_aliases={"permissions"})
             yield option
 
 

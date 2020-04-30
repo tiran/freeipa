@@ -37,10 +37,19 @@ from ipapython.ipaldap import LDAPClient
 
 def parse_options():
     parser = ArgumentParser()
-    parser.add_argument('--validate', dest='validate', action='store_true',
-        default=False, help='Validate the API vs the stored API')
-    parser.add_argument('filename', nargs='?', default='ACI.txt',
-        help='File to create or validate, default: ACI.txt')
+    parser.add_argument(
+        "--validate",
+        dest="validate",
+        action="store_true",
+        default=False,
+        help="Validate the API vs the stored API",
+    )
+    parser.add_argument(
+        "filename",
+        nargs="?",
+        default="ACI.txt",
+        help="File to create or validate, default: ACI.txt",
+    )
 
     options = parser.parse_args()
     return options
@@ -48,8 +57,8 @@ def parse_options():
 
 def generate_aci_lines(api):
     """Yields ACI lines as they appear in ACI.txt, with trailing newline"""
-    update_plugin = api.Updater['update_managed_permissions']
-    perm_plugin = api.Object['permission']
+    update_plugin = api.Updater["update_managed_permissions"]
+    perm_plugin = api.Object["permission"]
     fake_ldap = LDAPClient(None, force_schema_updates=False, no_schema=True)
     for name, template, obj in update_plugin.get_templates():
         dn = perm_plugin.get_dn(name)
@@ -62,8 +71,8 @@ def generate_aci_lines(api):
             is_new=True,
         )
         aci = perm_plugin.make_aci(entry)
-        yield 'dn: %s\n' % entry.single_value['ipapermlocation']
-        yield f'aci: {aci}\n'
+        yield "dn: %s\n" % entry.single_value["ipapermlocation"]
+        yield f"aci: {aci}\n"
 
         check_member_attrs(name, template)
 
@@ -76,12 +85,13 @@ def check_member_attrs(name, template):
     left out and memberofindirect processing returns wrong a result.
     So we need all of them be readable.
     """
-    checked_attrs = ['member', 'memberuser', 'memberhost']
-    perm_attrs = template.get('ipapermdefaultattr', ())
+    checked_attrs = ["member", "memberuser", "memberhost"]
+    perm_attrs = template.get("ipapermdefaultattr", ())
     flags = [(a in perm_attrs) for a in checked_attrs]
-    if 'read' in template['ipapermright'] and any(flags) and not all(flags):
-        raise AssertionError("'%s' includes some  but not all of %s" %
-                             (name, checked_attrs))
+    if "read" in template["ipapermright"] and any(flags) and not all(flags):
+        raise AssertionError(
+            "'%s' includes some  but not all of %s" % (name, checked_attrs)
+        )
 
 
 def main(options):
@@ -92,14 +102,15 @@ def main(options):
         verbose=0,
         validate_api=True,
         enable_ra=True,
-        mode='developer',
+        mode="developer",
         plugins_on_demand=False,
-        basedn=DN('dc=ipa,dc=example'),
-        realm='IPA.EXAMPLE',
+        basedn=DN("dc=ipa,dc=example"),
+        realm="IPA.EXAMPLE",
         domain="example.com",
     )
 
     from ipaserver.install.plugins import update_managed_permissions
+
     api.add_module(update_managed_permissions)
 
     api.finalize()
@@ -110,23 +121,25 @@ def main(options):
         with open(options.filename) as file:
             file_lines = file.readlines()
         if file_lines != output_lines:
-            diff = list(difflib.unified_diff(
-                file_lines,
-                output_lines,
-                fromfile='existing %s' % options.filename,
-                tofile='new result',
-            ))
+            diff = list(
+                difflib.unified_diff(
+                    file_lines,
+                    output_lines,
+                    fromfile="existing %s" % options.filename,
+                    tofile="new result",
+                )
+            )
             for line in diff:
-                print(line, end=' ')
+                print(line, end=" ")
             print(file=sys.stderr)
-            print('Managed permission ACI validation failed.', file=sys.stderr)
-            print('Re-check permission changes and run `makeaci`.', file=sys.stderr)
-            sys.exit('%s validation failed' % options.filename)
+            print("Managed permission ACI validation failed.", file=sys.stderr)
+            print("Re-check permission changes and run `makeaci`.", file=sys.stderr)
+            sys.exit("%s validation failed" % options.filename)
     else:
-        with open(options.filename, 'w') as file:
+        with open(options.filename, "w") as file:
             file.writelines(output_lines)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     options = parse_options()
     main(options)

@@ -1,4 +1,3 @@
-
 import contextlib
 import pytest
 
@@ -33,48 +32,51 @@ if six.PY3:
             assert a >= b
             return 1
 
+
 pytestmark = pytest.mark.tier0
 
 
 def expected_class(klass, component):
     if klass is AVA:
-        if component == 'self':
+        if component == "self":
             return AVA
 
     elif klass is RDN:
-        if component == 'self':
+        if component == "self":
             return RDN
-        elif component == 'AVA':
+        elif component == "AVA":
             return AVA
 
     elif klass is DN:
-        if component == 'self':
+        if component == "self":
             return DN
-        elif component == 'AVA':
+        elif component == "AVA":
             return AVA
-        elif component == 'RDN':
+        elif component == "RDN":
             return RDN
 
-    raise ValueError("class %s with component '%s' unknown" % (klass.__name__, component))
+    raise ValueError(
+        "class %s with component '%s' unknown" % (klass.__name__, component)
+    )
 
 
 class TestAVA:
     @pytest.fixture(autouse=True)
     def ava_setup(self):
-        self.attr1    = 'cn'
-        self.value1   = 'Bob'
-        self.str_ava1 = '%s=%s' % (self.attr1, self.value1)
-        self.ava1     = AVA(self.attr1, self.value1)
+        self.attr1 = "cn"
+        self.value1 = "Bob"
+        self.str_ava1 = "%s=%s" % (self.attr1, self.value1)
+        self.ava1 = AVA(self.attr1, self.value1)
 
-        self.attr2    = 'ou'
-        self.value2   = 'People'
-        self.str_ava2 = '%s=%s' % (self.attr2, self.value2)
-        self.ava2     = AVA(self.attr2, self.value2)
+        self.attr2 = "ou"
+        self.value2 = "People"
+        self.str_ava2 = "%s=%s" % (self.attr2, self.value2)
+        self.ava2 = AVA(self.attr2, self.value2)
 
-        self.attr3    = 'c'
-        self.value3   = 'US'
-        self.str_ava3 = '%s=%s' % (self.attr3, self.value3)
-        self.ava3     = AVA(self.attr3, self.value3)
+        self.attr3 = "c"
+        self.value3 = "US"
+        self.str_ava3 = "%s=%s" % (self.attr3, self.value3)
+        self.ava3 = AVA(self.attr3, self.value3)
 
     def assertExpectedClass(self, klass, obj, component):
         assert obj.__class__ is expected_class(klass, component)
@@ -82,22 +84,22 @@ class TestAVA:
     def test_create(self):
         # Create with attr,value pair
         ava1 = AVA(self.attr1, self.value1)
-        self.assertExpectedClass(AVA, ava1, 'self')
+        self.assertExpectedClass(AVA, ava1, "self")
         assert ava1 == self.ava1
 
         # Create with "attr=value" string
         ava1 = AVA(self.str_ava1)
-        self.assertExpectedClass(AVA, ava1, 'self')
+        self.assertExpectedClass(AVA, ava1, "self")
         assert ava1 == self.ava1
 
         # Create with tuple (attr, value)
         ava1 = AVA((self.attr1, self.value1))
-        self.assertExpectedClass(AVA, ava1, 'self')
+        self.assertExpectedClass(AVA, ava1, "self")
         assert ava1 == self.ava1
 
         # Create with list [attr, value]
         ava1 = AVA([self.attr1, self.value1])
-        self.assertExpectedClass(AVA, ava1, 'self')
+        self.assertExpectedClass(AVA, ava1, "self")
         assert ava1 == self.ava1
 
         # Create with no args should fail
@@ -118,20 +120,20 @@ class TestAVA:
 
         # Create with non-string parameters, should convert
         ava1 = AVA(1, self.value1)
-        self.assertExpectedClass(AVA, ava1, 'self')
-        assert ava1.attr == u'1'
+        self.assertExpectedClass(AVA, ava1, "self")
+        assert ava1.attr == u"1"
 
         ava1 = AVA((1, self.value1))
-        self.assertExpectedClass(AVA, ava1, 'self')
-        assert ava1.attr == u'1'
+        self.assertExpectedClass(AVA, ava1, "self")
+        assert ava1.attr == u"1"
 
         ava1 = AVA(self.attr1, 1)
-        self.assertExpectedClass(AVA, ava1, 'self')
-        assert ava1.value == u'1'
+        self.assertExpectedClass(AVA, ava1, "self")
+        assert ava1.value == u"1"
 
         ava1 = AVA((self.attr1, 1))
-        self.assertExpectedClass(AVA, ava1, 'self')
-        assert ava1.value == u'1'
+        self.assertExpectedClass(AVA, ava1, "self")
+        assert ava1.value == u"1"
 
     def test_indexing(self):
         ava1 = AVA(self.ava1)
@@ -142,7 +144,7 @@ class TestAVA:
         assert ava1[1] == self.value1
 
         with pytest.raises(KeyError):
-            ava1['foo']  # pylint: disable=pointless-statement
+            ava1["foo"]  # pylint: disable=pointless-statement
 
         with pytest.raises(KeyError):
             ava1[3]  # pylint: disable=pointless-statement
@@ -294,25 +296,35 @@ class TestRDN:
     @pytest.fixture(autouse=True)
     def rdn_setup(self):
         # ava1 must sort before ava2
-        self.attr1    = 'cn'
-        self.value1   = 'Bob'
-        self.str_ava1 = '%s=%s' % (self.attr1, self.value1)
-        self.ava1     = AVA(self.attr1, self.value1)
+        self.attr1 = "cn"
+        self.value1 = "Bob"
+        self.str_ava1 = "%s=%s" % (self.attr1, self.value1)
+        self.ava1 = AVA(self.attr1, self.value1)
 
-        self.str_rdn1 = '%s=%s' % (self.attr1, self.value1)
+        self.str_rdn1 = "%s=%s" % (self.attr1, self.value1)
         self.rdn1 = RDN((self.attr1, self.value1))
 
-        self.attr2    = 'ou'
-        self.value2   = 'people'
-        self.str_ava2 = '%s=%s' % (self.attr2, self.value2)
-        self.ava2     = AVA(self.attr2, self.value2)
+        self.attr2 = "ou"
+        self.value2 = "people"
+        self.str_ava2 = "%s=%s" % (self.attr2, self.value2)
+        self.ava2 = AVA(self.attr2, self.value2)
 
-        self.str_rdn2 = '%s=%s' % (self.attr2, self.value2)
-        self.rdn2     = RDN((self.attr2, self.value2))
+        self.str_rdn2 = "%s=%s" % (self.attr2, self.value2)
+        self.rdn2 = RDN((self.attr2, self.value2))
 
-        self.str_ava3 = '%s=%s+%s=%s' % (self.attr1, self.value1, self.attr2, self.value2)
+        self.str_ava3 = "%s=%s+%s=%s" % (
+            self.attr1,
+            self.value1,
+            self.attr2,
+            self.value2,
+        )
 
-        self.str_rdn3 = '%s=%s+%s=%s' % (self.attr1, self.value1, self.attr2, self.value2)
+        self.str_rdn3 = "%s=%s+%s=%s" % (
+            self.attr1,
+            self.value1,
+            self.attr2,
+            self.value2,
+        )
         self.rdn3 = RDN(self.ava1, self.ava2)
 
     def assertExpectedClass(self, klass, obj, component):
@@ -324,18 +336,18 @@ class TestRDN:
 
         assert len(rdn1) == 1
         assert rdn1 == self.rdn1
-        self.assertExpectedClass(RDN, rdn1, 'self')
+        self.assertExpectedClass(RDN, rdn1, "self")
         for i in range(0, len(rdn1)):
-            self.assertExpectedClass(RDN, rdn1[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn1[i], "AVA")
         assert rdn1[0] == self.ava1
 
         # Create with multiple attr,value pairs
         rdn3 = RDN((self.attr1, self.value1), (self.attr2, self.value2))
         assert len(rdn3) == 2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
         assert rdn3[0] == self.ava1
         assert rdn3[1] == self.ava2
 
@@ -343,9 +355,9 @@ class TestRDN:
         rdn3 = RDN([self.attr1, self.value1], [self.attr2, self.value2])
         assert len(rdn3) == 2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
         assert rdn3[0] == self.ava1
         assert rdn3[1] == self.ava2
 
@@ -355,9 +367,9 @@ class TestRDN:
         rdn3 = RDN((self.attr2, self.value2), (self.attr1, self.value1))
         assert len(rdn3) == 2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
         assert rdn3[0] == self.ava1
         assert rdn3[1] == self.ava2
 
@@ -365,21 +377,20 @@ class TestRDN:
         rdn1 = RDN(self.ava1)
         assert len(rdn1) == 1
         assert rdn1 == self.rdn1
-        self.assertExpectedClass(RDN, rdn1, 'self')
+        self.assertExpectedClass(RDN, rdn1, "self")
         for i in range(0, len(rdn1)):
-            self.assertExpectedClass(RDN, rdn1[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn1[i], "AVA")
         assert rdn1[0] == self.ava1
 
         # Create with multiple AVA objects
         rdn3 = RDN(self.ava1, self.ava2)
         assert len(rdn3) == 2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
         assert rdn3[0] == self.ava1
         assert rdn3[1] == self.ava2
-
 
         # Create with multiple AVA objects but reverse constructor
         # parameter ordering.  RDN canonical ordering should remain
@@ -387,9 +398,9 @@ class TestRDN:
         rdn3 = RDN(self.ava2, self.ava1)
         assert len(rdn3) == 2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
         assert rdn3[0] == self.ava1
         assert rdn3[1] == self.ava2
 
@@ -397,18 +408,18 @@ class TestRDN:
         rdn1 = RDN(self.str_rdn1)
         assert len(rdn1) == 1
         assert rdn1 == self.rdn1
-        self.assertExpectedClass(RDN, rdn1, 'self')
+        self.assertExpectedClass(RDN, rdn1, "self")
         for i in range(0, len(rdn1)):
-            self.assertExpectedClass(RDN, rdn1[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn1[i], "AVA")
         assert rdn1[0] == self.ava1
 
         # Create with single string with 2 AVA's
         rdn3 = RDN(self.str_rdn3)
         assert len(rdn3) == 2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
         assert rdn3[0] == self.ava1
         assert rdn3[1] == self.ava2
 
@@ -504,19 +515,19 @@ class TestRDN:
         assert rdn1[0] == self.ava1
         assert rdn1[self.ava1.attr] == self.ava1.value
         with pytest.raises(KeyError):
-            rdn1['foo']  # pylint: disable=pointless-statement
+            rdn1["foo"]  # pylint: disable=pointless-statement
 
         assert rdn2[0] == self.ava2
         assert rdn2[self.ava2.attr] == self.ava2.value
         with pytest.raises(KeyError):
-            rdn2['foo']  # pylint: disable=pointless-statement
+            rdn2["foo"]  # pylint: disable=pointless-statement
 
         assert rdn3[0] == self.ava1
         assert rdn3[self.ava1.attr] == self.ava1.value
         assert rdn3[1] == self.ava2
         assert rdn3[self.ava2.attr] == self.ava2.value
         with pytest.raises(KeyError):
-            rdn3['foo']  # pylint: disable=pointless-statement
+            rdn3["foo"]  # pylint: disable=pointless-statement
 
         assert rdn1.attr == self.attr1
         assert rdn1.value == self.value1
@@ -545,8 +556,7 @@ class TestRDN:
             if i == 0:
                 assert ava == self.ava1
             else:
-                pytest.fail(
-                    "got iteration index %d, but len=%d" % (i, len(rdn1)))
+                pytest.fail("got iteration index %d, but len=%d" % (i, len(rdn1)))
 
         assert len(rdn2) == 1
         assert rdn2[:] == [self.ava2]
@@ -554,8 +564,7 @@ class TestRDN:
             if i == 0:
                 assert ava == self.ava2
             else:
-                pytest.fail(
-                    "got iteration index %d, but len=%d" % (i, len(rdn2)))
+                pytest.fail("got iteration index %d, but len=%d" % (i, len(rdn2)))
 
         assert len(rdn3) == 2
         assert rdn3[:] == [self.ava1, self.ava2]
@@ -565,9 +574,7 @@ class TestRDN:
             elif i == 1:
                 assert ava == self.ava2
             else:
-                pytest.fail(
-                    "got iteration index %d, but len=%d" % (i, len(rdn3)))
-
+                pytest.fail("got iteration index %d, but len=%d" % (i, len(rdn3)))
 
     def test_concat(self):
         rdn1 = RDN((self.attr1, self.value1))
@@ -576,44 +583,43 @@ class TestRDN:
         # in-place addtion
         rdn1 += rdn2
         assert rdn1 == self.rdn3
-        self.assertExpectedClass(RDN, rdn1, 'self')
+        self.assertExpectedClass(RDN, rdn1, "self")
         for i in range(0, len(rdn1)):
-            self.assertExpectedClass(RDN, rdn1[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn1[i], "AVA")
 
         rdn1 = RDN((self.attr1, self.value1))
         rdn1 += self.ava2
         assert rdn1 == self.rdn3
-        self.assertExpectedClass(RDN, rdn1, 'self')
+        self.assertExpectedClass(RDN, rdn1, "self")
         for i in range(0, len(rdn1)):
-            self.assertExpectedClass(RDN, rdn1[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn1[i], "AVA")
 
         rdn1 = RDN((self.attr1, self.value1))
         rdn1 += self.str_ava2
         assert rdn1 == self.rdn3
-        self.assertExpectedClass(RDN, rdn1, 'self')
+        self.assertExpectedClass(RDN, rdn1, "self")
         for i in range(0, len(rdn1)):
-            self.assertExpectedClass(RDN, rdn1[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn1[i], "AVA")
 
         # concatenation
         rdn1 = RDN((self.attr1, self.value1))
         rdn3 = rdn1 + rdn2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
 
         rdn3 = rdn1 + self.ava2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
 
         rdn3 = rdn1 + self.str_ava2
         assert rdn3 == self.rdn3
-        self.assertExpectedClass(RDN, rdn3, 'self')
+        self.assertExpectedClass(RDN, rdn3, "self")
         for i in range(0, len(rdn3)):
-            self.assertExpectedClass(RDN, rdn3[i], 'AVA')
-
+            self.assertExpectedClass(RDN, rdn3[i], "AVA")
 
     def test_hashing(self):
         # create RDN's that are equal but differ in case
@@ -629,21 +635,21 @@ class TestDN:
     @pytest.fixture(autouse=True)
     def dn_setup(self):
         # ava1 must sort before ava2
-        self.attr1    = 'cn'
-        self.value1   = u'Bob'
-        self.str_ava1 = '%s=%s' % (self.attr1, self.value1)
-        self.ava1     = AVA(self.attr1, self.value1)
+        self.attr1 = "cn"
+        self.value1 = u"Bob"
+        self.str_ava1 = "%s=%s" % (self.attr1, self.value1)
+        self.ava1 = AVA(self.attr1, self.value1)
 
-        self.str_rdn1 = '%s=%s' % (self.attr1, self.value1)
-        self.rdn1     = RDN((self.attr1, self.value1))
+        self.str_rdn1 = "%s=%s" % (self.attr1, self.value1)
+        self.rdn1 = RDN((self.attr1, self.value1))
 
-        self.attr2    = 'ou'
-        self.value2   = u'people'
-        self.str_ava2 = '%s=%s' % (self.attr2, self.value2)
-        self.ava2     = AVA(self.attr2, self.value2)
+        self.attr2 = "ou"
+        self.value2 = u"people"
+        self.str_ava2 = "%s=%s" % (self.attr2, self.value2)
+        self.ava2 = AVA(self.attr2, self.value2)
 
-        self.str_rdn2 = '%s=%s' % (self.attr2, self.value2)
-        self.rdn2     = RDN((self.attr2, self.value2))
+        self.str_rdn2 = "%s=%s" % (self.attr2, self.value2)
+        self.rdn2 = RDN((self.attr2, self.value2))
 
         self.str_dn1 = self.str_rdn1
         self.dn1 = DN(self.rdn1)
@@ -651,35 +657,38 @@ class TestDN:
         self.str_dn2 = self.str_rdn2
         self.dn2 = DN(self.rdn2)
 
-        self.str_dn3 = '%s,%s' % (self.str_rdn1, self.str_rdn2)
+        self.str_dn3 = "%s,%s" % (self.str_rdn1, self.str_rdn2)
         self.dn3 = DN(self.rdn1, self.rdn2)
 
-        self.base_rdn1 = RDN(('dc', 'redhat'))
-        self.base_rdn2 = RDN(('dc', 'com'))
+        self.base_rdn1 = RDN(("dc", "redhat"))
+        self.base_rdn2 = RDN(("dc", "com"))
         self.base_dn = DN(self.base_rdn1, self.base_rdn2)
 
-        self.container_rdn1 = RDN(('cn', 'sudorules'))
-        self.container_rdn2 = RDN(('cn', 'sudo'))
+        self.container_rdn1 = RDN(("cn", "sudorules"))
+        self.container_rdn2 = RDN(("cn", "sudo"))
         self.container_dn = DN(self.container_rdn1, self.container_rdn2)
 
-        self.base_container_dn = DN((self.attr1, self.value1),
-                                    self.container_dn, self.base_dn)
+        self.base_container_dn = DN(
+            (self.attr1, self.value1), self.container_dn, self.base_dn
+        )
 
-        ou = x509.NameAttribute(
-            x509.NameOID.ORGANIZATIONAL_UNIT_NAME, self.value2)
+        ou = x509.NameAttribute(x509.NameOID.ORGANIZATIONAL_UNIT_NAME, self.value2)
         cn = x509.NameAttribute(x509.NameOID.COMMON_NAME, self.value1)
-        c = x509.NameAttribute(x509.NameOID.COUNTRY_NAME, 'AU')
-        st = x509.NameAttribute(
-            x509.NameOID.STATE_OR_PROVINCE_NAME, 'Queensland')
+        c = x509.NameAttribute(x509.NameOID.COUNTRY_NAME, "AU")
+        st = x509.NameAttribute(x509.NameOID.STATE_OR_PROVINCE_NAME, "Queensland")
         self.x500name = x509.Name([ou, cn])
-        self.x500nameMultiRDN = x509.Name([
-            x509.RelativeDistinguishedName([c, st]),
-            x509.RelativeDistinguishedName([cn]),
-        ])
-        self.x500nameMultiRDN2 = x509.Name([
-            x509.RelativeDistinguishedName([st, c]),
-            x509.RelativeDistinguishedName([cn]),
-        ])
+        self.x500nameMultiRDN = x509.Name(
+            [
+                x509.RelativeDistinguishedName([c, st]),
+                x509.RelativeDistinguishedName([cn]),
+            ]
+        )
+        self.x500nameMultiRDN2 = x509.Name(
+            [
+                x509.RelativeDistinguishedName([st, c]),
+                x509.RelativeDistinguishedName([cn]),
+            ]
+        )
 
     def assertExpectedClass(self, klass, obj, component):
         assert obj.__class__ is expected_class(klass, component)
@@ -688,11 +697,11 @@ class TestDN:
         # Create with single attr,value pair
         dn1 = DN((self.attr1, self.value1))
         assert len(dn1) == 1
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
         assert isinstance(dn1[0].attr, unicode)
         assert isinstance(dn1[0].value, unicode)
         assert dn1[0] == self.rdn1
@@ -700,11 +709,11 @@ class TestDN:
         # Create with single attr,value pair passed as a tuple
         dn1 = DN((self.attr1, self.value1))
         assert len(dn1) == 1
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -716,11 +725,11 @@ class TestDN:
         # Create with multiple attr,value pairs passed as tuples & lists
         dn1 = DN((self.attr1, self.value1), [self.attr2, self.value2])
         assert len(dn1) == 2
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -729,11 +738,11 @@ class TestDN:
         # Create with multiple attr,value pairs passed as tuple and RDN
         dn1 = DN((self.attr1, self.value1), RDN((self.attr2, self.value2)))
         assert len(dn1) == 2
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -744,11 +753,11 @@ class TestDN:
         # reversed because DN's are a ordered sequence of RDN's
         dn1 = DN((self.attr2, self.value2), (self.attr1, self.value1))
         assert len(dn1) == 2
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn2
@@ -757,11 +766,11 @@ class TestDN:
         # Create with single RDN object
         dn1 = DN(self.rdn1)
         assert len(dn1) == 1
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -769,11 +778,11 @@ class TestDN:
         # Create with multiple RDN objects, assure ordering is preserved.
         dn1 = DN(self.rdn1, self.rdn2)
         assert len(dn1) == 2
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -783,11 +792,11 @@ class TestDN:
         # ordering is preserved.
         dn1 = DN(self.rdn2, self.rdn1)
         assert len(dn1) == 2
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn2
@@ -796,11 +805,11 @@ class TestDN:
         # Create with single string with 1 RDN
         dn1 = DN(self.str_rdn1)
         assert len(dn1) == 1
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -808,11 +817,11 @@ class TestDN:
         # Create with single string with 2 RDN's
         dn1 = DN(self.str_dn3)
         assert len(dn1) == 2
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -821,11 +830,11 @@ class TestDN:
         # Create with a python-cryptography 'Name'
         dn1 = DN(self.x500name)
         assert len(dn1) == 2
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
             assert isinstance(dn1[i].attr, unicode)
             assert isinstance(dn1[i].value, unicode)
         assert dn1[0] == self.rdn1
@@ -835,17 +844,23 @@ class TestDN:
         dn1 = DN(self.x500nameMultiRDN)
         assert len(dn1) == 2
         assert len(dn1[1]) == 2
-        assert AVA('c', 'au') in dn1[1]
-        assert AVA('st', 'queensland') in dn1[1]
+        assert AVA("c", "au") in dn1[1]
+        assert AVA("st", "queensland") in dn1[1]
         assert len(dn1[0]) == 1
         assert self.ava1 in dn1[0]
 
         # Create with RDN, and 2 DN's (e.g. attr + container + base)
         dn1 = DN((self.attr1, self.value1), self.container_dn, self.base_dn)
         assert len(dn1) == 5
-        dn_str = ','.join([str(self.rdn1),
-                            str(self.container_rdn1), str(self.container_rdn2),
-                            str(self.base_rdn1), str(self.base_rdn2)])
+        dn_str = ",".join(
+            [
+                str(self.rdn1),
+                str(self.container_rdn1),
+                str(self.container_rdn2),
+                str(self.base_rdn1),
+                str(self.base_rdn2),
+            ]
+        )
         assert str(dn1) == dn_str
 
     def test_str(self):
@@ -915,7 +930,6 @@ class TestDN:
         result = cmp(self.dn3, self.dn1)
         assert result == 1
 
-
         # Test startswith, endswith
         container_dn = DN(self.container_dn)
         base_container_dn = DN(self.base_container_dn)
@@ -935,8 +949,7 @@ class TestDN:
         assert base_container_dn.endswith(container_dn + self.base_dn)
         assert not base_container_dn.endswith(DN(self.base_rdn1))
         assert base_container_dn.endswith(DN(self.base_rdn2))
-        assert base_container_dn.endswith(
-            (DN(self.base_rdn1), DN(self.base_rdn2)))
+        assert base_container_dn.endswith((DN(self.base_rdn1), DN(self.base_rdn2)))
 
         # Test "in" membership
         assert self.container_rdn1 in container_dn
@@ -953,8 +966,8 @@ class TestDN:
         assert self.container_rdn1 not in self.base_dn
 
     def test_eq_multi_rdn(self):
-        dn1 = DN(self.ava1, 'ST=Queensland+C=AU')
-        dn2 = DN(self.ava1, 'C=AU+ST=Queensland')
+        dn1 = DN(self.ava1, "ST=Queensland+C=AU")
+        dn2 = DN(self.ava1, "C=AU+ST=Queensland")
         assert dn1 == dn2
 
         # ensure AVAs get sorted when constructing from x509.Name
@@ -977,31 +990,31 @@ class TestDN:
         assert dn1[0] == self.rdn1
         assert dn1[self.rdn1.attr] == self.rdn1.value
         with pytest.raises(KeyError):
-            dn1['foo']  # pylint: disable=pointless-statement
+            dn1["foo"]  # pylint: disable=pointless-statement
 
         assert dn2[0] == self.rdn2
         assert dn2[self.rdn2.attr] == self.rdn2.value
         with pytest.raises(KeyError):
-            dn2['foo']  # pylint: disable=pointless-statement
+            dn2["foo"]  # pylint: disable=pointless-statement
 
         assert dn3[0] == self.rdn1
         assert dn3[self.rdn1.attr] == self.rdn1.value
         assert dn3[1] == self.rdn2
         assert dn3[self.rdn2.attr] == self.rdn2.value
         with pytest.raises(KeyError):
-            dn3['foo']  # pylint: disable=pointless-statement
+            dn3["foo"]  # pylint: disable=pointless-statement
 
         with pytest.raises(TypeError):
             dn3[1.0]  # pylint: disable=pointless-statement
 
     def test_assignments(self):
-        dn = DN('t=0,t=1,t=2,t=3,t=4,t=5,t=6,t=7,t=8,t=9')
+        dn = DN("t=0,t=1,t=2,t=3,t=4,t=5,t=6,t=7,t=8,t=9")
         with pytest.raises(TypeError):
             # pylint: disable=unsupported-assignment-operation
-            dn[0] = RDN('t=a')
+            dn[0] = RDN("t=a")
         with pytest.raises(TypeError):
             # pylint: disable=unsupported-assignment-operation
-            dn[0:1] = [RDN('t=a'), RDN('t=b')]
+            dn[0:1] = [RDN("t=a"), RDN("t=b")]
 
     def test_iter(self):
         dn1 = DN(self.dn1)
@@ -1014,8 +1027,7 @@ class TestDN:
             if i == 0:
                 assert ava == self.rdn1
             else:
-                pytest.fail(
-                    "got iteration index %d, but len=%d" % (i, len(self.rdn1)))
+                pytest.fail("got iteration index %d, but len=%d" % (i, len(self.rdn1)))
 
         assert len(dn2) == 1
         assert dn2[:] == self.rdn2
@@ -1023,8 +1035,7 @@ class TestDN:
             if i == 0:
                 assert ava == self.rdn2
             else:
-                pytest.fail(
-                    "got iteration index %d, but len=%d" % (i, len(self.rdn2)))
+                pytest.fail("got iteration index %d, but len=%d" % (i, len(self.rdn2)))
 
         assert len(dn3) == 2
         assert dn3[:] == DN(self.rdn1, self.rdn2)
@@ -1034,8 +1045,7 @@ class TestDN:
             elif i == 1:
                 assert ava == self.rdn2
             else:
-                pytest.fail(
-                    "got iteration index %d, but len=%d" % (i, len(dn3)))
+                pytest.fail("got iteration index %d, but len=%d" % (i, len(dn3)))
 
     def test_concat(self):
         dn1 = DN((self.attr1, self.value1))
@@ -1045,92 +1055,87 @@ class TestDN:
 
         dn1 += dn2
         assert dn1 == self.dn3
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
-
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
 
         dn1 = DN((self.attr1, self.value1))
         dn1 += self.rdn2
         assert dn1 == self.dn3
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
-
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
 
         dn1 = DN((self.attr1, self.value1))
         dn1 += self.dn2
         assert dn1 == self.dn3
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
-
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
 
         dn1 = DN((self.attr1, self.value1))
         dn1 += self.str_dn2
         assert dn1 == self.dn3
-        self.assertExpectedClass(DN, dn1, 'self')
+        self.assertExpectedClass(DN, dn1, "self")
         for i in range(0, len(dn1)):
-            self.assertExpectedClass(DN, dn1[i], 'RDN')
+            self.assertExpectedClass(DN, dn1[i], "RDN")
             for j in range(0, len(dn1[i])):
-                self.assertExpectedClass(DN, dn1[i][j], 'AVA')
-
+                self.assertExpectedClass(DN, dn1[i][j], "AVA")
 
         # concatenation
         dn1 = DN((self.attr1, self.value1))
         dn3 = dn1 + dn2
         assert dn3 == self.dn3
-        self.assertExpectedClass(DN, dn3, 'self')
+        self.assertExpectedClass(DN, dn3, "self")
         for i in range(0, len(dn3)):
-            self.assertExpectedClass(DN, dn3[i], 'RDN')
+            self.assertExpectedClass(DN, dn3[i], "RDN")
             for j in range(0, len(dn3[i])):
-                self.assertExpectedClass(DN, dn3[i][j], 'AVA')
-
+                self.assertExpectedClass(DN, dn3[i][j], "AVA")
 
         dn1 = DN((self.attr1, self.value1))
         dn3 = dn1 + self.rdn2
         assert dn3 == self.dn3
-        self.assertExpectedClass(DN, dn3, 'self')
+        self.assertExpectedClass(DN, dn3, "self")
         for i in range(0, len(dn3)):
-            self.assertExpectedClass(DN, dn3[i], 'RDN')
+            self.assertExpectedClass(DN, dn3[i], "RDN")
             for j in range(0, len(dn3[i])):
-                self.assertExpectedClass(DN, dn3[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn3[i][j], "AVA")
 
         dn3 = dn1 + self.str_rdn2
         assert dn3 == self.dn3
-        self.assertExpectedClass(DN, dn3, 'self')
+        self.assertExpectedClass(DN, dn3, "self")
         for i in range(0, len(dn3)):
-            self.assertExpectedClass(DN, dn3[i], 'RDN')
-            self.assertExpectedClass(DN, dn3[i][0], 'AVA')
+            self.assertExpectedClass(DN, dn3[i], "RDN")
+            self.assertExpectedClass(DN, dn3[i][0], "AVA")
 
         dn3 = dn1 + self.str_dn2
         assert dn3 == self.dn3
-        self.assertExpectedClass(DN, dn3, 'self')
-        self.assertExpectedClass(DN, dn3, 'self')
+        self.assertExpectedClass(DN, dn3, "self")
+        self.assertExpectedClass(DN, dn3, "self")
         for i in range(0, len(dn3)):
-            self.assertExpectedClass(DN, dn3[i], 'RDN')
+            self.assertExpectedClass(DN, dn3[i], "RDN")
             for j in range(0, len(dn3[i])):
-                self.assertExpectedClass(DN, dn3[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn3[i][j], "AVA")
 
         dn3 = dn1 + self.dn2
         assert dn3 == self.dn3
-        self.assertExpectedClass(DN, dn3, 'self')
-        self.assertExpectedClass(DN, dn3, 'self')
+        self.assertExpectedClass(DN, dn3, "self")
+        self.assertExpectedClass(DN, dn3, "self")
         for i in range(0, len(dn3)):
-            self.assertExpectedClass(DN, dn3[i], 'RDN')
+            self.assertExpectedClass(DN, dn3[i], "RDN")
             for j in range(0, len(dn3[i])):
-                self.assertExpectedClass(DN, dn3[i][j], 'AVA')
+                self.assertExpectedClass(DN, dn3[i][j], "AVA")
 
     def test_find(self):
         #        -10 -9  -8     -7  -6  -5  -4     -3  -2  -1
-        dn = DN('t=0,t=1,cn=bob,t=3,t=4,t=5,cn=bob,t=7,t=8,t=9')
-        pat = DN('cn=bob')
+        dn = DN("t=0,t=1,cn=bob,t=3,t=4,t=5,cn=bob,t=7,t=8,t=9")
+        pat = DN("cn=bob")
 
         # forward
         assert dn.find(pat) == 2
@@ -1167,7 +1172,7 @@ class TestDN:
 
     def test_replace(self):
         # pylint: disable=no-member
-        dn = DN('t=0,t=1,t=2,t=3,t=4,t=5,t=6,t=7,t=8,t=9')
+        dn = DN("t=0,t=1,t=2,t=3,t=4,t=5,t=6,t=7,t=8,t=9")
         with pytest.raises(AttributeError):
             dn.replace  # pylint: disable=pointless-statement
 
@@ -1256,17 +1261,17 @@ class TestDN:
 class TestEscapes:
     @pytest.fixture(autouse=True)
     def escapes_setup(self):
-        self.privilege = 'R,W privilege'
-        self.dn_str_hex_escape = 'cn=R\\2cW privilege,cn=privileges,cn=pbac,dc=idm,dc=lab,dc=bos,dc=redhat,dc=com'
-        self.dn_str_backslash_escape = 'cn=R\\,W privilege,cn=privileges,cn=pbac,dc=idm,dc=lab,dc=bos,dc=redhat,dc=com'
+        self.privilege = "R,W privilege"
+        self.dn_str_hex_escape = "cn=R\\2cW privilege,cn=privileges,cn=pbac,dc=idm,dc=lab,dc=bos,dc=redhat,dc=com"
+        self.dn_str_backslash_escape = "cn=R\\,W privilege,cn=privileges,cn=pbac,dc=idm,dc=lab,dc=bos,dc=redhat,dc=com"
 
     def test_escape(self):
         dn = DN(self.dn_str_hex_escape)
-        assert dn['cn'] == self.privilege
+        assert dn["cn"] == self.privilege
         assert dn[0].value == self.privilege
 
         dn = DN(self.dn_str_backslash_escape)
-        assert dn['cn'] == self.privilege
+        assert dn["cn"] == self.privilege
         assert dn[0].value == self.privilege
 
 
@@ -1274,17 +1279,19 @@ class TestInternationalization:
     @pytest.fixture(autouse=True)
     def i18n_setup(self):
         # Hello in Arabic
-        self.arabic_hello_utf8 = (b'\xd9\x85\xd9\x83\xd9\x8a\xd9\x84' +
-                                  b'\xd8\xb9\x20\xd9\x85\xd8\xa7\xd9' +
-                                  b'\x84\xd9\x91\xd8\xb3\xd9\x84\xd8\xa7')
+        self.arabic_hello_utf8 = (
+            b"\xd9\x85\xd9\x83\xd9\x8a\xd9\x84"
+            + b"\xd8\xb9\x20\xd9\x85\xd8\xa7\xd9"
+            + b"\x84\xd9\x91\xd8\xb3\xd9\x84\xd8\xa7"
+        )
 
-        self.arabic_hello_unicode = self.arabic_hello_utf8.decode('utf-8')
+        self.arabic_hello_unicode = self.arabic_hello_utf8.decode("utf-8")
 
     def assert_equal_utf8(self, obj, b):
         if six.PY2:
             assert str(obj) == b
         else:
-            assert str(obj) == b.decode('utf-8')
+            assert str(obj) == b.decode("utf-8")
 
     @contextlib.contextmanager
     def fail_py3(self, exception_type):
@@ -1295,121 +1302,119 @@ class TestInternationalization:
                 raise
 
     def test_i18n(self):
-        actual = self.arabic_hello_unicode.encode('utf-8')
+        actual = self.arabic_hello_unicode.encode("utf-8")
         expected = self.arabic_hello_utf8
         assert actual == expected
 
         # AVA's
         # test attr i18n
-        ava1 = AVA(self.arabic_hello_unicode, 'foo')
+        ava1 = AVA(self.arabic_hello_unicode, "foo")
         assert isinstance(ava1.attr, unicode)
         assert isinstance(ava1.value, unicode)
         assert ava1.attr == self.arabic_hello_unicode
-        self.assert_equal_utf8(ava1, self.arabic_hello_utf8 + b'=foo')
+        self.assert_equal_utf8(ava1, self.arabic_hello_utf8 + b"=foo")
 
         with self.fail_py3(TypeError):
-            ava1 = AVA(self.arabic_hello_utf8, 'foo')
+            ava1 = AVA(self.arabic_hello_utf8, "foo")
         if six.PY2:
             assert isinstance(ava1.attr, unicode)
             assert isinstance(ava1.value, unicode)
             assert ava1.attr == self.arabic_hello_unicode
-            self.assert_equal_utf8(ava1, self.arabic_hello_utf8 + b'=foo')
+            self.assert_equal_utf8(ava1, self.arabic_hello_utf8 + b"=foo")
 
         # test value i18n
-        ava1 = AVA('cn', self.arabic_hello_unicode)
+        ava1 = AVA("cn", self.arabic_hello_unicode)
         assert isinstance(ava1.attr, unicode)
         assert isinstance(ava1.value, unicode)
         assert ava1.value == self.arabic_hello_unicode
-        self.assert_equal_utf8(ava1, b'cn=' + self.arabic_hello_utf8)
+        self.assert_equal_utf8(ava1, b"cn=" + self.arabic_hello_utf8)
 
         with self.fail_py3(TypeError):
-            ava1 = AVA('cn', self.arabic_hello_utf8)
+            ava1 = AVA("cn", self.arabic_hello_utf8)
         if six.PY2:
             assert isinstance(ava1.attr, unicode)
             assert isinstance(ava1.value, unicode)
             assert ava1.value == self.arabic_hello_unicode
-            self.assert_equal_utf8(ava1, b'cn=' + self.arabic_hello_utf8)
+            self.assert_equal_utf8(ava1, b"cn=" + self.arabic_hello_utf8)
 
         # RDN's
         # test attr i18n
-        rdn1 = RDN((self.arabic_hello_unicode, 'foo'))
+        rdn1 = RDN((self.arabic_hello_unicode, "foo"))
         assert isinstance(rdn1.attr, unicode)
         assert isinstance(rdn1.value, unicode)
         assert rdn1.attr == self.arabic_hello_unicode
-        self.assert_equal_utf8(rdn1, self.arabic_hello_utf8 + b'=foo')
+        self.assert_equal_utf8(rdn1, self.arabic_hello_utf8 + b"=foo")
 
         with self.fail_py3(TypeError):
-            rdn1 = RDN((self.arabic_hello_utf8, 'foo'))
+            rdn1 = RDN((self.arabic_hello_utf8, "foo"))
         if six.PY2:
             assert isinstance(rdn1.attr, unicode)
             assert isinstance(rdn1.value, unicode)
             assert rdn1.attr == self.arabic_hello_unicode
-            assert str(rdn1) == self.arabic_hello_utf8 + b'=foo'
+            assert str(rdn1) == self.arabic_hello_utf8 + b"=foo"
 
         # test value i18n
-        rdn1 = RDN(('cn', self.arabic_hello_unicode))
+        rdn1 = RDN(("cn", self.arabic_hello_unicode))
         assert isinstance(rdn1.attr, unicode)
         assert isinstance(rdn1.value, unicode)
         assert rdn1.value == self.arabic_hello_unicode
-        self.assert_equal_utf8(rdn1, b'cn=' + self.arabic_hello_utf8)
+        self.assert_equal_utf8(rdn1, b"cn=" + self.arabic_hello_utf8)
 
         with self.fail_py3(TypeError):
-            rdn1 = RDN(('cn', self.arabic_hello_utf8))
+            rdn1 = RDN(("cn", self.arabic_hello_utf8))
         if six.PY2:
             assert isinstance(rdn1.attr, unicode)
             assert isinstance(rdn1.value, unicode)
             assert rdn1.value == self.arabic_hello_unicode
-            assert str(rdn1) == b'cn=' + self.arabic_hello_utf8
+            assert str(rdn1) == b"cn=" + self.arabic_hello_utf8
 
         # DN's
         # test attr i18n
-        dn1 = DN((self.arabic_hello_unicode, 'foo'))
+        dn1 = DN((self.arabic_hello_unicode, "foo"))
         assert isinstance(dn1[0].attr, unicode)
         assert isinstance(dn1[0].value, unicode)
         assert dn1[0].attr == self.arabic_hello_unicode
-        self.assert_equal_utf8(dn1, self.arabic_hello_utf8 + b'=foo')
+        self.assert_equal_utf8(dn1, self.arabic_hello_utf8 + b"=foo")
 
         with self.fail_py3(TypeError):
-            dn1 = DN((self.arabic_hello_utf8, 'foo'))
+            dn1 = DN((self.arabic_hello_utf8, "foo"))
         if six.PY2:
             assert isinstance(dn1[0].attr, unicode)
             assert isinstance(dn1[0].value, unicode)
             assert dn1[0].attr == self.arabic_hello_unicode
-            assert str(dn1) == self.arabic_hello_utf8 + b'=foo'
+            assert str(dn1) == self.arabic_hello_utf8 + b"=foo"
 
         # test value i18n
-        dn1 = DN(('cn', self.arabic_hello_unicode))
+        dn1 = DN(("cn", self.arabic_hello_unicode))
         assert isinstance(dn1[0].attr, unicode)
         assert isinstance(dn1[0].value, unicode)
         assert dn1[0].value == self.arabic_hello_unicode
-        self.assert_equal_utf8(dn1, b'cn=' + self.arabic_hello_utf8)
+        self.assert_equal_utf8(dn1, b"cn=" + self.arabic_hello_utf8)
 
         with self.fail_py3(TypeError):
-            dn1 = DN(('cn', self.arabic_hello_utf8))
+            dn1 = DN(("cn", self.arabic_hello_utf8))
         if six.PY2:
             assert isinstance(dn1[0].attr, unicode)
             assert isinstance(dn1[0].value, unicode)
             assert dn1[0].value == self.arabic_hello_unicode
-            assert str(dn1) == b'cn=' + self.arabic_hello_utf8
+            assert str(dn1) == b"cn=" + self.arabic_hello_utf8
 
 
 # 1: LDAP_AVA_STRING
 # 4: LDAP_AVA_NONPRINTABLE
 @pytest.mark.parametrize(
-    'dnstring,expected',
+    "dnstring,expected",
     [
-        ('', []),
-        ('cn=bob', [[('cn', 'bob', 1)]]),
-        ('cn=Bob', [[('cn', 'Bob', 1)]]),
-        (u'cn=b\xf6b', [[('cn', u'b\xf6b', 4)]]),
-        ('cn=bob,sn=builder', [[('cn', 'bob', 1)], [('sn', 'builder', 1)]]),
-        (u'cn=b\xf6b,sn=builder', [
-            [('cn', u'b\xf6b', 4)], [('sn', 'builder', 1)]
-        ]),
-        ('cn=bob+sn=builder', [[('cn', 'bob', 1), ('sn', 'builder', 1)]]),
-        ('dc=ipa,dc=example', [[('dc', 'ipa', 1)], [('dc', 'example', 1)]]),
-        ('cn=R\\,W privilege', [[('cn', 'R,W privilege', 1)]]),
-    ]
+        ("", []),
+        ("cn=bob", [[("cn", "bob", 1)]]),
+        ("cn=Bob", [[("cn", "Bob", 1)]]),
+        (u"cn=b\xf6b", [[("cn", u"b\xf6b", 4)]]),
+        ("cn=bob,sn=builder", [[("cn", "bob", 1)], [("sn", "builder", 1)]]),
+        (u"cn=b\xf6b,sn=builder", [[("cn", u"b\xf6b", 4)], [("sn", "builder", 1)]]),
+        ("cn=bob+sn=builder", [[("cn", "bob", 1), ("sn", "builder", 1)]]),
+        ("dc=ipa,dc=example", [[("dc", "ipa", 1)], [("dc", "example", 1)]]),
+        ("cn=R\\,W privilege", [[("cn", "R,W privilege", 1)]]),
+    ],
 )
 def test_str2dn2str(dnstring, expected):
     dn = str2dn(dnstring)
@@ -1419,14 +1424,7 @@ def test_str2dn2str(dnstring, expected):
     assert dn_ctypes.dn2str(dn) == dnstring
 
 
-@pytest.mark.parametrize(
-    'dnstring',
-    [
-        'cn',
-        'cn=foo,',
-        'cn=foo+bar',
-    ]
-)
+@pytest.mark.parametrize("dnstring", ["cn", "cn=foo,", "cn=foo+bar",])
 def test_str2dn_errors(dnstring):
     with pytest.raises(DECODING_ERROR):
         str2dn(dnstring)
@@ -1435,9 +1433,9 @@ def test_str2dn_errors(dnstring):
 
 
 def test_dn2str_special():
-    dnstring = 'cn=R\\2cW privilege'
-    dnstring2 = 'cn=R\\,W privilege'
-    expected = [[('cn', 'R,W privilege', 1)]]
+    dnstring = "cn=R\\2cW privilege"
+    dnstring2 = "cn=R\\,W privilege"
+    expected = [[("cn", "R,W privilege", 1)]]
 
     dn = str2dn(dnstring)
     assert dn == expected

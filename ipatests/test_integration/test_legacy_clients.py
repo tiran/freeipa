@@ -43,12 +43,14 @@ class BaseTestLegacyClient:
     """
 
     advice_id = None
-    backup_files = ['/etc/sysconfig/authconfig',
-                    '/etc/pam.d',
-                    '/etc/openldap/cacerts',
-                    '/etc/openldap/ldap.conf',
-                    '/etc/nsswitch.conf',
-                    paths.SSSD_CONF]
+    backup_files = [
+        "/etc/sysconfig/authconfig",
+        "/etc/pam.d",
+        "/etc/openldap/cacerts",
+        "/etc/openldap/ldap.conf",
+        "/etc/nsswitch.conf",
+        paths.SSSD_CONF,
+    ]
 
     homedir_template = "/home/{domain}/{username}"
     default_shell = platformconstants.DEFAULT_SHELL
@@ -72,18 +74,16 @@ class BaseTestLegacyClient:
     def test_apply_advice(self):
         # Obtain the advice from the server
         tasks.kinit_admin(self.master)
-        result = self.master.run_command(['ipa-advise', self.advice_id])
+        result = self.master.run_command(["ipa-advise", self.advice_id])
         advice = result.stdout_text
 
         # Apply the advice on the legacy client
-        advice_path = os.path.join(self.legacy_client.config.test_dir,
-                                   'advice.sh')
+        advice_path = os.path.join(self.legacy_client.config.test_dir, "advice.sh")
         self.legacy_client.put_file_contents(advice_path, advice)
-        result = self.legacy_client.run_command(['bash', '-x', '-e',
-                                                 advice_path])
+        result = self.legacy_client.run_command(["bash", "-x", "-e", advice_path])
 
         # Restart SSHD to load new PAM configuration
-        self.legacy_client.run_command([paths.SBIN_SERVICE, 'sshd', 'restart'])
+        self.legacy_client.run_command([paths.SBIN_SERVICE, "sshd", "restart"])
 
     def clear_sssd_caches(self):
         tasks.clear_sssd_cache(self.master)
@@ -91,18 +91,17 @@ class BaseTestLegacyClient:
 
     def test_getent_ipa_user(self):
         self.clear_sssd_caches()
-        result = self.legacy_client.run_command(['getent', 'passwd', 'admin'])
+        result = self.legacy_client.run_command(["getent", "passwd", "admin"])
 
-        admin_regex = r"admin:\*:(\d+):(\d+):"\
-                      r"Administrator:/home/admin:{}".format(
-                          platformconstants.DEFAULT_ADMIN_SHELL,
-                      )
+        admin_regex = r"admin:\*:(\d+):(\d+):" r"Administrator:/home/admin:{}".format(
+            platformconstants.DEFAULT_ADMIN_SHELL,
+        )
 
         assert re.search(admin_regex, result.stdout_text)
 
     def test_getent_ipa_group(self):
         self.clear_sssd_caches()
-        result = self.legacy_client.run_command(['getent', 'group', 'admins'])
+        result = self.legacy_client.run_command(["getent", "group", "admins"])
 
         admin_group_regex = r"admins:\*:(\d+):admin"
 
@@ -110,7 +109,7 @@ class BaseTestLegacyClient:
 
     def test_id_ipa_user(self):
         self.clear_sssd_caches()
-        result = self.legacy_client.run_command(['id', 'admin'])
+        result = self.legacy_client.run_command(["id", "admin"])
 
         uid_regex = r"uid=(\d+)\(admin\)"
         gid_regex = r"gid=(\d+)\(admins\)"
@@ -122,40 +121,39 @@ class BaseTestLegacyClient:
 
     def test_getent_ad_user(self):
         self.clear_sssd_caches()
-        testuser = 'testuser@%s' % self.ad.domain.name
-        result = self.legacy_client.run_command(['getent', 'passwd', testuser])
+        testuser = "testuser@%s" % self.ad.domain.name
+        result = self.legacy_client.run_command(["getent", "passwd", testuser])
 
-        testuser_regex = r"testuser@%s:\*:%s:%s:"\
-                         r"Test User:%s:%s"\
-                         % (re.escape(self.ad.domain.name),
-                            self.testuser_uid_regex,
-                            self.testuser_gid_regex,
-                            self.homedir_template.format(
-                                username='testuser',
-                                domain=re.escape(self.ad.domain.name)),
-                            self.default_shell,
-                            )
+        testuser_regex = r"testuser@%s:\*:%s:%s:" r"Test User:%s:%s" % (
+            re.escape(self.ad.domain.name),
+            self.testuser_uid_regex,
+            self.testuser_gid_regex,
+            self.homedir_template.format(
+                username="testuser", domain=re.escape(self.ad.domain.name)
+            ),
+            self.default_shell,
+        )
 
         assert re.search(testuser_regex, result.stdout_text)
 
     def test_getent_ad_group(self):
         self.clear_sssd_caches()
-        testgroup = 'testgroup@%s' % self.ad.domain.name
-        result = self.legacy_client.run_command(['getent', 'group', testgroup])
+        testgroup = "testgroup@%s" % self.ad.domain.name
+        result = self.legacy_client.run_command(["getent", "group", testgroup])
 
         testgroup_regex = r"%s:\*:%s:" % (testgroup, self.testuser_gid_regex)
         assert re.search(testgroup_regex, result.stdout_text)
 
     def test_id_ad_user(self):
         self.clear_sssd_caches()
-        testuser = 'testuser@%s' % self.ad.domain.name
-        testgroup = 'testgroup@%s' % self.ad.domain.name
+        testuser = "testuser@%s" % self.ad.domain.name
+        testgroup = "testgroup@%s" % self.ad.domain.name
 
-        result = self.legacy_client.run_command(['id', testuser])
+        result = self.legacy_client.run_command(["id", testuser])
 
         # Only for POSIX trust testing does the testuser belong to the
         # testgroup
-        group_name = r'\(%s\)' % testgroup if self.posix_trust else ''
+        group_name = r"\(%s\)" % testgroup if self.posix_trust else ""
 
         uid_regex = r"uid=%s\(%s\)" % (self.testuser_uid_regex, testuser)
         gid_regex = "gid=%s%s" % (self.testuser_gid_regex, group_name)
@@ -166,131 +164,129 @@ class BaseTestLegacyClient:
         assert re.search(groups_regex, result.stdout_text)
 
     def test_login_ipa_user(self):
-        if not self.master.transport.file_exists('/usr/bin/sshpass'):
-            pytest.skip('Package sshpass not available on %s'
-                        % self.master.hostname)
+        if not self.master.transport.file_exists("/usr/bin/sshpass"):
+            pytest.skip("Package sshpass not available on %s" % self.master.hostname)
 
         result = self.master.run_command(
-            'sshpass -p %s '
-            'ssh '
-            '-o StrictHostKeyChecking=no '
-            '-l admin '
-            '%s '
-            '"echo test"' %
-            (self.legacy_client.config.admin_password,
-             self.legacy_client.hostname))
+            "sshpass -p %s "
+            "ssh "
+            "-o StrictHostKeyChecking=no "
+            "-l admin "
+            "%s "
+            '"echo test"'
+            % (self.legacy_client.config.admin_password, self.legacy_client.hostname)
+        )
 
         assert "test" in result.stdout_text
 
     def test_login_ad_user(self):
-        if not self.master.transport.file_exists('/usr/bin/sshpass'):
-            pytest.skip('Package sshpass not available on %s'
-                        % self.master.hostname)
+        if not self.master.transport.file_exists("/usr/bin/sshpass"):
+            pytest.skip("Package sshpass not available on %s" % self.master.hostname)
 
-        testuser = 'testuser@%s' % self.ad.domain.name
+        testuser = "testuser@%s" % self.ad.domain.name
         result = self.master.run_command(
-            'sshpass -p Secret123 '
-            'ssh '
-            '-o StrictHostKeyChecking=no '
-            '-l %s '
-            '%s '
-            '"echo test"' %
-             (testuser, self.legacy_client.hostname))
+            "sshpass -p Secret123 "
+            "ssh "
+            "-o StrictHostKeyChecking=no "
+            "-l %s "
+            "%s "
+            '"echo test"' % (testuser, self.legacy_client.hostname)
+        )
 
         assert "test" in result.stdout_text
 
     def test_login_disabled_ipa_user(self):
-        if not self.master.transport.file_exists('/usr/bin/sshpass'):
-            pytest.skip('Package sshpass not available on %s'
-                        % self.master.hostname)
+        if not self.master.transport.file_exists("/usr/bin/sshpass"):
+            pytest.skip("Package sshpass not available on %s" % self.master.hostname)
 
         self.clear_sssd_caches()
 
         result = self.master.run_command(
-            'sshpass -p %s '
-            'ssh '
-            '-o StrictHostKeyChecking=no '
-            '-l disabledipauser '
-            '%s '
+            "sshpass -p %s "
+            "ssh "
+            "-o StrictHostKeyChecking=no "
+            "-l disabledipauser "
+            "%s "
             '"echo test"'
-            % (self.legacy_client.config.admin_password,
-               self.legacy_client.external_hostname),
-            raiseonerr=False)
+            % (
+                self.legacy_client.config.admin_password,
+                self.legacy_client.external_hostname,
+            ),
+            raiseonerr=False,
+        )
 
         assert result.returncode != 0
 
     def test_login_disabled_ad_user(self):
-        if not self.master.transport.file_exists('/usr/bin/sshpass'):
-            pytest.skip('Package sshpass not available on %s'
-                                 % self.master.hostname)
+        if not self.master.transport.file_exists("/usr/bin/sshpass"):
+            pytest.skip("Package sshpass not available on %s" % self.master.hostname)
 
-        testuser = 'disabledaduser@%s' % self.ad.domain.name
+        testuser = "disabledaduser@%s" % self.ad.domain.name
         result = self.master.run_command(
-            'sshpass -p Secret123 '
-            'ssh '
-            '-o StrictHostKeyChecking=no '
-            '-l %s '
-            '%s '
-            '"echo test"' %
-            (testuser, self.legacy_client.external_hostname),
-            raiseonerr=False)
+            "sshpass -p Secret123 "
+            "ssh "
+            "-o StrictHostKeyChecking=no "
+            "-l %s "
+            "%s "
+            '"echo test"' % (testuser, self.legacy_client.external_hostname),
+            raiseonerr=False,
+        )
 
         assert result.returncode != 0
 
     def test_getent_subdomain_ad_user(self):
         if not self.ad_subdomain:
-            pytest.skip('AD for the subdomain is not available.')
+            pytest.skip("AD for the subdomain is not available.")
 
         self.clear_sssd_caches()
-        testuser = 'subdomaintestuser@%s' % self.ad_subdomain
-        result = self.legacy_client.run_command(['getent', 'passwd', testuser])
+        testuser = "subdomaintestuser@%s" % self.ad_subdomain
+        result = self.legacy_client.run_command(["getent", "passwd", testuser])
 
-        testuser_regex = r"subdomaintestuser@%s:\*:%s:%s:"\
-                         r"Subdomaintest User:%s:"\
-                         r"%s"\
-                         % (re.escape(self.ad_subdomain),
-                            self.subdomain_testuser_uid_regex,
-                            self.subdomain_testuser_gid_regex,
-                            self.homedir_template.format(
-                                username='subdomaintestuser',
-                                domain=re.escape(self.ad_subdomain)),
-                            self.default_shell,
-                            )
+        testuser_regex = (
+            r"subdomaintestuser@%s:\*:%s:%s:"
+            r"Subdomaintest User:%s:"
+            r"%s"
+            % (
+                re.escape(self.ad_subdomain),
+                self.subdomain_testuser_uid_regex,
+                self.subdomain_testuser_gid_regex,
+                self.homedir_template.format(
+                    username="subdomaintestuser", domain=re.escape(self.ad_subdomain)
+                ),
+                self.default_shell,
+            )
+        )
 
         assert re.search(testuser_regex, result.stdout_text)
 
     def test_getent_subdomain_ad_group(self):
         if not self.ad_subdomain:
-            pytest.skip('AD for the subdomain is not available.')
+            pytest.skip("AD for the subdomain is not available.")
 
         self.clear_sssd_caches()
-        testgroup = 'subdomaintestgroup@%s' % self.ad_subdomain
-        result = self.legacy_client.run_command(['getent', 'group', testgroup])
+        testgroup = "subdomaintestgroup@%s" % self.ad_subdomain
+        result = self.legacy_client.run_command(["getent", "group", testgroup])
 
-        testgroup_stdout = r"%s:\*:%s:" % (testgroup,
-                                          self.subdomain_testuser_gid_regex)
+        testgroup_stdout = r"%s:\*:%s:" % (testgroup, self.subdomain_testuser_gid_regex)
         assert re.search(testgroup_stdout, result.stdout_text)
 
     def test_id_subdomain_ad_user(self):
         if not self.ad_subdomain:
-            pytest.skip('AD for the subdomain is not available.')
+            pytest.skip("AD for the subdomain is not available.")
 
         self.clear_sssd_caches()
-        testuser = 'subdomaintestuser@%s' % self.ad_subdomain
-        testgroup = 'subdomaintestgroup@%s' % self.ad_subdomain
+        testuser = "subdomaintestuser@%s" % self.ad_subdomain
+        testgroup = "subdomaintestgroup@%s" % self.ad_subdomain
 
-        result = self.legacy_client.run_command(['id', testuser])
+        result = self.legacy_client.run_command(["id", testuser])
 
         # Only for POSIX trust testing does the testuser belong to the
         # testgroup
-        group_name = r'\(%s\)' % testgroup if self.posix_trust else ''
+        group_name = r"\(%s\)" % testgroup if self.posix_trust else ""
 
-        uid_regex = r"uid=%s\(%s\)" % (self.subdomain_testuser_uid_regex,
-                                      testuser)
-        gid_regex = "gid=%s%s" % (self.subdomain_testuser_gid_regex,
-                                  group_name)
-        groups_regex = "groups=%s%s" % (self.subdomain_testuser_gid_regex,
-                                        group_name)
+        uid_regex = r"uid=%s\(%s\)" % (self.subdomain_testuser_uid_regex, testuser)
+        gid_regex = "gid=%s%s" % (self.subdomain_testuser_gid_regex, group_name)
+        groups_regex = "groups=%s%s" % (self.subdomain_testuser_gid_regex, group_name)
 
         assert re.search(uid_regex, result.stdout_text)
         assert re.search(gid_regex, result.stdout_text)
@@ -298,100 +294,102 @@ class BaseTestLegacyClient:
 
     def test_login_subdomain_ad_user(self):
         if not self.ad_subdomain:
-            pytest.skip('AD for the subdomain is not available.')
+            pytest.skip("AD for the subdomain is not available.")
 
-        if not self.master.transport.file_exists('/usr/bin/sshpass'):
-            pytest.skip('Package sshpass not available on %s'
-                        % self.master.hostname)
+        if not self.master.transport.file_exists("/usr/bin/sshpass"):
+            pytest.skip("Package sshpass not available on %s" % self.master.hostname)
 
-        testuser = 'subdomaintestuser@%s' % self.ad_subdomain
+        testuser = "subdomaintestuser@%s" % self.ad_subdomain
         result = self.master.run_command(
-            'sshpass -p Secret123 '
-            'ssh '
-            '-o StrictHostKeyChecking=no '
-            '-l %s '
-            '%s '
-            '"echo test"' %
-             (testuser, self.legacy_client.external_hostname))
+            "sshpass -p Secret123 "
+            "ssh "
+            "-o StrictHostKeyChecking=no "
+            "-l %s "
+            "%s "
+            '"echo test"' % (testuser, self.legacy_client.external_hostname)
+        )
 
         assert "test" in result.stdout_text
 
     def test_login_disabled_subdomain_ad_user(self):
         if not self.ad_subdomain:
-            pytest.skip('AD for the subdomain is not available.')
+            pytest.skip("AD for the subdomain is not available.")
 
-        if not self.master.transport.file_exists('/usr/bin/sshpass'):
-            pytest.skip('Package sshpass not available on %s'
-                        % self.master.hostname)
+        if not self.master.transport.file_exists("/usr/bin/sshpass"):
+            pytest.skip("Package sshpass not available on %s" % self.master.hostname)
 
-        testuser = 'subdomaindisabledaduser@%s' % self.ad_subdomain
+        testuser = "subdomaindisabledaduser@%s" % self.ad_subdomain
         result = self.master.run_command(
-            'sshpass -p Secret123 '
-            'ssh '
-            '-o StrictHostKeyChecking=no '
-            '-l %s '
-            '%s '
-            '"echo test"' %
-            (testuser, self.legacy_client.external_hostname),
-            raiseonerr=False)
+            "sshpass -p Secret123 "
+            "ssh "
+            "-o StrictHostKeyChecking=no "
+            "-l %s "
+            "%s "
+            '"echo test"' % (testuser, self.legacy_client.external_hostname),
+            raiseonerr=False,
+        )
 
         assert result.returncode != 0
 
     def test_getent_treedomain_ad_user(self):
         if not self.ad_treedomain:
-            pytest.skip('AD tree root domain is not available.')
+            pytest.skip("AD tree root domain is not available.")
 
         self.clear_sssd_caches()
-        testuser = 'treetestuser@{0}'.format(self.ad_treedomain)
-        result = self.legacy_client.run_command(['getent', 'passwd', testuser])
+        testuser = "treetestuser@{0}".format(self.ad_treedomain)
+        result = self.legacy_client.run_command(["getent", "passwd", testuser])
 
-        testuser_regex = (r"treetestuser@{0}:\*:{1}:{2}:TreeTest User:"
-                          r"/home/{0}/treetestuser:{3}".format(
-                              re.escape(self.ad_treedomain),
-                              self.treedomain_testuser_uid_regex,
-                              self.treedomain_testuser_gid_regex,
-                              self.default_shell,
-                          ))
+        testuser_regex = (
+            r"treetestuser@{0}:\*:{1}:{2}:TreeTest User:"
+            r"/home/{0}/treetestuser:{3}".format(
+                re.escape(self.ad_treedomain),
+                self.treedomain_testuser_uid_regex,
+                self.treedomain_testuser_gid_regex,
+                self.default_shell,
+            )
+        )
 
         assert re.search(testuser_regex, result.stdout_text)
 
     def test_getent_treedomain_ad_group(self):
         if not self.ad_treedomain:
-            pytest.skip('AD tree root domain is not available')
+            pytest.skip("AD tree root domain is not available")
 
         self.clear_sssd_caches()
-        testgroup = 'treetestgroup@{0}'.format(self.ad_treedomain)
-        result = self.legacy_client.run_command(['getent', 'group', testgroup])
+        testgroup = "treetestgroup@{0}".format(self.ad_treedomain)
+        result = self.legacy_client.run_command(["getent", "group", testgroup])
 
         testgroup_stdout = r"{0}:\*:{1}:".format(
-                           testgroup, self.treedomain_testuser_gid_regex)
+            testgroup, self.treedomain_testuser_gid_regex
+        )
 
         assert re.search(testgroup_stdout, result.stdout_text)
 
     def test_id_treedomain_ad_user(self):
         if not self.ad_treedomain:
-            pytest.skip('AD tree root domain is not available')
+            pytest.skip("AD tree root domain is not available")
 
         self.clear_sssd_caches()
 
-        testuser = 'treetestuser@{0}'.format(self.ad_treedomain)
-        testgroup = 'treetestgroup@{0}'.format(self.ad_treedomain)
+        testuser = "treetestuser@{0}".format(self.ad_treedomain)
+        testgroup = "treetestgroup@{0}".format(self.ad_treedomain)
 
-        result = self.legacy_client.run_command(['id', testuser])
+        result = self.legacy_client.run_command(["id", testuser])
 
         # Only for POSIX trust testing does the testuser belong to the
         # testgroup
 
-        group_name = r'\({}\)'.format(testgroup) if self.posix_trust else ''
+        group_name = r"\({}\)".format(testgroup) if self.posix_trust else ""
 
         uid_regex = r"uid={0}\({1}\)".format(
-                    self.treedomain_testuser_uid_regex, testuser)
+            self.treedomain_testuser_uid_regex, testuser
+        )
 
-        gid_regex = "gid={0}{1}".format(
-                    self.treedomain_testuser_gid_regex, group_name)
+        gid_regex = "gid={0}{1}".format(self.treedomain_testuser_gid_regex, group_name)
 
         group_regex = "groups={0}{1}".format(
-                      self.treedomain_testuser_gid_regex, group_name)
+            self.treedomain_testuser_gid_regex, group_name
+        )
 
         assert re.search(uid_regex, result.stdout_text)
         assert re.search(gid_regex, result.stdout_text)
@@ -399,22 +397,22 @@ class BaseTestLegacyClient:
 
     def test_login_treedomain_ad_user(self):
         if not self.ad_treedomain:
-            pytest.skip('AD tree root domain is not available.')
+            pytest.skip("AD tree root domain is not available.")
 
-        if not self.master.transport.file_exists('/usr/bin/sshpass'):
+        if not self.master.transport.file_exists("/usr/bin/sshpass"):
             pytest.skip(
-                'Package sshpass not available on {}'.format(
-                    self.master.hostname)
+                "Package sshpass not available on {}".format(self.master.hostname)
             )
 
         result = self.master.run_command(
-            'sshpass -p {0} ssh -o StrictHostKeyChecking=no '
+            "sshpass -p {0} ssh -o StrictHostKeyChecking=no "
             '-l admin {1} "echo test"'.format(
                 self.legacy_client.config.admin_password,
-                self.legacy_client.external_hostname))
+                self.legacy_client.external_hostname,
+            )
+        )
 
         assert "test" in result.stdout_text
-
 
     @classmethod
     def install(cls, mh):
@@ -423,18 +421,24 @@ class BaseTestLegacyClient:
         tasks.kinit_admin(cls.master)
 
         password_confirmation = (
-            cls.master.config.admin_password +
-            '\n' +
-            cls.master.config.admin_password
-            )
+            cls.master.config.admin_password + "\n" + cls.master.config.admin_password
+        )
 
-        cls.master.run_command(['ipa', 'user-add', 'disabledipauser',
-                                        '--first', 'disabled',
-                                        '--last', 'ipauser',
-                                        '--password'],
-                                 stdin_text=password_confirmation)
+        cls.master.run_command(
+            [
+                "ipa",
+                "user-add",
+                "disabledipauser",
+                "--first",
+                "disabled",
+                "--last",
+                "ipauser",
+                "--password",
+            ],
+            stdin_text=password_confirmation,
+        )
 
-        cls.master.run_command(['ipa', 'user-disable', 'disabledipauser'])
+        cls.master.run_command(["ipa", "user-disable", "disabledipauser"])
 
         cls.ad = cls.ad_domains[0].ads[0]
 
@@ -443,16 +447,14 @@ class BaseTestLegacyClient:
         # Determine whether the subdomain AD is available
         try:
             child_ad = cls.host_by_role(cls.optional_extra_roles[0])
-            cls.ad_subdomain = '.'.join(
-                child_ad.hostname.split('.')[1:])
+            cls.ad_subdomain = ".".join(child_ad.hostname.split(".")[1:])
         except LookupError:
             cls.ad_subdomain = None
 
         # Determine whether the tree domain AD is available
         try:
             cls.tree_ad = cls.host_by_role(cls.optional_extra_roles[1])
-            cls.ad_treedomain = '.'.join(
-                cls.tree_ad.hostname.split('.')[1:])
+            cls.ad_treedomain = ".".join(cls.tree_ad.hostname.split(".")[1:])
         except LookupError:
             cls.ad_treedomain = None
 
@@ -463,15 +465,14 @@ class BaseTestLegacyClient:
 
     @classmethod
     def uninstall(cls, mh):
-        cls.master.run_command(['ipa', 'user-del', 'disabledipauser'],
-                                raiseonerr=False)
+        cls.master.run_command(["ipa", "user-del", "disabledipauser"], raiseonerr=False)
 
         # Remove information about trust from AD, if domain was defined
-        if hasattr(cls, 'ad_domain'):
+        if hasattr(cls, "ad_domain"):
             tasks.remove_trust_info_from_ad(cls.master, cls.ad_domain)
 
         # Also unapply fixes on the legacy client, if defined
-        if hasattr(cls, 'legacy_client'):
+        if hasattr(cls, "legacy_client"):
             tasks.unapply_fixes(cls.legacy_client)
 
         super(BaseTestLegacyClient, cls).uninstall(mh)
@@ -479,18 +480,19 @@ class BaseTestLegacyClient:
 
 # Base classes with attributes that are specific for each legacy client test
 
+
 class BaseTestLegacySSSDBefore19RedHat:
 
-    advice_id = 'config-redhat-sssd-before-1-9'
-    required_extra_roles = ['legacy_client_sssd_redhat']
-    optional_extra_roles = ['ad_subdomain', 'ad_treedomain']
+    advice_id = "config-redhat-sssd-before-1-9"
+    required_extra_roles = ["legacy_client_sssd_redhat"]
+    optional_extra_roles = ["ad_subdomain", "ad_treedomain"]
 
 
 class BaseTestLegacyNssPamLdapdRedHat:
 
-    advice_id = 'config-redhat-nss-pam-ldapd'
-    required_extra_roles = ['legacy_client_nss_pam_ldapd_redhat']
-    optional_extra_roles = ['ad_subdomain', 'ad_treedomain']
+    advice_id = "config-redhat-nss-pam-ldapd"
+    required_extra_roles = ["legacy_client_nss_pam_ldapd_redhat"]
+    optional_extra_roles = ["ad_subdomain", "ad_treedomain"]
 
     def clear_sssd_caches(self):
         tasks.clear_sssd_cache(self.master)
@@ -498,9 +500,9 @@ class BaseTestLegacyNssPamLdapdRedHat:
 
 class BaseTestLegacyNssLdapRedHat:
 
-    advice_id = 'config-redhat-nss-ldap'
-    required_extra_roles = ['legacy_client_nss_ldap_redhat']
-    optional_extra_roles = ['ad_subdomain', 'ad_treedomain']
+    advice_id = "config-redhat-nss-ldap"
+    required_extra_roles = ["legacy_client_nss_ldap_redhat"]
+    optional_extra_roles = ["ad_subdomain", "ad_treedomain"]
 
     def clear_sssd_caches(self):
         tasks.clear_sssd_cache(self.master)
@@ -509,37 +511,35 @@ class BaseTestLegacyNssLdapRedHat:
 # Base classes that join legacy client specific steps with steps required
 # to setup IPA with trust (both with and without using the POSIX attributes)
 
-class BaseTestLegacyClientPosix(trust_tests.BaseTestTrust,
-                                BaseTestLegacyClient):
 
-    testuser_uid_regex = '10042'
-    testuser_gid_regex = '10047'
-    subdomain_testuser_uid_regex = '10142'
-    subdomain_testuser_gid_regex = '10147'
-    treedomain_testuser_uid_regex = '10242'
-    treedomain_testuser_gid_regex = '10247'
+class BaseTestLegacyClientPosix(trust_tests.BaseTestTrust, BaseTestLegacyClient):
+
+    testuser_uid_regex = "10042"
+    testuser_gid_regex = "10047"
+    subdomain_testuser_uid_regex = "10142"
+    subdomain_testuser_gid_regex = "10147"
+    treedomain_testuser_uid_regex = "10242"
+    treedomain_testuser_gid_regex = "10247"
     posix_trust = True
 
     def test_remove_trust_with_posix_attributes(self):
         pass
 
 
-class BaseTestLegacyClientNonPosix(trust_tests.BaseTestTrust,
-                                   BaseTestLegacyClient):
+class BaseTestLegacyClientNonPosix(trust_tests.BaseTestTrust, BaseTestLegacyClient):
 
-    testuser_uid_regex = r'(?!10042)(\d+)'
-    testuser_gid_regex = r'(?!10047)(\d+)'
-    subdomain_testuser_uid_regex = r'(?!10142)(\d+)'
-    subdomain_testuser_gid_regex = r'(?!10147)(\d+)'
-    treedomain_testuser_uid_regex = r'(?!10242)(\d+)'
-    treedomain_testuser_gid_regex = r'(?!10247)(\d+)'
+    testuser_uid_regex = r"(?!10042)(\d+)"
+    testuser_gid_regex = r"(?!10047)(\d+)"
+    subdomain_testuser_uid_regex = r"(?!10142)(\d+)"
+    subdomain_testuser_gid_regex = r"(?!10147)(\d+)"
+    treedomain_testuser_uid_regex = r"(?!10242)(\d+)"
+    treedomain_testuser_gid_regex = r"(?!10247)(\d+)"
 
     def test_remove_nonposix_trust(self):
         pass
 
 
 class BaseTestSSSDMixin:
-
     def test_apply_advice(self):
         super(BaseTestSSSDMixin, self).test_apply_advice()
         tasks.setup_sssd_debugging(self.legacy_client)
@@ -547,33 +547,38 @@ class BaseTestSSSDMixin:
 
 # Tests definitions themselves. Beauty. Just pure beauty.
 
-class TestLegacySSSDBefore19RedHatNonPosix(BaseTestSSSDMixin,
-                                           BaseTestLegacySSSDBefore19RedHat,
-                                           BaseTestLegacyClientNonPosix):
+
+class TestLegacySSSDBefore19RedHatNonPosix(
+    BaseTestSSSDMixin, BaseTestLegacySSSDBefore19RedHat, BaseTestLegacyClientNonPosix
+):
     pass
 
 
-class TestLegacyNssPamLdapdRedHatNonPosix(BaseTestLegacyNssPamLdapdRedHat,
-                                          BaseTestLegacyClientNonPosix):
+class TestLegacyNssPamLdapdRedHatNonPosix(
+    BaseTestLegacyNssPamLdapdRedHat, BaseTestLegacyClientNonPosix
+):
     pass
 
 
-class TestLegacyNssLdapRedHatNonPosix(BaseTestLegacyNssLdapRedHat,
-                                      BaseTestLegacyClientNonPosix):
+class TestLegacyNssLdapRedHatNonPosix(
+    BaseTestLegacyNssLdapRedHat, BaseTestLegacyClientNonPosix
+):
     pass
 
 
-class TestLegacySSSDBefore19RedHatPosix(BaseTestSSSDMixin,
-                                        BaseTestLegacySSSDBefore19RedHat,
-                                        BaseTestLegacyClientPosix):
+class TestLegacySSSDBefore19RedHatPosix(
+    BaseTestSSSDMixin, BaseTestLegacySSSDBefore19RedHat, BaseTestLegacyClientPosix
+):
     pass
 
 
-class TestLegacyNssPamLdapdRedHatPosix(BaseTestLegacyNssPamLdapdRedHat,
-                                       BaseTestLegacyClientPosix):
+class TestLegacyNssPamLdapdRedHatPosix(
+    BaseTestLegacyNssPamLdapdRedHat, BaseTestLegacyClientPosix
+):
     pass
 
 
-class TestLegacyNssLdapRedHatPosix(BaseTestLegacyNssLdapRedHat,
-                                   BaseTestLegacyClientPosix):
+class TestLegacyNssLdapRedHatPosix(
+    BaseTestLegacyNssLdapRedHat, BaseTestLegacyClientPosix
+):
     pass

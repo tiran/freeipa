@@ -26,7 +26,8 @@ from ipalib import Object
 from ipalib.plugable import Registry
 from .baseldap import gen_pkey_only_option, pkey_to_value
 
-__doc__ = _("""
+__doc__ = _(
+    """
 Group to Group Delegation
 
 A permission enables fine-grained delegation of permissions. Access Control
@@ -50,11 +51,12 @@ EXAMPLES:
 
  Delete a rule:
    ipa delegation-del "managers edit employees' street"
-""")
+"""
+)
 
 register = Registry()
 
-ACI_PREFIX=u"delegation"
+ACI_PREFIX = u"delegation"
 
 
 @register()
@@ -64,156 +66,140 @@ class delegation(Object):
     """
 
     bindable = False
-    object_name = _('delegation')
-    object_name_plural = _('delegations')
-    label = _('Delegations')
-    label_singular = _('Delegation')
+    object_name = _("delegation")
+    object_name_plural = _("delegations")
+    label = _("Delegations")
+    label_singular = _("Delegation")
 
     takes_params = (
-        Str('aciname',
-            cli_name='name',
-            label=_('Delegation name'),
-            doc=_('Delegation name'),
+        Str(
+            "aciname",
+            cli_name="name",
+            label=_("Delegation name"),
+            doc=_("Delegation name"),
             primary_key=True,
         ),
-        Str('permissions*',
-            cli_name='permissions',
-            label=_('Permissions'),
-            doc=_('Permissions to grant (read, write). Default is write.'),
+        Str(
+            "permissions*",
+            cli_name="permissions",
+            label=_("Permissions"),
+            doc=_("Permissions to grant (read, write). Default is write."),
         ),
-        Str('attrs+',
-            cli_name='attrs',
-            label=_('Attributes'),
-            doc=_('Attributes to which the delegation applies'),
+        Str(
+            "attrs+",
+            cli_name="attrs",
+            label=_("Attributes"),
+            doc=_("Attributes to which the delegation applies"),
             normalizer=lambda value: value.lower(),
         ),
-        Str('memberof',
-            cli_name='membergroup',
-            label=_('Member user group'),
-            doc=_('User group to apply delegation to'),
+        Str(
+            "memberof",
+            cli_name="membergroup",
+            label=_("Member user group"),
+            doc=_("User group to apply delegation to"),
         ),
-        Str('group',
-            cli_name='group',
-            label=_('User group'),
-            doc=_('User group ACI grants access to'),
+        Str(
+            "group",
+            cli_name="group",
+            label=_("User group"),
+            doc=_("User group ACI grants access to"),
         ),
-        Str('aci',
-            label=_('ACI'),
-            flags={'no_create', 'no_update', 'no_search'},
-        ),
+        Str("aci", label=_("ACI"), flags={"no_create", "no_update", "no_search"},),
     )
 
     def __json__(self):
         json_friendly_attributes = (
-            'label', 'label_singular', 'takes_params', 'bindable', 'name',
-            'object_name', 'object_name_plural',
+            "label",
+            "label_singular",
+            "takes_params",
+            "bindable",
+            "name",
+            "object_name",
+            "object_name_plural",
         )
-        json_dict = dict(
-            (a, getattr(self, a)) for a in json_friendly_attributes
-        )
-        json_dict['primary_key'] = self.primary_key.name
+        json_dict = dict((a, getattr(self, a)) for a in json_friendly_attributes)
+        json_dict["primary_key"] = self.primary_key.name
 
-        json_dict['methods'] = list(self.methods)
+        json_dict["methods"] = list(self.methods)
         return json_dict
 
     def postprocess_result(self, result):
         try:
             # do not include prefix in result
-            del result['aciprefix']
+            del result["aciprefix"]
         except KeyError:
             pass
 
 
-
 @register()
 class delegation_add(crud.Create):
-    __doc__ = _('Add a new delegation.')
+    __doc__ = _("Add a new delegation.")
 
     msg_summary = _('Added delegation "%(value)s"')
 
     def execute(self, aciname, **kw):
-        if 'permissions' not in kw:
-            kw['permissions'] = (u'write',)
-        kw['aciprefix'] = ACI_PREFIX
-        result = api.Command['aci_add'](aciname, **kw)['result']
+        if "permissions" not in kw:
+            kw["permissions"] = (u"write",)
+        kw["aciprefix"] = ACI_PREFIX
+        result = api.Command["aci_add"](aciname, **kw)["result"]
         self.obj.postprocess_result(result)
 
-        return dict(
-            result=result,
-            value=pkey_to_value(aciname, kw),
-        )
-
+        return dict(result=result, value=pkey_to_value(aciname, kw),)
 
 
 @register()
 class delegation_del(crud.Delete):
-    __doc__ = _('Delete a delegation.')
+    __doc__ = _("Delete a delegation.")
 
     has_output = output.standard_boolean
     msg_summary = _('Deleted delegation "%(value)s"')
 
     def execute(self, aciname, **kw):
-        kw['aciprefix'] = ACI_PREFIX
-        result = api.Command['aci_del'](aciname, **kw)
+        kw["aciprefix"] = ACI_PREFIX
+        result = api.Command["aci_del"](aciname, **kw)
         self.obj.postprocess_result(result)
-        return dict(
-            result=True,
-            value=pkey_to_value(aciname, kw),
-        )
-
+        return dict(result=True, value=pkey_to_value(aciname, kw),)
 
 
 @register()
 class delegation_mod(crud.Update):
-    __doc__ = _('Modify a delegation.')
+    __doc__ = _("Modify a delegation.")
 
     msg_summary = _('Modified delegation "%(value)s"')
 
     def execute(self, aciname, **kw):
-        kw['aciprefix'] = ACI_PREFIX
-        result = api.Command['aci_mod'](aciname, **kw)['result']
+        kw["aciprefix"] = ACI_PREFIX
+        result = api.Command["aci_mod"](aciname, **kw)["result"]
         self.obj.postprocess_result(result)
 
-        return dict(
-            result=result,
-            value=pkey_to_value(aciname, kw),
-        )
-
+        return dict(result=result, value=pkey_to_value(aciname, kw),)
 
 
 @register()
 class delegation_find(crud.Search):
-    __doc__ = _('Search for delegations.')
+    __doc__ = _("Search for delegations.")
 
     msg_summary = ngettext(
-        '%(count)d delegation matched', '%(count)d delegations matched', 0
+        "%(count)d delegation matched", "%(count)d delegations matched", 0
     )
 
     takes_options = (gen_pkey_only_option("name"),)
 
     def execute(self, term=None, **kw):
-        kw['aciprefix'] = ACI_PREFIX
-        results = api.Command['aci_find'](term, **kw)['result']
+        kw["aciprefix"] = ACI_PREFIX
+        results = api.Command["aci_find"](term, **kw)["result"]
 
         for aci in results:
             self.obj.postprocess_result(aci)
 
-        return dict(
-            result=results,
-            count=len(results),
-            truncated=False,
-        )
-
+        return dict(result=results, count=len(results), truncated=False,)
 
 
 @register()
 class delegation_show(crud.Retrieve):
-    __doc__ = _('Display information about a delegation.')
+    __doc__ = _("Display information about a delegation.")
 
     def execute(self, aciname, **kw):
-        result = api.Command['aci_show'](aciname, aciprefix=ACI_PREFIX, **kw)['result']
+        result = api.Command["aci_show"](aciname, aciprefix=ACI_PREFIX, **kw)["result"]
         self.obj.postprocess_result(result)
-        return dict(
-            result=result,
-            value=pkey_to_value(aciname, kw),
-        )
+        return dict(result=result, value=pkey_to_value(aciname, kw),)

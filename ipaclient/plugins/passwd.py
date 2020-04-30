@@ -12,6 +12,6 @@ register = Registry()
 class passwd(CommandOverride):
     def get_args(self):
         for arg in super(passwd, self).get_args():
-            if arg.name == 'current_password':
+            if arg.name == "current_password":
                 arg = arg.clone(sortorder=-1)
             yield arg

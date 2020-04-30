@@ -23,6 +23,7 @@ from __future__ import print_function
 
 import sys
 from ipaplatform.paths import paths
+
 try:
     from optparse import OptionParser  # pylint: disable=deprecated-module
     from ipapython import ipautil, config
@@ -32,39 +33,54 @@ try:
     from ipapython.ipa_log_manager import standard_logging_setup
     from ipapython.dn import DN
 except ImportError as e:
-    print("""\
+    print(
+        """\
 There was a problem importing one of the required Python modules. The
 error was:
 
     %s
-""" % e, file=sys.stderr)
+"""
+        % e,
+        file=sys.stderr,
+    )
     sys.exit(1)
 
-compat_dn = DN(('cn', 'Schema Compatibility'), ('cn', 'plugins'), ('cn', 'config'))
-nis_config_dn = DN(('cn', 'NIS Server'), ('cn', 'plugins'), ('cn', 'config'))
+compat_dn = DN(("cn", "Schema Compatibility"), ("cn", "plugins"), ("cn", "config"))
+nis_config_dn = DN(("cn", "NIS Server"), ("cn", "plugins"), ("cn", "config"))
+
 
 def parse_options():
     usage = "%prog [options] <enable|disable|status>\n"
     usage += "%prog [options]\n"
     parser = OptionParser(usage=usage, formatter=config.IPAFormatter())
 
-    parser.add_option("-d", "--debug", action="store_true", dest="debug",
-                      help="Display debugging information about the update(s)")
-    parser.add_option("-y", dest="password",
-                      help="File containing the Directory Manager password")
+    parser.add_option(
+        "-d",
+        "--debug",
+        action="store_true",
+        dest="debug",
+        help="Display debugging information about the update(s)",
+    )
+    parser.add_option(
+        "-y", dest="password", help="File containing the Directory Manager password"
+    )
 
     config.add_standard_options(parser)
     options, args = parser.parse_args()
 
     return options, args
 
+
 def get_dirman_password():
     """Prompt the user for the Directory Manager password and verify its
        correctness.
     """
-    password = installutils.read_password("Directory Manager", confirm=False, validate=False)
+    password = installutils.read_password(
+        "Directory Manager", confirm=False, validate=False
+    )
 
     return password
+
 
 def get_entry(dn):
     """
@@ -77,6 +93,7 @@ def get_entry(dn):
     except errors.NotFound:
         pass
     return entry
+
 
 def main():
     retval = 0
@@ -102,10 +119,9 @@ def main():
         if dirman_password is None:
             sys.exit("Directory Manager password required")
 
-    api.bootstrap(context='cli',
-                  in_server=True,
-                  debug=options.debug,
-                  confdir=paths.ETC_IPA)
+    api.bootstrap(
+        context="cli", in_server=True, debug=options.debug, confdir=paths.ETC_IPA
+    )
     api.finalize()
     api.Backend.ldap2.connect(bind_pw=dirman_password)
 
@@ -113,7 +129,10 @@ def main():
         entry = None
         try:
             entry = get_entry(compat_dn)
-            if entry is not None and entry.get('nsslapd-pluginenabled', [''])[0].lower() == 'on':
+            if (
+                entry is not None
+                and entry.get("nsslapd-pluginenabled", [""])[0].lower() == "on"
+            ):
                 print("Plugin Enabled")
             else:
                 print("Plugin Disabled")
@@ -125,7 +144,10 @@ def main():
         entry = None
         try:
             entry = get_entry(compat_dn)
-            if entry is not None and entry.get('nsslapd-pluginenabled', [''])[0].lower() == 'on':
+            if (
+                entry is not None
+                and entry.get("nsslapd-pluginenabled", [""])[0].lower() == "on"
+            ):
                 print("Plugin already Enabled")
                 retval = 2
             else:
@@ -137,7 +159,7 @@ def main():
                         print("Updating Directory Server failed.")
                         retval = 1
                 else:
-                    entry['nsslapd-pluginenabled'] = ['on']
+                    entry["nsslapd-pluginenabled"] = ["on"]
                     api.Backend.ldap2.update_entry(entry)
         except errors.ExecutionError as lde:
             print("An error occurred while talking to the server.")
@@ -149,8 +171,14 @@ def main():
         try:
             entry = get_entry(nis_config_dn)
             # We can't disable schema compat if the NIS plugin is enabled
-            if entry is not None and entry.get('nsslapd-pluginenabled', [''])[0].lower() == 'on':
-                print("The NIS plugin is configured, cannot disable compatibility.", file=sys.stderr)
+            if (
+                entry is not None
+                and entry.get("nsslapd-pluginenabled", [""])[0].lower() == "on"
+            ):
+                print(
+                    "The NIS plugin is configured, cannot disable compatibility.",
+                    file=sys.stderr,
+                )
                 print("Run 'ipa-nis-manage disable' first.", file=sys.stderr)
                 retval = 2
         except errors.ExecutionError as lde:
@@ -162,13 +190,16 @@ def main():
             entry = None
             try:
                 entry = get_entry(compat_dn)
-                if entry is None or entry.get('nsslapd-pluginenabled', [''])[0].lower() == 'off':
+                if (
+                    entry is None
+                    or entry.get("nsslapd-pluginenabled", [""])[0].lower() == "off"
+                ):
                     print("Plugin is already disabled")
                     retval = 2
                 else:
                     print("Disabling plugin")
 
-                    entry['nsslapd-pluginenabled'] = ['off']
+                    entry["nsslapd-pluginenabled"] = ["off"]
                     api.Backend.ldap2.update_entry(entry)
             except errors.DatabaseError as dbe:
                 print("An error occurred while talking to the server.")
@@ -189,5 +220,6 @@ def main():
 
     return retval
 
-if __name__ == '__main__':
-    installutils.run_script(main, operation_name='ipa-compat-manage')
+
+if __name__ == "__main__":
+    installutils.run_script(main, operation_name="ipa-compat-manage")

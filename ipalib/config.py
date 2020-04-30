@@ -43,8 +43,12 @@ from ipapython.dn import DN
 from ipalib.base import check_name
 from ipalib.constants import (
     CONFIG_SECTION,
-    OVERRIDE_ERROR, SET_ERROR, DEL_ERROR,
-    TLS_VERSIONS, TLS_VERSION_DEFAULT_MIN, TLS_VERSION_DEFAULT_MAX,
+    OVERRIDE_ERROR,
+    SET_ERROR,
+    DEL_ERROR,
+    TLS_VERSIONS,
+    TLS_VERSION_DEFAULT_MIN,
+    TLS_VERSION_DEFAULT_MAX,
 )
 from ipalib import errors
 
@@ -206,8 +210,8 @@ class Env:
     __locked = False
 
     def __init__(self, **initialize):
-        object.__setattr__(self, '_Env__d', {})
-        object.__setattr__(self, '_Env__done', set())
+        object.__setattr__(self, "_Env__d", {})
+        object.__setattr__(self, "_Env__done", set())
         if initialize:
             self._merge(**initialize)
 
@@ -216,10 +220,8 @@ class Env:
         Prevent further changes to environment.
         """
         if self.__locked is True:
-            raise Exception(
-                '%s.__lock__() already called' % self.__class__.__name__
-            )
-        object.__setattr__(self, '_Env__locked', True)
+            raise Exception("%s.__lock__() already called" % self.__class__.__name__)
+        object.__setattr__(self, "_Env__locked", True)
 
     def __islocked__(self):
         """
@@ -240,32 +242,30 @@ class Env:
         Set ``key`` to ``value``.
         """
         if self.__locked:
-            raise AttributeError(
-                SET_ERROR % (self.__class__.__name__, key, value)
-            )
+            raise AttributeError(SET_ERROR % (self.__class__.__name__, key, value))
         check_name(key)
         # pylint: disable=no-member
         if key in self.__d:
-            raise AttributeError(OVERRIDE_ERROR %
-                (self.__class__.__name__, key, self.__d[key], value)
+            raise AttributeError(
+                OVERRIDE_ERROR % (self.__class__.__name__, key, self.__d[key], value)
             )
         # pylint: enable=no-member
         assert not hasattr(self, key)
         if isinstance(value, str):
             value = value.strip()
             if isinstance(value, bytes):
-                value = value.decode('utf-8')
+                value = value.decode("utf-8")
             m = {
-                'True': True,
-                'False': False,
-                'None': None,
-                '': None,
+                "True": True,
+                "False": False,
+                "None": None,
+                "": None,
             }
             if value in m:
                 value = m[value]
             elif value.isdigit():
                 value = int(value)
-            elif key == 'basedn':
+            elif key == "basedn":
                 value = DN(value)
         if type(value) not in (unicode, int, float, bool, type(None), DN):
             raise TypeError(key, value)
@@ -293,9 +293,7 @@ class Env:
           ...
         AttributeError: locked: cannot delete Env.name
         """
-        raise AttributeError(
-            DEL_ERROR % (self.__class__.__name__, name)
-        )
+        raise AttributeError(DEL_ERROR % (self.__class__.__name__, name))
 
     def __contains__(self, key):
         """
@@ -385,8 +383,8 @@ class Env:
             if key not in self:
                 self[key] = value
                 i += 1
-        if 'config_loaded' not in self: # we loaded at least 1 file
-            self['config_loaded'] = True
+        if "config_loaded" not in self:  # we loaded at least 1 file
+            self["config_loaded"] = True
         return i, len(items)
 
     def _join(self, key, *parts):
@@ -408,9 +406,7 @@ class Env:
     def __doing(self, name):
         # pylint: disable=no-member
         if name in self.__done:
-            raise Exception(
-                '%s.%s() already called' % (self.__class__.__name__, name)
-            )
+            raise Exception("%s.%s() already called" % (self.__class__.__name__, name))
         self.__done.add(name)
 
     def __do_if_not_done(self, name):
@@ -443,72 +439,70 @@ class Env:
 
         :param overrides: Variables specified via command-line options.
         """
-        self.__doing('_bootstrap')
+        self.__doing("_bootstrap")
 
         # Set run-time variables (cannot be overridden):
         self.ipalib = path.dirname(path.abspath(__file__))
         self.site_packages = path.dirname(self.ipalib)
         self.script = path.abspath(sys.argv[0])
         self.bin = path.dirname(self.script)
-        home = os.path.expanduser('~')
-        self.home = home if not home.startswith('~') else None
+        home = os.path.expanduser("~")
+        self.home = home if not home.startswith("~") else None
         self.fips_mode = tasks.is_fips_enabled()
 
         # Merge in overrides:
         self._merge(**overrides)
 
         # Determine if running in source tree:
-        if 'in_tree' not in self:
-            self.in_tree = (
-                self.bin == self.site_packages
-                and path.isfile(path.join(self.bin, 'setup.py'))
+        if "in_tree" not in self:
+            self.in_tree = self.bin == self.site_packages and path.isfile(
+                path.join(self.bin, "setup.py")
             )
-        if self.in_tree and 'mode' not in self:
-            self.mode = 'developer'
+        if self.in_tree and "mode" not in self:
+            self.mode = "developer"
 
         # Set dot_ipa:
-        if 'dot_ipa' not in self:
-            self.dot_ipa = self._join('home', '.ipa')
+        if "dot_ipa" not in self:
+            self.dot_ipa = self._join("home", ".ipa")
 
         # Set context
-        if 'context' not in self:
-            self.context = 'default'
+        if "context" not in self:
+            self.context = "default"
 
         # Set confdir:
-        self.env_confdir = os.environ.get('IPA_CONFDIR')
+        self.env_confdir = os.environ.get("IPA_CONFDIR")
 
-        if 'confdir' in self and self.env_confdir is not None:
+        if "confdir" in self and self.env_confdir is not None:
             raise errors.EnvironmentError(
-                    "IPA_CONFDIR env cannot be set because explicit confdir "
-                    "is used")
+                "IPA_CONFDIR env cannot be set because explicit confdir " "is used"
+            )
 
-        if 'confdir' not in self:
+        if "confdir" not in self:
             if self.env_confdir is not None:
-                if (not path.isabs(self.env_confdir)
-                        or not path.isdir(self.env_confdir)):
+                if not path.isabs(self.env_confdir) or not path.isdir(self.env_confdir):
                     raise errors.EnvironmentError(
                         "IPA_CONFDIR env var must be an absolute path to an "
-                        "existing directory, got '{}'.".format(
-                            self.env_confdir))
+                        "existing directory, got '{}'.".format(self.env_confdir)
+                    )
                 self.confdir = self.env_confdir
             elif self.in_tree:
                 self.confdir = self.dot_ipa
             else:
-                self.confdir = path.join('/', 'etc', 'ipa')
+                self.confdir = path.join("/", "etc", "ipa")
 
         # Set conf (config file for this context):
-        if 'conf' not in self:
-            self.conf = self._join('confdir', '%s.conf' % self.context)
+        if "conf" not in self:
+            self.conf = self._join("confdir", "%s.conf" % self.context)
 
         # Set conf_default (default base config used in all contexts):
-        if 'conf_default' not in self:
-            self.conf_default = self._join('confdir', 'default.conf')
+        if "conf_default" not in self:
+            self.conf_default = self._join("confdir", "default.conf")
 
-        if 'nss_dir' not in self:
-            self.nss_dir = self._join('confdir', 'nssdb')
+        if "nss_dir" not in self:
+            self.nss_dir = self._join("confdir", "nssdb")
 
-        if 'tls_ca_cert' not in self:
-            self.tls_ca_cert = self._join('confdir', 'ca.crt')
+        if "tls_ca_cert" not in self:
+            self.tls_ca_cert = self._join("confdir", "ca.crt")
 
         # having tls_ca_cert an absolute path could help us extending this
         # in the future for different certificate providers simply by adding
@@ -516,11 +510,12 @@ class Env:
         if not path.isabs(self.tls_ca_cert):
             raise errors.EnvironmentError(
                 "tls_ca_cert has to be an absolute path to a CA certificate, "
-                "got '{}'".format(self.tls_ca_cert))
+                "got '{}'".format(self.tls_ca_cert)
+            )
 
         # Set plugins_on_demand:
-        if 'plugins_on_demand' not in self:
-            self.plugins_on_demand = (self.context == 'cli')
+        if "plugins_on_demand" not in self:
+            self.plugins_on_demand = self.context == "cli"
 
     def _finalize_core(self, **defaults):
         """
@@ -556,74 +551,79 @@ class Env:
 
         :param defaults: Internal defaults for all built-in variables.
         """
-        self.__doing('_finalize_core')
-        self.__do_if_not_done('_bootstrap')
+        self.__doing("_finalize_core")
+        self.__do_if_not_done("_bootstrap")
 
         # Merge in context config file and then default config file:
-        mode = self.__d.get('mode')  # pylint: disable=no-member
-        if mode != 'dummy':
+        mode = self.__d.get("mode")  # pylint: disable=no-member
+        if mode != "dummy":
             self._merge_from_file(self.conf)
             self._merge_from_file(self.conf_default)
 
         # Determine if in_server:
-        if 'in_server' not in self:
-            self.in_server = (self.context == 'server')
+        if "in_server" not in self:
+            self.in_server = self.context == "server"
 
         # Set logdir:
-        if 'logdir' not in self:
+        if "logdir" not in self:
             if self.in_tree or not self.in_server:
-                self.logdir = self._join('dot_ipa', 'log')
+                self.logdir = self._join("dot_ipa", "log")
             else:
-                self.logdir = path.join('/', 'var', 'log', 'ipa')
+                self.logdir = path.join("/", "var", "log", "ipa")
 
         # Set log file:
-        if 'log' not in self:
-            self.log = self._join('logdir', '%s.log' % self.context)
+        if "log" not in self:
+            self.log = self._join("logdir", "%s.log" % self.context)
 
         # Workaround for ipa-server-install --uninstall. When no config file
         # is available, we set realm, domain, and basedn to RFC 2606 reserved
         # suffix to suppress attribute errors during uninstallation.
-        if (self.in_server and self.context == 'installer' and
-                not getattr(self, 'config_loaded', False)):
-            if 'realm' not in self:
-                self.realm = 'UNCONFIGURED.INVALID'
-            if 'domain' not in self:
+        if (
+            self.in_server
+            and self.context == "installer"
+            and not getattr(self, "config_loaded", False)
+        ):
+            if "realm" not in self:
+                self.realm = "UNCONFIGURED.INVALID"
+            if "domain" not in self:
                 self.domain = self.realm.lower()
 
-        if 'basedn' not in self and 'domain' in self:
-            self.basedn = DN(*(('dc', dc) for dc in self.domain.split('.')))
+        if "basedn" not in self and "domain" in self:
+            self.basedn = DN(*(("dc", dc) for dc in self.domain.split(".")))
 
         # Derive xmlrpc_uri from server
         # (Note that this is done before deriving jsonrpc_uri from xmlrpc_uri
         # and server from jsonrpc_uri so that when only server or xmlrpc_uri
         # is specified, all 3 keys have a value.)
-        if 'xmlrpc_uri' not in self and 'server' in self:
+        if "xmlrpc_uri" not in self and "server" in self:
             # pylint: disable=no-member, access-member-before-definition
-            self.xmlrpc_uri = 'https://{}/ipa/xml'.format(self.server)
+            self.xmlrpc_uri = "https://{}/ipa/xml".format(self.server)
 
         # Derive ldap_uri from server
-        if 'ldap_uri' not in self and 'server' in self:
+        if "ldap_uri" not in self and "server" in self:
             # pylint: disable=no-member, access-member-before-definition
-            self.ldap_uri = 'ldap://{}'.format(self.server)
+            self.ldap_uri = "ldap://{}".format(self.server)
 
         # Derive jsonrpc_uri from xmlrpc_uri
-        if 'jsonrpc_uri' not in self:
-            if 'xmlrpc_uri' in self:
+        if "jsonrpc_uri" not in self:
+            if "xmlrpc_uri" in self:
                 xmlrpc_uri = self.xmlrpc_uri
             else:
-                xmlrpc_uri = defaults.get('xmlrpc_uri')
+                xmlrpc_uri = defaults.get("xmlrpc_uri")
             if xmlrpc_uri:
-                (scheme, netloc, uripath, params, query, fragment
-                        ) = urlparse(xmlrpc_uri)
-                uripath = uripath.replace('/xml', '/json', 1)
-                self.jsonrpc_uri = urlunparse((
-                        scheme, netloc, uripath, params, query, fragment))
+                (scheme, netloc, uripath, params, query, fragment) = urlparse(
+                    xmlrpc_uri
+                )
+                uripath = uripath.replace("/xml", "/json", 1)
+                self.jsonrpc_uri = urlunparse(
+                    (scheme, netloc, uripath, params, query, fragment)
+                )
 
-        if 'server' not in self:
-            if 'jsonrpc_uri' in self:
+        if "server" not in self:
+            if "jsonrpc_uri" in self:
                 jsonrpc_uri = self.jsonrpc_uri
             else:
-                jsonrpc_uri = defaults.get('jsonrpc_uri')
+                jsonrpc_uri = defaults.get("jsonrpc_uri")
             if jsonrpc_uri:
                 parsed = urlparse(jsonrpc_uri)
                 self.server = parsed.netloc
@@ -631,34 +631,39 @@ class Env:
         self._merge(**defaults)
 
         # set the best known TLS version if min/max versions are not set
-        if 'tls_version_min' not in self:
+        if "tls_version_min" not in self:
             self.tls_version_min = TLS_VERSION_DEFAULT_MIN
         if (
-                self.tls_version_min is not None and
-                self.tls_version_min not in TLS_VERSIONS
+            self.tls_version_min is not None
+            and self.tls_version_min not in TLS_VERSIONS
         ):
             raise errors.EnvironmentError(
-                "Unknown TLS version '{ver}' set in tls_version_min."
-                .format(ver=self.tls_version_min))
+                "Unknown TLS version '{ver}' set in tls_version_min.".format(
+                    ver=self.tls_version_min
+                )
+            )
 
-        if 'tls_version_max' not in self:
+        if "tls_version_max" not in self:
             self.tls_version_max = TLS_VERSION_DEFAULT_MAX
         if (
-                self.tls_version_max is not None and
-                self.tls_version_max not in TLS_VERSIONS
+            self.tls_version_max is not None
+            and self.tls_version_max not in TLS_VERSIONS
         ):
             raise errors.EnvironmentError(
-                "Unknown TLS version '{ver}' set in tls_version_max."
-                .format(ver=self.tls_version_max))
+                "Unknown TLS version '{ver}' set in tls_version_max.".format(
+                    ver=self.tls_version_max
+                )
+            )
 
         if (
-                self.tls_version_min is not None and
-                self.tls_version_max is not None and
-                self.tls_version_max < self.tls_version_min
+            self.tls_version_min is not None
+            and self.tls_version_max is not None
+            and self.tls_version_max < self.tls_version_min
         ):
             raise errors.EnvironmentError(
                 "tls_version_min is set to a higher TLS version than "
-                "tls_version_max.")
+                "tls_version_max."
+            )
 
     def _finalize(self, **lastchance):
         """
@@ -682,7 +687,7 @@ class Env:
 
         :param lastchance: Any final variables to merge-in before locking.
         """
-        self.__doing('_finalize')
-        self.__do_if_not_done('_finalize_core')
+        self.__doing("_finalize")
+        self.__do_if_not_done("_finalize_core")
         self._merge(**lastchance)
         self.__lock__()

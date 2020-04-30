@@ -33,21 +33,21 @@ class update_unhashed_password(Updater):
     """
     DS
     """
+
     def __remove_update(self, update, key, value):
-        statement = dict(action='remove', attr=key, value=value)
-        update.setdefault('updates', []).append(statement)
+        statement = dict(action="remove", attr=key, value=value)
+        update.setdefault("updates", []).append(statement)
 
     def __add_update(self, update, key, value):
-        statement = dict(action='add', attr=key, value=value)
-        update.setdefault('updates', []).append(statement)
+        statement = dict(action="add", attr=key, value=value)
+        update.setdefault("updates", []).append(statement)
 
     def execute(self, **options):
         logger.debug("Upgrading unhashed password configuration")
         ldap = self.api.Backend.ldap2
-        base_config = DN(('cn', 'config'))
+        base_config = DN(("cn", "config"))
         try:
-            entry = ldap.get_entry(base_config,
-                                   ['nsslapd-unhashed-pw-switch'])
+            entry = ldap.get_entry(base_config, ["nsslapd-unhashed-pw-switch"])
         except errors.NotFound:
             logger.error("Unhashed password configuration not found")
             return False, []
@@ -55,62 +55,61 @@ class update_unhashed_password(Updater):
         config_dn = entry.dn
 
         toggle = entry.single_value.get("nsslapd-unhashed-pw-switch")
-        if toggle.lower() not in ['off', 'on', 'nolog']:
+        if toggle.lower() not in ["off", "on", "nolog"]:
             logger.error("Unhashed password had invalid value '%s'", toggle)
 
         # Check if it exists winsync agreements
-        searchfilter = '(objectclass=nsDSWindowsReplicationAgreement)'
+        searchfilter = "(objectclass=nsDSWindowsReplicationAgreement)"
         try:
             winsync_agmts, _truncated = ldap.find_entries(
-                base_dn=base_config,
-                filter=searchfilter,
-                attrs_list=[]
+                base_dn=base_config, filter=searchfilter, attrs_list=[]
             )
         except errors.NotFound:
             logger.debug("Unhashed password this is not a winsync deployment")
             winsync_agmts = []
 
         update = {
-            'dn': config_dn,
-            'updates': [],
+            "dn": config_dn,
+            "updates": [],
         }
         if len(winsync_agmts) > 0:
             # We are running in a winsync environment
             # Log a warning that changelog will contain sensitive data
             try:
                 cldb_e = ldap.get_entry(
-                    DN(('cn', 'changelog5'),
-                       ('cn', 'config')),
-                    ['nsslapd-changelogdir'])
+                    DN(("cn", "changelog5"), ("cn", "config")), ["nsslapd-changelogdir"]
+                )
                 cldb = cldb_e.single_value.get("nsslapd-changelogdir")
-                logger.warning("This server is configured for winsync, "
-                               "the changelog files under %s "
-                               "may contain clear text passwords.\n"
-                               "Please ensure that these files can be accessed"
-                               " only by trusted accounts.\n", cldb)
+                logger.warning(
+                    "This server is configured for winsync, "
+                    "the changelog files under %s "
+                    "may contain clear text passwords.\n"
+                    "Please ensure that these files can be accessed"
+                    " only by trusted accounts.\n",
+                    cldb,
+                )
             except errors.NotFound:
-                logger.warning("This server is configured for winsync, "
-                               "the changelog files may contain "
-                               "clear text passwords.\n"
-                               "Please ensure that these files can be accessed"
-                               " only by trusted accounts.\n")
-            if toggle.lower() == 'on':
+                logger.warning(
+                    "This server is configured for winsync, "
+                    "the changelog files may contain "
+                    "clear text passwords.\n"
+                    "Please ensure that these files can be accessed"
+                    " only by trusted accounts.\n"
+                )
+            if toggle.lower() == "on":
                 # The current DS configuration already logs the
                 # unhashed password
                 updates = []
             else:
-                self.__remove_update(update, 'nsslapd-unhashed-pw-switch',
-                                     toggle)
-                self.__add_update(update, 'nsslapd-unhashed-pw-switch', 'on')
+                self.__remove_update(update, "nsslapd-unhashed-pw-switch", toggle)
+                self.__add_update(update, "nsslapd-unhashed-pw-switch", "on")
                 updates = [update]
         else:
-            if toggle.lower() == 'nolog':
+            if toggle.lower() == "nolog":
                 updates = []
             else:
-                self.__remove_update(update, 'nsslapd-unhashed-pw-switch',
-                                     toggle)
-                self.__add_update(update, 'nsslapd-unhashed-pw-switch',
-                                  'nolog')
+                self.__remove_update(update, "nsslapd-unhashed-pw-switch", toggle)
+                self.__add_update(update, "nsslapd-unhashed-pw-switch", "nolog")
                 updates = [update]
 
         return False, updates

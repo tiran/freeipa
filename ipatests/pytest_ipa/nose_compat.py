@@ -29,42 +29,52 @@ from ipapython.ipa_log_manager import Formatter, convert_log_level
 def pytest_addoption(parser):
     group = parser.getgroup("IPA nosetests compatibility shim")
 
-    group.addoption('--with-xunit', action="store_const",
-           dest="xmlpath", metavar="path",  default=None,
-           const=os.environ.get('IPATEST_XUNIT_PATH', './nosetests.xml'),
-           help="create junit-xml style report file at $IPATEST_XUNIT_PATH,"
-                "or nosetests.xml by default")
+    group.addoption(
+        "--with-xunit",
+        action="store_const",
+        dest="xmlpath",
+        metavar="path",
+        default=None,
+        const=os.environ.get("IPATEST_XUNIT_PATH", "./nosetests.xml"),
+        help="create junit-xml style report file at $IPATEST_XUNIT_PATH,"
+        "or nosetests.xml by default",
+    )
 
-    group.addoption('--logging-level', action="store",
-           dest="logging_level", metavar="level", default='CRITICAL',
-           help="level for logging to stderr. "
-                "Bypasses pytest logging redirection."
-                "May be used to show progress of long-running tests.")
+    group.addoption(
+        "--logging-level",
+        action="store",
+        dest="logging_level",
+        metavar="level",
+        default="CRITICAL",
+        help="level for logging to stderr. "
+        "Bypasses pytest logging redirection."
+        "May be used to show progress of long-running tests.",
+    )
 
 
 def pytest_configure(config):
-    if config.getoption('logging_level'):
+    if config.getoption("logging_level"):
         # Forward IPA logging to a normal Python logger. Nose's logcapture plugin
         # can't work with IPA-managed loggers
         class LogHandler(logging.Handler):
-            name = 'forwarding log handler'
-            logger = logging.getLogger('IPA')
+            name = "forwarding log handler"
+            logger = logging.getLogger("IPA")
 
             def emit(self, record):
-                capture = config.pluginmanager.getplugin('capturemanager')
+                capture = config.pluginmanager.getplugin("capturemanager")
                 orig_stdout, orig_stderr = sys.stdout, sys.stderr
                 if capture:
                     capture.suspend_global_capture()
                 sys.stderr.write(self.format(record))
-                sys.stderr.write('\n')
+                sys.stderr.write("\n")
                 if capture:
                     capture.resume_global_capture()
                 sys.stdout, sys.stderr = orig_stdout, orig_stderr
 
-        level = convert_log_level(config.getoption('logging_level'))
+        level = convert_log_level(config.getoption("logging_level"))
 
         handler = LogHandler()
-        handler.setFormatter(Formatter('[%(name)s] %(message)s'))
+        handler.setFormatter(Formatter("[%(name)s] %(message)s"))
         handler.setLevel(level)
         root_logger = logging.getLogger()
         root_logger.addHandler(handler)

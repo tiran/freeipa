@@ -40,57 +40,73 @@ class update_service_principalalias(Updater):
         ldap = self.api.Backend.ldap2
 
         base_dn = DN(self.api.env.container_service, self.api.env.basedn)
-        search_filter = ("(&(objectclass=krbprincipal)(objectclass=ipaservice)"
-                         "(!(objectclass=ipakrbprincipal)))")
-        logger.debug("update_service_principalalias: search for affected "
-                     "services")
+        search_filter = (
+            "(&(objectclass=krbprincipal)(objectclass=ipaservice)"
+            "(!(objectclass=ipakrbprincipal)))"
+        )
+        logger.debug("update_service_principalalias: search for affected " "services")
 
         while True:
             # run the search in loop to avoid issues when LDAP limits are hit
             # during update
             try:
-                (entries, truncated) = ldap.find_entries(search_filter,
-                    ['objectclass', 'krbprincipalname'], base_dn,
-                    time_limit=0, size_limit=0)
+                (entries, truncated) = ldap.find_entries(
+                    search_filter,
+                    ["objectclass", "krbprincipalname"],
+                    base_dn,
+                    time_limit=0,
+                    size_limit=0,
+                )
             except errors.NotFound:
-                logger.debug("update_service_principalalias: no service "
-                             "to update found")
+                logger.debug(
+                    "update_service_principalalias: no service " "to update found"
+                )
                 return False, []
             except errors.ExecutionError as e:
-                logger.error("update_service_principalalias: cannot "
-                             "retrieve list of affected services: %s", e)
+                logger.error(
+                    "update_service_principalalias: cannot "
+                    "retrieve list of affected services: %s",
+                    e,
+                )
                 return False, []
             if not entries:
                 # no entry was returned, rather break than continue cycling
-                logger.debug("update_service_principalalias: no service "
-                             "was returned")
+                logger.debug(
+                    "update_service_principalalias: no service " "was returned"
+                )
                 return False, []
-            logger.debug("update_service_principalalias: found %d "
-                         "services to update, truncated: %s",
-                         len(entries), truncated)
+            logger.debug(
+                "update_service_principalalias: found %d "
+                "services to update, truncated: %s",
+                len(entries),
+                truncated,
+            )
 
             error = False
             for entry in entries:
-                entry['objectclass'] = (entry['objectclass'] +
-                                        ['ipakrbprincipal'])
-                entry['ipakrbprincipalalias'] = entry['krbprincipalname']
+                entry["objectclass"] = entry["objectclass"] + ["ipakrbprincipal"]
+                entry["ipakrbprincipalalias"] = entry["krbprincipalname"]
                 try:
                     ldap.update_entry(entry)
                 except (errors.EmptyModlist, errors.NotFound):
                     pass
                 except errors.ExecutionError as e:
-                    logger.debug("update_service_principalalias: cannot "
-                                 "update service: %s", e)
+                    logger.debug(
+                        "update_service_principalalias: cannot " "update service: %s", e
+                    )
                     error = True
 
             if error:
                 # exit loop to avoid infinite cycles
-                logger.error("update_service_principalalias: error(s)"
-                             "detected during service update")
+                logger.error(
+                    "update_service_principalalias: error(s)"
+                    "detected during service update"
+                )
                 return False, []
             elif not truncated:
                 # all affected entries updated, exit the loop
-                logger.debug("update_service_principalalias: all affected"
-                             " services updated")
+                logger.debug(
+                    "update_service_principalalias: all affected" " services updated"
+                )
                 return False, []
         return False, []

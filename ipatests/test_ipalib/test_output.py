@@ -30,6 +30,7 @@ import pytest
 
 pytestmark = pytest.mark.tier0
 
+
 class test_Output(ClassChecker):
     """
     Test the `ipalib.output.Output` class.
@@ -41,8 +42,8 @@ class test_Output(ClassChecker):
         """
         Test the `ipalib.output.Output.__init__` method.
         """
-        o = self.cls('result')
-        assert o.name == 'result'
+        o = self.cls("result")
+        assert o.name == "result"
         assert o.type is None
         assert o.doc is None
 
@@ -50,21 +51,18 @@ class test_Output(ClassChecker):
         """
         Test the `ipalib.output.Output.__repr__` method.
         """
-        o = self.cls('aye')
+        o = self.cls("aye")
         assert repr(o) == "Output('aye')"
-        o = self.cls('aye', type=int, doc='An A, aye?')
-        assert repr(o) == (
-            "Output('aye', type=[<type 'int'>], doc='An A, aye?')"
-        )
+        o = self.cls("aye", type=int, doc="An A, aye?")
+        assert repr(o) == ("Output('aye', type=[<type 'int'>], doc='An A, aye?')")
 
         class Entry(self.cls):
             pass
-        o = Entry('aye')
+
+        o = Entry("aye")
         assert repr(o) == "Entry('aye')"
-        o = Entry('aye', type=int, doc='An A, aye?')
-        assert repr(o) == (
-            "Entry('aye', type=[<type 'int'>], doc='An A, aye?')"
-        )
+        o = Entry("aye", type=int, doc="An A, aye?")
+        assert repr(o) == ("Entry('aye', type=[<type 'int'>], doc='An A, aye?')")
 
 
 class test_ListOfEntries(ClassChecker):
@@ -78,23 +76,35 @@ class test_ListOfEntries(ClassChecker):
         """
         Test the `ipalib.output.ListOfEntries.validate` method.
         """
-        api = 'the api instance'
+        api = "the api instance"
+
         class example(Command):
             pass
+
         cmd = example(api)
-        inst = self.cls('stuff')
+        inst = self.cls("stuff")
 
-        okay = dict(foo='bar')
-        nope = ('aye', 'bee')
+        okay = dict(foo="bar")
+        nope = ("aye", "bee")
 
-        e = raises(TypeError, inst.validate,
-                   cmd, [okay, okay, nope], API_VERSION)
+        e = raises(TypeError, inst.validate, cmd, [okay, okay, nope], API_VERSION)
         assert str(e) == output.emsg % (
-            'example', 'ListOfEntries', 'stuff', 2, dict, tuple, nope
+            "example",
+            "ListOfEntries",
+            "stuff",
+            2,
+            dict,
+            tuple,
+            nope,
         )
 
-        e = raises(TypeError, inst.validate,
-                   cmd, [nope, okay, nope], API_VERSION)
+        e = raises(TypeError, inst.validate, cmd, [nope, okay, nope], API_VERSION)
         assert str(e) == output.emsg % (
-            'example', 'ListOfEntries', 'stuff', 0, dict, tuple, nope
+            "example",
+            "ListOfEntries",
+            "stuff",
+            0,
+            dict,
+            tuple,
+            nope,
         )

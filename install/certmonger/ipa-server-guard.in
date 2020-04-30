@@ -22,10 +22,11 @@
 from __future__ import print_function
 
 import os
+
 # Prevent garbage from readline on standard output
 # (see https://fedorahosted.org/freeipa/ticket/4064)
 if not os.isatty(1):
-    os.environ['TERM'] = 'dumb'
+    os.environ["TERM"] = "dumb"
 import sys
 import syslog
 import traceback
@@ -45,12 +46,14 @@ def main():
         raise RuntimeError("Not enough arguments")
 
     # Avoid the lock if the operation is unsupported by ipa-submit
-    operation = os.environ.get('CERTMONGER_OPERATION')
-    if operation not in ('IDENTIFY',
-                         'FETCH-ROOTS',
-                         'GET-NEW-REQUEST-REQUIREMENTS',
-                         'SUBMIT',
-                         'POLL'):
+    operation = os.environ.get("CERTMONGER_OPERATION")
+    if operation not in (
+        "IDENTIFY",
+        "FETCH-ROOTS",
+        "GET-NEW-REQUEST-REQUIREMENTS",
+        "SUBMIT",
+        "POLL",
+    ):
         return OPERATION_NOT_SUPPORTED_BY_HELPER
 
     with certs.renewal_lock:
@@ -60,8 +63,10 @@ def main():
             sys.stderr.write(result.raw_error_output)
         else:
             # Write bytes directly
-            sys.stdout.buffer.write(result.raw_output)  #pylint: disable=no-member
-            sys.stderr.buffer.write(result.raw_error_output)  #pylint: disable=no-member
+            sys.stdout.buffer.write(result.raw_output)  # pylint: disable=no-member
+            sys.stderr.buffer.write(
+                result.raw_error_output
+            )  # pylint: disable=no-member
         sys.stdout.flush()
         sys.stderr.flush()
 

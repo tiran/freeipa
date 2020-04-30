@@ -18,34 +18,40 @@ register = Registry()
 class topologysuffix_verify(MethodOverride):
     def output_for_cli(self, textui, output, *args, **options):
 
-        connect_errors = output['result']['connect_errors']
-        max_agmts_errors = output['result']['max_agmts_errors']
+        connect_errors = output["result"]["connect_errors"]
+        max_agmts_errors = output["result"]["max_agmts_errors"]
 
         if not connect_errors and not max_agmts_errors:
-            header = _('Replication topology of suffix "%(suffix)s" '
-                       'is in order.')
-            textui.print_h1(header % {'suffix': args[0]})
+            header = _('Replication topology of suffix "%(suffix)s" ' "is in order.")
+            textui.print_h1(header % {"suffix": args[0]})
 
         if connect_errors:
-            header = _('Replication topology of suffix "%(suffix)s" contains '
-                       'errors.')
-            textui.print_h1(header % {'suffix': args[0]})
-            textui.print_dashed(unicode(_('Topology is disconnected')))
+            header = _(
+                'Replication topology of suffix "%(suffix)s" contains ' "errors."
+            )
+            textui.print_h1(header % {"suffix": args[0]})
+            textui.print_dashed(unicode(_("Topology is disconnected")))
             for err in connect_errors:
                 msg = _("Server %(srv)s can't contact servers: %(replicas)s")
-                msg = msg % {'srv': err[0], 'replicas': ', '.join(err[2])}
+                msg = msg % {"srv": err[0], "replicas": ", ".join(err[2])}
                 textui.print_indented(msg)
 
         if max_agmts_errors:
-            textui.print_dashed(unicode(_('Recommended maximum number of '
-                                          'agreements per replica exceeded')))
+            textui.print_dashed(
+                unicode(
+                    _(
+                        "Recommended maximum number of "
+                        "agreements per replica exceeded"
+                    )
+                )
+            )
             textui.print_attribute(
                 unicode(_("Maximum number of agreements per replica")),
-                [output['result']['max_agmts']]
+                [output["result"]["max_agmts"]],
             )
             for err in max_agmts_errors:
                 msg = _('Server "%(srv)s" has %(n)d agreements with servers:')
-                msg = msg % {'srv': err[0], 'n': len(err[1])}
+                msg = msg % {"srv": err[0], "n": len(err[1])}
                 textui.print_indented(msg)
                 for replica in err[1]:
                     textui.print_indented(replica, 2)

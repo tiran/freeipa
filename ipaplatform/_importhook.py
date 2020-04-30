@@ -12,10 +12,10 @@ from ipaplatform.osinfo import osinfo
 
 class IpaMetaImporter:
     modules = {
-        'ipaplatform.constants',
-        'ipaplatform.paths',
-        'ipaplatform.services',
-        'ipaplatform.tasks'
+        "ipaplatform.constants",
+        "ipaplatform.paths",
+        "ipaplatform.services",
+        "ipaplatform.tasks",
     }
 
     def __init__(self, platform):
@@ -29,8 +29,8 @@ class IpaMetaImporter:
 
     def load_module(self, fullname):
         """Meta importer hook"""
-        suffix = fullname.split('.', 1)[1]
-        alias = 'ipaplatform.{}.{}'.format(self.platform, suffix)
+        suffix = fullname.split(".", 1)[1]
+        alias = "ipaplatform.{}.{}".format(self.platform, suffix)
         platform_mod = importlib.import_module(alias)
         base_mod = sys.modules.get(fullname)
         if base_mod is not None:

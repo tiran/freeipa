@@ -26,17 +26,14 @@ class TestPKIConfigOverride(IntegrationTest):
     def install(cls, mh):
         pki_ini = tasks.upload_temp_contents(cls.master, KEY_OVERRIDE)
         extra_args = [
-            '--pki-config-override', pki_ini,
+            "--pki-config-override",
+            pki_ini,
         ]
-        tasks.install_master(
-            cls.master, setup_dns=False, extra_args=extra_args
-        )
-        cls.master.run_command(['rm', '-f', pki_ini])
+        tasks.install_master(cls.master, setup_dns=False, extra_args=extra_args)
+        cls.master.run_command(["rm", "-f", pki_ini])
 
     def test_cert_rsa4096(self):
-        ca_pem = self.master.get_file_contents(
-            paths.IPA_CA_CRT, encoding=None
-        )
+        ca_pem = self.master.get_file_contents(paths.IPA_CA_CRT, encoding=None)
         cert = load_pem_x509_certificate(ca_pem)
         assert cert.public_key().key_size == 4096
         assert cert.signature_hash_algorithm.name == hashes.SHA512.name

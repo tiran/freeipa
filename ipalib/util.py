@@ -57,8 +57,11 @@ except ImportError:
 from ipalib import errors, messages
 from ipalib.constants import (
     DOMAIN_LEVEL_0,
-    TLS_VERSIONS, TLS_VERSION_MINIMAL, TLS_VERSION_MAXIMAL,
-    TLS_VERSION_DEFAULT_MIN, TLS_VERSION_DEFAULT_MAX,
+    TLS_VERSIONS,
+    TLS_VERSION_MINIMAL,
+    TLS_VERSION_MAXIMAL,
+    TLS_VERSION_DEFAULT_MIN,
+    TLS_VERSION_DEFAULT_MAX,
 )
 from ipalib.text import _
 from ipaplatform.constants import constants
@@ -91,12 +94,12 @@ def json_serialize(obj):
     if isinstance(obj, (int, bool, float, unicode, type(None))):
         return obj
     if isinstance(obj, str):
-        return obj.decode('utf-8')
+        return obj.decode("utf-8")
     if isinstance(obj, (decimal.Decimal, DN)):
         return str(obj)
-    if not callable(getattr(obj, '__json__', None)):
+    if not callable(getattr(obj, "__json__", None)):
         # raise TypeError('%r is not JSON serializable')
-        return ''
+        return ""
     return json_serialize(obj.__json__())
 
 
@@ -131,18 +134,19 @@ def has_soa_or_ns_record(domain):
 
 def normalize_name(name):
     result = dict()
-    components = name.split('@')
+    components = name.split("@")
     if len(components) == 2:
-        result['domain'] = unicode(components[1]).lower()
-        result['name'] = unicode(components[0]).lower()
+        result["domain"] = unicode(components[1]).lower()
+        result["name"] = unicode(components[0]).lower()
     else:
-        components = name.split('\\')
+        components = name.split("\\")
         if len(components) == 2:
-            result['flatname'] = unicode(components[0]).lower()
-            result['name'] = unicode(components[1]).lower()
+            result["flatname"] = unicode(components[0]).lower()
+            result["name"] = unicode(components[1]).lower()
         else:
-            result['name'] = unicode(name).lower()
+            result["name"] = unicode(name).lower()
     return result
+
 
 def isvalid_base64(data):
     """
@@ -158,10 +162,9 @@ def isvalid_base64(data):
     fits the base64 requirements.
     """
 
-    data = ''.join(data.split())
+    data = "".join(data.split())
 
-    if (len(data) % 4 > 0 or
-            re.match(r'^[a-zA-Z0-9\+\/]+\={0,2}$', data) is None):
+    if len(data) % 4 > 0 or re.match(r"^[a-zA-Z0-9\+\/]+\={0,2}$", data) is None:
         return False
     else:
         return True
@@ -178,7 +181,7 @@ def strip_csr_header(csr):
         s = csr.find(b"-----BEGIN CERTIFICATE REQUEST-----")
     if s >= 0:
         e = csr.find(b"-----END")
-        csr = csr[s + headerlen:e]
+        csr = csr[s + headerlen : e]
 
     return csr
 
@@ -198,37 +201,42 @@ def validate_ipaddr(ipaddr):
             return False
     return True
 
+
 def check_writable_file(filename):
     """
     Determine if the file is writable. If the file doesn't exist then
     open the file to test writability.
     """
     if filename is None:
-        raise errors.FileError(reason=_('Filename is empty'))
+        raise errors.FileError(reason=_("Filename is empty"))
     try:
         if os.path.isfile(filename):
             if not os.access(filename, os.W_OK):
-                raise errors.FileError(reason=_('Permission denied: %(file)s') % dict(file=filename))
+                raise errors.FileError(
+                    reason=_("Permission denied: %(file)s") % dict(file=filename)
+                )
         else:
-            fp = open(filename, 'w')
+            fp = open(filename, "w")
             fp.close()
     except (IOError, OSError) as e:
         raise errors.FileError(reason=str(e))
 
+
 def normalize_zonemgr(zonemgr):
     if not zonemgr or not isinstance(zonemgr, str):
         return zonemgr
-    if '@' in zonemgr:
+    if "@" in zonemgr:
         # local-part needs to be normalized
-        name, _at, domain = zonemgr.partition('@')
-        name = name.replace('.', '\\.')
-        zonemgr = u''.join((name, u'.', domain))
+        name, _at, domain = zonemgr.partition("@")
+        name = name.replace(".", "\\.")
+        zonemgr = u"".join((name, u".", domain))
 
     return zonemgr
 
+
 def normalize_zone(zone):
-    if zone[-1] != '.':
-        return zone + '.'
+    if zone[-1] != ".":
+        return zone + "."
     else:
         return zone
 
@@ -260,35 +268,46 @@ def get_proper_tls_version_span(tls_version_min, tls_version_max):
     try:
         min_version_idx = TLS_VERSIONS.index(tls_version_min)
     except ValueError:
-        raise ValueError("tls_version_min ('{val}') is not a known "
-                         "TLS version.".format(val=tls_version_min))
+        raise ValueError(
+            "tls_version_min ('{val}') is not a known "
+            "TLS version.".format(val=tls_version_min)
+        )
 
     try:
         max_version_idx = TLS_VERSIONS.index(tls_version_max)
     except ValueError:
-        raise ValueError("tls_version_max ('{val}') is not a known "
-                         "TLS version.".format(val=tls_version_max))
+        raise ValueError(
+            "tls_version_max ('{val}') is not a known "
+            "TLS version.".format(val=tls_version_max)
+        )
 
     if min_version_idx > max_version_idx:
-        raise ValueError("tls_version_min is higher than "
-                         "tls_version_max.")
+        raise ValueError("tls_version_min is higher than " "tls_version_max.")
 
     if min_version_idx < min_allowed_idx:
         min_version_idx = min_allowed_idx
-        logger.warning("tls_version_min set too low ('%s'),using '%s' instead",
-                       tls_version_min, TLS_VERSIONS[min_version_idx])
+        logger.warning(
+            "tls_version_min set too low ('%s'),using '%s' instead",
+            tls_version_min,
+            TLS_VERSIONS[min_version_idx],
+        )
 
     if max_version_idx < min_allowed_idx:
         max_version_idx = min_version_idx
-        logger.warning("tls_version_max set too low ('%s'),using '%s' instead",
-                       tls_version_max, TLS_VERSIONS[max_version_idx])
-    return TLS_VERSIONS[min_version_idx:max_version_idx+1]
+        logger.warning(
+            "tls_version_max set too low ('%s'),using '%s' instead",
+            tls_version_max,
+            TLS_VERSIONS[max_version_idx],
+        )
+    return TLS_VERSIONS[min_version_idx : max_version_idx + 1]
 
 
 def create_https_connection(
-    host, port=HTTPSConnection.default_port,
+    host,
+    port=HTTPSConnection.default_port,
     cafile=None,
-    client_certfile=None, client_keyfile=None,
+    client_certfile=None,
+    client_keyfile=None,
     keyfile_passwd=None,
     tls_version_min=TLS_VERSION_DEFAULT_MIN,
     tls_version_max=TLS_VERSION_DEFAULT_MAX,
@@ -326,12 +345,14 @@ def create_https_connection(
     # pylint: enable=no-member
 
     if cafile is None:
-        raise RuntimeError("cafile argument is required to perform server "
-                           "certificate verification")
+        raise RuntimeError(
+            "cafile argument is required to perform server " "certificate verification"
+        )
 
     if not os.path.isfile(cafile) or not os.access(cafile, os.R_OK):
-        raise RuntimeError("cafile \'{file}\' doesn't exist or is unreadable".
-                           format(file=cafile))
+        raise RuntimeError(
+            "cafile '{file}' doesn't exist or is unreadable".format(file=cafile)
+        )
 
     # official Python documentation states that the best option to get
     # TLSv1 and later is to setup SSLContext with PROTOCOL_SSLv23
@@ -339,8 +360,10 @@ def create_https_connection(
     # pylint: disable=no-member
     ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     ctx.options |= (
-        ssl.OP_ALL | ssl.OP_NO_COMPRESSION | ssl.OP_SINGLE_DH_USE |
-        ssl.OP_SINGLE_ECDH_USE
+        ssl.OP_ALL
+        | ssl.OP_NO_COMPRESSION
+        | ssl.OP_SINGLE_DH_USE
+        | ssl.OP_SINGLE_ECDH_USE
     )
 
     if constants.TLS_HIGH_CIPHERS is not None:
@@ -382,18 +405,18 @@ def create_https_connection(
 
 
 def validate_dns_label(dns_label, allow_underscore=False, allow_slash=False):
-    base_chars = 'a-z0-9'
-    extra_chars = ''
-    middle_chars = ''
+    base_chars = "a-z0-9"
+    extra_chars = ""
+    middle_chars = ""
 
     if allow_underscore:
-        extra_chars += '_'
+        extra_chars += "_"
     if allow_slash:
-        middle_chars += '/'
+        middle_chars += "/"
 
-    middle_chars = middle_chars + '-' #has to be always the last in the regex [....-]
+    middle_chars = middle_chars + "-"  # has to be always the last in the regex [....-]
 
-    label_regex = r'''^[%(base)s%(extra)s] # must begin with an alphanumeric
+    label_regex = r"""^[%(base)s%(extra)s] # must begin with an alphanumeric
                                            # character, or underscore if
                                            # allow_underscore is True
         ([%(base)s%(extra)s%(middle)s]*    # can contain all allowed character
@@ -401,35 +424,39 @@ def validate_dns_label(dns_label, allow_underscore=False, allow_slash=False):
         [%(base)s%(extra)s])*$             # must end with alphanumeric
                                            # character or underscore if
                                            # allow_underscore is True
-        ''' % dict(base=base_chars, extra=extra_chars, middle=middle_chars)
+        """ % dict(
+        base=base_chars, extra=extra_chars, middle=middle_chars
+    )
     regex = re.compile(label_regex, re.IGNORECASE | re.VERBOSE)
 
     if not dns_label:
-        raise ValueError(_('empty DNS label'))
+        raise ValueError(_("empty DNS label"))
 
     if len(dns_label) > 63:
-        raise ValueError(_('DNS label cannot be longer that 63 characters'))
+        raise ValueError(_("DNS label cannot be longer that 63 characters"))
 
     if not regex.match(dns_label):
-        chars = ', '.join("'%s'" % c for c in extra_chars + middle_chars)
-        chars2 = ', '.join("'%s'" % c for c in middle_chars)
-        raise ValueError(_("only letters, numbers, %(chars)s are allowed. " \
-                           "DNS label may not start or end with %(chars2)s") \
-                           % dict(chars=chars, chars2=chars2))
+        chars = ", ".join("'%s'" % c for c in extra_chars + middle_chars)
+        chars2 = ", ".join("'%s'" % c for c in middle_chars)
+        raise ValueError(
+            _(
+                "only letters, numbers, %(chars)s are allowed. "
+                "DNS label may not start or end with %(chars2)s"
+            )
+            % dict(chars=chars, chars2=chars2)
+        )
 
 
 def validate_domain_name(
-    domain_name, allow_underscore=False,
-    allow_slash=False, entity='domain'
+    domain_name, allow_underscore=False, allow_slash=False, entity="domain"
 ):
-    if domain_name.endswith('.'):
+    if domain_name.endswith("."):
         domain_name = domain_name[:-1]
 
     domain_name = domain_name.split(".")
 
     if len(domain_name) < 2:
-        raise ValueError(_(
-            'single label {}s are not supported'.format(entity)))
+        raise ValueError(_("single label {}s are not supported".format(entity)))
 
     # apply DNS name validator to every name part
     for label in domain_name:
@@ -438,8 +465,8 @@ def validate_domain_name(
 
 def validate_zonemgr(zonemgr):
     assert isinstance(zonemgr, DNSName)
-    if any(b'@' in label for label in zonemgr.labels):
-        raise ValueError(_('too many \'@\' characters'))
+    if any(b"@" in label for label in zonemgr.labels):
+        raise ValueError(_("too many '@' characters"))
 
 
 def validate_zonemgr_str(zonemgr):
@@ -449,8 +476,9 @@ def validate_zonemgr_str(zonemgr):
     return validate_zonemgr(zonemgr)
 
 
-def validate_hostname(hostname, check_fqdn=True, allow_underscore=False,
-                      allow_slash=False, maxlen=255):
+def validate_hostname(
+    hostname, check_fqdn=True, allow_underscore=False, allow_slash=False, maxlen=255
+):
     """ See RFC 952, 1123
 
     Length limit of 64 imposed by MAXHOSTNAMELEN on Linux.
@@ -468,21 +496,21 @@ def validate_hostname(hostname, check_fqdn=True, allow_underscore=False,
     :param check_fqdn Check if hostname is fully qualified
     """
     if len(hostname) > maxlen:
-        raise ValueError(_('cannot be longer that {} characters'.format(
-                         maxlen)))
+        raise ValueError(_("cannot be longer that {} characters".format(maxlen)))
 
-    if hostname.endswith('.'):
+    if hostname.endswith("."):
         hostname = hostname[:-1]
 
-    if '..' in hostname:
-        raise ValueError(_('hostname contains empty label (consecutive dots)'))
+    if ".." in hostname:
+        raise ValueError(_("hostname contains empty label (consecutive dots)"))
 
-    if '.' not in hostname:
+    if "." not in hostname:
         if check_fqdn:
-            raise ValueError(_('not fully qualified'))
+            raise ValueError(_("not fully qualified"))
         validate_dns_label(hostname, allow_underscore, allow_slash)
     else:
         validate_domain_name(hostname, allow_underscore, allow_slash)
+
 
 def normalize_sshpubkey(value):
     return SSHPublicKey(value).openssh()
@@ -492,7 +520,7 @@ def validate_sshpubkey(ugettext, value):
     try:
         SSHPublicKey(value)
     except (ValueError, UnicodeDecodeError):
-        return _('invalid SSH public key')
+        return _("invalid SSH public key")
     else:
         return None
 
@@ -501,16 +529,16 @@ def validate_sshpubkey_no_options(ugettext, value):
     try:
         pubkey = SSHPublicKey(value)
     except (ValueError, UnicodeDecodeError):
-        return _('invalid SSH public key')
+        return _("invalid SSH public key")
 
     if pubkey.has_options():
-        return _('options are not allowed')
+        return _("options are not allowed")
     else:
         return None
 
 
 def convert_sshpubkey_post(entry_attrs):
-    pubkeys = entry_attrs.get('ipasshpubkey')
+    pubkeys = entry_attrs.get("ipasshpubkey")
     if not pubkeys:
         return
 
@@ -525,16 +553,16 @@ def convert_sshpubkey_post(entry_attrs):
         fp = pubkey.fingerprint_hex_sha256()
         comment = pubkey.comment()
         if comment:
-            fp = u'%s %s' % (fp, comment)
-        fp = u'%s (%s)' % (fp, pubkey.keytype())
+            fp = u"%s %s" % (fp, comment)
+        fp = u"%s (%s)" % (fp, pubkey.keytype())
 
         newpubkeys.append(pubkey.openssh())
         fingerprints.append(fp)
 
-    if 'ipasshpubkey' in entry_attrs:
-        entry_attrs['ipasshpubkey'] = newpubkeys or None
+    if "ipasshpubkey" in entry_attrs:
+        entry_attrs["ipasshpubkey"] = newpubkeys or None
     if fingerprints:
-        entry_attrs['sshpubkeyfp'] = fingerprints
+        entry_attrs["sshpubkeyfp"] = fingerprints
 
 
 def add_sshpubkey_to_attrs_pre(context, attrs_list):
@@ -543,61 +571,64 @@ def add_sshpubkey_to_attrs_pre(context, attrs_list):
     ssh fingerprint. This attribute must be removed later if was added here
     (see remove_sshpubkey_from_output_post).
     """
-    if not ('ipasshpubkey' in attrs_list or '*' in attrs_list):
-        setattr(context, 'ipasshpubkey_added', True)
-        attrs_list.append('ipasshpubkey')
+    if not ("ipasshpubkey" in attrs_list or "*" in attrs_list):
+        setattr(context, "ipasshpubkey_added", True)
+        attrs_list.append("ipasshpubkey")
 
 
 def remove_sshpubkey_from_output_post(context, entry_attrs):
     """
     Remove ipasshpubkey from output if it was added in pre_callbacks
     """
-    if getattr(context, 'ipasshpubkey_added', False):
-        entry_attrs.pop('ipasshpubkey', None)
-        delattr(context, 'ipasshpubkey_added')
+    if getattr(context, "ipasshpubkey_added", False):
+        entry_attrs.pop("ipasshpubkey", None)
+        delattr(context, "ipasshpubkey_added")
 
 
 def remove_sshpubkey_from_output_list_post(context, entries):
     """
     Remove ipasshpubkey from output if it was added in pre_callbacks
     """
-    if getattr(context, 'ipasshpubkey_added', False):
+    if getattr(context, "ipasshpubkey_added", False):
         for entry_attrs in entries:
-            entry_attrs.pop('ipasshpubkey', None)
-        delattr(context, 'ipasshpubkey_added')
+            entry_attrs.pop("ipasshpubkey", None)
+        delattr(context, "ipasshpubkey_added")
 
 
 # regexp matching signed floating point number (group 1) followed by
 # optional whitespace followed by time unit, e.g. day, hour (group 7)
-time_duration_re = re.compile(r'([-+]?((\d+)|(\d+\.\d+)|(\.\d+)|(\d+\.)))\s*([a-z]+)', re.IGNORECASE)
+time_duration_re = re.compile(
+    r"([-+]?((\d+)|(\d+\.\d+)|(\.\d+)|(\d+\.)))\s*([a-z]+)", re.IGNORECASE
+)
 
 # number of seconds in a time unit
 time_duration_units = {
-    'year'    : 365*24*60*60,
-    'years'   : 365*24*60*60,
-    'y'       : 365*24*60*60,
-    'month'   : 30*24*60*60,
-    'months'  : 30*24*60*60,
-    'week'    : 7*24*60*60,
-    'weeks'   : 7*24*60*60,
-    'w'       : 7*24*60*60,
-    'day'     : 24*60*60,
-    'days'    : 24*60*60,
-    'd'       : 24*60*60,
-    'hour'    : 60*60,
-    'hours'   : 60*60,
-    'h'       : 60*60,
-    'minute'  : 60,
-    'minutes' : 60,
-    'min'     : 60,
-    'second'  : 1,
-    'seconds' : 1,
-    'sec'     : 1,
-    's'       : 1,
+    "year": 365 * 24 * 60 * 60,
+    "years": 365 * 24 * 60 * 60,
+    "y": 365 * 24 * 60 * 60,
+    "month": 30 * 24 * 60 * 60,
+    "months": 30 * 24 * 60 * 60,
+    "week": 7 * 24 * 60 * 60,
+    "weeks": 7 * 24 * 60 * 60,
+    "w": 7 * 24 * 60 * 60,
+    "day": 24 * 60 * 60,
+    "days": 24 * 60 * 60,
+    "d": 24 * 60 * 60,
+    "hour": 60 * 60,
+    "hours": 60 * 60,
+    "h": 60 * 60,
+    "minute": 60,
+    "minutes": 60,
+    "min": 60,
+    "second": 1,
+    "seconds": 1,
+    "sec": 1,
+    "s": 1,
 }
 
+
 def parse_time_duration(value):
-    '''
+    """
 
     Given a time duration string, parse it and return the total number
     of seconds represented as a floating point value. Negative values
@@ -639,7 +670,7 @@ def parse_time_duration(value):
             A time duration string in the specified format
     :returns:
         total number of seconds as float (may be negative)
-    '''
+    """
 
     matches = 0
     duration = 0.0
@@ -649,9 +680,9 @@ def parse_time_duration(value):
         unit = match.group(7)
 
         # Get the unit, only M and m are case sensitive
-        if unit == 'M':         # month
-            seconds_per_unit = 30*24*60*60
-        elif unit == 'm':       # minute
+        if unit == "M":  # month
+            seconds_per_unit = 30 * 24 * 60 * 60
+        elif unit == "m":  # minute
             seconds_per_unit = 60
         else:
             unit = unit.lower()
@@ -667,7 +698,8 @@ def parse_time_duration(value):
 
     return duration
 
-def get_dns_forward_zone_update_policy(realm, rrtypes=('A', 'AAAA', 'SSHFP')):
+
+def get_dns_forward_zone_update_policy(realm, rrtypes=("A", "AAAA", "SSHFP")):
     """
     Generate update policy for a forward DNS zone (idnsUpdatePolicy
     attribute). Bind uses this policy to grant/reject access for client
@@ -678,14 +710,14 @@ def get_dns_forward_zone_update_policy(realm, rrtypes=('A', 'AAAA', 'SSHFP')):
                     allowed to update
     """
     policy_element = "grant %(realm)s krb5-self * %(rrtype)s"
-    policies = [ policy_element % dict(realm=realm, rrtype=rrtype) \
-               for rrtype in rrtypes ]
+    policies = [policy_element % dict(realm=realm, rrtype=rrtype) for rrtype in rrtypes]
     policy = "; ".join(policies)
     policy += ";"
 
     return policy
 
-def get_dns_reverse_zone_update_policy(realm, reverse_zone, rrtypes=('PTR',)):
+
+def get_dns_reverse_zone_update_policy(realm, reverse_zone, rrtypes=("PTR",)):
     """
     Generate update policy for a reverse DNS zone (idnsUpdatePolicy
     attribute). Bind uses this policy to grant/reject access for client
@@ -698,33 +730,37 @@ def get_dns_reverse_zone_update_policy(realm, reverse_zone, rrtypes=('PTR',)):
                     allowed to update
     """
     policy_element = "grant %(realm)s krb5-subdomain %(zone)s %(rrtype)s"
-    policies = [ policy_element \
-                    % dict(realm=realm, zone=reverse_zone, rrtype=rrtype) \
-                 for rrtype in rrtypes ]
+    policies = [
+        policy_element % dict(realm=realm, zone=reverse_zone, rrtype=rrtype)
+        for rrtype in rrtypes
+    ]
     policy = "; ".join(policies)
     policy += ";"
 
     return policy
 
+
 # dictionary of valid reverse zone -> number of address components
 REVERSE_DNS_ZONES = {
-    DNSName.ip4_rev_zone : 4,
-    DNSName.ip6_rev_zone : 32,
+    DNSName.ip4_rev_zone: 4,
+    DNSName.ip6_rev_zone: 32,
 }
+
 
 def zone_is_reverse(zone_name):
     return DNSName(zone_name).is_reverse()
 
+
 def get_reverse_zone_default(ip_address):
     ip = netaddr.IPAddress(str(ip_address))
-    items = ip.reverse_dns.split('.')
+    items = ip.reverse_dns.split(".")
 
     if ip.version == 4:
-        items = items[1:]   # /24 for IPv4
+        items = items[1:]  # /24 for IPv4
     elif ip.version == 6:
         items = items[16:]  # /64 for IPv6
 
-    return normalize_zone('.'.join(items))
+    return normalize_zone(".".join(items))
 
 
 def validate_rdn_param(ugettext, value):
@@ -740,7 +776,7 @@ def validate_hostmask(ugettext, hostmask):
     try:
         netaddr.IPNetwork(hostmask)
     except (ValueError, AddrFormatError):
-        return _('invalid hostmask')
+        return _("invalid hostmask")
     else:
         return None
 
@@ -762,13 +798,16 @@ class EDNS0UnsupportedError(ForwarderValidationError):
 
 
 class DNSSECSignatureMissingError(ForwarderValidationError):
-    format = _("answer to query '%(owner)s %(rtype)s' is missing DNSSEC "
-               "signatures (no RRSIG data)")
+    format = _(
+        "answer to query '%(owner)s %(rtype)s' is missing DNSSEC "
+        "signatures (no RRSIG data)"
+    )
 
 
 class DNSSECValidationError(ForwarderValidationError):
-    format = _("record '%(owner)s %(rtype)s' "
-               "failed DNSSEC validation on server %(ip)s")
+    format = _(
+        "record '%(owner)s %(rtype)s' " "failed DNSSEC validation on server %(ip)s"
+    )
 
 
 def _log_response(e):
@@ -778,13 +817,20 @@ def _log_response(e):
     :param e: DNSException
     """
     assert isinstance(e, DNSException)
-    response = getattr(e, 'kwargs', {}).get('response')
+    response = getattr(e, "kwargs", {}).get("response")
     if response:
         logger.debug("DNSException: %s; server response: %s", e, response)
 
 
-def _resolve_record(owner, rtype, nameserver_ip=None, edns0=False,
-                    dnssec=False, flag_cd=False, timeout=10):
+def _resolve_record(
+    owner,
+    rtype,
+    nameserver_ip=None,
+    edns0=False,
+    dnssec=False,
+    flag_cd=False,
+    timeout=10,
+):
     """
     :param nameserver_ip: if None, default resolvers will be used
     :param edns0: enables EDNS0
@@ -828,16 +874,15 @@ def _validate_edns0_forwarder(owner, rtype, ip_addr, timeout=10):
         _resolve_record(owner, rtype, nameserver_ip=ip_addr, timeout=timeout)
     except DNSException as e:
         _log_response(e)
-        raise UnresolvableRecordError(owner=owner, rtype=rtype, ip=ip_addr,
-                                      error=e)
+        raise UnresolvableRecordError(owner=owner, rtype=rtype, ip=ip_addr, error=e)
 
     try:
-        _resolve_record(owner, rtype, nameserver_ip=ip_addr, edns0=True,
-                        timeout=timeout)
+        _resolve_record(
+            owner, rtype, nameserver_ip=ip_addr, edns0=True, timeout=timeout
+        )
     except DNSException as e:
         _log_response(e)
-        raise EDNS0UnsupportedError(owner=owner, rtype=rtype, ip=ip_addr,
-                                    error=e)
+        raise EDNS0UnsupportedError(owner=owner, rtype=rtype, ip=ip_addr, error=e)
 
 
 def validate_dnssec_global_forwarder(ip_addr, timeout=10):
@@ -858,16 +903,20 @@ def validate_dnssec_global_forwarder(ip_addr, timeout=10):
 
     # DNS root has to be signed
     try:
-        ans = _resolve_record(owner, rtype, nameserver_ip=ip_addr, dnssec=True,
-                              timeout=timeout)
+        ans = _resolve_record(
+            owner, rtype, nameserver_ip=ip_addr, dnssec=True, timeout=timeout
+        )
     except DNSException as e:
         _log_response(e)
         raise DNSSECSignatureMissingError(owner=owner, rtype=rtype, ip=ip_addr)
 
     try:
         ans.response.find_rrset(
-            ans.response.answer, dns.name.root, dns.rdataclass.IN,
-            dns.rdatatype.RRSIG, dns.rdatatype.SOA
+            ans.response.answer,
+            dns.name.root,
+            dns.rdataclass.IN,
+            dns.rdatatype.RRSIG,
+            dns.rdatatype.SOA,
         )
     except KeyError:
         raise DNSSECSignatureMissingError(owner=owner, rtype=rtype, ip=ip_addr)
@@ -894,27 +943,42 @@ def validate_dnssec_zone_forwarder_step2(ipa_ip_addr, fwzone, timeout=10):
     """
     rtype = "SOA"
     try:
-        ans_cd = _resolve_record(fwzone, rtype, nameserver_ip=ipa_ip_addr,
-                                 edns0=True, dnssec=True, flag_cd=True,
-                                 timeout=timeout)
+        ans_cd = _resolve_record(
+            fwzone,
+            rtype,
+            nameserver_ip=ipa_ip_addr,
+            edns0=True,
+            dnssec=True,
+            flag_cd=True,
+            timeout=timeout,
+        )
     except NXDOMAIN as e:
         # sometimes CD flag is ignored and NXDomain is returned
         _log_response(e)
         raise DNSSECValidationError(owner=fwzone, rtype=rtype, ip=ipa_ip_addr)
     except DNSException as e:
         _log_response(e)
-        raise UnresolvableRecordError(owner=fwzone, rtype=rtype,
-                                      ip=ipa_ip_addr, error=e)
+        raise UnresolvableRecordError(
+            owner=fwzone, rtype=rtype, ip=ipa_ip_addr, error=e
+        )
 
     try:
-        ans_do = _resolve_record(fwzone, rtype, nameserver_ip=ipa_ip_addr,
-                                 edns0=True, dnssec=True, timeout=timeout)
+        ans_do = _resolve_record(
+            fwzone,
+            rtype,
+            nameserver_ip=ipa_ip_addr,
+            edns0=True,
+            dnssec=True,
+            timeout=timeout,
+        )
     except DNSException as e:
         _log_response(e)
         raise DNSSECValidationError(owner=fwzone, rtype=rtype, ip=ipa_ip_addr)
     else:
-        if (ans_do.canonical_name == ans_cd.canonical_name
-            and ans_do.rrset == ans_cd.rrset):
+        if (
+            ans_do.canonical_name == ans_cd.canonical_name
+            and ans_do.rrset == ans_cd.rrset
+        ):
             return
         # records received with and without CD flag are not equivalent:
         # this might be caused by an DNSSEC validation failure in cases where
@@ -935,20 +999,20 @@ def validate_idna_domain(value):
     try:
         DNSName(value)
     except dns.name.BadEscape:
-        error = _('invalid escape code in domain name')
+        error = _("invalid escape code in domain name")
     except dns.name.EmptyLabel:
-        error = _('empty DNS label')
+        error = _("empty DNS label")
     except dns.name.NameTooLong:
-        error = _('domain name cannot be longer than 255 characters')
+        error = _("domain name cannot be longer than 255 characters")
     except dns.name.LabelTooLong:
-        error = _('DNS label cannot be longer than 63 characters')
+        error = _("DNS label cannot be longer than 63 characters")
     except dns.exception.SyntaxError:
-        error = _('invalid domain name')
+        error = _("invalid domain name")
     else:
-        #compare if IDN normalized and original domain match
-        #there is N:1 mapping between unicode and IDNA names
-        #user should use normalized names to avoid mistakes
-        labels = re.split(u'[.\uff0e\u3002\uff61]', value, flags=re.UNICODE)
+        # compare if IDN normalized and original domain match
+        # there is N:1 mapping between unicode and IDNA names
+        # user should use normalized names to avoid mistakes
+        labels = re.split(u"[.\uff0e\u3002\uff61]", value, flags=re.UNICODE)
         try:
             for label in labels:
                 label.encode("ascii")
@@ -956,11 +1020,15 @@ def validate_idna_domain(value):
             # IDNA
             is_nonnorm = any(encodings.idna.nameprep(x) != x for x in labels)
             if is_nonnorm:
-                error = _("domain name '%(domain)s' should be normalized to"
-                          ": %(normalized)s") % {
-                          'domain': value,
-                          'normalized': '.'.join([encodings.idna.nameprep(x)
-                                                  for x in labels])}
+                error = _(
+                    "domain name '%(domain)s' should be normalized to"
+                    ": %(normalized)s"
+                ) % {
+                    "domain": value,
+                    "normalized": ".".join(
+                        [encodings.idna.nameprep(x) for x in labels]
+                    ),
+                }
 
     if error:
         raise ValueError(error)
@@ -978,7 +1046,7 @@ def detect_dns_zone_realm_type(api, domain):
     # First, try to detect _kerberos TXT record in the domain
     # This would indicate that the domain belongs to IPA realm
 
-    kerberos_prefix = DNSName('_kerberos')
+    kerberos_prefix = DNSName("_kerberos")
     domain_suffix = DNSName(domain)
     kerberos_record_name = kerberos_prefix + domain_suffix
 
@@ -987,17 +1055,19 @@ def detect_dns_zone_realm_type(api, domain):
         answer = result.response.answer
 
         # IPA domain will have only one _kerberos TXT record
-        if (len(answer) == 1 and
-            len(answer[0]) == 1 and
-            answer[0].rdtype == rdatatype.TXT):
+        if (
+            len(answer) == 1
+            and len(answer[0]) == 1
+            and answer[0].rdtype == rdatatype.TXT
+        ):
 
             record = answer[0][0]
 
             # If the record contains our current realm, it is 'ipa-current'
             if record.to_text() == '"{0}"'.format(api.env.realm):
-                return 'current'
+                return "current"
             else:
-                return 'foreign'
+                return "foreign"
 
     except DNSException:
         pass
@@ -1005,7 +1075,7 @@ def detect_dns_zone_realm_type(api, domain):
     # Try to detect AD specific record in the zone.
     # This would indicate that the domain belongs to foreign (AD) realm
 
-    gc_prefix = DNSName('_ldap._tcp.gc._msdcs')
+    gc_prefix = DNSName("_ldap._tcp.gc._msdcs")
     ad_specific_record_name = gc_prefix + domain_suffix
 
     try:
@@ -1013,18 +1083,18 @@ def detect_dns_zone_realm_type(api, domain):
         resolver.query(ad_specific_record_name, rdatatype.SRV)
     except DNSException:
         # If we could not detect type with certainty, return unknown
-        return 'unknown'
+        return "unknown"
     else:
-        return 'foreign'
+        return "foreign"
 
 
 def has_managed_topology(api):
-    domainlevel = api.Command['domainlevel_get']().get('result', DOMAIN_LEVEL_0)
+    domainlevel = api.Command["domainlevel_get"]().get("result", DOMAIN_LEVEL_0)
     return domainlevel > DOMAIN_LEVEL_0
 
 
 class classproperty:
-    __slots__ = ('__doc__', 'fget')
+    __slots__ = ("__doc__", "fget")
 
     def __init__(self, fget=None, doc=None):
         if doc is None and fget is not None:
@@ -1051,7 +1121,7 @@ class classproperty:
 
 def normalize_hostname(hostname):
     """Use common fqdn form without the trailing dot"""
-    if hostname.endswith(u'.'):
+    if hostname.endswith(u"."):
         hostname = hostname[:-1]
     hostname = hostname.lower()
     return hostname
@@ -1068,7 +1138,7 @@ def hostname_validator(ugettext, value, maxlen=255):
     try:
         validate_hostname(value, maxlen=maxlen)
     except ValueError as e:
-        return _('invalid domain-name: %s') % unicode(e)
+        return _("invalid domain-name: %s") % unicode(e)
 
     return None
 
@@ -1080,18 +1150,16 @@ def ipaddr_validator(ugettext, ipaddr, ip_version=None):
         if ip_version is not None:
             if ip.version != ip_version:
                 return _(
-                    'invalid IP address version (is %(value)d, must be '
-                    '%(required_value)d)!') % dict(
-                    value=ip.version,
-                    required_value=ip_version
-                )
+                    "invalid IP address version (is %(value)d, must be "
+                    "%(required_value)d)!"
+                ) % dict(value=ip.version, required_value=ip_version)
     except (netaddr.AddrFormatError, ValueError):
-        return _('invalid IP address format')
+        return _("invalid IP address format")
     return None
 
 
 def validate_bind_forwarder(ugettext, forwarder):
-    ip_address, sep, port = forwarder.partition(u' port ')
+    ip_address, sep, port = forwarder.partition(u" port ")
 
     ip_address_validation = ipaddr_validator(ugettext, ip_address)
 
@@ -1104,20 +1172,19 @@ def validate_bind_forwarder(ugettext, forwarder):
             if port < 0 or port > 65535:
                 raise ValueError()
         except ValueError:
-            return _('%(port)s is not a valid port' % dict(port=port))
+            return _("%(port)s is not a valid port" % dict(port=port))
 
     return None
 
 
 def set_krbcanonicalname(entry_attrs):
-    objectclasses = set(i.lower() for i in entry_attrs['objectclass'])
+    objectclasses = set(i.lower() for i in entry_attrs["objectclass"])
 
-    if 'krbprincipalaux' not in objectclasses:
+    if "krbprincipalaux" not in objectclasses:
         return
 
-    if ('krbprincipalname' in entry_attrs
-            and 'krbcanonicalname' not in entry_attrs):
-        entry_attrs['krbcanonicalname'] = entry_attrs['krbprincipalname']
+    if "krbprincipalname" in entry_attrs and "krbcanonicalname" not in entry_attrs:
+        entry_attrs["krbcanonicalname"] = entry_attrs["krbprincipalname"]
 
 
 def ensure_last_krbprincipalname(ldap, entry_attrs, *keys):
@@ -1129,31 +1196,32 @@ def ensure_last_krbprincipalname(ldap, entry_attrs, *keys):
     :param entry_attrs: LDAP entry made prior to update
     :param options: command options
     """
-    entry = ldap.get_entry(
-        entry_attrs.dn, ['krbcanonicalname', 'krbprincipalname'])
+    entry = ldap.get_entry(entry_attrs.dn, ["krbcanonicalname", "krbprincipalname"])
 
-    krbcanonicalname = entry.single_value.get('krbcanonicalname', None)
+    krbcanonicalname = entry.single_value.get("krbcanonicalname", None)
 
     if krbcanonicalname in keys[-1]:
         raise errors.ValidationError(
-            name='krbprincipalname',
-            error=_('at least one value equal to the canonical '
-                    'principal name must be present')
+            name="krbprincipalname",
+            error=_(
+                "at least one value equal to the canonical "
+                "principal name must be present"
+            ),
         )
 
 
 def ensure_krbcanonicalname_set(ldap, entry_attrs):
     old_entry = ldap.get_entry(
-        entry_attrs.dn,
-        ['krbcanonicalname', 'krbprincipalname', 'objectclass'])
+        entry_attrs.dn, ["krbcanonicalname", "krbprincipalname", "objectclass"]
+    )
 
-    if old_entry.single_value.get('krbcanonicalname', None) is not None:
+    if old_entry.single_value.get("krbcanonicalname", None) is not None:
         return
 
     set_krbcanonicalname(old_entry)
 
-    old_entry.pop('krbprincipalname', None)
-    old_entry.pop('objectclass', None)
+    old_entry.pop("krbprincipalname", None)
+    old_entry.pop("objectclass", None)
 
     entry_attrs.update(old_entry)
 
@@ -1171,23 +1239,19 @@ def check_client_configuration(env=None):
             return True
         else:
             raise ScriptError(
-                f'IPA client is not configured on this system (confdir '
-                f'{env.confdir} is missing {env.conf_default})',
-                CLIENT_NOT_CONFIGURED
+                f"IPA client is not configured on this system (confdir "
+                f"{env.confdir} is missing {env.conf_default})",
+                CLIENT_NOT_CONFIGURED,
             )
-    elif (
-            os.path.isfile(paths.IPA_DEFAULT_CONF) and
-            os.path.isfile(
-                os.path.join(paths.IPA_CLIENT_SYSRESTORE, 'sysrestore.state')
-            )
+    elif os.path.isfile(paths.IPA_DEFAULT_CONF) and os.path.isfile(
+        os.path.join(paths.IPA_CLIENT_SYSRESTORE, "sysrestore.state")
     ):
         # standard installation, check for config and client sysrestore state
         return True
     else:
         # client not configured
         raise ScriptError(
-            'IPA client is not configured on this system',
-            CLIENT_NOT_CONFIGURED
+            "IPA client is not configured on this system", CLIENT_NOT_CONFIGURED
         )
 
 
@@ -1202,20 +1266,19 @@ def check_principal_realm_in_trust_namespace(api_instance, *keys):
     :raises: ValidationError if the suffix coincides with realm name, UPN
     suffix or netbios name of trusted domains
     """
-    trust_objects = api_instance.Command.trust_find(u'', sizelimit=0)['result']
+    trust_objects = api_instance.Command.trust_find(u"", sizelimit=0)["result"]
 
     trust_suffix_namespace = set()
 
     for obj in trust_objects:
-        nt_suffixes = obj.get('ipantadditionalsuffixes', [])
+        nt_suffixes = obj.get("ipantadditionalsuffixes", [])
 
-        trust_suffix_namespace.update(
-            set(upn.lower() for upn in nt_suffixes))
+        trust_suffix_namespace.update(set(upn.lower() for upn in nt_suffixes))
 
-        if 'ipantflatname' in obj:
-            trust_suffix_namespace.add(obj['ipantflatname'][0].lower())
+        if "ipantflatname" in obj:
+            trust_suffix_namespace.add(obj["ipantflatname"][0].lower())
 
-        trust_suffix_namespace.add(obj['cn'][0].lower())
+        trust_suffix_namespace.add(obj["cn"][0].lower())
 
     for principal in keys[-1]:
         realm = principal.realm
@@ -1223,22 +1286,22 @@ def check_principal_realm_in_trust_namespace(api_instance, *keys):
 
         if realm in trust_suffix_namespace or upn in trust_suffix_namespace:
             raise errors.ValidationError(
-                name='krbprincipalname',
-                error=_('realm or UPN suffix overlaps with trusted domain '
-                        'namespace'))
+                name="krbprincipalname",
+                error=_(
+                    "realm or UPN suffix overlaps with trusted domain " "namespace"
+                ),
+            )
 
 
 def no_matching_interface_for_ip_address_warning(addr_list):
     for ip in addr_list:
         if not ip.get_matching_interface():
-            logger.warning(
-                "No network interface matches the IP address %s", ip)
+            logger.warning("No network interface matches the IP address %s", ip)
             # fixme: once when loggers will be fixed, we can remove this
             # print
             print(
-                "WARNING: No network interface matches the IP address "
-                "{}".format(ip),
-                file=sys.stderr
+                "WARNING: No network interface matches the IP address " "{}".format(ip),
+                file=sys.stderr,
             )
 
 
@@ -1253,8 +1316,7 @@ def get_terminal_height(fd=1):
         int: Terminal height
     """
     try:
-        return struct.unpack(
-            'hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, b'1234'))[0]
+        return struct.unpack("hh", fcntl.ioctl(fd, termios.TIOCGWINSZ, b"1234"))[0]
     except (IOError, OSError, struct.error):
         return os.environ.get("LINES", 25)
 
@@ -1265,7 +1327,7 @@ def get_pager():
     :return: path to the file if it exists otherwise None
     :rtype: str or None
     """
-    pager = os.environ.get('PAGER', 'less')
+    pager = os.environ.get("PAGER", "less")
     return shutil.which(pager)
 
 
@@ -1290,11 +1352,19 @@ def open_in_pager(data, pager):
 
 
 if reprlib is not None:
+
     class APIRepr(reprlib.Repr):
         builtin_types = {
-            bool, int, float,
-            str, bytes,
-            dict, tuple, list, set, frozenset,
+            bool,
+            int,
+            float,
+            str,
+            bytes,
+            dict,
+            tuple,
+            list,
+            set,
+            frozenset,
             type(None),
         }
 
@@ -1307,7 +1377,7 @@ if reprlib is not None:
 
         def repr_str(self, x, level):
             """Output with u'' prefix"""
-            return 'u' + repr(x)
+            return "u" + repr(x)
 
         def repr_type(self, x, level):
             if x is str:

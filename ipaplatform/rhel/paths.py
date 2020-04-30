@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
+"""
 This RHEL base platform module exports default filesystem paths as common
 in RHEL-based systems.
-'''
+"""
 
 # Fallback to default path definitions
 from __future__ import absolute_import
@@ -31,7 +31,7 @@ from ipaplatform.rhel.constants import HAS_NFS_CONF
 
 class RHELPathNamespace(RedHatPathNamespace):
     if HAS_NFS_CONF:
-        SYSCONFIG_NFS = '/etc/nfs.conf'
+        SYSCONFIG_NFS = "/etc/nfs.conf"
 
 
 paths = RHELPathNamespace()

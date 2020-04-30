@@ -24,21 +24,29 @@ DNS tests
 from ipatests.test_webui.ui_driver import UI_driver
 from ipatests.test_webui.ui_driver import screenshot
 from ipatests.test_webui.data_dns import (
-    ZONE_ENTITY, FORWARD_ZONE_ENTITY, CONFIG_ENTITY,
-    ZONE_DEFAULT_FACET, ZONE_PKEY, ZONE_DATA, FORWARD_ZONE_PKEY,
-    FORWARD_ZONE_DATA, RECORD_PKEY, A_IP, RECORD_ADD_DATA, RECORD_MOD_DATA,
-    CONFIG_MOD_DATA
+    ZONE_ENTITY,
+    FORWARD_ZONE_ENTITY,
+    CONFIG_ENTITY,
+    ZONE_DEFAULT_FACET,
+    ZONE_PKEY,
+    ZONE_DATA,
+    FORWARD_ZONE_PKEY,
+    FORWARD_ZONE_DATA,
+    RECORD_PKEY,
+    A_IP,
+    RECORD_ADD_DATA,
+    RECORD_MOD_DATA,
+    CONFIG_MOD_DATA,
 )
 import pytest
 
 
 @pytest.mark.tier1
 class test_dns(UI_driver):
-
     @pytest.fixture(autouse=True)
     def dns_setup(self, ui_driver_fsetup):
         if not self.has_dns():
-            self.skip('DNS not configured')
+            self.skip("DNS not configured")
 
     @screenshot
     def test_zone_record_crud(self):
@@ -48,15 +56,17 @@ class test_dns(UI_driver):
         self.init_app()
 
         # add and mod zone
-        self.basic_crud(ZONE_ENTITY, ZONE_DATA,
-                        default_facet=ZONE_DEFAULT_FACET, delete=False)
+        self.basic_crud(
+            ZONE_ENTITY, ZONE_DATA, default_facet=ZONE_DEFAULT_FACET, delete=False
+        )
 
         # add and mod record
         self.navigate_to_record(ZONE_PKEY)
-        self.add_record(ZONE_ENTITY, RECORD_ADD_DATA,
-                        facet=ZONE_DEFAULT_FACET, navigate=False)
+        self.add_record(
+            ZONE_ENTITY, RECORD_ADD_DATA, facet=ZONE_DEFAULT_FACET, navigate=False
+        )
         self.navigate_to_record(RECORD_PKEY)
-        self.add_table_record('arecord', RECORD_MOD_DATA)
+        self.add_table_record("arecord", RECORD_MOD_DATA)
 
         # del record, del zone
         self.navigate_by_breadcrumb(ZONE_PKEY)
@@ -79,8 +89,8 @@ class test_dns(UI_driver):
 
         self.disable_action()
         self.enable_action()
-        self.action_list_action('add_permission')
-        self.action_list_action('remove_permission')
+        self.action_list_action("add_permission")
+        self.action_list_action("remove_permission")
 
         # del zone
         self.navigate_by_breadcrumb("DNS Forward Zones")
@@ -94,12 +104,11 @@ class test_dns(UI_driver):
         self.init_app()
         self.add_record(ZONE_ENTITY, ZONE_DATA)
         self.navigate_to_record(ZONE_PKEY)
-        self.add_record(ZONE_ENTITY, RECORD_ADD_DATA,
-                        facet=ZONE_DEFAULT_FACET)
+        self.add_record(ZONE_ENTITY, RECORD_ADD_DATA, facet=ZONE_DEFAULT_FACET)
         self.navigate_to_record(RECORD_PKEY)
-        self.delete_record(A_IP, parent=self.get_facet(), table_name='arecord')
-        self.assert_dialog('message_dialog')
-        self.dialog_button_click('ok')
+        self.delete_record(A_IP, parent=self.get_facet(), table_name="arecord")
+        self.assert_dialog("message_dialog")
+        self.dialog_button_click("ok")
         self.wait_for_request(n=2)
         self.assert_facet(ZONE_ENTITY, ZONE_DEFAULT_FACET)
         self.navigate_by_breadcrumb("DNS Zones")
@@ -111,5 +120,5 @@ class test_dns(UI_driver):
         Basic CRUD: dnsconfig
         """
         self.init_app()
-        self.navigate_by_menu('network_services/dns/dnsconfig')
+        self.navigate_by_menu("network_services/dns/dnsconfig")
         self.mod_record(CONFIG_ENTITY, CONFIG_MOD_DATA)

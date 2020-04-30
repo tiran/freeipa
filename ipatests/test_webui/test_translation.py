@@ -26,23 +26,23 @@ class ConfigPageBase(UI_driver):
     Base class to test translation of pages which are located at /ipa/config/
     """
 
-    page_name = ''
+    page_name = ""
 
     def init_app(self):
         """
         Load a web page
         """
-        self.url = '/'.join((self.get_base_url(), self.page_name))
+        self.url = "/".join((self.get_base_url(), self.page_name))
         self.load()
 
     def get_base_url(self):
         """
         Get FreeIPA Web UI config url
         """
-        host = self.config.get('ipa_server')
+        host = self.config.get("ipa_server")
         if not host:
-            self.skip('FreeIPA server hostname not configured')
-        return 'https://%s/ipa/config' % host
+            self.skip("FreeIPA server hostname not configured")
+        return "https://%s/ipa/config" % host
 
     def files_loaded(self):
         """
@@ -57,9 +57,7 @@ class ConfigPageBase(UI_driver):
         """
         self.driver.get(self.url)
         runner = self
-        WebDriverWait(self.driver, 10).until(
-            lambda d: runner.files_loaded()
-        )
+        WebDriverWait(self.driver, 10).until(lambda d: runner.files_loaded())
 
     def page_raw_source(self):
         """
@@ -68,11 +66,11 @@ class ConfigPageBase(UI_driver):
         host = api.env.host
         cacert = api.env.tls_ca_cert
         conn = util.create_https_connection(host, cafile=cacert)
-        conn.request('GET', self.url)
+        conn.request("GET", self.url)
         response = conn.getresponse()
         # check successful response from a server
         assert response.status == 200
-        return response.read().decode('utf-8')
+        return response.read().decode("utf-8")
 
     def has_no_child(self, tag, child_tag):
         """
@@ -89,7 +87,7 @@ class ConfigPageBase(UI_driver):
         Extract html text from the current opened page by the given id
         """
         dom_element = self.find("#{}".format(id), By.CSS_SELECTOR)
-        return dom_element.get_attribute('innerHTML').split('\n')
+        return dom_element.get_attribute("innerHTML").split("\n")
 
     def innerhtml_noscript(self, id, raw_page):
         """
@@ -97,15 +95,14 @@ class ConfigPageBase(UI_driver):
         'noscript' html tag with the given id
         """
         html_tree = html.fromstring(raw_page)
-        noscript_tree = html_tree.xpath(
-            "//div[@id='{}']/noscript/*".format(id)
+        noscript_tree = html_tree.xpath("//div[@id='{}']/noscript/*".format(id))
+        noscript_html_text = "".join(
+            [html.tostring(elem, encoding="unicode") for elem in noscript_tree]
         )
-        noscript_html_text = ''.join([html.tostring(elem, encoding="unicode")
-                                      for elem in noscript_tree])
         noscript_html = []
         # remove trailing whitespaces between close and open tags
-        for html_row in noscript_html_text.split('\n'):
-            noscript_html.append(sub('^[ ]+(?=(<|[ ]*$))', '', html_row))
+        for html_row in noscript_html_text.split("\n"):
+            noscript_html.append(sub("^[ ]+(?=(<|[ ]*$))", "", html_row))
         return noscript_html
 
     def check_noscript_innerhtml(self, html_id):
@@ -113,7 +110,7 @@ class ConfigPageBase(UI_driver):
         Compare inner html under enabled javascript and disabled one
         """
         # check if js is enabled in browser
-        assert self.has_no_child(html_id, 'noscript')
+        assert self.has_no_child(html_id, "noscript")
         html_js_enabled = self.innerhtml(html_id)
 
         raw_page = self.page_raw_source()
@@ -127,7 +124,7 @@ class TestSsbrowserPage(ConfigPageBase):
     Test translation of ssbrowser.html page
     """
 
-    page_name = 'ssbrowser.html'
+    page_name = "ssbrowser.html"
 
     @screenshot
     def test_long_text_of_ssbrowser_page(self):
@@ -137,7 +134,7 @@ class TestSsbrowserPage(ConfigPageBase):
         """
 
         self.init_app()
-        self.check_noscript_innerhtml('ssbrowser-msg')
+        self.check_noscript_innerhtml("ssbrowser-msg")
 
 
 @pytest.mark.tier1
@@ -146,7 +143,7 @@ class TestUnauthorizedPage(ConfigPageBase):
     Test translation of unauthorized.html page
     """
 
-    page_name = 'unauthorized.html'
+    page_name = "unauthorized.html"
 
     @screenshot
     def test_long_text_of_unauthorized_page(self):
@@ -156,4 +153,4 @@ class TestUnauthorizedPage(ConfigPageBase):
         """
 
         self.init_app()
-        self.check_noscript_innerhtml('unauthorized-msg')
+        self.check_noscript_innerhtml("unauthorized-msg")

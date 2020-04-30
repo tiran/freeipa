@@ -17,43 +17,41 @@ register = Registry()
 
 
 class env(LocalOrRemote):
-    __doc__ = _('Show environment variables.')
+    __doc__ = _("Show environment variables.")
 
-    msg_summary = _('%(count)d variables')
+    msg_summary = _("%(count)d variables")
 
-    takes_args = (
-        'variables*',
-    )
+    takes_args = ("variables*",)
 
     takes_options = LocalOrRemote.takes_options + (
         Flag(
-            'all',
-            cli_name='all',
-            doc=_('retrieve and print all attributes from the server. '
-                  'Affects command output.'),
-            exclude='webui',
-            flags=['no_option', 'no_output'],
+            "all",
+            cli_name="all",
+            doc=_(
+                "retrieve and print all attributes from the server. "
+                "Affects command output."
+            ),
+            exclude="webui",
+            flags=["no_option", "no_output"],
             default=True,
         ),
     )
 
     has_output = (
         Output(
-            'result',
-            type=dict,
-            doc=_('Dictionary mapping variable name to value'),
+            "result", type=dict, doc=_("Dictionary mapping variable name to value"),
         ),
         Output(
-            'total',
+            "total",
             type=int,
-            doc=_('Total number of variables env (>= count)'),
-            flags=['no_display'],
+            doc=_("Total number of variables env (>= count)"),
+            flags=["no_display"],
         ),
         Output(
-            'count',
+            "count",
             type=int,
-            doc=_('Number of variables returned (<= total)'),
-            flags=['no_display'],
+            doc=_("Number of variables returned (<= total)"),
+            flags=["no_display"],
         ),
         summary,
     )
@@ -61,8 +59,8 @@ class env(LocalOrRemote):
     def __find_keys(self, variables):
         keys = set()
         for query in variables:
-            if '*' in query:
-                pat = re.compile(query.replace('*', '.*') + '$')
+            if "*" in query:
+                pat = re.compile(query.replace("*", ".*") + "$")
                 for key in self.env:
                     if pat.match(key):
                         keys.add(key)
@@ -76,45 +74,39 @@ class env(LocalOrRemote):
         else:
             keys = self.__find_keys(variables)
         ret = dict(
-            result=dict(
-                (key, self.env[key]) for key in keys
-            ),
+            result=dict((key, self.env[key]) for key in keys),
             count=len(keys),
             total=len(self.env),
         )
         if len(keys) > 1:
-            ret['summary'] = self.msg_summary % ret
+            ret["summary"] = self.msg_summary % ret
         else:
-            ret['summary'] = None
+            ret["summary"] = None
         return ret
 
 
 class plugins(LocalOrRemote):
-    __doc__ = _('Show all loaded plugins.')
+    __doc__ = _("Show all loaded plugins.")
 
-    msg_summary = ngettext(
-        '%(count)d plugin loaded', '%(count)d plugins loaded', 0
-    )
+    msg_summary = ngettext("%(count)d plugin loaded", "%(count)d plugins loaded", 0)
 
     takes_options = LocalOrRemote.takes_options + (
         Flag(
-            'all',
-            cli_name='all',
-            doc=_('retrieve and print all attributes from the server. '
-                  'Affects command output.'),
-            exclude='webui',
-            flags=['no_option', 'no_output'],
+            "all",
+            cli_name="all",
+            doc=_(
+                "retrieve and print all attributes from the server. "
+                "Affects command output."
+            ),
+            exclude="webui",
+            flags=["no_option", "no_output"],
             default=True,
         ),
     )
 
     has_output = (
-        Output('result', dict, 'Dictionary mapping plugin names to bases'),
-        Output(
-            'count',
-            type=int,
-            doc=_('Number of plugins loaded'),
-        ),
+        Output("result", dict, "Dictionary mapping plugin names to bases"),
+        Output("count", type=int, doc=_("Number of plugins loaded"),),
         summary,
     )
 
@@ -123,10 +115,7 @@ class plugins(LocalOrRemote):
         for namespace in self.api:
             for plugin in self.api[namespace]():
                 cls = type(plugin)
-                key = '{}.{}'.format(cls.__module__, cls.__name__)
-                result.setdefault(key, []).append(namespace.decode('utf-8'))
+                key = "{}.{}".format(cls.__module__, cls.__name__)
+                result.setdefault(key, []).append(namespace.decode("utf-8"))
 
-        return dict(
-            result=result,
-            count=len(result),
-        )
+        return dict(result=result, count=len(result),)

@@ -29,38 +29,42 @@ from unittest import TestCase
 import pytest
 
 forbidden_module_scopes = [
-    'setup_module',
-    'setup_function',
-    'teardown_module',
-    'teardown_function',
+    "setup_module",
+    "setup_function",
+    "teardown_module",
+    "teardown_function",
 ]
 
 forbidden_class_scopes = [
-    'setup_class',
-    'setup_method',
-    'teardown_class',
-    'teardown_method',
+    "setup_class",
+    "setup_method",
+    "teardown_class",
+    "teardown_method",
 ]
 
 
 def pytest_collection_finish(session):
     for item in session.items:
-        cls = getattr(item, 'cls', None)
+        cls = getattr(item, "cls", None)
         if cls is not None and issubclass(cls, TestCase):
-            item.warn(pytest.PytestDeprecationWarning(
-                "unittest is deprecated in favour of fixtures style"))
+            item.warn(
+                pytest.PytestDeprecationWarning(
+                    "unittest is deprecated in favour of fixtures style"
+                )
+            )
             continue
 
         def xunit_depr_warn(item, attr, names):
             for n in names:
                 obj = getattr(item, attr, None)
                 method = getattr(obj, n, None)
-                fixtured = hasattr(method, '__pytest_wrapped__')
+                fixtured = hasattr(method, "__pytest_wrapped__")
                 if method is not None and not fixtured:
                     item.warn(
                         pytest.PytestDeprecationWarning(
-                            "xunit style is deprecated in favour of "
-                            "fixtures style"))
+                            "xunit style is deprecated in favour of " "fixtures style"
+                        )
+                    )
 
-        xunit_depr_warn(item, 'module', forbidden_module_scopes)
-        xunit_depr_warn(item, 'cls', forbidden_class_scopes)
+        xunit_depr_warn(item, "module", forbidden_module_scopes)
+        xunit_depr_warn(item, "cls", forbidden_class_scopes)

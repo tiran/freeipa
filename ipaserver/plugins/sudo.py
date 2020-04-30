@@ -4,4 +4,4 @@
 
 from ipalib.text import _
 
-__doc__ = _('commands for controlling sudo configuration')
+__doc__ = _("commands for controlling sudo configuration")

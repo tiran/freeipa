@@ -19,7 +19,8 @@ if six.PY3:
 
 _ffi = FFI()
 
-_ffi.cdef('''
+_ffi.cdef(
+    """
 /* p11-kit/pkcs11.h */
 
 typedef unsigned long CK_FLAGS;
@@ -337,51 +338,52 @@ struct ck_rsa_pkcs_oaep_params {
 };
 
 typedef struct ck_rsa_pkcs_oaep_params CK_RSA_PKCS_OAEP_PARAMS;
-''')
+"""
+)
 
-_libp11_kit = _ffi.dlopen(ctypes.util.find_library('p11-kit'))
+_libp11_kit = _ffi.dlopen(ctypes.util.find_library("p11-kit"))
 
 
 # utility
 
 NULL = _ffi.NULL
 
-unsigned_char = _ffi.typeof('unsigned char')
-unsigned_long = _ffi.typeof('unsigned long')
+unsigned_char = _ffi.typeof("unsigned char")
+unsigned_long = _ffi.typeof("unsigned long")
 
 sizeof = _ffi.sizeof
 
 
 def new_ptr(ctype, *args):
-    return _ffi.new(_ffi.getctype(ctype, '*'), *args)
+    return _ffi.new(_ffi.getctype(ctype, "*"), *args)
 
 
 def new_array(ctype, *args):
-    return _ffi.new(_ffi.getctype(ctype, '[]'), *args)
+    return _ffi.new(_ffi.getctype(ctype, "[]"), *args)
 
 
 # p11-kit/pkcs11.h
 
-CK_SESSION_HANDLE = _ffi.typeof('CK_SESSION_HANDLE')
+CK_SESSION_HANDLE = _ffi.typeof("CK_SESSION_HANDLE")
 
-CK_OBJECT_HANDLE = _ffi.typeof('CK_OBJECT_HANDLE')
+CK_OBJECT_HANDLE = _ffi.typeof("CK_OBJECT_HANDLE")
 
 CKU_USER = 1
 
 CKF_RW_SESSION = 0x2
 CKF_SERIAL_SESSION = 0x4
 
-CK_OBJECT_CLASS = _ffi.typeof('CK_OBJECT_CLASS')
+CK_OBJECT_CLASS = _ffi.typeof("CK_OBJECT_CLASS")
 
 CKO_PUBLIC_KEY = 2
 CKO_PRIVATE_KEY = 3
 CKO_SECRET_KEY = 4
 CKO_VENDOR_DEFINED = 0x80000000
 
-CK_KEY_TYPE = _ffi.typeof('CK_KEY_TYPE')
+CK_KEY_TYPE = _ffi.typeof("CK_KEY_TYPE")
 
 CKK_RSA = 0
-CKK_AES = 0x1f
+CKK_AES = 0x1F
 
 CKA_CLASS = 0
 CKA_TOKEN = 1
@@ -397,9 +399,9 @@ CKA_WRAP = 0x106
 CKA_UNWRAP = 0x107
 CKA_SIGN = 0x108
 CKA_SIGN_RECOVER = 0x109
-CKA_VERIFY = 0x10a
-CKA_VERIFY_RECOVER = 0x10b
-CKA_DERIVE = 0x10c
+CKA_VERIFY = 0x10A
+CKA_VERIFY_RECOVER = 0x10B
+CKA_DERIVE = 0x10C
 CKA_MODULUS = 0x120
 CKA_MODULUS_BITS = 0x121
 CKA_PUBLIC_EXPONENT = 0x122
@@ -423,24 +425,24 @@ CKR_ATTRIBUTE_TYPE_INVALID = 0x12
 CKR_USER_NOT_LOGGED_IN = 0x101
 CKR_BUFFER_TOO_SMALL = 0x150
 
-CK_BYTE = _ffi.typeof('CK_BYTE')
-CK_BBOOL = _ffi.typeof('CK_BBOOL')
-CK_ULONG = _ffi.typeof('CK_ULONG')
-CK_BYTE_PTR = _ffi.typeof('CK_BYTE_PTR')
+CK_BYTE = _ffi.typeof("CK_BYTE")
+CK_BBOOL = _ffi.typeof("CK_BBOOL")
+CK_ULONG = _ffi.typeof("CK_ULONG")
+CK_BYTE_PTR = _ffi.typeof("CK_BYTE_PTR")
 CK_FALSE = 0
 CK_TRUE = 1
 
-CK_OBJECT_HANDLE_PTR = _ffi.typeof('CK_OBJECT_HANDLE_PTR')
+CK_OBJECT_HANDLE_PTR = _ffi.typeof("CK_OBJECT_HANDLE_PTR")
 
-CK_ATTRIBUTE = _ffi.typeof('CK_ATTRIBUTE')
+CK_ATTRIBUTE = _ffi.typeof("CK_ATTRIBUTE")
 
-CK_MECHANISM = _ffi.typeof('CK_MECHANISM')
+CK_MECHANISM = _ffi.typeof("CK_MECHANISM")
 
-CK_FUNCTION_LIST_PTR = _ffi.typeof('CK_FUNCTION_LIST_PTR')
+CK_FUNCTION_LIST_PTR = _ffi.typeof("CK_FUNCTION_LIST_PTR")
 
-CK_SLOT_ID = _ffi.typeof('CK_SLOT_ID')
+CK_SLOT_ID = _ffi.typeof("CK_SLOT_ID")
 
-CK_TOKEN_INFO = _ffi.typeof('CK_TOKEN_INFO')
+CK_TOKEN_INFO = _ffi.typeof("CK_TOKEN_INFO")
 
 NULL_PTR = NULL
 
@@ -464,6 +466,7 @@ p11_kit_uri_free = _libp11_kit.p11_kit_uri_free
 
 # library.c
 
+
 def loadLibrary(module):
     """Load the PKCS#11 library"""
     # Load PKCS #11 library
@@ -476,9 +479,7 @@ def loadLibrary(module):
     # Retrieve the entry point for C_GetFunctionList
     pGetFunctionList = pDynLib.C_GetFunctionList
     if pGetFunctionList == NULL:
-        raise Error(
-            f"Module '{module}' has no function 'C_GetFunctionList'."
-        )
+        raise Error(f"Module '{module}' has no function 'C_GetFunctionList'.")
 
     # Store the handle so we can dlclose it later
 
@@ -489,7 +490,7 @@ def loadLibrary(module):
 
 # compat TODO
 CKM_AES_KEY_WRAP = 0x2109
-CKM_AES_KEY_WRAP_PAD = 0x210a
+CKM_AES_KEY_WRAP_PAD = 0x210A
 
 # TODO
 CKA_COPYABLE = 0x0017
@@ -498,7 +499,7 @@ CKG_MGF1_SHA1 = 0x00000001
 
 CKZ_DATA_SPECIFIED = 0x00000001
 
-CK_RSA_PKCS_OAEP_PARAMS = _ffi.typeof('CK_RSA_PKCS_OAEP_PARAMS')
+CK_RSA_PKCS_OAEP_PARAMS = _ffi.typeof("CK_RSA_PKCS_OAEP_PARAMS")
 
 
 true_ptr = new_ptr(CK_BBOOL, CK_TRUE)
@@ -509,13 +510,16 @@ MAX_TEMPLATE_LEN = 32
 #
 # Constants
 #
-CONST_RSA_PKCS_OAEP_PARAMS_ptr = new_ptr(CK_RSA_PKCS_OAEP_PARAMS, dict(
-    hash_alg=CKM_SHA_1,
-    mgf=CKG_MGF1_SHA1,
-    source=CKZ_DATA_SPECIFIED,
-    source_data=NULL,
-    source_data_len=0,
-))
+CONST_RSA_PKCS_OAEP_PARAMS_ptr = new_ptr(
+    CK_RSA_PKCS_OAEP_PARAMS,
+    dict(
+        hash_alg=CKM_SHA_1,
+        mgf=CKG_MGF1_SHA1,
+        source=CKZ_DATA_SPECIFIED,
+        source_data=NULL,
+        source_data_len=0,
+    ),
+)
 
 
 #
@@ -524,7 +528,8 @@ CONST_RSA_PKCS_OAEP_PARAMS_ptr = new_ptr(CK_RSA_PKCS_OAEP_PARAMS, dict(
 class P11HelperException(Exception):
     """parent class for all exceptions"""
 
-P11HelperException.__name__ = 'Exception'
+
+P11HelperException.__name__ = "Exception"
 
 
 class Error(P11HelperException):
@@ -542,6 +547,7 @@ class DuplicationError(P11HelperException):
 ########################################################################
 # Support functions
 #
+
 
 def pyobj_to_bool(pyobj):
     if pyobj:
@@ -565,7 +571,7 @@ def unicode_to_char_array(unicode):
     :param unicode: input python unicode object
     """
     try:
-        utf8_str = unicode.encode('utf-8')
+        utf8_str = unicode.encode("utf-8")
     except Exception:
         raise Error("Unable to encode UTF-8")
     try:
@@ -580,14 +586,14 @@ def char_array_to_unicode(array, l):
     """
     Convert utf-8 encoded char array to unicode object
     """
-    return _ffi.buffer(array, l)[:].decode('utf-8')
+    return _ffi.buffer(array, l)[:].decode("utf-8")
 
 
 def int_to_bytes(value):
     try:
-        return binascii.unhexlify('{0:x}'.format(value))
+        return binascii.unhexlify("{0:x}".format(value))
     except (TypeError, binascii.Error):
-        return binascii.unhexlify('0{0:x}'.format(value))
+        return binascii.unhexlify("0{0:x}".format(value))
 
 
 def bytes_to_int(value):
@@ -602,15 +608,18 @@ def check_return_value(rv, message):
         try:
             errmsg = "Error at %s: 0x%x\n" % (message, rv)
         except Exception:
-            raise Error("An error occured during error message generation. "
-                        "Please report this problem. Developers will use "
-                        "a crystal ball to find out the root cause.")
+            raise Error(
+                "An error occured during error message generation. "
+                "Please report this problem. Developers will use "
+                "a crystal ball to find out the root cause."
+            )
         else:
             raise Error(errmsg)
 
 
-def _fill_template_from_parts(attr, template_len, id, id_len, label, label_len,
-                              class_, cka_wrap, cka_unwrap):
+def _fill_template_from_parts(
+    attr, template_len, id, id_len, label, label_len, class_, cka_wrap, cka_unwrap
+):
     """
     Fill template structure with pointers to attributes passed as independent
     variables.
@@ -727,15 +736,15 @@ class P11_Helper:
         rv = self.p11.C_FindObjectsInit(self.session, template, template_len)
         check_return_value(rv, "Find key init")
 
-        rv = self.p11.C_FindObjects(self.session, result_object_ptr, 1,
-                                    objectCount_ptr)
+        rv = self.p11.C_FindObjects(self.session, result_object_ptr, 1, objectCount_ptr)
         check_return_value(rv, "Find key")
 
         while objectCount_ptr[0] > 0:
             result_objects.append(result_object_ptr[0])
 
-            rv = self.p11.C_FindObjects(self.session, result_object_ptr, 1,
-                                        objectCount_ptr)
+            rv = self.p11.C_FindObjects(
+                self.session, result_object_ptr, 1, objectCount_ptr
+            )
             check_return_value(rv, "Check for duplicated key")
 
         rv = self.p11.C_FindObjectsFinal(self.session)
@@ -758,19 +767,20 @@ class P11_Helper:
         class_ptr = new_ptr(CK_OBJECT_CLASS, class_)
         class_sec_ptr = new_ptr(CK_OBJECT_CLASS, CKO_SECRET_KEY)
 
-        template_pub_priv = new_array(CK_ATTRIBUTE, (
-            (CKA_ID, id, id_len),
-            (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),
-        ))
+        template_pub_priv = new_array(
+            CK_ATTRIBUTE,
+            ((CKA_ID, id, id_len), (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),),
+        )
 
-        template_sec = new_array(CK_ATTRIBUTE, (
-            (CKA_ID, id, id_len),
-            (CKA_CLASS, class_sec_ptr, sizeof(CK_OBJECT_CLASS)),
-        ))
+        template_sec = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_ID, id, id_len),
+                (CKA_CLASS, class_sec_ptr, sizeof(CK_OBJECT_CLASS)),
+            ),
+        )
 
-        template_id = new_array(CK_ATTRIBUTE, (
-            (CKA_ID, id, id_len),
-        ))
+        template_id = new_array(CK_ATTRIBUTE, ((CKA_ID, id, id_len),))
 
         #
         # Only one secret key with same ID is allowed
@@ -779,8 +789,9 @@ class P11_Helper:
             rv = self.p11.C_FindObjectsInit(self.session, template_id, 1)
             check_return_value(rv, "id, label exists init")
 
-            rv = self.p11.C_FindObjects(self.session, result_object_ptr, 1,
-                                        object_count_ptr)
+            rv = self.p11.C_FindObjects(
+                self.session, result_object_ptr, 1, object_count_ptr
+            )
             check_return_value(rv, "id, label exists")
 
             rv = self.p11.C_FindObjectsFinal(self.session)
@@ -798,8 +809,9 @@ class P11_Helper:
         rv = self.p11.C_FindObjectsInit(self.session, template_sec, 2)
         check_return_value(rv, "id, label exists init")
 
-        rv = self.p11.C_FindObjects(self.session, result_object_ptr, 1,
-                                    object_count_ptr)
+        rv = self.p11.C_FindObjects(
+            self.session, result_object_ptr, 1, object_count_ptr
+        )
         check_return_value(rv, "id, label exists")
 
         rv = self.p11.C_FindObjectsFinal(self.session)
@@ -815,8 +827,9 @@ class P11_Helper:
         rv = self.p11.C_FindObjectsInit(self.session, template_pub_priv, 2)
         check_return_value(rv, "id, label exists init")
 
-        rv = self.p11.C_FindObjects(self.session, result_object_ptr, 1,
-                                    object_count_ptr)
+        rv = self.p11.C_FindObjects(
+            self.session, result_object_ptr, 1, object_count_ptr
+        )
         check_return_value(rv, "id, label exists")
 
         rv = self.p11.C_FindObjectsFinal(self.session)
@@ -870,9 +883,9 @@ class P11_Helper:
         #
         # Start session
         #
-        rv = self.p11.C_OpenSession(slot,
-                                    CKF_SERIAL_SESSION | CKF_RW_SESSION, NULL,
-                                    NULL, self.session_ptr)
+        rv = self.p11.C_OpenSession(
+            slot, CKF_SERIAL_SESSION | CKF_RW_SESSION, NULL, NULL, self.session_ptr
+        )
         check_return_value(rv, "open session")
 
         #
@@ -896,8 +909,7 @@ class P11_Helper:
 
             result_ids_ptr = new_array(CK_SLOT_ID, object_count_ptr[0])
 
-            rv = self.p11.C_GetSlotList(
-                CK_TRUE, result_ids_ptr, object_count_ptr)
+            rv = self.p11.C_GetSlotList(CK_TRUE, result_ids_ptr, object_count_ptr)
             if rv == CKR_BUFFER_TOO_SMALL:
                 continue
             check_return_value(rv, "get slots IDs")
@@ -910,7 +922,7 @@ class P11_Helper:
         for slot in slots:
             token_info_ptr = new_ptr(CK_TOKEN_INFO)
             rv = self.p11.C_GetTokenInfo(slot, token_info_ptr)
-            check_return_value(rv, 'get token info')
+            check_return_value(rv, "get token info")
 
             # softhsm always returns label 32 bytes long with padding made of
             # white spaces (#32), so we have to rstrip() padding and compare
@@ -920,8 +932,10 @@ class P11_Helper:
             # In case that this is not valid anymore, keep in mind backward
             # compatibility
 
-            if self.token_label == char_array_to_unicode(
-                    token_info_ptr[0].label, 32).rstrip():
+            if (
+                self.token_label
+                == char_array_to_unicode(token_info_ptr[0].label, 32).rstrip()
+            ):
                 return slot
         return None
 
@@ -957,13 +971,25 @@ class P11_Helper:
     # Methods working with keys
     #
 
-    def generate_master_key(self, label, id, key_length=16, cka_copyable=True,
-                            cka_decrypt=False, cka_derive=False,
-                            cka_encrypt=False, cka_extractable=True,
-                            cka_modifiable=True, cka_private=True,
-                            cka_sensitive=True, cka_sign=False,
-                            cka_unwrap=True, cka_verify=False, cka_wrap=True,
-                            cka_wrap_with_trusted=False):
+    def generate_master_key(
+        self,
+        label,
+        id,
+        key_length=16,
+        cka_copyable=True,
+        cka_decrypt=False,
+        cka_derive=False,
+        cka_encrypt=False,
+        cka_extractable=True,
+        cka_modifiable=True,
+        cka_private=True,
+        cka_sensitive=True,
+        cka_sign=False,
+        cka_unwrap=True,
+        cka_verify=False,
+        cka_wrap=True,
+        cka_wrap_with_trusted=False,
+    ):
         """
         Generate master key
 
@@ -999,73 +1025,95 @@ class P11_Helper:
         label, label_length = unicode_to_char_array(label_unicode)
 
         # TODO param?
-        mechanism_ptr = new_ptr(CK_MECHANISM, (
-            CKM_AES_KEY_GEN, NULL_PTR, 0
-        ))
+        mechanism_ptr = new_ptr(CK_MECHANISM, (CKM_AES_KEY_GEN, NULL_PTR, 0))
 
         if key_length not in (16, 24, 32):
-            raise Error("generate_master_key: key length allowed values are: "
-                        "16, 24 and 32")
+            raise Error(
+                "generate_master_key: key length allowed values are: " "16, 24 and 32"
+            )
 
         if self._id_exists(id_, id_length, CKO_SECRET_KEY):
             raise DuplicationError("Master key with same ID already exists")
 
         # Process keyword boolean arguments
-        (_cka_copyable_ptr, cka_decrypt_ptr, cka_derive_ptr, cka_encrypt_ptr,
-         cka_extractable_ptr, cka_modifiable_ptr, cka_private_ptr,
-         cka_sensitive_ptr, cka_sign_ptr, cka_unwrap_ptr, cka_verify_ptr,
-         cka_wrap_ptr, cka_wrap_with_trusted_ptr,) = convert_py2bool(attrs)
+        (
+            _cka_copyable_ptr,
+            cka_decrypt_ptr,
+            cka_derive_ptr,
+            cka_encrypt_ptr,
+            cka_extractable_ptr,
+            cka_modifiable_ptr,
+            cka_private_ptr,
+            cka_sensitive_ptr,
+            cka_sign_ptr,
+            cka_unwrap_ptr,
+            cka_verify_ptr,
+            cka_wrap_ptr,
+            cka_wrap_with_trusted_ptr,
+        ) = convert_py2bool(attrs)
 
-        symKeyTemplate = new_array(CK_ATTRIBUTE, (
-            (CKA_ID, id_, id_length),
-            (CKA_LABEL, label, label_length),
-            (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
-            (CKA_VALUE_LEN, key_length_ptr, sizeof(CK_ULONG)),
-            # TODO Softhsm doesn't support it
-            # (CKA_COPYABLE, cka_copyable_ptr, sizeof(CK_BBOOL)),
-            (CKA_DECRYPT, cka_decrypt_ptr, sizeof(CK_BBOOL)),
-            (CKA_DERIVE, cka_derive_ptr, sizeof(CK_BBOOL)),
-            (CKA_ENCRYPT, cka_encrypt_ptr, sizeof(CK_BBOOL)),
-            (CKA_EXTRACTABLE, cka_extractable_ptr, sizeof(CK_BBOOL)),
-            (CKA_MODIFIABLE, cka_modifiable_ptr, sizeof(CK_BBOOL)),
-            (CKA_PRIVATE, cka_private_ptr, sizeof(CK_BBOOL)),
-            (CKA_SENSITIVE, cka_sensitive_ptr, sizeof(CK_BBOOL)),
-            (CKA_SIGN, cka_sign_ptr, sizeof(CK_BBOOL)),
-            (CKA_UNWRAP, cka_unwrap_ptr, sizeof(CK_BBOOL)),
-            (CKA_VERIFY, cka_verify_ptr, sizeof(CK_BBOOL)),
-            (CKA_WRAP, cka_wrap_ptr, sizeof(CK_BBOOL)),
-            (CKA_WRAP_WITH_TRUSTED, cka_wrap_with_trusted_ptr,
-             sizeof(CK_BBOOL)),
-        ))
+        symKeyTemplate = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_ID, id_, id_length),
+                (CKA_LABEL, label, label_length),
+                (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
+                (CKA_VALUE_LEN, key_length_ptr, sizeof(CK_ULONG)),
+                # TODO Softhsm doesn't support it
+                # (CKA_COPYABLE, cka_copyable_ptr, sizeof(CK_BBOOL)),
+                (CKA_DECRYPT, cka_decrypt_ptr, sizeof(CK_BBOOL)),
+                (CKA_DERIVE, cka_derive_ptr, sizeof(CK_BBOOL)),
+                (CKA_ENCRYPT, cka_encrypt_ptr, sizeof(CK_BBOOL)),
+                (CKA_EXTRACTABLE, cka_extractable_ptr, sizeof(CK_BBOOL)),
+                (CKA_MODIFIABLE, cka_modifiable_ptr, sizeof(CK_BBOOL)),
+                (CKA_PRIVATE, cka_private_ptr, sizeof(CK_BBOOL)),
+                (CKA_SENSITIVE, cka_sensitive_ptr, sizeof(CK_BBOOL)),
+                (CKA_SIGN, cka_sign_ptr, sizeof(CK_BBOOL)),
+                (CKA_UNWRAP, cka_unwrap_ptr, sizeof(CK_BBOOL)),
+                (CKA_VERIFY, cka_verify_ptr, sizeof(CK_BBOOL)),
+                (CKA_WRAP, cka_wrap_ptr, sizeof(CK_BBOOL)),
+                (CKA_WRAP_WITH_TRUSTED, cka_wrap_with_trusted_ptr, sizeof(CK_BBOOL)),
+            ),
+        )
 
-        rv = self.p11.C_GenerateKey(self.session, mechanism_ptr,
-                                    symKeyTemplate,
-                                    (sizeof(symKeyTemplate) //
-                                     sizeof(CK_ATTRIBUTE)), master_key_ptr)
+        rv = self.p11.C_GenerateKey(
+            self.session,
+            mechanism_ptr,
+            symKeyTemplate,
+            (sizeof(symKeyTemplate) // sizeof(CK_ATTRIBUTE)),
+            master_key_ptr,
+        )
         check_return_value(rv, "generate master key")
 
         return master_key_ptr[0]
 
-    def generate_replica_key_pair(self, label, id, modulus_bits=2048,
-                                  pub_cka_copyable=True, pub_cka_derive=False,
-                                  pub_cka_encrypt=False,
-                                  pub_cka_modifiable=True,
-                                  pub_cka_private=True, pub_cka_trusted=False,
-                                  pub_cka_verify=False,
-                                  pub_cka_verify_recover=False,
-                                  pub_cka_wrap=True,
-                                  priv_cka_always_authenticate=False,
-                                  priv_cka_copyable=True,
-                                  priv_cka_decrypt=False,
-                                  priv_cka_derive=False,
-                                  priv_cka_extractable=False,
-                                  priv_cka_modifiable=True,
-                                  priv_cka_private=True,
-                                  priv_cka_sensitive=True,
-                                  priv_cka_sign=False,
-                                  priv_cka_sign_recover=False,
-                                  priv_cka_unwrap=True,
-                                  priv_cka_wrap_with_trusted=False):
+    def generate_replica_key_pair(
+        self,
+        label,
+        id,
+        modulus_bits=2048,
+        pub_cka_copyable=True,
+        pub_cka_derive=False,
+        pub_cka_encrypt=False,
+        pub_cka_modifiable=True,
+        pub_cka_private=True,
+        pub_cka_trusted=False,
+        pub_cka_verify=False,
+        pub_cka_verify_recover=False,
+        pub_cka_wrap=True,
+        priv_cka_always_authenticate=False,
+        priv_cka_copyable=True,
+        priv_cka_decrypt=False,
+        priv_cka_derive=False,
+        priv_cka_extractable=False,
+        priv_cka_modifiable=True,
+        priv_cka_private=True,
+        priv_cka_sensitive=True,
+        priv_cka_sign=False,
+        priv_cka_sign_recover=False,
+        priv_cka_unwrap=True,
+        priv_cka_wrap_with_trusted=False,
+    ):
         """
         Generate replica keys
 
@@ -1109,8 +1157,7 @@ class P11_Helper:
 
         public_key_ptr = new_ptr(CK_OBJECT_HANDLE)
         private_key_ptr = new_ptr(CK_OBJECT_HANDLE)
-        mechanism_ptr = new_ptr(CK_MECHANISM,
-                                (CKM_RSA_PKCS_KEY_PAIR_GEN, NULL_PTR, 0))
+        mechanism_ptr = new_ptr(CK_MECHANISM, (CKM_RSA_PKCS_KEY_PAIR_GEN, NULL_PTR, 0))
 
         if self._id_exists(id_, id_length, CKO_PRIVATE_KEY):
             raise DuplicationError("Private key with same ID already exists")
@@ -1121,72 +1168,108 @@ class P11_Helper:
         modulus_bits_ptr = new_ptr(CK_ULONG, modulus_bits)
 
         # Process keyword boolean arguments
-        (_pub_cka_copyable_ptr, pub_cka_derive_ptr, pub_cka_encrypt_ptr,
-         pub_cka_modifiable_ptr, pub_cka_private_ptr, pub_cka_trusted_ptr,
-         pub_cka_verify_ptr, pub_cka_verify_recover_ptr, pub_cka_wrap_ptr,
-         ) = convert_py2bool(attrs_pub)
-        (priv_cka_always_authenticate_ptr, _priv_cka_copyable_ptr,
-         priv_cka_decrypt_ptr, priv_cka_derive_ptr, priv_cka_extractable_ptr,
-         priv_cka_modifiable_ptr, priv_cka_private_ptr, priv_cka_sensitive_ptr,
-         priv_cka_sign_ptr, _priv_cka_sign_recover_ptr, priv_cka_unwrap_ptr,
-         priv_cka_wrap_with_trusted_ptr,) = convert_py2bool(attrs_priv)
+        (
+            _pub_cka_copyable_ptr,
+            pub_cka_derive_ptr,
+            pub_cka_encrypt_ptr,
+            pub_cka_modifiable_ptr,
+            pub_cka_private_ptr,
+            pub_cka_trusted_ptr,
+            pub_cka_verify_ptr,
+            pub_cka_verify_recover_ptr,
+            pub_cka_wrap_ptr,
+        ) = convert_py2bool(attrs_pub)
+        (
+            priv_cka_always_authenticate_ptr,
+            _priv_cka_copyable_ptr,
+            priv_cka_decrypt_ptr,
+            priv_cka_derive_ptr,
+            priv_cka_extractable_ptr,
+            priv_cka_modifiable_ptr,
+            priv_cka_private_ptr,
+            priv_cka_sensitive_ptr,
+            priv_cka_sign_ptr,
+            _priv_cka_sign_recover_ptr,
+            priv_cka_unwrap_ptr,
+            priv_cka_wrap_with_trusted_ptr,
+        ) = convert_py2bool(attrs_priv)
 
         # 65537 (RFC 6376 section 3.3.1)
         public_exponent = new_array(CK_BYTE, (1, 0, 1))
-        publicKeyTemplate = new_array(CK_ATTRIBUTE, (
-            (CKA_ID, id_, id_length),
-            (CKA_LABEL, label, label_length),
-            (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
-            (CKA_MODULUS_BITS, modulus_bits_ptr, sizeof(CK_ULONG)),
-            (CKA_PUBLIC_EXPONENT, public_exponent, 3),
-            # TODO Softhsm doesn't support it
-            # (CKA_COPYABLE, pub_cka_copyable_p, sizeof(CK_BBOOL)),
-            (CKA_DERIVE, pub_cka_derive_ptr, sizeof(CK_BBOOL)),
-            (CKA_ENCRYPT, pub_cka_encrypt_ptr, sizeof(CK_BBOOL)),
-            (CKA_MODIFIABLE, pub_cka_modifiable_ptr, sizeof(CK_BBOOL)),
-            (CKA_PRIVATE, pub_cka_private_ptr, sizeof(CK_BBOOL)),
-            (CKA_TRUSTED, pub_cka_trusted_ptr, sizeof(CK_BBOOL)),
-            (CKA_VERIFY, pub_cka_verify_ptr, sizeof(CK_BBOOL)),
-            (CKA_VERIFY_RECOVER, pub_cka_verify_recover_ptr, sizeof(CK_BBOOL)),
-            (CKA_WRAP, pub_cka_wrap_ptr, sizeof(CK_BBOOL)),
-        ))
+        publicKeyTemplate = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_ID, id_, id_length),
+                (CKA_LABEL, label, label_length),
+                (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
+                (CKA_MODULUS_BITS, modulus_bits_ptr, sizeof(CK_ULONG)),
+                (CKA_PUBLIC_EXPONENT, public_exponent, 3),
+                # TODO Softhsm doesn't support it
+                # (CKA_COPYABLE, pub_cka_copyable_p, sizeof(CK_BBOOL)),
+                (CKA_DERIVE, pub_cka_derive_ptr, sizeof(CK_BBOOL)),
+                (CKA_ENCRYPT, pub_cka_encrypt_ptr, sizeof(CK_BBOOL)),
+                (CKA_MODIFIABLE, pub_cka_modifiable_ptr, sizeof(CK_BBOOL)),
+                (CKA_PRIVATE, pub_cka_private_ptr, sizeof(CK_BBOOL)),
+                (CKA_TRUSTED, pub_cka_trusted_ptr, sizeof(CK_BBOOL)),
+                (CKA_VERIFY, pub_cka_verify_ptr, sizeof(CK_BBOOL)),
+                (CKA_VERIFY_RECOVER, pub_cka_verify_recover_ptr, sizeof(CK_BBOOL)),
+                (CKA_WRAP, pub_cka_wrap_ptr, sizeof(CK_BBOOL)),
+            ),
+        )
 
-        privateKeyTemplate = new_array(CK_ATTRIBUTE, (
-            (CKA_ID, id_, id_length),
-            (CKA_LABEL, label, label_length),
-            (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
-            (CKA_ALWAYS_AUTHENTICATE, priv_cka_always_authenticate_ptr,
-             sizeof(CK_BBOOL)),
-            # TODO Softhsm doesn't support it
-            # (CKA_COPYABLE, priv_cka_copyable_ptr, sizeof(CK_BBOOL)),
-            (CKA_DECRYPT, priv_cka_decrypt_ptr, sizeof(CK_BBOOL)),
-            (CKA_DERIVE,  priv_cka_derive_ptr, sizeof(CK_BBOOL)),
-            (CKA_EXTRACTABLE, priv_cka_extractable_ptr, sizeof(CK_BBOOL)),
-            (CKA_MODIFIABLE, priv_cka_modifiable_ptr, sizeof(CK_BBOOL)),
-            (CKA_PRIVATE, priv_cka_private_ptr, sizeof(CK_BBOOL)),
-            (CKA_SENSITIVE, priv_cka_sensitive_ptr, sizeof(CK_BBOOL)),
-            (CKA_SIGN, priv_cka_sign_ptr, sizeof(CK_BBOOL)),
-            (CKA_SIGN_RECOVER, priv_cka_sign_ptr, sizeof(CK_BBOOL)),
-            (CKA_UNWRAP, priv_cka_unwrap_ptr, sizeof(CK_BBOOL)),
-            (CKA_WRAP_WITH_TRUSTED, priv_cka_wrap_with_trusted_ptr,
-             sizeof(CK_BBOOL)),
-        ))
+        privateKeyTemplate = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_ID, id_, id_length),
+                (CKA_LABEL, label, label_length),
+                (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
+                (
+                    CKA_ALWAYS_AUTHENTICATE,
+                    priv_cka_always_authenticate_ptr,
+                    sizeof(CK_BBOOL),
+                ),
+                # TODO Softhsm doesn't support it
+                # (CKA_COPYABLE, priv_cka_copyable_ptr, sizeof(CK_BBOOL)),
+                (CKA_DECRYPT, priv_cka_decrypt_ptr, sizeof(CK_BBOOL)),
+                (CKA_DERIVE, priv_cka_derive_ptr, sizeof(CK_BBOOL)),
+                (CKA_EXTRACTABLE, priv_cka_extractable_ptr, sizeof(CK_BBOOL)),
+                (CKA_MODIFIABLE, priv_cka_modifiable_ptr, sizeof(CK_BBOOL)),
+                (CKA_PRIVATE, priv_cka_private_ptr, sizeof(CK_BBOOL)),
+                (CKA_SENSITIVE, priv_cka_sensitive_ptr, sizeof(CK_BBOOL)),
+                (CKA_SIGN, priv_cka_sign_ptr, sizeof(CK_BBOOL)),
+                (CKA_SIGN_RECOVER, priv_cka_sign_ptr, sizeof(CK_BBOOL)),
+                (CKA_UNWRAP, priv_cka_unwrap_ptr, sizeof(CK_BBOOL)),
+                (
+                    CKA_WRAP_WITH_TRUSTED,
+                    priv_cka_wrap_with_trusted_ptr,
+                    sizeof(CK_BBOOL),
+                ),
+            ),
+        )
 
-        rv = self.p11.C_GenerateKeyPair(self.session, mechanism_ptr,
-                                        publicKeyTemplate,
-                                        (sizeof(publicKeyTemplate) //
-                                         sizeof(CK_ATTRIBUTE)),
-                                        privateKeyTemplate,
-                                        (sizeof(privateKeyTemplate) //
-                                         sizeof(CK_ATTRIBUTE)),
-                                        public_key_ptr,
-                                        private_key_ptr)
+        rv = self.p11.C_GenerateKeyPair(
+            self.session,
+            mechanism_ptr,
+            publicKeyTemplate,
+            (sizeof(publicKeyTemplate) // sizeof(CK_ATTRIBUTE)),
+            privateKeyTemplate,
+            (sizeof(privateKeyTemplate) // sizeof(CK_ATTRIBUTE)),
+            public_key_ptr,
+            private_key_ptr,
+        )
         check_return_value(rv, "generate key pair")
 
         return public_key_ptr[0], private_key_ptr[0]
 
-    def find_keys(self, objclass=CKO_VENDOR_DEFINED, label=None, id=None,
-                  cka_wrap=None, cka_unwrap=None, uri=None):
+    def find_keys(
+        self,
+        objclass=CKO_VENDOR_DEFINED,
+        label=None,
+        id=None,
+        cka_wrap=None,
+        cka_unwrap=None,
+        uri=None,
+    ):
         """
         Find key
         """
@@ -1236,12 +1319,20 @@ class P11_Helper:
 
         try:
             if uri_str is None:
-                _fill_template_from_parts(template, template_len_ptr, id_,
-                                          id_length, label, label_length,
-                                          class_ptr, ckawrap, ckaunwrap)
+                _fill_template_from_parts(
+                    template,
+                    template_len_ptr,
+                    id_,
+                    id_length,
+                    label,
+                    label_length,
+                    class_ptr,
+                    ckawrap,
+                    ckaunwrap,
+                )
             else:
                 uri = _parse_uri(uri_str)
-                template = (p11_kit_uri_get_attributes(uri, template_len_ptr))
+                template = p11_kit_uri_get_attributes(uri, template_len_ptr)
                 # Do not deallocate URI while you are using the template.
                 # Template contains pointers to values inside URI!
 
@@ -1267,29 +1358,36 @@ class P11_Helper:
         class_ptr = new_ptr(CK_OBJECT_CLASS, CKO_PUBLIC_KEY)
         key_type_ptr = new_ptr(CK_KEY_TYPE, CKK_RSA)
 
-        obj_template = new_array(CK_ATTRIBUTE, (
-            (CKA_MODULUS, NULL_PTR, 0),
-            (CKA_PUBLIC_EXPONENT, NULL_PTR, 0),
-            (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),
-            (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
-        ))
+        obj_template = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_MODULUS, NULL_PTR, 0),
+                (CKA_PUBLIC_EXPONENT, NULL_PTR, 0),
+                (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),
+                (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
+            ),
+        )
 
-        rv = self.p11.C_GetAttributeValue(self.session, object, obj_template,
-                                          (sizeof(obj_template) //
-                                           sizeof(CK_ATTRIBUTE)))
+        rv = self.p11.C_GetAttributeValue(
+            self.session,
+            object,
+            obj_template,
+            (sizeof(obj_template) // sizeof(CK_ATTRIBUTE)),
+        )
         check_return_value(rv, "get RSA public key values - prepare")
 
         # Set proper size for attributes
-        modulus = new_array(CK_BYTE,
-                            obj_template[0].ulValueLen * sizeof(CK_BYTE))
+        modulus = new_array(CK_BYTE, obj_template[0].ulValueLen * sizeof(CK_BYTE))
         obj_template[0].pValue = modulus
-        exponent = new_array(CK_BYTE,
-                             obj_template[1].ulValueLen * sizeof(CK_BYTE))
+        exponent = new_array(CK_BYTE, obj_template[1].ulValueLen * sizeof(CK_BYTE))
         obj_template[1].pValue = exponent
 
-        rv = self.p11.C_GetAttributeValue(self.session, object, obj_template,
-                                          (sizeof(obj_template) //
-                                           sizeof(CK_ATTRIBUTE)))
+        rv = self.p11.C_GetAttributeValue(
+            self.session,
+            object,
+            obj_template,
+            (sizeof(obj_template) // sizeof(CK_ATTRIBUTE)),
+        )
         check_return_value(rv, "get RSA public key values")
 
         # Check if the key is RSA public key
@@ -1300,18 +1398,22 @@ class P11_Helper:
             raise Error("export_RSA_public_key: required RSA key type")
 
         try:
-            n = bytes_to_int(string_to_pybytes_or_none(
-                modulus, obj_template[0].ulValueLen))
+            n = bytes_to_int(
+                string_to_pybytes_or_none(modulus, obj_template[0].ulValueLen)
+            )
         except Exception:
-            raise Error("export_RSA_public_key: internal error: unable to "
-                        "convert modulus")
+            raise Error(
+                "export_RSA_public_key: internal error: unable to " "convert modulus"
+            )
 
         try:
-            e = bytes_to_int(string_to_pybytes_or_none(
-                exponent, obj_template[1].ulValueLen))
+            e = bytes_to_int(
+                string_to_pybytes_or_none(exponent, obj_template[1].ulValueLen)
+            )
         except Exception:
-            raise Error("export_RSA_public_key: internal error: unable to "
-                        "convert exponent")
+            raise Error(
+                "export_RSA_public_key: internal error: unable to " "convert exponent"
+            )
 
         # set modulus and exponent
         rsa_ = rsa.RSAPublicNumbers(e, n)
@@ -1319,8 +1421,9 @@ class P11_Helper:
         try:
             pkey = rsa_.public_key(default_backend())
         except Exception:
-            raise Error("export_RSA_public_key: internal error: "
-                        "EVP_PKEY_set1_RSA failed")
+            raise Error(
+                "export_RSA_public_key: internal error: " "EVP_PKEY_set1_RSA failed"
+            )
 
         try:
             ret = pkey.public_bytes(
@@ -1343,14 +1446,20 @@ class P11_Helper:
         key_type_ptr = new_ptr(CK_KEY_TYPE, CKK_RSA)
         # TODO check long overflow
 
-        obj_template = new_array(CK_ATTRIBUTE, (
-            (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),
-            (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
-        ))
+        obj_template = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),
+                (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
+            ),
+        )
 
-        rv = self.p11.C_GetAttributeValue(self.session, object, obj_template,
-                                          (sizeof(obj_template) //
-                                           sizeof(CK_ATTRIBUTE)))
+        rv = self.p11.C_GetAttributeValue(
+            self.session,
+            object,
+            obj_template,
+            (sizeof(obj_template) // sizeof(CK_ATTRIBUTE)),
+        )
         check_return_value(rv, "export_public_key: get RSA public key values")
 
         if class_ptr[0] != CKO_PUBLIC_KEY:
@@ -1361,10 +1470,23 @@ class P11_Helper:
         else:
             raise Error("export_public_key: unsupported key type")
 
-    def _import_RSA_public_key(self, label, label_length, id, id_length, pkey,
-                               cka_copyable, cka_derive, cka_encrypt,
-                               cka_modifiable, cka_private, cka_trusted,
-                               cka_verify, cka_verify_recover, cka_wrap):
+    def _import_RSA_public_key(
+        self,
+        label,
+        label_length,
+        id,
+        id_length,
+        pkey,
+        cka_copyable,
+        cka_derive,
+        cka_encrypt,
+        cka_modifiable,
+        cka_private,
+        cka_trusted,
+        cka_verify,
+        cka_verify_recover,
+        cka_wrap,
+    ):
         """
         Import RSA public key
         """
@@ -1388,39 +1510,55 @@ class P11_Helper:
         if exponent_len == 0:
             raise Error("import_RSA_public_key: BN_bn2bin exponent error")
 
-        template = new_array(CK_ATTRIBUTE, (
-            (CKA_ID, id, id_length),
-            (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),
-            (CKA_KEY_TYPE, keyType_ptr, sizeof(CK_KEY_TYPE)),
-            (CKA_TOKEN, cka_token, sizeof(CK_BBOOL)),
-            (CKA_LABEL, label, label_length),
-            (CKA_MODULUS, modulus, modulus_len),
-            (CKA_PUBLIC_EXPONENT, exponent, exponent_len),
-            # TODO Softhsm doesn't support it
-            # (CKA_COPYABLE, cka_copyable, sizeof(CK_BBOOL)),
-            (CKA_DERIVE, cka_derive, sizeof(CK_BBOOL)),
-            (CKA_ENCRYPT, cka_encrypt, sizeof(CK_BBOOL)),
-            (CKA_MODIFIABLE, cka_modifiable, sizeof(CK_BBOOL)),
-            (CKA_PRIVATE, cka_private, sizeof(CK_BBOOL)),
-            (CKA_TRUSTED, cka_trusted, sizeof(CK_BBOOL)),
-            (CKA_VERIFY, cka_verify, sizeof(CK_BBOOL)),
-            (CKA_VERIFY_RECOVER, cka_verify_recover, sizeof(CK_BBOOL)),
-            (CKA_WRAP, cka_wrap, sizeof(CK_BBOOL)),
-        ))
+        template = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_ID, id, id_length),
+                (CKA_CLASS, class_ptr, sizeof(CK_OBJECT_CLASS)),
+                (CKA_KEY_TYPE, keyType_ptr, sizeof(CK_KEY_TYPE)),
+                (CKA_TOKEN, cka_token, sizeof(CK_BBOOL)),
+                (CKA_LABEL, label, label_length),
+                (CKA_MODULUS, modulus, modulus_len),
+                (CKA_PUBLIC_EXPONENT, exponent, exponent_len),
+                # TODO Softhsm doesn't support it
+                # (CKA_COPYABLE, cka_copyable, sizeof(CK_BBOOL)),
+                (CKA_DERIVE, cka_derive, sizeof(CK_BBOOL)),
+                (CKA_ENCRYPT, cka_encrypt, sizeof(CK_BBOOL)),
+                (CKA_MODIFIABLE, cka_modifiable, sizeof(CK_BBOOL)),
+                (CKA_PRIVATE, cka_private, sizeof(CK_BBOOL)),
+                (CKA_TRUSTED, cka_trusted, sizeof(CK_BBOOL)),
+                (CKA_VERIFY, cka_verify, sizeof(CK_BBOOL)),
+                (CKA_VERIFY_RECOVER, cka_verify_recover, sizeof(CK_BBOOL)),
+                (CKA_WRAP, cka_wrap, sizeof(CK_BBOOL)),
+            ),
+        )
         object_ptr = new_ptr(CK_OBJECT_HANDLE)
 
-        rv = self.p11.C_CreateObject(self.session, template,
-                                     (sizeof(template) //
-                                      sizeof(CK_ATTRIBUTE)), object_ptr)
+        rv = self.p11.C_CreateObject(
+            self.session,
+            template,
+            (sizeof(template) // sizeof(CK_ATTRIBUTE)),
+            object_ptr,
+        )
         check_return_value(rv, "create public key object")
 
         return object_ptr[0]
 
-    def import_public_key(self, label, id, data, cka_copyable=True,
-                          cka_derive=False, cka_encrypt=False,
-                          cka_modifiable=True, cka_private=True,
-                          cka_trusted=False, cka_verify=True,
-                          cka_verify_recover=True, cka_wrap=False):
+    def import_public_key(
+        self,
+        label,
+        id,
+        data,
+        cka_copyable=True,
+        cka_derive=False,
+        cka_encrypt=False,
+        cka_modifiable=True,
+        cka_private=True,
+        cka_trusted=False,
+        cka_verify=True,
+        cka_verify_recover=True,
+        cka_wrap=False,
+    ):
         """
         Import RSA public key
         """
@@ -1451,9 +1589,17 @@ class P11_Helper:
             raise DuplicationError("Public key with same ID already exists")
 
         # Process keyword boolean arguments
-        (cka_copyable_ptr, cka_derive_ptr, cka_encrypt_ptr, cka_modifiable_ptr,
-         cka_private_ptr, cka_trusted_ptr, cka_verify_ptr,
-         cka_verify_recover_ptr, cka_wrap_ptr,) = convert_py2bool(attrs_pub)
+        (
+            cka_copyable_ptr,
+            cka_derive_ptr,
+            cka_encrypt_ptr,
+            cka_modifiable_ptr,
+            cka_private_ptr,
+            cka_trusted_ptr,
+            cka_verify_ptr,
+            cka_verify_recover_ptr,
+            cka_wrap_ptr,
+        ) = convert_py2bool(attrs_pub)
 
         # decode from ASN1 DER
         try:
@@ -1461,17 +1607,22 @@ class P11_Helper:
         except Exception:
             raise Error("import_public_key: d2i_PUBKEY error")
         if isinstance(pkey, rsa.RSAPublicKey):
-            ret = self._import_RSA_public_key(label, label_length, id_,
-                                              id_length, pkey,
-                                              cka_copyable_ptr,
-                                              cka_derive_ptr,
-                                              cka_encrypt_ptr,
-                                              cka_modifiable_ptr,
-                                              cka_private_ptr,
-                                              cka_trusted_ptr,
-                                              cka_verify_ptr,
-                                              cka_verify_recover_ptr,
-                                              cka_wrap_ptr)
+            ret = self._import_RSA_public_key(
+                label,
+                label_length,
+                id_,
+                id_length,
+                pkey,
+                cka_copyable_ptr,
+                cka_derive_ptr,
+                cka_encrypt_ptr,
+                cka_modifiable_ptr,
+                cka_private_ptr,
+                cka_trusted_ptr,
+                cka_verify_ptr,
+                cka_verify_recover_ptr,
+                cka_wrap_ptr,
+            )
         elif isinstance(pkey, dsa.DSAPublicKey):
             raise Error("DSA is not supported")
         elif isinstance(pkey, ec.EllipticCurvePublicKey):
@@ -1495,33 +1646,56 @@ class P11_Helper:
         # TODO export method
 
         # fill mech parameters
-        _set_wrapping_mech_parameters(wrapping_mech_ptr.mechanism,
-                                      wrapping_mech_ptr)
+        _set_wrapping_mech_parameters(wrapping_mech_ptr.mechanism, wrapping_mech_ptr)
 
-        rv = self.p11.C_WrapKey(self.session, wrapping_mech_ptr,
-                                object_wrapping_key, object_key, NULL,
-                                wrapped_key_len_ptr)
+        rv = self.p11.C_WrapKey(
+            self.session,
+            wrapping_mech_ptr,
+            object_wrapping_key,
+            object_key,
+            NULL,
+            wrapped_key_len_ptr,
+        )
         check_return_value(rv, "key wrapping: get buffer length")
 
         wrapped_key = new_array(CK_BYTE, wrapped_key_len_ptr[0])
 
-        rv = self.p11.C_WrapKey(self.session, wrapping_mech_ptr,
-                                object_wrapping_key, object_key, wrapped_key,
-                                wrapped_key_len_ptr)
+        rv = self.p11.C_WrapKey(
+            self.session,
+            wrapping_mech_ptr,
+            object_wrapping_key,
+            object_key,
+            wrapped_key,
+            wrapped_key_len_ptr,
+        )
         check_return_value(rv, "key wrapping: wrapping")
 
         result = string_to_pybytes_or_none(wrapped_key, wrapped_key_len_ptr[0])
 
         return result
 
-    def import_wrapped_secret_key(self, label, id, data, unwrapping_key,
-                                  wrapping_mech, key_type, cka_copyable=True,
-                                  cka_decrypt=False, cka_derive=False,
-                                  cka_encrypt=False, cka_extractable=True,
-                                  cka_modifiable=True, cka_private=True,
-                                  cka_sensitive=True, cka_sign=False,
-                                  cka_unwrap=True, cka_verify=False,
-                                  cka_wrap=True, cka_wrap_with_trusted=False):
+    def import_wrapped_secret_key(
+        self,
+        label,
+        id,
+        data,
+        unwrapping_key,
+        wrapping_mech,
+        key_type,
+        cka_copyable=True,
+        cka_decrypt=False,
+        cka_derive=False,
+        cka_encrypt=False,
+        cka_extractable=True,
+        cka_modifiable=True,
+        cka_private=True,
+        cka_sensitive=True,
+        cka_sign=False,
+        cka_unwrap=True,
+        cka_verify=False,
+        cka_wrap=True,
+        cka_wrap_with_trusted=False,
+    ):
         """
         Import wrapped secret key
         """
@@ -1557,8 +1731,7 @@ class P11_Helper:
             cka_wrap_with_trusted,
         )
 
-        _set_wrapping_mech_parameters(wrapping_mech_ptr.mechanism,
-                                      wrapping_mech_ptr)
+        _set_wrapping_mech_parameters(wrapping_mech_ptr.mechanism, wrapping_mech_ptr)
 
         label, label_length = unicode_to_char_array(label_unicode)
 
@@ -1566,52 +1739,82 @@ class P11_Helper:
             raise DuplicationError("Secret key with same ID already exists")
 
         # Process keyword boolean arguments
-        (_cka_copyable_ptr, cka_decrypt_ptr, cka_derive_ptr, cka_encrypt_ptr,
-         cka_extractable_ptr, cka_modifiable_ptr, cka_private_ptr,
-         cka_sensitive_ptr, cka_sign_ptr, cka_unwrap_ptr, cka_verify_ptr,
-         cka_wrap_ptr, cka_wrap_with_trusted_ptr,) = convert_py2bool(attrs)
+        (
+            _cka_copyable_ptr,
+            cka_decrypt_ptr,
+            cka_derive_ptr,
+            cka_encrypt_ptr,
+            cka_extractable_ptr,
+            cka_modifiable_ptr,
+            cka_private_ptr,
+            cka_sensitive_ptr,
+            cka_sign_ptr,
+            cka_unwrap_ptr,
+            cka_verify_ptr,
+            cka_wrap_ptr,
+            cka_wrap_with_trusted_ptr,
+        ) = convert_py2bool(attrs)
 
-        template = new_array(CK_ATTRIBUTE, (
-            (CKA_CLASS, key_class_ptr, sizeof(CK_OBJECT_CLASS)),
-            (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
-            (CKA_ID, id_, id_length),
-            (CKA_LABEL, label, label_length),
-            (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
-            # TODO Softhsm doesn't support it
-            # (CKA_COPYABLE, cka_copyable_ptr, sizeof(CK_BBOOL)),
-            (CKA_DECRYPT, cka_decrypt_ptr, sizeof(CK_BBOOL)),
-            (CKA_DERIVE, cka_derive_ptr, sizeof(CK_BBOOL)),
-            (CKA_ENCRYPT, cka_encrypt_ptr, sizeof(CK_BBOOL)),
-            (CKA_EXTRACTABLE, cka_extractable_ptr, sizeof(CK_BBOOL)),
-            (CKA_MODIFIABLE, cka_modifiable_ptr, sizeof(CK_BBOOL)),
-            (CKA_PRIVATE, cka_private_ptr, sizeof(CK_BBOOL)),
-            (CKA_SENSITIVE, cka_sensitive_ptr, sizeof(CK_BBOOL)),
-            (CKA_SIGN, cka_sign_ptr, sizeof(CK_BBOOL)),
-            (CKA_UNWRAP, cka_unwrap_ptr, sizeof(CK_BBOOL)),
-            (CKA_VERIFY, cka_verify_ptr, sizeof(CK_BBOOL)),
-            (CKA_WRAP, cka_wrap_ptr, sizeof(CK_BBOOL)),
-            (CKA_WRAP_WITH_TRUSTED, cka_wrap_with_trusted_ptr,
-             sizeof(CK_BBOOL)),
-        ))
+        template = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_CLASS, key_class_ptr, sizeof(CK_OBJECT_CLASS)),
+                (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
+                (CKA_ID, id_, id_length),
+                (CKA_LABEL, label, label_length),
+                (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
+                # TODO Softhsm doesn't support it
+                # (CKA_COPYABLE, cka_copyable_ptr, sizeof(CK_BBOOL)),
+                (CKA_DECRYPT, cka_decrypt_ptr, sizeof(CK_BBOOL)),
+                (CKA_DERIVE, cka_derive_ptr, sizeof(CK_BBOOL)),
+                (CKA_ENCRYPT, cka_encrypt_ptr, sizeof(CK_BBOOL)),
+                (CKA_EXTRACTABLE, cka_extractable_ptr, sizeof(CK_BBOOL)),
+                (CKA_MODIFIABLE, cka_modifiable_ptr, sizeof(CK_BBOOL)),
+                (CKA_PRIVATE, cka_private_ptr, sizeof(CK_BBOOL)),
+                (CKA_SENSITIVE, cka_sensitive_ptr, sizeof(CK_BBOOL)),
+                (CKA_SIGN, cka_sign_ptr, sizeof(CK_BBOOL)),
+                (CKA_UNWRAP, cka_unwrap_ptr, sizeof(CK_BBOOL)),
+                (CKA_VERIFY, cka_verify_ptr, sizeof(CK_BBOOL)),
+                (CKA_WRAP, cka_wrap_ptr, sizeof(CK_BBOOL)),
+                (CKA_WRAP_WITH_TRUSTED, cka_wrap_with_trusted_ptr, sizeof(CK_BBOOL)),
+            ),
+        )
 
-        rv = self.p11.C_UnwrapKey(self.session, wrapping_mech_ptr,
-                                  unwrapping_key_object, wrapped_key,
-                                  wrapped_key_len, template,
-                                  sizeof(template) // sizeof(CK_ATTRIBUTE),
-                                  unwrapped_key_object_ptr)
+        rv = self.p11.C_UnwrapKey(
+            self.session,
+            wrapping_mech_ptr,
+            unwrapping_key_object,
+            wrapped_key,
+            wrapped_key_len,
+            template,
+            sizeof(template) // sizeof(CK_ATTRIBUTE),
+            unwrapped_key_object_ptr,
+        )
         check_return_value(rv, "import_wrapped_key: key unwrapping")
 
         return unwrapped_key_object_ptr[0]
 
-    def import_wrapped_private_key(self, label, id, data, unwrapping_key,
-                                   wrapping_mech, key_type,
-                                   cka_always_authenticate=False,
-                                   cka_copyable=True, cka_decrypt=False,
-                                   cka_derive=False, cka_extractable=True,
-                                   cka_modifiable=True, cka_private=True,
-                                   cka_sensitive=True, cka_sign=True,
-                                   cka_sign_recover=True, cka_unwrap=False,
-                                   cka_wrap_with_trusted=False):
+    def import_wrapped_private_key(
+        self,
+        label,
+        id,
+        data,
+        unwrapping_key,
+        wrapping_mech,
+        key_type,
+        cka_always_authenticate=False,
+        cka_copyable=True,
+        cka_decrypt=False,
+        cka_derive=False,
+        cka_extractable=True,
+        cka_modifiable=True,
+        cka_private=True,
+        cka_sensitive=True,
+        cka_sign=True,
+        cka_sign_recover=True,
+        cka_unwrap=False,
+        cka_wrap_with_trusted=False,
+    ):
         """
         Import wrapped private key
         """
@@ -1652,40 +1855,59 @@ class P11_Helper:
             raise DuplicationError("Secret key with same ID already exists")
 
         # Process keyword boolean arguments
-        (cka_always_authenticate_ptr, _cka_copyable_ptr, cka_decrypt_ptr,
-         cka_derive_ptr, cka_extractable_ptr, cka_modifiable_ptr,
-         cka_private_ptr, cka_sensitive_ptr, cka_sign_ptr,
-         _cka_sign_recover_ptr, cka_unwrap_ptr, cka_wrap_with_trusted_ptr,
-         ) = convert_py2bool(attrs_priv)
+        (
+            cka_always_authenticate_ptr,
+            _cka_copyable_ptr,
+            cka_decrypt_ptr,
+            cka_derive_ptr,
+            cka_extractable_ptr,
+            cka_modifiable_ptr,
+            cka_private_ptr,
+            cka_sensitive_ptr,
+            cka_sign_ptr,
+            _cka_sign_recover_ptr,
+            cka_unwrap_ptr,
+            cka_wrap_with_trusted_ptr,
+        ) = convert_py2bool(attrs_priv)
 
-        template = new_array(CK_ATTRIBUTE, (
-            (CKA_CLASS, key_class_ptr, sizeof(CK_OBJECT_CLASS)),
-            (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
-            (CKA_ID, id_, id_length),
-            (CKA_LABEL, label, label_length),
-            (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
-            (CKA_ALWAYS_AUTHENTICATE, cka_always_authenticate_ptr,
-             sizeof(CK_BBOOL)),
-            # TODO Softhsm doesn't support it
-            # (CKA_COPYABLE, cka_copyable_ptr, sizeof(CK_BBOOL)),
-            (CKA_DECRYPT, cka_decrypt_ptr, sizeof(CK_BBOOL)),
-            (CKA_DERIVE, cka_derive_ptr, sizeof(CK_BBOOL)),
-            (CKA_EXTRACTABLE, cka_extractable_ptr, sizeof(CK_BBOOL)),
-            (CKA_MODIFIABLE,  cka_modifiable_ptr, sizeof(CK_BBOOL)),
-            (CKA_PRIVATE, cka_private_ptr, sizeof(CK_BBOOL)),
-            (CKA_SENSITIVE, cka_sensitive_ptr, sizeof(CK_BBOOL)),
-            (CKA_SIGN, cka_sign_ptr, sizeof(CK_BBOOL)),
-            (CKA_SIGN_RECOVER, cka_sign_ptr, sizeof(CK_BBOOL)),
-            (CKA_UNWRAP, cka_unwrap_ptr, sizeof(CK_BBOOL)),
-            (CKA_WRAP_WITH_TRUSTED, cka_wrap_with_trusted_ptr,
-             sizeof(CK_BBOOL)),
-        ))
+        template = new_array(
+            CK_ATTRIBUTE,
+            (
+                (CKA_CLASS, key_class_ptr, sizeof(CK_OBJECT_CLASS)),
+                (CKA_KEY_TYPE, key_type_ptr, sizeof(CK_KEY_TYPE)),
+                (CKA_ID, id_, id_length),
+                (CKA_LABEL, label, label_length),
+                (CKA_TOKEN, true_ptr, sizeof(CK_BBOOL)),
+                (
+                    CKA_ALWAYS_AUTHENTICATE,
+                    cka_always_authenticate_ptr,
+                    sizeof(CK_BBOOL),
+                ),
+                # TODO Softhsm doesn't support it
+                # (CKA_COPYABLE, cka_copyable_ptr, sizeof(CK_BBOOL)),
+                (CKA_DECRYPT, cka_decrypt_ptr, sizeof(CK_BBOOL)),
+                (CKA_DERIVE, cka_derive_ptr, sizeof(CK_BBOOL)),
+                (CKA_EXTRACTABLE, cka_extractable_ptr, sizeof(CK_BBOOL)),
+                (CKA_MODIFIABLE, cka_modifiable_ptr, sizeof(CK_BBOOL)),
+                (CKA_PRIVATE, cka_private_ptr, sizeof(CK_BBOOL)),
+                (CKA_SENSITIVE, cka_sensitive_ptr, sizeof(CK_BBOOL)),
+                (CKA_SIGN, cka_sign_ptr, sizeof(CK_BBOOL)),
+                (CKA_SIGN_RECOVER, cka_sign_ptr, sizeof(CK_BBOOL)),
+                (CKA_UNWRAP, cka_unwrap_ptr, sizeof(CK_BBOOL)),
+                (CKA_WRAP_WITH_TRUSTED, cka_wrap_with_trusted_ptr, sizeof(CK_BBOOL)),
+            ),
+        )
 
-        rv = self.p11.C_UnwrapKey(self.session, wrapping_mech_ptr,
-                                  unwrapping_key_object, wrapped_key,
-                                  wrapped_key_len, template,
-                                  sizeof(template) // sizeof(CK_ATTRIBUTE),
-                                  unwrapped_key_object_ptr)
+        rv = self.p11.C_UnwrapKey(
+            self.session,
+            wrapping_mech_ptr,
+            unwrapping_key_object,
+            wrapped_key,
+            wrapped_key_len,
+            template,
+            sizeof(template) // sizeof(CK_ATTRIBUTE),
+            unwrapped_key_object_ptr,
+        )
         check_return_value(rv, "import_wrapped_key: key unwrapping")
 
         return unwrapped_key_object_ptr[0]
@@ -1698,27 +1920,29 @@ class P11_Helper:
         attribute_ptr = new_ptr(CK_ATTRIBUTE)
 
         attribute_ptr.type = attr
-        if attr in (CKA_ALWAYS_AUTHENTICATE,
-                    CKA_ALWAYS_SENSITIVE,
-                    CKA_COPYABLE,
-                    CKA_ENCRYPT,
-                    CKA_EXTRACTABLE,
-                    CKA_DECRYPT,
-                    CKA_DERIVE,
-                    CKA_LOCAL,
-                    CKA_MODIFIABLE,
-                    CKA_NEVER_EXTRACTABLE,
-                    CKA_PRIVATE,
-                    CKA_SENSITIVE,
-                    CKA_SIGN,
-                    CKA_SIGN_RECOVER,
-                    CKA_TOKEN,
-                    CKA_TRUSTED,
-                    CKA_UNWRAP,
-                    CKA_VERIFY,
-                    CKA_VERIFY_RECOVER,
-                    CKA_WRAP,
-                    CKA_WRAP_WITH_TRUSTED):
+        if attr in (
+            CKA_ALWAYS_AUTHENTICATE,
+            CKA_ALWAYS_SENSITIVE,
+            CKA_COPYABLE,
+            CKA_ENCRYPT,
+            CKA_EXTRACTABLE,
+            CKA_DECRYPT,
+            CKA_DERIVE,
+            CKA_LOCAL,
+            CKA_MODIFIABLE,
+            CKA_NEVER_EXTRACTABLE,
+            CKA_PRIVATE,
+            CKA_SENSITIVE,
+            CKA_SIGN,
+            CKA_SIGN_RECOVER,
+            CKA_TOKEN,
+            CKA_TRUSTED,
+            CKA_UNWRAP,
+            CKA_VERIFY,
+            CKA_VERIFY_RECOVER,
+            CKA_WRAP,
+            CKA_WRAP_WITH_TRUSTED,
+        ):
             attribute_ptr.pValue = true_ptr if value else false_ptr
             attribute_ptr.ulValueLen = sizeof(CK_BBOOL)
         elif attr == CKA_ID:
@@ -1742,9 +1966,9 @@ class P11_Helper:
 
         template = new_array(CK_ATTRIBUTE, (attribute_ptr[0],))
 
-        rv = self.p11.C_SetAttributeValue(self.session, object, template,
-                                          (sizeof(template) //
-                                           sizeof(CK_ATTRIBUTE)))
+        rv = self.p11.C_SetAttributeValue(
+            self.session, object, template, (sizeof(template) // sizeof(CK_ATTRIBUTE))
+        )
         check_return_value(rv, "set_attribute")
 
     def get_attribute(self, key_object, attr):
@@ -1756,48 +1980,50 @@ class P11_Helper:
         attribute_ptr.ulValueLen = 0
         template = new_array(CK_ATTRIBUTE, (attribute_ptr[0],))
 
-        rv = self.p11.C_GetAttributeValue(self.session, object, template,
-                                          (sizeof(template) //
-                                           sizeof(CK_ATTRIBUTE)))
+        rv = self.p11.C_GetAttributeValue(
+            self.session, object, template, (sizeof(template) // sizeof(CK_ATTRIBUTE))
+        )
         if rv == CKR_ATTRIBUTE_TYPE_INVALID or template[0].ulValueLen == -1:
             raise NotFound("attribute does not exist")
         check_return_value(rv, "get_attribute init")
         value = new_array(unsigned_char, template[0].ulValueLen)
         template[0].pValue = value
 
-        rv = self.p11.C_GetAttributeValue(self.session, object, template,
-                                          (sizeof(template) //
-                                           sizeof(CK_ATTRIBUTE)))
+        rv = self.p11.C_GetAttributeValue(
+            self.session, object, template, (sizeof(template) // sizeof(CK_ATTRIBUTE))
+        )
         check_return_value(rv, "get_attribute")
 
-        if attr in (CKA_ALWAYS_AUTHENTICATE,
-                    CKA_ALWAYS_SENSITIVE,
-                    CKA_COPYABLE,
-                    CKA_ENCRYPT,
-                    CKA_EXTRACTABLE,
-                    CKA_DECRYPT,
-                    CKA_DERIVE,
-                    CKA_LOCAL,
-                    CKA_MODIFIABLE,
-                    CKA_NEVER_EXTRACTABLE,
-                    CKA_PRIVATE,
-                    CKA_SENSITIVE,
-                    CKA_SIGN,
-                    CKA_SIGN_RECOVER,
-                    CKA_TOKEN,
-                    CKA_TRUSTED,
-                    CKA_UNWRAP,
-                    CKA_VERIFY,
-                    CKA_VERIFY_RECOVER,
-                    CKA_WRAP,
-                    CKA_WRAP_WITH_TRUSTED):
-            ret = bool(_ffi.cast(_ffi.getctype(CK_BBOOL, '*'), value)[0])
+        if attr in (
+            CKA_ALWAYS_AUTHENTICATE,
+            CKA_ALWAYS_SENSITIVE,
+            CKA_COPYABLE,
+            CKA_ENCRYPT,
+            CKA_EXTRACTABLE,
+            CKA_DECRYPT,
+            CKA_DERIVE,
+            CKA_LOCAL,
+            CKA_MODIFIABLE,
+            CKA_NEVER_EXTRACTABLE,
+            CKA_PRIVATE,
+            CKA_SENSITIVE,
+            CKA_SIGN,
+            CKA_SIGN_RECOVER,
+            CKA_TOKEN,
+            CKA_TRUSTED,
+            CKA_UNWRAP,
+            CKA_VERIFY,
+            CKA_VERIFY_RECOVER,
+            CKA_WRAP,
+            CKA_WRAP_WITH_TRUSTED,
+        ):
+            ret = bool(_ffi.cast(_ffi.getctype(CK_BBOOL, "*"), value)[0])
         elif attr == CKA_LABEL:
             ret = char_array_to_unicode(value, template[0].ulValueLen)
         elif attr in (CKA_MODULUS, CKA_PUBLIC_EXPONENT, CKA_ID):
             ret = string_to_pybytes_or_none(value, template[0].ulValueLen)
         elif attr == CKA_KEY_TYPE:
-            ret = _ffi.cast(_ffi.getctype(unsigned_long, '*'), value)[0]
+            ret = _ffi.cast(_ffi.getctype(unsigned_long, "*"), value)[0]
         else:
             raise Error("Unknown attribute")
 
@@ -1832,8 +2058,9 @@ def gen_key_id(key_id_len=16):
     )
 
 
-def generate_master_key(p11, keylabel=u"dnssec-master", key_length=16,
-                        disable_old_keys=True):
+def generate_master_key(
+    p11, keylabel=u"dnssec-master", key_length=16, disable_old_keys=True
+):
     assert isinstance(p11, P11_Helper)
 
     key_id = None
@@ -1841,23 +2068,17 @@ def generate_master_key(p11, keylabel=u"dnssec-master", key_length=16,
         # check if key with this ID exist in LDAP or softHSM
         # id is 16 Bytes long
         key_id = gen_key_id()
-        keys = p11.find_keys(KEY_CLASS_SECRET_KEY,
-                             label=keylabel,
-                             id=key_id)
+        keys = p11.find_keys(KEY_CLASS_SECRET_KEY, label=keylabel, id=key_id)
         if not keys:
             break  # we found unique id
 
-    p11.generate_master_key(keylabel,
-                            key_id,
-                            key_length=key_length,
-                            cka_wrap=True,
-                            cka_unwrap=True)
+    p11.generate_master_key(
+        keylabel, key_id, key_length=key_length, cka_wrap=True, cka_unwrap=True
+    )
 
     if disable_old_keys:
         # set CKA_WRAP=False for old master keys
-        master_keys = p11.find_keys(KEY_CLASS_SECRET_KEY,
-                                    label=keylabel,
-                                    cka_wrap=True)
+        master_keys = p11.find_keys(KEY_CLASS_SECRET_KEY, label=keylabel, cka_wrap=True)
 
         for handle in master_keys:
             # don't disable wrapping for new key

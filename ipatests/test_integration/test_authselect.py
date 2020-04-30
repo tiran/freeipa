@@ -15,9 +15,9 @@ from ipaplatform.paths import paths
 from ipatests.test_integration.base import IntegrationTest
 from ipatests.pytest_ipa.integration import tasks
 
-default_profile = 'sssd'
-preconfigured_profile = 'winbind'
-preconfigured_options = ('with-fingerprint',)
+default_profile = "sssd"
+preconfigured_profile = "winbind"
+preconfigured_options = ("with-fingerprint",)
 
 
 def check_authselect_profile(host, expected_profile, expected_options=()):
@@ -25,8 +25,7 @@ def check_authselect_profile(host, expected_profile, expected_options=()):
     Checks that the current authselect profile on the host
     matches expected one
     """
-    cmd = host.run_command(
-        ['cat', '/etc/authselect/authselect.conf'])
+    cmd = host.run_command(["cat", "/etc/authselect/authselect.conf"])
     lines = cmd.stdout_text.splitlines()
     assert lines[0] == expected_profile
     options = lines[1::]
@@ -38,15 +37,16 @@ def apply_authselect_profile(host, profile, options=()):
     """
     Apply the specified authselect profile and options with --force
     """
-    cmd = ['authselect', 'select', profile]
+    cmd = ["authselect", "select", profile]
     cmd.extend(options)
-    cmd.append('--force')
+    cmd.append("--force")
     host.run_command(cmd)
 
 
 @pytest.mark.skipif(
     paths.AUTHSELECT is None,
-    reason="Authselect is only available in fedora-like distributions")
+    reason="Authselect is only available in fedora-like distributions",
+)
 class TestClientInstallation(IntegrationTest):
     """
     Tests the client installation with authselect profile.
@@ -59,15 +59,18 @@ class TestClientInstallation(IntegrationTest):
     This test ensures that both scenarios are properly handled by the client
     installer.
     """
+
     num_clients = 1
     msg_warn_install = (
         "WARNING: The configuration pre-client installation "
         "is not managed by authselect and cannot be backed up. "
-        "Uninstallation may not be able to revert to the original state.")
+        "Uninstallation may not be able to revert to the original state."
+    )
     msg_warn_uninstall = (
         "WARNING: Unable to revert to the pre-installation "
         "state ('authconfig' tool has been deprecated in favor of "
-        "'authselect'). The default sssd profile will be used instead.")
+        "'authselect'). The default sssd profile will be used instead."
+    )
 
     @classmethod
     def install(cls, mh):
@@ -75,19 +78,27 @@ class TestClientInstallation(IntegrationTest):
         cls.client = cls.clients[0]
 
     def _install_client(self, extraargs=[]):
-        cmd = ['ipa-client-install', '-U',
-               '--domain', self.client.domain.name,
-               '--realm', self.client.domain.realm,
-               '-p', self.client.config.admin_name,
-               '-w', self.client.config.admin_password,
-               '--server', self.master.hostname]
+        cmd = [
+            "ipa-client-install",
+            "-U",
+            "--domain",
+            self.client.domain.name,
+            "--realm",
+            self.client.domain.realm,
+            "-p",
+            self.client.config.admin_name,
+            "-w",
+            self.client.config.admin_password,
+            "--server",
+            self.master.hostname,
+        ]
         cmd.extend(extraargs)
         return self.client.run_command(cmd, raiseonerr=False)
 
     def _uninstall_client(self):
         return self.client.run_command(
-            ['ipa-client-install', '--uninstall', '-U'],
-            raiseonerr=False)
+            ["ipa-client-install", "--uninstall", "-U"], raiseonerr=False
+        )
 
     def test_install_client_no_preconfigured_profile(self):
         """
@@ -96,14 +107,13 @@ class TestClientInstallation(IntegrationTest):
         # On a machine upgraded from authconfig, there is no profile
         # To simulate this use case, remove /etc/authselect/authselect.conf
         # before launching client installation
-        self.client.run_command(
-            ['rm', '-f', '/etc/authselect/authselect.conf'])
+        self.client.run_command(["rm", "-f", "/etc/authselect/authselect.conf"])
         result = self._install_client()
         assert result.returncode == 0
         assert self.msg_warn_install in result.stderr_text
         # Client installation must configure the 'sssd' profile
         # with sudo
-        check_authselect_profile(self.client, default_profile, ('with-sudo',))
+        check_authselect_profile(self.client, default_profile, ("with-sudo",))
 
     def test_uninstall_client_no_preconfigured_profile(self):
         """
@@ -123,19 +133,21 @@ class TestClientInstallation(IntegrationTest):
         """
         # Configure a profile winbind with feature with-fingerprint
         apply_authselect_profile(
-            self.client, preconfigured_profile, preconfigured_options)
+            self.client, preconfigured_profile, preconfigured_options
+        )
         # Make sure that oddjobd is disabled and stopped
         self.client.run_command(["systemctl", "disable", "oddjobd", "--now"])
 
         # Call the installer, must succeed and store the winbind profile
         # in the statestore, but install sssd profile with-mkhomedir
-        result = self._install_client(extraargs=['-f', '--mkhomedir'])
+        result = self._install_client(extraargs=["-f", "--mkhomedir"])
         assert result.returncode == 0
         assert self.msg_warn_install not in result.stderr_text
         # Client installation must configure the 'sssd' profile
         # with mkhomedir (because of extraargs) and with sudo
         check_authselect_profile(
-            self.client, default_profile, ('with-mkhomedir', 'with-sudo'))
+            self.client, default_profile, ("with-mkhomedir", "with-sudo")
+        )
 
         # Test for ticket 7604:
         # ipa-client-install --mkhomedir doesn't enable oddjobd
@@ -154,13 +166,14 @@ class TestClientInstallation(IntegrationTest):
         assert result.returncode == 0
         assert self.msg_warn_uninstall not in result.stderr_text
         check_authselect_profile(
-            self.client, preconfigured_profile, preconfigured_options)
+            self.client, preconfigured_profile, preconfigured_options
+        )
 
     def test_install_client_no_sudo(self):
         """
         Test client installation with --no-sudo option
         """
-        result = self._install_client(extraargs=['-f', '--no-sudo'])
+        result = self._install_client(extraargs=["-f", "--no-sudo"])
         assert result.returncode == 0
         assert self.msg_warn_install not in result.stderr_text
         # Client installation must configure the 'sssd' profile
@@ -174,16 +187,16 @@ class TestClientInstallation(IntegrationTest):
         """
         # Remove the keys 'profile' and 'features_list' from sysrestore.state
         def keep(line):
-            if line.startswith('profile') or line.startswith('features_list'):
+            if line.startswith("profile") or line.startswith("features_list"):
                 return False
             return True
 
-        sysrestore_state_file = os.path.join(paths.IPA_CLIENT_SYSRESTORE,
-                                             "sysrestore.state")
-        content = self.client.get_file_contents(sysrestore_state_file,
-                                                encoding='utf-8')
-        lines = [line.rstrip() for line in content.split('\n') if keep(line)]
-        new_content = '\n'.join(lines)
+        sysrestore_state_file = os.path.join(
+            paths.IPA_CLIENT_SYSRESTORE, "sysrestore.state"
+        )
+        content = self.client.get_file_contents(sysrestore_state_file, encoding="utf-8")
+        lines = [line.rstrip() for line in content.split("\n") if keep(line)]
+        new_content = "\n".join(lines)
         self.client.put_file_contents(sysrestore_state_file, new_content)
 
         result = self._uninstall_client()
@@ -198,7 +211,8 @@ class TestClientInstallation(IntegrationTest):
 
 @pytest.mark.skipif(
     paths.AUTHSELECT is None,
-    reason="Authselect is only available in fedora-like distributions")
+    reason="Authselect is only available in fedora-like distributions",
+)
 class TestServerInstallation(IntegrationTest):
     """
     Tests the server installation with authselect profile.
@@ -223,9 +237,10 @@ class TestServerInstallation(IntegrationTest):
         """
         # Configure a profile winbind with feature with-fingerprint
         apply_authselect_profile(
-            self.master, preconfigured_profile, preconfigured_options)
+            self.master, preconfigured_profile, preconfigured_options
+        )
         tasks.install_master(self.master, setup_dns=False)
-        check_authselect_profile(self.master, default_profile, ('with-sudo',))
+        check_authselect_profile(self.master, default_profile, ("with-sudo",))
 
     def test_uninstall(self):
         """
@@ -235,7 +250,8 @@ class TestServerInstallation(IntegrationTest):
         # uninstall must revert to the preconfigured profile
         tasks.uninstall_master(self.master)
         check_authselect_profile(
-            self.master, preconfigured_profile, preconfigured_options)
+            self.master, preconfigured_profile, preconfigured_options
+        )
 
     @classmethod
     def uninstall(cls, mh):

@@ -28,13 +28,13 @@ class BaseTracker:
     def dn(self):
         """A property containing the distinguished name of the entry."""
         if not self._dn:
-            raise ValueError('The DN must be set in the init method.')
+            raise ValueError("The DN must be set in the init method.")
         return self._dn
 
     @dn.setter
     def dn(self, value):
         if not (isinstance(value, DN) or isinstance(value, Fuzzy)):
-            raise ValueError('The value must be an instance of DN or Fuzzy.')
+            raise ValueError("The value must be an instance of DN or Fuzzy.")
         self._dn = value
 
     @property
@@ -52,7 +52,7 @@ class BaseTracker:
     def filter_attrs(self, keys):
         """Return a dict of expected attrs, filtered by the given keys"""
         if not self.attrs:
-            raise RuntimeError('The tracker instance has no attributes.')
+            raise RuntimeError("The tracker instance has no attributes.")
         return {k: v for k, v in self.attrs.items() if k in keys}
 
     def run_command(self, name, *args, **options):
@@ -62,19 +62,18 @@ class BaseTracker:
         """
         cmd = self.api.Command[name]
 
-        options.setdefault('version', self.default_version)
+        options.setdefault("version", self.default_version)
 
-        args_repr = ', '.join(
-            [repr(a) for a in args] +
-            ['%s=%r' % item for item in list(options.items())])
+        args_repr = ", ".join(
+            [repr(a) for a in args] + ["%s=%r" % item for item in list(options.items())]
+        )
         try:
             result = cmd(*args, **options)
         except Exception as e:
-            print('Ran command: %s(%s): %s: %s' % (cmd, args_repr,
-                                                   type(e).__name__, e))
+            print("Ran command: %s(%s): %s: %s" % (cmd, args_repr, type(e).__name__, e))
             raise
         else:
-            print('Ran command: %s(%s): OK' % (cmd, args_repr))
+            print("Ran command: %s(%s): OK" % (cmd, args_repr))
         return result
 
     def make_command(self, name, *args, **options):
@@ -109,7 +108,6 @@ class RetrievalTracker(BaseTracker):
 
 
 class SearchTracker(BaseTracker):
-
     def make_find_command(self, *args, **kwargs):
         """Make function that finds the entry using ${CMD}_find
 
@@ -160,8 +158,7 @@ class ModificationTracker(BaseTracker):
                 del self.attrs[key]
 
         self.check_update(
-            result,
-            extra_keys=set(updates.keys()) | set(expected_updates.keys())
+            result, extra_keys=set(updates.keys()) | set(expected_updates.keys())
         )
 
 
@@ -301,6 +298,7 @@ class EnableTracker(BaseTracker):
         The fixture ensures the plugin entry is in the same state
         (enabled/disabled) after the test as it was before it.
         """
+
         def cleanup():
             if self.original_enabled != self.enabled:
                 if self.original_enabled:
@@ -322,7 +320,7 @@ class ConfigurationTracker(RetrievalTracker, ModificationTracker):
         it was in the begining.
         """
         retrieve = self.make_retrieve_command(all=True)
-        res = retrieve()['result']
+        res = retrieve()["result"]
         original_state = {}
         for k, v in res.items():
             if k in self.update_keys:
@@ -341,8 +339,7 @@ class ConfigurationTracker(RetrievalTracker, ModificationTracker):
         return super(ConfigurationTracker, self).make_fixture(request)
 
 
-class Tracker(RetrievalTracker, SearchTracker, ModificationTracker,
-              CreationTracker):
+class Tracker(RetrievalTracker, SearchTracker, ModificationTracker, CreationTracker):
     """Wraps and tracks modifications to a plugin LDAP entry object
 
     Stores a copy of state of a plugin entry object and allows checking that

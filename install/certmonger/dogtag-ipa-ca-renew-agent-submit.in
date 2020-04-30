@@ -22,10 +22,11 @@
 from __future__ import print_function
 
 import os
+
 # Prevent garbage from readline on standard output
 # (see https://fedorahosted.org/freeipa/ticket/4064)
 if not os.isatty(1):
-    os.environ['TERM'] = 'dumb'
+    os.environ["TERM"] = "dumb"
 import sys
 import syslog
 import traceback
@@ -65,7 +66,7 @@ if six.PY3:
     unicode = str
 
 
-IPA_CA_NICKNAME = 'caSigningCert cert-pki-ca'
+IPA_CA_NICKNAME = "caSigningCert cert-pki-ca"
 
 
 def get_nickname():
@@ -73,7 +74,7 @@ def get_nickname():
     # an OpenSSL certificate for which we have to reverse the order of its DN
     # components thus changing the CERTMONGER_REQ_SUBJECT
     # https://pagure.io/certmonger/issue/62
-    csr = os.environ.get('CERTMONGER_CSR').encode('ascii')
+    csr = os.environ.get("CERTMONGER_CSR").encode("ascii")
     csr_obj = crypto_x509.load_pem_x509_csr(csr, default_backend())
     subject = csr_obj.subject
     if not subject:
@@ -85,8 +86,7 @@ def get_nickname():
 
     ca_subject_dn = ca.lookup_ca_subject(api, subject_base)
 
-    return cainstance.get_ca_renewal_nickname(
-        subject_base, ca_subject_dn, DN(subject))
+    return cainstance.get_ca_renewal_nickname(subject_base, ca_subject_dn, DN(subject))
 
 
 def is_replicated():
@@ -103,11 +103,12 @@ def ldap_connect():
     conn = None
     try:
         conn = ldap2(api)
-        conn.connect(ccache=os.environ['KRB5CCNAME'])
+        conn.connect(ccache=os.environ["KRB5CCNAME"])
         yield conn
     finally:
         if conn is not None and conn.isconnected():
             conn.disconnect()
+
 
 def call_handler(_handler, *args, **kwargs):
     """
@@ -120,9 +121,9 @@ def call_handler(_handler, *args, **kwargs):
     After calling the handler, put the requested profile name and cookie
     returned by the handler in a new cookie and return it.
     """
-    operation = os.environ['CERTMONGER_OPERATION']
-    if operation == 'POLL':
-        cookie = os.environ.pop('CERTMONGER_CA_COOKIE', None)
+    operation = os.environ["CERTMONGER_OPERATION"]
+    if operation == "POLL":
+        cookie = os.environ.pop("CERTMONGER_CA_COOKIE", None)
         if cookie is None:
             return (UNCONFIGURED, "Cookie not provided")
         if len(cookie) > 0:
@@ -135,57 +136,53 @@ def call_handler(_handler, *args, **kwargs):
         else:
             # Reconstruct the data for the missing cookie. Sanity checking
             # is done elsewhere, when needed.
-            context = dict(cookie=u'')
-            profile = os.environ.get('CERTMONGER_CA_PROFILE')
+            context = dict(cookie=u"")
+            profile = os.environ.get("CERTMONGER_CA_PROFILE")
             if profile is not None:
-                profile = profile.encode('ascii').decode('raw_unicode_escape')
-            context['profile'] = profile
+                profile = profile.encode("ascii").decode("raw_unicode_escape")
+            context["profile"] = profile
 
-        if 'profile' in context:
-            profile = context.pop('profile')
+        if "profile" in context:
+            profile = context.pop("profile")
             try:
                 if profile is not None:
                     if not isinstance(profile, unicode):
                         raise TypeError
-                    profile = (profile.encode('raw_unicode_escape')
-                               .decode('ascii'))
+                    profile = profile.encode("raw_unicode_escape").decode("ascii")
             except (TypeError, UnicodeEncodeError):
-                return (UNCONFIGURED,
-                        "Invalid 'profile' in cookie: %r" % profile)
+                return (UNCONFIGURED, "Invalid 'profile' in cookie: %r" % profile)
         else:
             return (UNCONFIGURED, "No 'profile' in cookie")
 
         # If profile has changed between SUBMIT and POLL, restart request
-        if os.environ.get('CERTMONGER_CA_PROFILE') != profile:
-            os.environ['CERTMONGER_OPERATION'] = 'SUBMIT'
+        if os.environ.get("CERTMONGER_CA_PROFILE") != profile:
+            os.environ["CERTMONGER_OPERATION"] = "SUBMIT"
             context = {}
 
-        if 'cookie' in context:
-            cookie = context.pop('cookie')
+        if "cookie" in context:
+            cookie = context.pop("cookie")
             try:
                 if not isinstance(cookie, unicode):
                     raise TypeError
-                cookie = cookie.encode('raw_unicode_escape').decode('ascii')
+                cookie = cookie.encode("raw_unicode_escape").decode("ascii")
             except (TypeError, UnicodeEncodeError):
-                return (UNCONFIGURED,
-                        "Invalid 'cookie' in cookie: %r" % cookie)
-            os.environ['CERTMONGER_CA_COOKIE'] = cookie
+                return (UNCONFIGURED, "Invalid 'cookie' in cookie: %r" % cookie)
+            os.environ["CERTMONGER_CA_COOKIE"] = cookie
     else:
         context = {}
 
     result = _handler(*args, **kwargs)
 
     if result[0] in (WAIT, WAIT_WITH_DELAY):
-        context['cookie'] = (result[-1].encode('ascii')
-                             .decode('raw_unicode_escape'))
+        context["cookie"] = result[-1].encode("ascii").decode("raw_unicode_escape")
 
-    profile = os.environ.get('CERTMONGER_CA_PROFILE')
+    profile = os.environ.get("CERTMONGER_CA_PROFILE")
     if profile is not None:
-        profile = profile.encode('ascii').decode('raw_unicode_escape')
-    context['profile'] = profile
+        profile = profile.encode("ascii").decode("raw_unicode_escape")
+    context["profile"] = profile
 
     cookie = json.dumps(context)
-    os.environ['CERTMONGER_CA_COOKIE'] = cookie
+    os.environ["CERTMONGER_CA_COOKIE"] = cookie
     if result[0] in (WAIT, WAIT_WITH_DELAY):
         result = result[:-1] + (cookie,)
 
@@ -197,42 +194,47 @@ def request_cert(reuse_existing, **kwargs):
     Request certificate from IPA CA.
     """
     if reuse_existing:
-        cert = os.environ.get('CERTMONGER_CERTIFICATE')
+        cert = os.environ.get("CERTMONGER_CERTIFICATE")
         if cert:
             return (ISSUED, cert)
         else:
             return (REJECTED, "New certificate requests not supported")
 
-    syslog.syslog(syslog.LOG_NOTICE,
-                  "Forwarding request to dogtag-ipa-renew-agent")
+    syslog.syslog(syslog.LOG_NOTICE, "Forwarding request to dogtag-ipa-renew-agent")
 
-    args = ([paths.DOGTAG_IPA_RENEW_AGENT_SUBMIT,
-             "--cafile", paths.IPA_CA_CRT,
-             "--certfile", paths.RA_AGENT_PEM,
-             "--keyfile", paths.RA_AGENT_KEY] +
-            sys.argv[1:] +
-            ['--submit-option', "requestor_name=IPA"] +
-            ['--force-new', '--approval-option', 'bypassCAnotafter=true']
+    args = (
+        [
+            paths.DOGTAG_IPA_RENEW_AGENT_SUBMIT,
+            "--cafile",
+            paths.IPA_CA_CRT,
+            "--certfile",
+            paths.RA_AGENT_PEM,
+            "--keyfile",
+            paths.RA_AGENT_KEY,
+        ]
+        + sys.argv[1:]
+        + ["--submit-option", "requestor_name=IPA"]
+        + ["--force-new", "--approval-option", "bypassCAnotafter=true"]
     )
-    result = ipautil.run(args, raiseonerr=False, env=os.environ,
-                         capture_output=True)
+    result = ipautil.run(args, raiseonerr=False, env=os.environ, capture_output=True)
     if six.PY2:
         sys.stderr.write(result.raw_error_output)
     else:
         # Write bytes directly
-        sys.stderr.buffer.write(result.raw_error_output)  #pylint: disable=no-member
+        sys.stderr.buffer.write(result.raw_error_output)  # pylint: disable=no-member
     sys.stderr.flush()
 
-    syslog.syslog(syslog.LOG_NOTICE,
-                  "dogtag-ipa-renew-agent returned %d" % result.returncode)
+    syslog.syslog(
+        syslog.LOG_NOTICE, "dogtag-ipa-renew-agent returned %d" % result.returncode
+    )
 
     stdout = result.output
-    if stdout.endswith('\n'):
+    if stdout.endswith("\n"):
         stdout = stdout[:-1]
 
     rc = result.returncode
     if rc == WAIT_WITH_DELAY:
-        delay, _sep, cookie = stdout.partition('\n')
+        delay, _sep, cookie = stdout.partition("\n")
         return (rc, delay, cookie)
     else:
         return (rc, stdout)
@@ -242,11 +244,11 @@ def store_cert(**kwargs):
     """
     Store certificate in LDAP.
     """
-    operation = os.environ.get('CERTMONGER_OPERATION')
-    if operation == 'SUBMIT':
+    operation = os.environ.get("CERTMONGER_OPERATION")
+    if operation == "SUBMIT":
         attempts = 0
-    elif operation == 'POLL':
-        cookie = os.environ.get('CERTMONGER_CA_COOKIE')
+    elif operation == "POLL":
+        cookie = os.environ.get("CERTMONGER_CA_COOKIE")
         if not cookie:
             return (UNCONFIGURED, "Cookie not provided")
 
@@ -261,10 +263,10 @@ def store_cert(**kwargs):
     if not nickname:
         return (REJECTED, "Nickname could not be determined")
 
-    cert = os.environ.get('CERTMONGER_CERTIFICATE')
+    cert = os.environ.get("CERTMONGER_CERTIFICATE")
     if not cert:
         return (REJECTED, "New certificate requests not supported")
-    cert = x509.load_pem_x509_certificate(cert.encode('ascii'))
+    cert = x509.load_pem_x509_certificate(cert.encode("ascii"))
 
     try:
         with ldap_connect() as conn:
@@ -274,67 +276,71 @@ def store_cert(**kwargs):
         if attempts < 10:
             syslog.syslog(
                 syslog.LOG_ERR,
-                "Updating renewal certificate failed: %s. Sleeping 30s" % e)
+                "Updating renewal certificate failed: %s. Sleeping 30s" % e,
+            )
             return (WAIT_WITH_DELAY, 30, str(attempts))
         else:
             syslog.syslog(
                 syslog.LOG_ERR,
                 "Giving up. To retry storing the certificate, resubmit the "
-                "request with CA \"dogtag-ipa-ca-renew-agent-reuse\"")
+                'request with CA "dogtag-ipa-ca-renew-agent-reuse"',
+            )
 
-    return (ISSUED, cert.public_bytes(x509.Encoding.PEM).decode('ascii'))
+    return (ISSUED, cert.public_bytes(x509.Encoding.PEM).decode("ascii"))
 
 
 def request_and_store_cert(**kwargs):
     """
     Request certificate from IPA CA and store it in LDAP.
     """
-    operation = os.environ.get('CERTMONGER_OPERATION')
-    if operation == 'SUBMIT':
-        state = 'request'
+    operation = os.environ.get("CERTMONGER_OPERATION")
+    if operation == "SUBMIT":
+        state = "request"
         cookie = None
-    elif operation == 'POLL':
-        cookie = os.environ.get('CERTMONGER_CA_COOKIE')
+    elif operation == "POLL":
+        cookie = os.environ.get("CERTMONGER_CA_COOKIE")
         if not cookie:
             return (UNCONFIGURED, "Cookie not provided")
 
-        state, _sep, cookie = cookie.partition(':')
-        if state not in ('request', 'store'):
-            return (UNCONFIGURED,
-                    "Invalid cookie: %r" % os.environ['CERTMONGER_CA_COOKIE'])
+        state, _sep, cookie = cookie.partition(":")
+        if state not in ("request", "store"):
+            return (
+                UNCONFIGURED,
+                "Invalid cookie: %r" % os.environ["CERTMONGER_CA_COOKIE"],
+            )
     else:
         return (OPERATION_NOT_SUPPORTED_BY_HELPER,)
 
-    if state == 'request':
+    if state == "request":
         if cookie is None:
-            os.environ['CERTMONGER_OPERATION'] = 'SUBMIT'
+            os.environ["CERTMONGER_OPERATION"] = "SUBMIT"
         else:
-            os.environ['CERTMONGER_CA_COOKIE'] = cookie
+            os.environ["CERTMONGER_CA_COOKIE"] = cookie
 
         result = call_handler(request_cert, **kwargs)
         if result[0] == WAIT:
-            return (result[0], 'request:%s' % result[1])
+            return (result[0], "request:%s" % result[1])
         elif result[0] == WAIT_WITH_DELAY:
-            return (result[0], result[1], 'request:%s' % result[2])
+            return (result[0], result[1], "request:%s" % result[2])
         elif result[0] != ISSUED:
             return result
         else:
             cert = result[1]
             cookie = None
     else:
-        cert, _sep, cookie = cookie.partition(':')
+        cert, _sep, cookie = cookie.partition(":")
 
     if cookie is None:
-        os.environ['CERTMONGER_OPERATION'] = 'SUBMIT'
+        os.environ["CERTMONGER_OPERATION"] = "SUBMIT"
     else:
-        os.environ['CERTMONGER_CA_COOKIE'] = cookie
-    os.environ['CERTMONGER_CERTIFICATE'] = cert
+        os.environ["CERTMONGER_CA_COOKIE"] = cookie
+    os.environ["CERTMONGER_CERTIFICATE"] = cert
 
     result = call_handler(store_cert, **kwargs)
     if result[0] == WAIT:
-        return (result[0], 'store:%s:%s' % (cert, result[1]))
+        return (result[0], "store:%s:%s" % (cert, result[1]))
     elif result[0] == WAIT_WITH_DELAY:
-        return (result[0], result[1], 'store:%s:%s' % (cert, result[2]))
+        return (result[0], result[1], "store:%s:%s" % (cert, result[2]))
     else:
         return result
 
@@ -348,23 +354,29 @@ def retrieve_or_reuse_cert(**kwargs):
     if not nickname:
         return (REJECTED, "Nickname could not be determined")
 
-    cert = os.environ.get('CERTMONGER_CERTIFICATE')
+    cert = os.environ.get("CERTMONGER_CERTIFICATE")
     if not cert:
         return (REJECTED, "New certificate requests not supported")
-    cert = x509.load_pem_x509_certificate(cert.encode('ascii'))
+    cert = x509.load_pem_x509_certificate(cert.encode("ascii"))
 
     with ldap_connect() as conn:
         try:
             entry = conn.get_entry(
-                DN(('cn', nickname), ('cn', 'ca_renewal'),
-                   ('cn', 'ipa'), ('cn', 'etc'), api.env.basedn),
-                ['usercertificate'])
+                DN(
+                    ("cn", nickname),
+                    ("cn", "ca_renewal"),
+                    ("cn", "ipa"),
+                    ("cn", "etc"),
+                    api.env.basedn,
+                ),
+                ["usercertificate"],
+            )
         except errors.NotFound:
             pass
         else:
-            cert = entry.single_value['usercertificate']
+            cert = entry.single_value["usercertificate"]
 
-    return (ISSUED, cert.public_bytes(x509.Encoding.PEM).decode('ascii'))
+    return (ISSUED, cert.public_bytes(x509.Encoding.PEM).decode("ascii"))
 
 
 def retrieve_cert_continuous(reuse_existing, **kwargs):
@@ -372,21 +384,21 @@ def retrieve_cert_continuous(reuse_existing, **kwargs):
     Retrieve new certificate from LDAP. Repeat every eight hours until the
     certificate is available.
     """
-    old_cert = os.environ.get('CERTMONGER_CERTIFICATE')
+    old_cert = os.environ.get("CERTMONGER_CERTIFICATE")
     if old_cert:
-        old_cert = x509.load_pem_x509_certificate(old_cert.encode('ascii'))
+        old_cert = x509.load_pem_x509_certificate(old_cert.encode("ascii"))
 
-    result = call_handler(retrieve_or_reuse_cert,
-                          reuse_existing=reuse_existing,
-                          **kwargs)
+    result = call_handler(
+        retrieve_or_reuse_cert, reuse_existing=reuse_existing, **kwargs
+    )
     if result[0] != ISSUED or reuse_existing:
         return result
 
-    new_cert = x509.load_pem_x509_certificate(result[1].encode('ascii'))
+    new_cert = x509.load_pem_x509_certificate(result[1].encode("ascii"))
     if new_cert == old_cert:
         syslog.syslog(syslog.LOG_INFO, "Updated certificate not available")
         # No cert available yet, tell certmonger to wait another 8 hours
-        return (WAIT_WITH_DELAY, 8 * 60 * 60, '')
+        return (WAIT_WITH_DELAY, 8 * 60 * 60, "")
 
     return result
 
@@ -406,106 +418,110 @@ def renew_ca_cert(reuse_existing, force_self_signed, **kwargs):
     """
     This is used for automatic CA certificate renewal.
     """
-    csr = os.environ.get('CERTMONGER_CSR').encode('ascii')
+    csr = os.environ.get("CERTMONGER_CSR").encode("ascii")
     if not csr:
         return (UNCONFIGURED, "Certificate request not provided")
 
-    cert = os.environ.get('CERTMONGER_CERTIFICATE')
+    cert = os.environ.get("CERTMONGER_CERTIFICATE")
     if not cert:
         return (REJECTED, "New certificate requests not supported")
-    cert = x509.load_pem_x509_certificate(cert.encode('ascii'))
+    cert = x509.load_pem_x509_certificate(cert.encode("ascii"))
     is_self_signed = cert.is_self_signed()
 
-    operation = os.environ.get('CERTMONGER_OPERATION')
-    if operation == 'SUBMIT':
-        state = 'retrieve'
+    operation = os.environ.get("CERTMONGER_OPERATION")
+    if operation == "SUBMIT":
+        state = "retrieve"
 
-        if (is_self_signed or force_self_signed) \
-                and not reuse_existing and is_renewal_master():
-            state = 'request'
+        if (
+            (is_self_signed or force_self_signed)
+            and not reuse_existing
+            and is_renewal_master()
+        ):
+            state = "request"
 
         csr_file = paths.IPA_CA_CSR
         try:
-            with open(csr_file, 'wb') as f:
+            with open(csr_file, "wb") as f:
                 f.write(csr)
         except Exception as e:
             return (UNREACHABLE, "Failed to write %s: %s" % (csr_file, e))
-    elif operation == 'POLL':
-        cookie = os.environ.get('CERTMONGER_CA_COOKIE')
+    elif operation == "POLL":
+        cookie = os.environ.get("CERTMONGER_CA_COOKIE")
         if not cookie:
             return (UNCONFIGURED, "Cookie not provided")
 
-        state, _sep, cookie = cookie.partition(':')
-        if state not in ('retrieve', 'request'):
-            return (UNCONFIGURED,
-                    "Invalid cookie: %r" % os.environ['CERTMONGER_CA_COOKIE'])
+        state, _sep, cookie = cookie.partition(":")
+        if state not in ("retrieve", "request"):
+            return (
+                UNCONFIGURED,
+                "Invalid cookie: %r" % os.environ["CERTMONGER_CA_COOKIE"],
+            )
 
-        os.environ['CERTMONGER_CA_COOKIE'] = cookie
+        os.environ["CERTMONGER_CA_COOKIE"] = cookie
     else:
         return (OPERATION_NOT_SUPPORTED_BY_HELPER,)
 
-    if state == 'retrieve':
-        result = call_handler(retrieve_cert,
-                              reuse_existing=reuse_existing,
-                              **kwargs)
+    if state == "retrieve":
+        result = call_handler(retrieve_cert, reuse_existing=reuse_existing, **kwargs)
         if result[0] == REJECTED and not is_self_signed and not reuse_existing:
-            syslog.syslog(syslog.LOG_ALERT,
-                          "Certificate with subject '%s' is about to expire, "
-                          "use ipa-cacert-manage to renew it"
-                          % (os.environ.get("CERTMONGER_REQ_SUBJECT"),))
-    elif state == 'request':
-        profile = os.environ.get('CERTMONGER_CA_PROFILE')
-        os.environ['CERTMONGER_CA_PROFILE'] = 'caCACert'
-        result = call_handler(request_and_store_cert,
-                              reuse_existing=reuse_existing,
-                              **kwargs)
+            syslog.syslog(
+                syslog.LOG_ALERT,
+                "Certificate with subject '%s' is about to expire, "
+                "use ipa-cacert-manage to renew it"
+                % (os.environ.get("CERTMONGER_REQ_SUBJECT"),),
+            )
+    elif state == "request":
+        profile = os.environ.get("CERTMONGER_CA_PROFILE")
+        os.environ["CERTMONGER_CA_PROFILE"] = "caCACert"
+        result = call_handler(
+            request_and_store_cert, reuse_existing=reuse_existing, **kwargs
+        )
         if profile is not None:
-            os.environ['CERTMONGER_CA_PROFILE'] = profile
+            os.environ["CERTMONGER_CA_PROFILE"] = profile
         else:
-            del os.environ['CERTMONGER_CA_PROFILE']
+            del os.environ["CERTMONGER_CA_PROFILE"]
 
     if result[0] == WAIT:
-        return (result[0], '%s:%s' % (state, result[1]))
+        return (result[0], "%s:%s" % (state, result[1]))
     elif result[0] == WAIT_WITH_DELAY:
-        return (result[0], result[1], '%s:%s' % (state, result[2]))
+        return (result[0], result[1], "%s:%s" % (state, result[2]))
     else:
         return result
 
+
 def main():
     kwargs = {
-        'reuse_existing': False,
-        'force_self_signed': False,
+        "reuse_existing": False,
+        "force_self_signed": False,
     }
 
     try:
-        sys.argv.remove('--reuse-existing')
+        sys.argv.remove("--reuse-existing")
     except ValueError:
         pass
     else:
-        kwargs['reuse_existing'] = True
+        kwargs["reuse_existing"] = True
 
     try:
-        sys.argv.remove('--force-self-signed')
+        sys.argv.remove("--force-self-signed")
     except ValueError:
         pass
     else:
-        kwargs['force_self_signed'] = True
+        kwargs["force_self_signed"] = True
 
-    operation = os.environ.get('CERTMONGER_OPERATION')
-    if operation not in ('SUBMIT', 'POLL'):
+    operation = os.environ.get("CERTMONGER_OPERATION")
+    if operation not in ("SUBMIT", "POLL"):
         return OPERATION_NOT_SUPPORTED_BY_HELPER
 
-    api.bootstrap(
-        in_server=True, context='renew', confdir=paths.ETC_IPA, log=None
-    )
+    api.bootstrap(in_server=True, context="renew", confdir=paths.ETC_IPA, log=None)
     api.finalize()
 
     tmpdir = tempfile.mkdtemp(prefix="tmp-")
     certs.renewal_lock.acquire()
     try:
-        principal = str('host/%s@%s' % (api.env.host, api.env.realm))
-        ccache_filename = os.path.join(tmpdir, 'ccache')
-        os.environ['KRB5CCNAME'] = ccache_filename
+        principal = str("host/%s@%s" % (api.env.host, api.env.realm))
+        ccache_filename = os.path.join(tmpdir, "ccache")
+        os.environ["KRB5CCNAME"] = ccache_filename
         kinit_keytab(principal, paths.KRB5_KEYTAB, ccache_filename)
 
         api.Backend.ldap2.connect()

@@ -4,4 +4,4 @@
 
 from ipalib.text import _
 
-__doc__ = _('One time password commands')
+__doc__ = _("One time password commands")

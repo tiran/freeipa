@@ -37,15 +37,15 @@ class trust_add(MethodOverride):
         system.
         """
 
-        trust_secret = kw.get('trust_secret')
-        realm_admin = kw.get('realm_admin')
-        realm_passwd = kw.get('realm_passwd')
+        trust_secret = kw.get("trust_secret")
+        realm_admin = kw.get("realm_admin")
+        realm_passwd = kw.get("realm_passwd")
 
         if trust_secret is None:
             if realm_admin is None:
-                kw['realm_admin'] = self.prompt_param(
-                           self.params['realm_admin'])
+                kw["realm_admin"] = self.prompt_param(self.params["realm_admin"])
 
             if realm_passwd is None:
-                kw['realm_passwd'] = self.Backend.textui.prompt_password(
-                           self.params['realm_passwd'].label, confirm=False)
+                kw["realm_passwd"] = self.Backend.textui.prompt_password(
+                    self.params["realm_passwd"].label, confirm=False
+                )
