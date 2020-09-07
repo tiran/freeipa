@@ -176,5 +176,8 @@ class BaseConstantsNamespace:
     # remote password, and DSA cert authentication.
     TLS_HIGH_CIPHERS = "HIGH:!aNULL:!eNULL:!MD5:!RC4:!3DES:!PSK:!SRP:!aDSS"
 
+    KRB5KDC_USER = "krb5kdc"
+    KRB5KDC_GROUP = "krb5kdc"
+
 
 constants = BaseConstantsNamespace()

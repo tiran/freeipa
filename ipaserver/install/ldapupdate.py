@@ -296,6 +296,8 @@ class LDAPUpdate:
             SELINUX_USERMAP_DEFAULT=platformconstants.SELINUX_USERMAP_DEFAULT,
             SELINUX_USERMAP_ORDER=platformconstants.SELINUX_USERMAP_ORDER,
             FIPS="#" if tasks.is_fips_enabled() else "",
+            KRB5KDC_UID=constants.KRB5KDC_USER.uid,
+            KRB5KDC_GID=constants.KRB5KDC_GROUP.gid,
         )
         for k, v in default_sub.items():
             self.sub_dict.setdefault(k, v)

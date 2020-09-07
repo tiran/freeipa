@@ -1,7 +1,15 @@
+# countainer for autobind
+dn: cn=autobind,cn=config
+default: objectClass: nsContainer
+default: objectClass: top
+default: cn: autobind
+
 # map LDAPI autobind uid/gid to user entries (not used by root autobind)
 dn: cn=config
 only: nsslapd-ldapimaptoentries: on
+only: nsslapd-ldapientrysearchbase: cn=autobind,cn=config
 
 # lib389 configures 389-DS for root-autobind. This entry is no longer needed.
 dn: cn=root-autobind,cn=config
 deleteentry: cn=root-autobind,cn=config
+

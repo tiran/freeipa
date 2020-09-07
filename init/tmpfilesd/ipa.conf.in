@@ -1,2 +1,4 @@
 d /run/ipa 0711 root root
 d /run/ipa/ccaches 0770 ipaapi ipaapi
+d /run/krb5kdc 0755 krb5kdc krb5kdc
+d /run/kadmind 0755 krb5kdc krb5kdc

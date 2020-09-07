@@ -1,0 +1,30 @@
+# autobind system user for KDC
+dn: cn=krb5kdc,cn=autobind,cn=config
+default: objectClass: groupofnames
+default: objectClass: nestedgroup
+default: objectClass: ipaIDobject
+default: objectClass: top
+default: cn: krb5kdc
+only: uidNumber: $KRB5KDC_UID
+only: gidNumber: $KRB5KDC_GID
+
+# KDC is a passsync manager
+dn: cn=ipa_pwd_extop,cn=plugins,cn=config
+add: passSyncManagersDNs: cn=krb5kdc,cn=autobind,cn=config
+
+# privilege
+dn: cn=Kerberos KDC services,cn=privileges,cn=pbac,$SUFFIX
+default: objectClass: top
+default: objectClass: groupofnames
+default: objectClass: nestedgroup
+default: cn: Kerberos KDC services
+default: description: Kerberos KDC system accounts
+default: member: cn=krb5kdc,cn=autobind,cn=config
+
+# MemberOf plugin does not work for cn=config backend
+# create reverse mapping manually
+dn: cn=krb5kdc,cn=autobind,cn=config
+add: memberOf: cn=Kerberos KDC services,cn=privileges,cn=pbac,$SUFFIX
+
+dn: $SUFFIX
+add: aci: (targetattr = "*")(version 3.0;acl "KRB5KDC: Allow all";allow (all) groupdn = "ldap:///cn=Kerberos KDC services,cn=privileges,cn=pbac,$SUFFIX";)

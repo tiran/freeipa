@@ -44,6 +44,8 @@ dist_app_DATA =				\
 	dnssec.ldif			\
 	domainlevel.ldif			\
 	kerberos.ldif			\
+	krb5kdc-override.conf	\
+	kadmind-override.conf	\
 	bind.ipa-ext.conf.template		\
 	bind.ipa-options-ext.conf.template	\
 	bind.named.conf.template	\
